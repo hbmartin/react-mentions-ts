@@ -16,8 +16,7 @@
     "now-build": "webpack --config demo/webpack.config.js",
     "prerelease": "yarn build",
     "release": "changeset publish",
-    "change": "changeset",
-    "prepare": "npm link ../react ../react-dom --force"
+    "change": "changeset"
   },
   "repository": {
     "type": "git",
