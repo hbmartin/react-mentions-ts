@@ -16,7 +16,8 @@
     "now-build": "webpack --config demo/webpack.config.js",
     "prerelease": "yarn build",
     "release": "changeset publish",
-    "change": "changeset"
+    "change": "changeset",
+    "prepare": "npm link /node_modules/react /node_modules/react-dom && yarn build"
   },
   "repository": {
     "type": "git",
@@ -92,7 +93,7 @@
     "substyle": "^9.1.0"
   },
   "peerDependencies": {
-    "react": ">=16.8.3",
-    "react-dom": ">=16.8.3"
+    "react": "^18",
+    "react-dom": "^18"
   }
 }
