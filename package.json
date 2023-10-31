@@ -17,7 +17,7 @@
     "prerelease": "yarn build",
     "release": "changeset publish",
     "change": "changeset",
-    "prepare": "npm link /node_modules/react /node_modules/react-dom && yarn build"
+    "prepare": "npm link ../react ../react-dom --force"
   },
   "repository": {
     "type": "git",
