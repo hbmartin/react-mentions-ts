@@ -12,10 +12,9 @@
     "lint": "eslint --max-warnings=0 --ext .js src test demo",
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=development webpack-dev-server --config demo/webpack.config.js",
     "test": "jest",
-    "prerelease": "yarn build",
     "release": "changeset publish",
     "change": "changeset",
-    "prepare": "webpack --config demo/webpack.config.js"
+    "prepare": "yarn"
   },
   "repository": {
     "type": "git",
