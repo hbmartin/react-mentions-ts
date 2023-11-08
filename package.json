@@ -1,5 +1,5 @@
 {
-  "name": "mattcohen24/react-mentions",
+  "name": "react-mentions",
   "version": "4.4.11",
   "description": "React mentions input",
   "main": "dist/react-mentions.cjs.js",
