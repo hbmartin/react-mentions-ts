@@ -1,6 +1,6 @@
 {
-  "name": "react-mentions",
-  "version": "4.4.10",
+  "name": "mattcohen24/react-mentions",
+  "version": "4.4.11",
   "description": "React mentions input",
   "main": "dist/react-mentions.cjs.js",
   "module": "dist/react-mentions.esm.js",
@@ -16,11 +16,12 @@
     "now-build": "webpack --config demo/webpack.config.js",
     "prerelease": "yarn build",
     "release": "changeset publish",
-    "change": "changeset"
+    "change": "changeset",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/signavio/react-mentions.git"
+    "url": "git+https://github.com/signavio/react-mentions.git"
   },
   "keywords": [
     "react",
