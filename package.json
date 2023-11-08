@@ -17,7 +17,7 @@
     "prerelease": "yarn build",
     "release": "changeset publish",
     "change": "changeset",
-    "prepare": "npm install && yarn build"
+    "prepare": "yarn install && yarn build"
   },
   "repository": {
     "type": "git",
