@@ -26,22 +26,24 @@ var PLACEHOLDERS = {
 };
 
 var findPositionOfCapturingGroup = function findPositionOfCapturingGroup(markup, parameterName) {
-  invariant(parameterName === 'id' || parameterName === 'display', "Second arg must be either \"id\" or \"display\", got: \"".concat(parameterName, "\"")); // find positions of placeholders in the markup
+  invariant(parameterName === 'id' || parameterName === 'display', "Second arg must be either \"id\" or \"display\", got: \"".concat(parameterName, "\""));
 
+  // find positions of placeholders in the markup
   var indexDisplay = markup.indexOf(PLACEHOLDERS.display);
-  var indexId = markup.indexOf(PLACEHOLDERS.id); // set indices to null if not found
+  var indexId = markup.indexOf(PLACEHOLDERS.id);
 
+  // set indices to null if not found
   if (indexDisplay < 0) indexDisplay = null;
-  if (indexId < 0) indexId = null; // markup must contain one of the mandatory placeholders
+  if (indexId < 0) indexId = null;
 
+  // markup must contain one of the mandatory placeholders
   invariant(indexDisplay !== null || indexId !== null, "The markup '".concat(markup, "' does not contain either of the placeholders '__id__' or '__display__'"));
-
   if (indexDisplay !== null && indexId !== null) {
     // both placeholders are used, return 0 or 1 depending on the position of the requested parameter
     return parameterName === 'id' && indexId <= indexDisplay || parameterName === 'display' && indexDisplay <= indexId ? 0 : 1;
-  } // just one placeholder is being used, we'll use the captured string for both parameters
+  }
 
-
+  // just one placeholder is being used, we'll use the captured string for both parameters
   return 0;
 };
 
@@ -49,10 +51,9 @@ var combineRegExps = function combineRegExps(regExps) {
   var serializedRegexParser = /^\/(.+)\/(\w+)?$/;
   return new RegExp(regExps.map(function (regex) {
     var _serializedRegexParse = serializedRegexParser.exec(regex.toString()),
-        _serializedRegexParse2 = _slicedToArray(_serializedRegexParse, 3),
-        regexString = _serializedRegexParse2[1],
-        regexFlags = _serializedRegexParse2[2];
-
+      _serializedRegexParse2 = _slicedToArray(_serializedRegexParse, 3),
+      regexString = _serializedRegexParse2[1],
+      regexFlags = _serializedRegexParse2[2];
     invariant(!regexFlags, "RegExp flags are not supported. Change /".concat(regexString, "/").concat(regexFlags, " into /").concat(regexString, "/"));
     return "(".concat(regexString, ")");
   }).join('|'), 'g');
@@ -65,37 +66,36 @@ var countPlaceholders = function countPlaceholders(markup) {
   return count;
 };
 
-var emptyFn = function emptyFn() {}; // Finds all occurrences of the markup in the value and calls the `markupIteratee` callback for each of them.
+var emptyFn = function emptyFn() {};
+
+// Finds all occurrences of the markup in the value and calls the `markupIteratee` callback for each of them.
 // The optional `textIteratee` callback is called for each plain text ranges in between these markup occurrences.
-
-
 var iterateMentionsMarkup = function iterateMentionsMarkup(value, config, markupIteratee) {
   var textIteratee = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : emptyFn;
   var regex = combineRegExps(config.map(function (c) {
     return c.regex;
   }));
   var accOffset = 2; // first is whole match, second is the for the capturing group of first regexp component
-
   var captureGroupOffsets = config.map(function (_ref) {
     var markup = _ref.markup;
-    var result = accOffset; // + 1 is for the capturing group we add around each regexp component in combineRegExps
-
+    var result = accOffset;
+    // + 1 is for the capturing group we add around each regexp component in combineRegExps
     accOffset += countPlaceholders(markup) + 1;
     return result;
   });
   var match;
   var start = 0;
-  var currentPlainTextIndex = 0; // detect all mention markup occurrences in the value and iterate the matches
+  var currentPlainTextIndex = 0;
 
+  // detect all mention markup occurrences in the value and iterate the matches
   while ((match = regex.exec(value)) !== null) {
     var offset = captureGroupOffsets.find(function (o) {
       return !!match[o];
     }); // eslint-disable-line no-loop-func
-
     var mentionChildIndex = captureGroupOffsets.indexOf(offset);
     var _config$mentionChildI = config[mentionChildIndex],
-        markup = _config$mentionChildI.markup,
-        displayTransform = _config$mentionChildI.displayTransform;
+      markup = _config$mentionChildI.markup,
+      displayTransform = _config$mentionChildI.displayTransform;
     var idPos = offset + findPositionOfCapturingGroup(markup, 'id');
     var displayPos = offset + findPositionOfCapturingGroup(markup, 'display');
     var id = match[idPos];
@@ -107,7 +107,6 @@ var iterateMentionsMarkup = function iterateMentionsMarkup(value, config, markup
     currentPlainTextIndex += display.length;
     start = regex.lastIndex;
   }
-
   if (start < value.length) {
     textIteratee(value.substring(start), start, currentPlainTextIndex);
   }
@@ -123,34 +122,28 @@ var getPlainText = function getPlainText(value, config) {
   return result;
 };
 
+// For the passed character index in the plain text string, returns the corresponding index
 // in the marked up value string.
 // If the passed character index lies inside a mention, the value of `inMarkupCorrection` defines the
 // correction to apply:
 //   - 'START' to return the index of the mention markup's first char (default)
 //   - 'END' to return the index after its last char
 //   - 'NULL' to return null
-
 var mapPlainTextIndex = function mapPlainTextIndex(value, config, indexInPlainText) {
   var inMarkupCorrection = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'START';
-
   if (typeof indexInPlainText !== 'number') {
     return indexInPlainText;
   }
-
   var result;
-
   var textIteratee = function textIteratee(substr, index, substrPlainTextIndex) {
     if (result !== undefined) return;
-
     if (substrPlainTextIndex + substr.length >= indexInPlainText) {
       // found the corresponding position in the current plain text range
       result = index + indexInPlainText - substrPlainTextIndex;
     }
   };
-
   var markupIteratee = function markupIteratee(markup, index, mentionPlainTextIndex, id, display, childIndex, lastMentionEndIndex) {
     if (result !== undefined) return;
-
     if (mentionPlainTextIndex + display.length > indexInPlainText) {
       // found the corresponding position inside current match,
       // return the index of the first or after the last char of the matching markup
@@ -162,10 +155,10 @@ var mapPlainTextIndex = function mapPlainTextIndex(value, config, indexInPlainTe
       }
     }
   };
+  iterateMentionsMarkup(value, config, markupIteratee, textIteratee);
 
-  iterateMentionsMarkup(value, config, markupIteratee, textIteratee); // when a mention is at the end of the value and we want to get the caret position
+  // when a mention is at the end of the value and we want to get the caret position
   // at the end of the string, result is undefined
-
   return result === undefined ? value.length : result;
 };
 
@@ -173,89 +166,82 @@ var spliceString = function spliceString(str, start, end, insert) {
   return str.substring(0, start) + insert + str.substring(end);
 };
 
+// Applies a change from the plain text textarea to the underlying marked up value
 // guided by the textarea text selection ranges before and after the change
-
 var applyChangeToValue = function applyChangeToValue(value, plainTextValue, _ref, config) {
   var selectionStartBefore = _ref.selectionStartBefore,
-      selectionEndBefore = _ref.selectionEndBefore,
-      selectionEndAfter = _ref.selectionEndAfter;
+    selectionEndBefore = _ref.selectionEndBefore,
+    selectionEndAfter = _ref.selectionEndAfter;
   var oldPlainTextValue = getPlainText(value, config);
   var lengthDelta = oldPlainTextValue.length - plainTextValue.length;
-
   if (selectionStartBefore === 'undefined') {
     selectionStartBefore = selectionEndAfter + lengthDelta;
   }
-
   if (selectionEndBefore === 'undefined') {
     selectionEndBefore = selectionStartBefore;
-  } // Fixes an issue with replacing combined characters for complex input. Eg like acented letters on OSX
+  }
 
-
+  // Fixes an issue with replacing combined characters for complex input. Eg like acented letters on OSX
   if (selectionStartBefore === selectionEndBefore && selectionEndBefore === selectionEndAfter && oldPlainTextValue.length === plainTextValue.length) {
     selectionStartBefore = selectionStartBefore - 1;
-  } // extract the insertion from the new plain text value
+  }
 
+  // extract the insertion from the new plain text value
+  var insert = plainTextValue.slice(selectionStartBefore, selectionEndAfter);
 
-  var insert = plainTextValue.slice(selectionStartBefore, selectionEndAfter); // handling for Backspace key with no range selection
-
+  // handling for Backspace key with no range selection
   var spliceStart = Math.min(selectionStartBefore, selectionEndAfter);
   var spliceEnd = selectionEndBefore;
-
   if (selectionStartBefore === selectionEndAfter) {
     // handling for Delete key with no range selection
     spliceEnd = Math.max(selectionEndBefore, selectionStartBefore + lengthDelta);
   }
-
   var mappedSpliceStart = mapPlainTextIndex(value, config, spliceStart, 'START');
   var mappedSpliceEnd = mapPlainTextIndex(value, config, spliceEnd, 'END');
   var controlSpliceStart = mapPlainTextIndex(value, config, spliceStart, 'NULL');
   var controlSpliceEnd = mapPlainTextIndex(value, config, spliceEnd, 'NULL');
   var willRemoveMention = controlSpliceStart === null || controlSpliceEnd === null;
   var newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert);
-
   if (!willRemoveMention) {
     // test for auto-completion changes
     var controlPlainTextValue = getPlainText(newValue, config);
-
     if (controlPlainTextValue !== plainTextValue) {
       // some auto-correction is going on
+
       // find start of diff
       spliceStart = 0;
-
       while (plainTextValue[spliceStart] === controlPlainTextValue[spliceStart]) {
         spliceStart++;
-      } // extract auto-corrected insertion
+      }
 
+      // extract auto-corrected insertion
+      insert = plainTextValue.slice(spliceStart, selectionEndAfter);
 
-      insert = plainTextValue.slice(spliceStart, selectionEndAfter); // find index of the unchanged remainder
+      // find index of the unchanged remainder
+      spliceEnd = oldPlainTextValue.lastIndexOf(plainTextValue.substring(selectionEndAfter));
 
-      spliceEnd = oldPlainTextValue.lastIndexOf(plainTextValue.substring(selectionEndAfter)); // re-map the corrected indices
-
+      // re-map the corrected indices
       mappedSpliceStart = mapPlainTextIndex(value, config, spliceStart, 'START');
       mappedSpliceEnd = mapPlainTextIndex(value, config, spliceEnd, 'END');
       newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert);
     }
   }
-
   return newValue;
 };
 
+// For a given indexInPlainText that lies inside a mention,
 // returns a the index of of the first char of the mention in the plain text.
 // If indexInPlainText does not lie inside a mention, returns indexInPlainText.
-
 var findStartOfMentionInPlainText = function findStartOfMentionInPlainText(value, config, indexInPlainText) {
   var result = indexInPlainText;
   var foundMention = false;
-
   var markupIteratee = function markupIteratee(markup, index, mentionPlainTextIndex, id, display, childIndex, lastMentionEndIndex) {
     if (mentionPlainTextIndex <= indexInPlainText && mentionPlainTextIndex + display.length > indexInPlainText) {
       result = mentionPlainTextIndex;
       foundMention = true;
     }
   };
-
   iterateMentionsMarkup(value, config, markupIteratee);
-
   if (foundMention) {
     return result;
   }
@@ -302,9 +288,9 @@ var markupToRegex = function markupToRegex(markup) {
 var readConfigFromChildren = function readConfigFromChildren(children) {
   return Children.toArray(children).map(function (_ref) {
     var _ref$props = _ref.props,
-        markup = _ref$props.markup,
-        regex = _ref$props.regex,
-        displayTransform = _ref$props.displayTransform;
+      markup = _ref$props.markup,
+      regex = _ref$props.regex,
+      displayTransform = _ref$props.displayTransform;
     return {
       markup: markup,
       regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup),
@@ -313,9 +299,9 @@ var readConfigFromChildren = function readConfigFromChildren(children) {
       }
     };
   });
-}; // make sure that the custom regex defines the correct number of capturing groups
+};
 
-
+// make sure that the custom regex defines the correct number of capturing groups
 var coerceCapturingGroups = function coerceCapturingGroups(regex, markup) {
   var numberOfGroups = new RegExp(regex.toString() + '|').exec('').length - 1;
   var numberOfPlaceholders = countPlaceholders(markup);
@@ -608,16 +594,13 @@ var removeAccents = function removeAccents(str) {
   });
   return formattedStr;
 };
-
 var normalizeString = function normalizeString(str) {
   return removeAccents(str).toLowerCase();
 };
-
 var getSubstringIndex = function getSubstringIndex(str, substr, ignoreAccents) {
   if (!ignoreAccents) {
     return str.toLowerCase().indexOf(substr.toLowerCase());
   }
-
   return normalizeString(str).indexOf(normalizeString(substr));
 };
 
@@ -635,36 +618,28 @@ var keys = function keys(obj) {
 
 var omit = function omit(obj) {
   var _ref;
-
   for (var _len = arguments.length, rest = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
     rest[_key - 1] = arguments[_key];
   }
-
   var keys = (_ref = []).concat.apply(_ref, rest);
-
   return Object.keys(obj).reduce(function (acc, k) {
     if (obj.hasOwnProperty(k) && !keys.includes(k) && obj[k] !== undefined) {
       acc[k] = obj[k];
     }
-
     return acc;
   }, {});
 };
 
 var _excluded = ["style", "className", "classNames"];
-
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-
 function createDefaultStyle(defaultStyle, getModifiers) {
   var enhance = function enhance(ComponentToWrap) {
     var DefaultStyleEnhancer = function DefaultStyleEnhancer(_ref) {
       var style = _ref.style,
-          className = _ref.className,
-          classNames = _ref.classNames,
-          rest = _objectWithoutProperties(_ref, _excluded);
-
+        className = _ref.className,
+        classNames = _ref.classNames,
+        rest = _objectWithoutProperties(_ref, _excluded);
       var modifiers = getModifiers ? getModifiers(rest) : undefined;
       var styles = useStyles(defaultStyle, {
         style: style,
@@ -675,17 +650,16 @@ function createDefaultStyle(defaultStyle, getModifiers) {
         style: styles
       }));
     };
-
     var displayName = ComponentToWrap.displayName || ComponentToWrap.name || 'Component';
-    DefaultStyleEnhancer.displayName = "defaultStyle(".concat(displayName, ")"); // return DefaultStyleEnhancer
+    DefaultStyleEnhancer.displayName = "defaultStyle(".concat(displayName, ")");
 
+    // return DefaultStyleEnhancer
     return /*#__PURE__*/React.forwardRef(function (props, ref) {
       return DefaultStyleEnhancer(_objectSpread(_objectSpread({}, props), {}, {
         ref: ref
       }));
     });
   };
-
   return enhance;
 }
 
@@ -695,50 +669,41 @@ var _generateComponentKey = function _generateComponentKey(usedKeys, id) {
   } else {
     usedKeys[id]++;
   }
-
   return id + '_' + usedKeys[id];
 };
-
 function Highlighter(_ref) {
   var selectionStart = _ref.selectionStart,
-      selectionEnd = _ref.selectionEnd,
-      _ref$value = _ref.value,
-      value = _ref$value === void 0 ? '' : _ref$value,
-      onCaretPositionChange = _ref.onCaretPositionChange,
-      containerRef = _ref.containerRef,
-      children = _ref.children,
-      singleLine = _ref.singleLine,
-      style = _ref.style;
-
+    selectionEnd = _ref.selectionEnd,
+    _ref$value = _ref.value,
+    value = _ref$value === void 0 ? '' : _ref$value,
+    onCaretPositionChange = _ref.onCaretPositionChange,
+    containerRef = _ref.containerRef,
+    children = _ref.children,
+    singleLine = _ref.singleLine,
+    style = _ref.style;
   var _useState = useState({
-    left: undefined,
-    top: undefined
-  }),
-      _useState2 = _slicedToArray(_useState, 2),
-      position = _useState2[0],
-      setPosition = _useState2[1];
-
+      left: undefined,
+      top: undefined
+    }),
+    _useState2 = _slicedToArray(_useState, 2),
+    position = _useState2[0],
+    setPosition = _useState2[1];
   var _useState3 = useState(),
-      _useState4 = _slicedToArray(_useState3, 2),
-      caretElement = _useState4[0],
-      setCaretElement = _useState4[1];
-
+    _useState4 = _slicedToArray(_useState3, 2),
+    caretElement = _useState4[0],
+    setCaretElement = _useState4[1];
   useEffect(function () {
     notifyCaretPosition();
   });
-
   var notifyCaretPosition = function notifyCaretPosition() {
     if (!caretElement) {
       return;
     }
-
     var offsetLeft = caretElement.offsetLeft,
-        offsetTop = caretElement.offsetTop;
-
+      offsetTop = caretElement.offsetTop;
     if (position.left === offsetLeft && position.top === offsetTop) {
       return;
     }
-
     var newPosition = {
       left: offsetLeft,
       top: offsetTop
@@ -746,47 +711,38 @@ function Highlighter(_ref) {
     setPosition(newPosition);
     onCaretPositionChange(newPosition);
   };
-
   var config = readConfigFromChildren(children);
   var caretPositionInMarkup;
-
   if (selectionEnd === selectionStart) {
     caretPositionInMarkup = mapPlainTextIndex(value, config, selectionStart, 'START');
   }
-
   var resultComponents = [];
   var componentKeys = {};
   var components = resultComponents;
   var substringComponentKey = 0;
-
   var textIteratee = function textIteratee(substr, index, indexInPlainText) {
     // check whether the caret element has to be inserted inside the current plain substring
     if (isNumber(caretPositionInMarkup) && caretPositionInMarkup >= index && caretPositionInMarkup <= index + substr.length) {
       // if yes, split substr at the caret position and insert the caret component
       var splitIndex = caretPositionInMarkup - index;
-      components.push(renderSubstring(substr.substring(0, splitIndex), substringComponentKey)); // add all following substrings and mention components as children of the caret component
-
+      components.push(renderSubstring(substr.substring(0, splitIndex), substringComponentKey));
+      // add all following substrings and mention components as children of the caret component
       components = [renderSubstring(substr.substring(splitIndex), substringComponentKey)];
     } else {
       components.push(renderSubstring(substr, substringComponentKey));
     }
-
     substringComponentKey++;
   };
-
   var mentionIteratee = function mentionIteratee(markup, index, indexInPlainText, id, display, mentionChildIndex, lastMentionEndIndex) {
     var key = _generateComponentKey(componentKeys, id);
-
     components.push(getMentionComponentForMatch(id, display, mentionChildIndex, key));
   };
-
   var renderSubstring = function renderSubstring(string, key) {
     // set substring span to hidden, so that Emojis are not shown double in Mobile Safari
     return /*#__PURE__*/React.createElement("span", _extends({}, style('substring'), {
       key: key
     }), string);
   };
-
   var getMentionComponentForMatch = function getMentionComponentForMatch(id, display, mentionChildIndex, key) {
     var props = {
       id: id,
@@ -796,28 +752,24 @@ function Highlighter(_ref) {
     var child = Children.toArray(children)[mentionChildIndex];
     return /*#__PURE__*/React.cloneElement(child, props);
   };
-
   var renderHighlighterCaret = function renderHighlighterCaret(children) {
     return /*#__PURE__*/React.createElement("span", _extends({}, style('caret'), {
       ref: setCaretElement,
       key: "caret"
     }), children);
   };
+  iterateMentionsMarkup(value, config, mentionIteratee, textIteratee);
 
-  iterateMentionsMarkup(value, config, mentionIteratee, textIteratee); // append a span containing a space, to ensure the last text line has the correct height
-
+  // append a span containing a space, to ensure the last text line has the correct height
   components.push(' ');
-
   if (components !== resultComponents) {
     // if a caret component is to be rendered, add all components that followed as its children
     resultComponents.push(renderHighlighterCaret(components));
   }
-
   return /*#__PURE__*/React.createElement("div", _extends({}, style, {
     ref: containerRef
   }), resultComponents);
 }
-
 Highlighter.propTypes = {
   selectionStart: PropTypes.number,
   selectionEnd: PropTypes.number,
@@ -854,65 +806,53 @@ var Highlighter$1 = styled(Highlighter);
 
 function Suggestion(_ref) {
   var id = _ref.id,
-      focused = _ref.focused,
-      ignoreAccents = _ref.ignoreAccents,
-      index = _ref.index,
-      onClick = _ref.onClick,
-      onMouseEnter = _ref.onMouseEnter,
-      query = _ref.query,
-      renderSuggestion = _ref.renderSuggestion,
-      suggestion = _ref.suggestion,
-      style = _ref.style,
-      className = _ref.className,
-      classNames = _ref.classNames;
+    focused = _ref.focused,
+    ignoreAccents = _ref.ignoreAccents,
+    index = _ref.index,
+    onClick = _ref.onClick,
+    onMouseEnter = _ref.onMouseEnter,
+    query = _ref.query,
+    renderSuggestion = _ref.renderSuggestion,
+    suggestion = _ref.suggestion,
+    style = _ref.style,
+    className = _ref.className,
+    classNames = _ref.classNames;
   var rest = {
     onClick: onClick,
     onMouseEnter: onMouseEnter
   };
-
   var renderContent = function renderContent() {
     var display = getDisplay();
     var highlightedDisplay = renderHighlightedDisplay(display);
-
     if (renderSuggestion) {
       return renderSuggestion(suggestion, query, highlightedDisplay, index, focused);
     }
-
     return highlightedDisplay;
   };
-
   var getDisplay = function getDisplay() {
     if (typeof suggestion === 'string') {
       return suggestion;
     }
-
     var id = suggestion.id,
-        display = suggestion.display;
-
+      display = suggestion.display;
     if (id === undefined || !display) {
       return id;
     }
-
     return display;
   };
-
   var renderHighlightedDisplay = function renderHighlightedDisplay(display) {
     var i = getSubstringIndex(display, query, ignoreAccents);
-
     if (i === -1) {
       return /*#__PURE__*/React.createElement("span", style('display'), display);
     }
-
     return /*#__PURE__*/React.createElement("span", style('display'), display.substring(0, i), /*#__PURE__*/React.createElement("b", style('highlight'), display.substring(i, i + query.length)), display.substring(i + query.length));
   };
-
   return /*#__PURE__*/React.createElement("li", _extends({
     id: id,
     role: "option",
     "aria-selected": focused
   }, rest, style), renderContent());
 }
-
 Suggestion.propTypes = {
   id: PropTypes.string.isRequired,
   query: PropTypes.string.isRequired,
@@ -936,8 +876,8 @@ var Suggestion$1 = styled$1(Suggestion);
 
 function LoadingIndicator(_ref) {
   var style = _ref.style,
-      className = _ref.className,
-      classNames = _ref.classNames;
+    className = _ref.className,
+    classNames = _ref.classNames;
   var styles = useStyles(defaultstyle, {
     style: style,
     className: className,
@@ -946,63 +886,54 @@ function LoadingIndicator(_ref) {
   var spinnerStyles = styles('spinner');
   return /*#__PURE__*/React.createElement("div", styles, /*#__PURE__*/React.createElement("div", spinnerStyles, /*#__PURE__*/React.createElement("div", spinnerStyles(['element', 'element1'])), /*#__PURE__*/React.createElement("div", spinnerStyles(['element', 'element2'])), /*#__PURE__*/React.createElement("div", spinnerStyles(['element', 'element3'])), /*#__PURE__*/React.createElement("div", spinnerStyles(['element', 'element4'])), /*#__PURE__*/React.createElement("div", spinnerStyles(['element', 'element5']))));
 }
-
 var defaultstyle = {};
 
 function SuggestionsOverlay(_ref) {
   var id = _ref.id,
-      _ref$suggestions = _ref.suggestions,
-      suggestions = _ref$suggestions === void 0 ? {} : _ref$suggestions,
-      a11ySuggestionsListLabel = _ref.a11ySuggestionsListLabel,
-      focusIndex = _ref.focusIndex,
-      position = _ref.position,
-      left = _ref.left,
-      right = _ref.right,
-      top = _ref.top,
-      scrollFocusedIntoView = _ref.scrollFocusedIntoView,
-      isLoading = _ref.isLoading,
-      isOpened = _ref.isOpened,
-      _ref$onSelect = _ref.onSelect,
-      onSelect = _ref$onSelect === void 0 ? function () {
-    return null;
-  } : _ref$onSelect,
-      ignoreAccents = _ref.ignoreAccents,
-      containerRef = _ref.containerRef,
-      children = _ref.children,
-      style = _ref.style,
-      customSuggestionsContainer = _ref.customSuggestionsContainer,
-      onMouseDown = _ref.onMouseDown,
-      onMouseEnter = _ref.onMouseEnter;
-
+    _ref$suggestions = _ref.suggestions,
+    suggestions = _ref$suggestions === void 0 ? {} : _ref$suggestions,
+    a11ySuggestionsListLabel = _ref.a11ySuggestionsListLabel,
+    focusIndex = _ref.focusIndex,
+    position = _ref.position,
+    left = _ref.left,
+    right = _ref.right,
+    top = _ref.top,
+    scrollFocusedIntoView = _ref.scrollFocusedIntoView,
+    isLoading = _ref.isLoading,
+    isOpened = _ref.isOpened,
+    _ref$onSelect = _ref.onSelect,
+    onSelect = _ref$onSelect === void 0 ? function () {
+      return null;
+    } : _ref$onSelect,
+    ignoreAccents = _ref.ignoreAccents,
+    containerRef = _ref.containerRef,
+    children = _ref.children,
+    style = _ref.style,
+    customSuggestionsContainer = _ref.customSuggestionsContainer,
+    onMouseDown = _ref.onMouseDown,
+    onMouseEnter = _ref.onMouseEnter;
   var _useState = useState(undefined),
-      _useState2 = _slicedToArray(_useState, 2),
-      ulElement = _useState2[0],
-      setUlElement = _useState2[1];
-
+    _useState2 = _slicedToArray(_useState, 2),
+    ulElement = _useState2[0],
+    setUlElement = _useState2[1];
   useEffect(function () {
     if (!ulElement || ulElement.offsetHeight >= ulElement.scrollHeight || !scrollFocusedIntoView) {
       return;
     }
-
     var scrollTop = ulElement.scrollTop;
-
     var _ulElement$children$f = ulElement.children[focusIndex].getBoundingClientRect(),
-        top = _ulElement$children$f.top,
-        bottom = _ulElement$children$f.bottom;
-
+      top = _ulElement$children$f.top,
+      bottom = _ulElement$children$f.bottom;
     var _ulElement$getBoundin = ulElement.getBoundingClientRect(),
-        topContainer = _ulElement$getBoundin.top;
-
+      topContainer = _ulElement$getBoundin.top;
     top = top - topContainer + scrollTop;
     bottom = bottom - topContainer + scrollTop;
-
     if (top < scrollTop) {
       ulElement.scrollTop = top;
     } else if (bottom > ulElement.offsetHeight) {
       ulElement.scrollTop = bottom - ulElement.offsetHeight;
     }
   }, [focusIndex, scrollFocusedIntoView, ulElement]);
-
   var renderSuggestions = function renderSuggestions() {
     var suggestionsToRender = /*#__PURE__*/React.createElement("ul", _extends({
       ref: setUlElement,
@@ -1011,7 +942,7 @@ function SuggestionsOverlay(_ref) {
       "aria-label": a11ySuggestionsListLabel
     }, style('list')), Object.values(suggestions).reduce(function (accResults, _ref2) {
       var results = _ref2.results,
-          queryInfo = _ref2.queryInfo;
+        queryInfo = _ref2.queryInfo;
       return [].concat(_toConsumableArray(accResults), _toConsumableArray(results.map(function (result, index) {
         return renderSuggestion(result, queryInfo, accResults.length + index);
       })));
@@ -1019,11 +950,10 @@ function SuggestionsOverlay(_ref) {
     if (customSuggestionsContainer) return customSuggestionsContainer(suggestionsToRender);
     return suggestionsToRender;
   };
-
   var renderSuggestion = function renderSuggestion(result, queryInfo, index) {
     var isFocused = index === focusIndex;
     var childIndex = queryInfo.childIndex,
-        query = queryInfo.query;
+      query = queryInfo.query;
     var renderSuggestion = Children.toArray(children)[childIndex].props.renderSuggestion;
     return /*#__PURE__*/React.createElement(Suggestion$1, {
       style: style('item'),
@@ -1043,39 +973,31 @@ function SuggestionsOverlay(_ref) {
       }
     });
   };
-
   var renderLoadingIndicator = function renderLoadingIndicator() {
     if (!isLoading) {
       return;
     }
-
     return /*#__PURE__*/React.createElement(LoadingIndicator, {
       style: style('loadingIndicator')
     });
   };
-
   var handleMouseEnter = function handleMouseEnter(index, ev) {
     if (onMouseEnter) {
       onMouseEnter(index);
     }
   };
-
   var select = function select(suggestion, queryInfo) {
     onSelect(suggestion, queryInfo);
   };
-
   var getID = function getID(suggestion) {
     if (typeof suggestion === 'string') {
       return suggestion;
     }
-
     return suggestion.id;
   };
-
   if (!isOpened) {
     return null;
   }
-
   return /*#__PURE__*/React.createElement("div", _extends({}, inline({
     position: position || 'absolute',
     left: left,
@@ -1086,7 +1008,6 @@ function SuggestionsOverlay(_ref) {
     ref: containerRef
   }), renderSuggestions(), renderLoadingIndicator());
 }
-
 SuggestionsOverlay.propTypes = {
   id: PropTypes.string.isRequired,
   suggestions: PropTypes.object.isRequired,
@@ -1120,40 +1041,33 @@ var styled$2 = createDefaultStyle({
 var SuggestionsOverlay$1 = styled$2(SuggestionsOverlay);
 
 function ownKeys$1(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-
 function _objectSpread$1(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys$1(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$1(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-
 function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 var makeTriggerRegex = function makeTriggerRegex(trigger) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
   if (trigger instanceof RegExp) {
     return trigger;
   } else {
     var allowSpaceInQuery = options.allowSpaceInQuery;
-    var escapedTriggerChar = escapeRegex(trigger); // first capture group is the part to be replaced on completion
-    // second capture group is for extracting the search query
+    var escapedTriggerChar = escapeRegex(trigger);
 
+    // first capture group is the part to be replaced on completion
+    // second capture group is for extracting the search query
     return new RegExp("(?:^|\\s)(".concat(escapedTriggerChar, "([^").concat(allowSpaceInQuery ? '' : '\\s').concat(escapedTriggerChar, "]*))$"));
   }
 };
-
 var getDataProvider = function getDataProvider(data, ignoreAccents) {
   if (data instanceof Array) {
     // if data is an array, create a function to query that
     return function (query, callback) {
       var results = [];
-
       for (var i = 0, l = data.length; i < l; ++i) {
         var display = data[i].display || data[i].id;
-
         if (getSubstringIndex(display, query, ignoreAccents) >= 0) {
           results.push(data[i]);
         }
       }
-
       return results;
     };
   } else {
@@ -1161,7 +1075,6 @@ var getDataProvider = function getDataProvider(data, ignoreAccents) {
     return data;
   }
 };
-
 var KEY = {
   TAB: 9,
   RETURN: 13,
@@ -1195,30 +1108,25 @@ var propTypes = {
   })]),
   children: PropTypes.oneOfType([PropTypes.element, PropTypes.arrayOf(PropTypes.element)]).isRequired
 };
-
 var MentionsInput = /*#__PURE__*/function (_React$Component) {
   _inherits(MentionsInput, _React$Component);
-
   var _super = _createSuper(MentionsInput);
-
   function MentionsInput(_props) {
     var _this;
-
     _classCallCheck(this, MentionsInput);
-
     _this = _super.call(this, _props);
-
     _defineProperty(_assertThisInitialized(_this), "setContainerElement", function (el) {
       _this.containerElement = el;
     });
-
     _defineProperty(_assertThisInitialized(_this), "getInputProps", function () {
       var _this$props = _this.props,
-          readOnly = _this$props.readOnly,
-          disabled = _this$props.disabled,
-          style = _this$props.style; // pass all props that neither we, nor substyle, consume through to the input control
+        readOnly = _this$props.readOnly,
+        disabled = _this$props.disabled,
+        style = _this$props.style;
 
-      var props = omit(_this.props, ['style', 'classNames', 'className'], // substyle props
+      // pass all props that neither we, nor substyle, consume through to the input control
+      var props = omit(_this.props, ['style', 'classNames', 'className'],
+      // substyle props
       keys(propTypes));
       return _objectSpread$1(_objectSpread$1(_objectSpread$1(_objectSpread$1({}, props), style('input')), {}, {
         value: _this.getPlainText(),
@@ -1239,56 +1147,46 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         'aria-activedescendant': getSuggestionHtmlId(_this.uuidSuggestionsOverlay, _this.state.focusIndex)
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "renderControl", function () {
       var _this$props2 = _this.props,
-          singleLine = _this$props2.singleLine,
-          style = _this$props2.style;
-
+        singleLine = _this$props2.singleLine,
+        style = _this$props2.style;
       var inputProps = _this.getInputProps();
-
       return /*#__PURE__*/React.createElement("div", style('control'), _this.renderHighlighter(), singleLine ? _this.renderInput(inputProps) : _this.renderTextarea(inputProps));
     });
-
     _defineProperty(_assertThisInitialized(_this), "renderInput", function (props) {
       return /*#__PURE__*/React.createElement("input", _extends({
         type: "text",
         ref: _this.setInputRef
       }, props));
     });
-
     _defineProperty(_assertThisInitialized(_this), "renderTextarea", function (props) {
       return /*#__PURE__*/React.createElement("textarea", _extends({
         ref: _this.setInputRef
       }, props));
     });
-
     _defineProperty(_assertThisInitialized(_this), "setInputRef", function (el) {
       _this.inputElement = el;
       var inputRef = _this.props.inputRef;
-
       if (typeof inputRef === 'function') {
         inputRef(el);
       } else if (inputRef) {
         inputRef.current = el;
       }
     });
-
     _defineProperty(_assertThisInitialized(_this), "setSuggestionsElement", function (el) {
       _this.suggestionsElement = el;
     });
-
     _defineProperty(_assertThisInitialized(_this), "renderSuggestionsOverlay", function () {
       if (!isNumber(_this.state.selectionStart)) {
         // do not show suggestions when the input does not have the focus
         return null;
       }
-
       var _this$state$suggestio = _this.state.suggestionsPosition,
-          position = _this$state$suggestio.position,
-          left = _this$state$suggestio.left,
-          top = _this$state$suggestio.top,
-          right = _this$state$suggestio.right;
+        position = _this$state$suggestio.position,
+        left = _this$state$suggestio.left,
+        top = _this$state$suggestio.top,
+        right = _this$state$suggestio.right;
       var suggestionsNode = /*#__PURE__*/React.createElement(SuggestionsOverlay$1, {
         id: _this.uuidSuggestionsOverlay,
         style: _this.props.style('suggestions'),
@@ -1309,23 +1207,21 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         ignoreAccents: _this.props.ignoreAccents,
         a11ySuggestionsListLabel: _this.props.a11ySuggestionsListLabel
       }, _this.props.children);
-
       if (_this.props.suggestionsPortalHost) {
         return /*#__PURE__*/ReactDOM.createPortal(suggestionsNode, _this.props.suggestionsPortalHost);
       } else {
         return suggestionsNode;
       }
     });
-
     _defineProperty(_assertThisInitialized(_this), "renderHighlighter", function () {
       var _this$state = _this.state,
-          selectionStart = _this$state.selectionStart,
-          selectionEnd = _this$state.selectionEnd;
+        selectionStart = _this$state.selectionStart,
+        selectionEnd = _this$state.selectionEnd;
       var _this$props3 = _this.props,
-          singleLine = _this$props3.singleLine,
-          children = _this$props3.children,
-          value = _this$props3.value,
-          style = _this$props3.style;
+        singleLine = _this$props3.singleLine,
+        children = _this$props3.children,
+        value = _this$props3.value,
+        style = _this$props3.style;
       return /*#__PURE__*/React.createElement(Highlighter$1, {
         containerRef: _this.setHighlighterElement,
         style: style('highlighter'),
@@ -1336,281 +1232,234 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         onCaretPositionChange: _this.handleCaretPositionChange
       }, children);
     });
-
     _defineProperty(_assertThisInitialized(_this), "setHighlighterElement", function (el) {
       _this.highlighterElement = el;
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleCaretPositionChange", function (position) {
       _this.setState({
         caretPosition: position
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "getPlainText", function () {
       return getPlainText(_this.props.value || '', readConfigFromChildren(_this.props.children));
     });
-
     _defineProperty(_assertThisInitialized(_this), "executeOnChange", function (event) {
       for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
         args[_key - 1] = arguments[_key];
       }
-
       if (_this.props.onChange) {
         var _this$props4;
-
         return (_this$props4 = _this.props).onChange.apply(_this$props4, [event].concat(args));
       }
-
       if (_this.props.valueLink) {
         var _this$props$valueLink;
-
         return (_this$props$valueLink = _this.props.valueLink).requestChange.apply(_this$props$valueLink, [event.target.value].concat(args));
       }
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleChange", function (ev) {
       isComposing = false;
-
       if (isIE()) {
         // if we are inside iframe, we need to find activeElement within its contentDocument
         var currentDocument = document.activeElement && document.activeElement.contentDocument || document;
-
         if (currentDocument.activeElement !== ev.target) {
           // fix an IE bug (blur from empty input element with placeholder attribute trigger "input" event)
           return;
         }
       }
-
       var value = _this.props.value || '';
       var config = readConfigFromChildren(_this.props.children);
       var newPlainTextValue = ev.target.value;
       var selectionStartBefore = _this.state.selectionStart;
-
       if (selectionStartBefore == null) {
         selectionStartBefore = ev.target.selectionStart;
       }
-
       var selectionEndBefore = _this.state.selectionEnd;
-
       if (selectionEndBefore == null) {
         selectionEndBefore = ev.target.selectionEnd;
-      } // Derive the new value to set by applying the local change in the textarea's plain text
+      }
 
-
+      // Derive the new value to set by applying the local change in the textarea's plain text
       var newValue = applyChangeToValue(value, newPlainTextValue, {
         selectionStartBefore: selectionStartBefore,
         selectionEndBefore: selectionEndBefore,
         selectionEndAfter: ev.target.selectionEnd
-      }, config); // In case a mention is deleted, also adjust the new plain text value
+      }, config);
 
-      newPlainTextValue = getPlainText(newValue, config); // Save current selection after change to be able to restore caret position after rerendering
+      // In case a mention is deleted, also adjust the new plain text value
+      newPlainTextValue = getPlainText(newValue, config);
 
+      // Save current selection after change to be able to restore caret position after rerendering
       var selectionStart = ev.target.selectionStart;
       var selectionEnd = ev.target.selectionEnd;
-      var setSelectionAfterMentionChange = false; // Adjust selection range in case a mention will be deleted by the characters outside of the
+      var setSelectionAfterMentionChange = false;
+
+      // Adjust selection range in case a mention will be deleted by the characters outside of the
       // selection range that are automatically deleted
-
       var startOfMention = findStartOfMentionInPlainText(value, config, selectionStart);
-
       if (startOfMention !== undefined && _this.state.selectionEnd > startOfMention) {
         // only if a deletion has taken place
         selectionStart = startOfMention + (ev.nativeEvent.data ? ev.nativeEvent.data.length : 0);
         selectionEnd = selectionStart;
         setSelectionAfterMentionChange = true;
       }
-
       _this.setState({
         selectionStart: selectionStart,
         selectionEnd: selectionEnd,
         setSelectionAfterMentionChange: setSelectionAfterMentionChange
       });
-
       var mentions = getMentions(newValue, config);
-
       if (ev.nativeEvent.isComposing && selectionStart === selectionEnd) {
         _this.updateMentionsQueries(_this.inputElement.value, selectionStart);
-      } // Propagate change
+      }
+
+      // Propagate change
       // let handleChange = this.getOnChange(this.props) || emptyFunction;
-
-
       var eventMock = {
         target: {
           value: newValue
         }
-      }; // this.props.onChange.call(this, eventMock, newValue, newPlainTextValue, mentions);
-
+      };
+      // this.props.onChange.call(this, eventMock, newValue, newPlainTextValue, mentions);
       _this.executeOnChange(eventMock, newValue, newPlainTextValue, mentions);
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleSelect", function (ev) {
       // keep track of selection range / caret position
       _this.setState({
         selectionStart: ev.target.selectionStart,
         selectionEnd: ev.target.selectionEnd
-      }); // do nothing while a IME composition session is active
+      });
 
+      // do nothing while a IME composition session is active
+      if (isComposing) return;
 
-      if (isComposing) return; // refresh suggestions queries
-
+      // refresh suggestions queries
       var el = _this.inputElement;
-
       if (ev.target.selectionStart === ev.target.selectionEnd) {
         _this.updateMentionsQueries(el.value, ev.target.selectionStart);
       } else {
         _this.clearSuggestions();
-      } // sync highlighters scroll position
+      }
 
-
+      // sync highlighters scroll position
       _this.updateHighlighterScroll();
-
       _this.props.onSelect(ev);
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleKeyDown", function (ev) {
       // do not intercept key events if the suggestions overlay is not shown
       var suggestionsCount = countSuggestions(_this.state.suggestions);
-
       if (suggestionsCount === 0 || !_this.suggestionsElement) {
         _this.props.onKeyDown(ev);
-
         return;
       }
-
       if (Object.values(KEY).indexOf(ev.keyCode) >= 0 && ev.keyCode !== KEY.SPACE) {
         ev.preventDefault();
         ev.stopPropagation();
       }
-
       switch (ev.keyCode) {
         case KEY.ESC:
           {
             _this.clearSuggestions();
-
             return;
           }
-
         case KEY.DOWN:
           {
             _this.shiftFocus(+1);
-
             return;
           }
-
         case KEY.UP:
           {
             _this.shiftFocus(-1);
-
             return;
           }
-
         case KEY.RETURN:
           {
             _this.selectFocused();
-
             return;
           }
-
         case KEY.TAB:
           {
             _this.selectFocused();
-
             return;
           }
-
         case KEY.SPACE:
           {
             if (suggestionsCount === 1 && _this.props.selectLastSuggestionOnSpace) {
               _this.selectFocused();
             }
-
             return;
           }
-
         default:
           {
             return;
           }
       }
     });
-
     _defineProperty(_assertThisInitialized(_this), "shiftFocus", function (delta) {
       var suggestionsCount = countSuggestions(_this.state.suggestions);
-
       _this.setState({
         focusIndex: (suggestionsCount + _this.state.focusIndex + delta) % suggestionsCount,
         scrollFocusedIntoView: true
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "selectFocused", function () {
       var _this$state2 = _this.state,
-          suggestions = _this$state2.suggestions,
-          focusIndex = _this$state2.focusIndex;
+        suggestions = _this$state2.suggestions,
+        focusIndex = _this$state2.focusIndex;
       var _Object$values$reduce = Object.values(suggestions).reduce(function (acc, _ref) {
-        var results = _ref.results,
+          var results = _ref.results,
             queryInfo = _ref.queryInfo;
-        return [].concat(_toConsumableArray(acc), _toConsumableArray(results.map(function (result) {
-          return {
-            result: result,
-            queryInfo: queryInfo
-          };
-        })));
-      }, [])[focusIndex],
-          result = _Object$values$reduce.result,
-          queryInfo = _Object$values$reduce.queryInfo;
-
+          return [].concat(_toConsumableArray(acc), _toConsumableArray(results.map(function (result) {
+            return {
+              result: result,
+              queryInfo: queryInfo
+            };
+          })));
+        }, [])[focusIndex],
+        result = _Object$values$reduce.result,
+        queryInfo = _Object$values$reduce.queryInfo;
       _this.addMention(result, queryInfo);
-
       _this.setState({
         focusIndex: 0
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleBlur", function (ev) {
       var clickedSuggestion = _this._suggestionsMouseDown;
-      _this._suggestionsMouseDown = false; // only reset selection if the mousedown happened on an element
-      // other than the suggestions overlay
+      _this._suggestionsMouseDown = false;
 
+      // only reset selection if the mousedown happened on an element
+      // other than the suggestions overlay
       if (!clickedSuggestion) {
         _this.setState({
           selectionStart: null,
           selectionEnd: null
         });
       }
-
       window.setTimeout(function () {
         _this.updateHighlighterScroll();
       }, 1);
-
       _this.props.onBlur(ev, clickedSuggestion);
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleSuggestionsMouseDown", function (ev) {
       _this._suggestionsMouseDown = true;
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleSuggestionsMouseEnter", function (focusIndex) {
       _this.setState({
         focusIndex: focusIndex,
         scrollFocusedIntoView: false
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "updateSuggestionsPosition", function () {
       var caretPosition = _this.state.caretPosition;
       var _this$props5 = _this.props,
-          suggestionsPortalHost = _this$props5.suggestionsPortalHost,
-          allowSuggestionsAboveCursor = _this$props5.allowSuggestionsAboveCursor,
-          forceSuggestionsAboveCursor = _this$props5.forceSuggestionsAboveCursor;
-
+        suggestionsPortalHost = _this$props5.suggestionsPortalHost,
+        allowSuggestionsAboveCursor = _this$props5.allowSuggestionsAboveCursor,
+        forceSuggestionsAboveCursor = _this$props5.forceSuggestionsAboveCursor;
       if (!caretPosition || !_this.suggestionsElement) {
         return;
       }
-
       var suggestions = _this.suggestionsElement;
-      var highlighter = _this.highlighterElement; // first get viewport-relative position (highlighter is offsetParent of caret):
-
+      var highlighter = _this.highlighterElement;
+      // first get viewport-relative position (highlighter is offsetParent of caret):
       var caretOffsetParentRect = highlighter.getBoundingClientRect();
       var caretHeight = getComputedStyleLengthProp(highlighter, 'font-size');
       var viewportRelative = {
@@ -1618,35 +1467,32 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         top: caretOffsetParentRect.top + caretPosition.top + caretHeight
       };
       var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-
       if (!suggestions) {
         return;
       }
+      var position = {};
 
-      var position = {}; // if suggestions menu is in a portal, update position to be releative to its portal node
-
+      // if suggestions menu is in a portal, update position to be releative to its portal node
       if (suggestionsPortalHost) {
         position.position = 'fixed';
         var left = viewportRelative.left;
-        var top = viewportRelative.top; // absolute/fixed positioned elements are positioned according to their entire box including margins; so we remove margins here:
-
+        var top = viewportRelative.top;
+        // absolute/fixed positioned elements are positioned according to their entire box including margins; so we remove margins here:
         left -= getComputedStyleLengthProp(suggestions, 'margin-left');
-        top -= getComputedStyleLengthProp(suggestions, 'margin-top'); // take into account highlighter/textinput scrolling:
-
+        top -= getComputedStyleLengthProp(suggestions, 'margin-top');
+        // take into account highlighter/textinput scrolling:
         left -= highlighter.scrollLeft;
-        top -= highlighter.scrollTop; // guard for mentions suggestions list clipped by right edge of window
-
+        top -= highlighter.scrollTop;
+        // guard for mentions suggestions list clipped by right edge of window
         var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-
         if (left + suggestions.offsetWidth > viewportWidth) {
           position.left = Math.max(0, viewportWidth - suggestions.offsetWidth);
         } else {
           position.left = left;
-        } // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
+        }
+        // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
         // Move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
         // is small enough to NOT cover up the caret
-
-
         if (allowSuggestionsAboveCursor && top + suggestions.offsetHeight > viewportHeight && suggestions.offsetHeight < top - caretHeight || forceSuggestionsAboveCursor) {
           position.top = Math.max(0, top - suggestions.offsetHeight - caretHeight);
         } else {
@@ -1654,62 +1500,50 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         }
       } else {
         var _left = caretPosition.left - highlighter.scrollLeft;
-
-        var _top = caretPosition.top - highlighter.scrollTop; // guard for mentions suggestions list clipped by right edge of window
-
-
+        var _top = caretPosition.top - highlighter.scrollTop;
+        // guard for mentions suggestions list clipped by right edge of window
         if (_left + suggestions.offsetWidth > _this.containerElement.offsetWidth) {
           position.right = 0;
         } else {
           position.left = _left;
-        } // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
+        }
+        // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
         // move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
         // is small enough to NOT cover up the caret
-
-
         if (allowSuggestionsAboveCursor && viewportRelative.top - highlighter.scrollTop + suggestions.offsetHeight > viewportHeight && suggestions.offsetHeight < caretOffsetParentRect.top - caretHeight - highlighter.scrollTop || forceSuggestionsAboveCursor) {
           position.top = _top - suggestions.offsetHeight - caretHeight;
         } else {
           position.top = _top;
         }
       }
-
       if (position.left === _this.state.suggestionsPosition.left && position.top === _this.state.suggestionsPosition.top && position.position === _this.state.suggestionsPosition.position) {
         return;
       }
-
       _this.setState({
         suggestionsPosition: position
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "updateHighlighterScroll", function () {
       var input = _this.inputElement;
       var highlighter = _this.highlighterElement;
-
       if (!input || !highlighter) {
         // since the invocation of this function is deferred,
         // the whole component may have been unmounted in the meanwhile
         return;
       }
-
       highlighter.scrollLeft = input.scrollLeft;
       highlighter.scrollTop = input.scrollTop;
       highlighter.height = input.height;
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleCompositionStart", function () {
       isComposing = true;
     });
-
     _defineProperty(_assertThisInitialized(_this), "handleCompositionEnd", function () {
       isComposing = false;
     });
-
     _defineProperty(_assertThisInitialized(_this), "setSelection", function (selectionStart, selectionEnd) {
       if (selectionStart === null || selectionEnd === null) return;
       var el = _this.inputElement;
-
       if (el.setSelectionRange) {
         el.setSelectionRange(selectionStart, selectionEnd);
       } else if (el.createTextRange) {
@@ -1720,75 +1554,67 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         range.select();
       }
     });
-
     _defineProperty(_assertThisInitialized(_this), "updateMentionsQueries", function (plainTextValue, caretPosition) {
       // Invalidate previous queries. Async results for previous queries will be neglected.
       _this._queryId++;
       _this.suggestions = {};
-
       _this.setState({
         suggestions: {}
       });
-
       var value = _this.props.value || '';
       var children = _this.props.children;
       var config = readConfigFromChildren(children);
-      var positionInValue = mapPlainTextIndex(value, config, caretPosition, 'NULL'); // If caret is inside of mention, do not query
+      var positionInValue = mapPlainTextIndex(value, config, caretPosition, 'NULL');
 
+      // If caret is inside of mention, do not query
       if (positionInValue === null) {
         return;
-      } // Extract substring in between the end of the previous mention and the caret
+      }
 
-
+      // Extract substring in between the end of the previous mention and the caret
       var substringStartIndex = getEndOfLastMention(value.substring(0, positionInValue), config);
-      var substring = plainTextValue.substring(substringStartIndex, caretPosition); // Check if suggestions have to be shown:
-      // Match the trigger patterns of all Mention children on the extracted substring
+      var substring = plainTextValue.substring(substringStartIndex, caretPosition);
 
+      // Check if suggestions have to be shown:
+      // Match the trigger patterns of all Mention children on the extracted substring
       React.Children.forEach(children, function (child, childIndex) {
         if (!child) {
           return;
         }
-
         var regex = makeTriggerRegex(child.props.trigger, _this.props);
         var match = substring.match(regex);
-
         if (match) {
           var querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index);
-
           _this.queryData(match[2], childIndex, querySequenceStart, querySequenceStart + match[1].length, plainTextValue);
         }
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "clearSuggestions", function () {
       // Invalidate previous queries. Async results for previous queries will be neglected.
       _this._queryId++;
       _this.suggestions = {};
-
       _this.setState({
         suggestions: {},
         focusIndex: 0
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "queryData", function (query, childIndex, querySequenceStart, querySequenceEnd, plainTextValue) {
       var _this$props6 = _this.props,
-          children = _this$props6.children,
-          ignoreAccents = _this$props6.ignoreAccents;
+        children = _this$props6.children,
+        ignoreAccents = _this$props6.ignoreAccents;
       var mentionChild = Children.toArray(children)[childIndex];
       var provideData = getDataProvider(mentionChild.props.data, ignoreAccents);
       var syncResult = provideData(query, _this.updateSuggestions.bind(null, _this._queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue));
-
       if (syncResult instanceof Array) {
         _this.updateSuggestions(_this._queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, syncResult);
       }
     });
-
     _defineProperty(_assertThisInitialized(_this), "updateSuggestions", function (queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, results) {
       // neglect async results from previous queries
-      if (queryId !== _this._queryId) return; // save in property so that multiple sync state updates from different mentions sources
-      // won't overwrite each other
+      if (queryId !== _this._queryId) return;
 
+      // save in property so that multiple sync state updates from different mentions sources
+      // won't overwrite each other
       _this.suggestions = _objectSpread$1(_objectSpread$1({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
         queryInfo: {
           childIndex: childIndex,
@@ -1801,56 +1627,49 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       }));
       var focusIndex = _this.state.focusIndex;
       var suggestionsCount = countSuggestions(_this.suggestions);
-
       _this.setState({
         suggestions: _this.suggestions,
         focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex
       });
     });
-
     _defineProperty(_assertThisInitialized(_this), "addMention", function (_ref2, _ref3) {
       var id = _ref2.id,
-          display = _ref2.display;
+        display = _ref2.display;
       var childIndex = _ref3.childIndex,
-          querySequenceStart = _ref3.querySequenceStart,
-          querySequenceEnd = _ref3.querySequenceEnd,
-          plainTextValue = _ref3.plainTextValue;
+        querySequenceStart = _ref3.querySequenceStart,
+        querySequenceEnd = _ref3.querySequenceEnd,
+        plainTextValue = _ref3.plainTextValue;
       // Insert mention in the marked up value at the correct position
       var value = _this.props.value || '';
       var config = readConfigFromChildren(_this.props.children);
       var mentionsChild = Children.toArray(_this.props.children)[childIndex];
       var _mentionsChild$props = mentionsChild.props,
-          markup = _mentionsChild$props.markup,
-          displayTransform = _mentionsChild$props.displayTransform,
-          appendSpaceOnAdd = _mentionsChild$props.appendSpaceOnAdd,
-          onAdd = _mentionsChild$props.onAdd;
+        markup = _mentionsChild$props.markup,
+        displayTransform = _mentionsChild$props.displayTransform,
+        appendSpaceOnAdd = _mentionsChild$props.appendSpaceOnAdd,
+        onAdd = _mentionsChild$props.onAdd;
       var start = mapPlainTextIndex(value, config, querySequenceStart, 'START');
       var end = start + querySequenceEnd - querySequenceStart;
       var insert = makeMentionsMarkup(markup, id, display);
-
       if (appendSpaceOnAdd) {
         insert += ' ';
       }
+      var newValue = spliceString(value, start, end, insert);
 
-      var newValue = spliceString(value, start, end, insert); // Refocus input and set caret position to end of mention
-
+      // Refocus input and set caret position to end of mention
       _this.inputElement.focus();
-
       var displayValue = displayTransform(id, display);
-
       if (appendSpaceOnAdd) {
         displayValue += ' ';
       }
-
       var newCaretPosition = querySequenceStart + displayValue.length;
-
       _this.setState({
         selectionStart: newCaretPosition,
         selectionEnd: newCaretPosition,
         setSelectionAfterMentionChange: true
-      }); // Propagate change
+      });
 
-
+      // Propagate change
       var eventMock = {
         target: {
           value: newValue
@@ -1858,17 +1677,14 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       };
       var mentions = getMentions(newValue, config);
       var newPlainTextValue = spliceString(plainTextValue, querySequenceStart, querySequenceEnd, displayValue);
-
       _this.executeOnChange(eventMock, newValue, newPlainTextValue, mentions);
-
       if (onAdd) {
         onAdd(id, display, start, end);
-      } // Make sure the suggestions overlay is closed
+      }
 
-
+      // Make sure the suggestions overlay is closed
       _this.clearSuggestions();
     });
-
     _defineProperty(_assertThisInitialized(_this), "isLoading", function () {
       var isLoading = false;
       React.Children.forEach(_this.props.children, function (child) {
@@ -1876,13 +1692,10 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       });
       return isLoading;
     });
-
     _defineProperty(_assertThisInitialized(_this), "isOpened", function () {
       return isNumber(_this.state.selectionStart) && (countSuggestions(_this.state.suggestions) !== 0 || _this.isLoading());
     });
-
     _defineProperty(_assertThisInitialized(_this), "_queryId", 0);
-
     _this.suggestions = {};
     _this.uuidSuggestionsOverlay = Math.random().toString(16).substring(2);
     _this.handleCopy = _this.handleCopy.bind(_assertThisInitialized(_this));
@@ -1899,7 +1712,6 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
     };
     return _this;
   }
-
   _createClass(MentionsInput, [{
     key: "componentDidMount",
     value: function componentDidMount() {
@@ -1915,17 +1727,16 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       // triggered by an update to suggestionsPosition.
       if (prevState.suggestionsPosition === this.state.suggestionsPosition) {
         this.updateSuggestionsPosition();
-      } // maintain selection in case a mention is added/removed causing
+      }
+
+      // maintain selection in case a mention is added/removed causing
       // the cursor to jump to the end
-
-
       if (this.state.setSelectionAfterMentionChange) {
         this.setState({
           setSelectionAfterMentionChange: false
         });
         this.setSelection(this.state.selectionStart, this.state.selectionEnd);
       }
-
       if (this.state.setSelectionAfterHandlePaste) {
         this.setState({
           setSelectionAfterHandlePaste: false
@@ -1947,24 +1758,24 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         ref: this.setContainerElement
       }, this.props.style), this.renderControl(), this.renderSuggestionsOverlay());
     }
+
+    // Returns the text to set as the value of the textarea with all markups removed
   }, {
     key: "handlePaste",
     value: function handlePaste(event) {
       if (event.target !== this.inputElement) {
         return;
       }
-
       if (!this.supportsClipboardActions(event)) {
         return;
       }
-
       event.preventDefault();
       var _this$state3 = this.state,
-          selectionStart = _this$state3.selectionStart,
-          selectionEnd = _this$state3.selectionEnd;
+        selectionStart = _this$state3.selectionStart,
+        selectionEnd = _this$state3.selectionEnd;
       var _this$props7 = this.props,
-          value = _this$props7.value,
-          children = _this$props7.children;
+        value = _this$props7.value,
+        children = _this$props7.children;
       var config = readConfigFromChildren(children);
       var markupStartIndex = mapPlainTextIndex(value, config, selectionStart, 'START');
       var markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, 'END');
@@ -1977,8 +1788,9 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
           value: newValue
         })
       };
-      this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(newValue, config)); // Move the cursor position to the end of the pasted data
+      this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(newValue, config));
 
+      // Move the cursor position to the end of the pasted data
       var startOfMention = findStartOfMentionInPlainText(value, config, selectionStart);
       var nextPos = (startOfMention || selectionStart) + getPlainText(pastedMentions || pastedData, config).length;
       this.setState({
@@ -1995,8 +1807,8 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var selectionStart = this.inputElement.selectionStart;
       var selectionEnd = this.inputElement.selectionEnd;
       var _this$props8 = this.props,
-          children = _this$props8.children,
-          value = _this$props8.value;
+        children = _this$props8.children,
+        value = _this$props8.value;
       var config = readConfigFromChildren(children);
       var markupStartIndex = mapPlainTextIndex(value, config, selectionStart, 'START');
       var markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, 'END');
@@ -2014,11 +1826,9 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       if (event.target !== this.inputElement) {
         return;
       }
-
       if (!this.supportsClipboardActions(event)) {
         return;
       }
-
       event.preventDefault();
       this.saveSelectionToClipboard(event);
     }
@@ -2028,19 +1838,17 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       if (event.target !== this.inputElement) {
         return;
       }
-
       if (!this.supportsClipboardActions(event)) {
         return;
       }
-
       event.preventDefault();
       this.saveSelectionToClipboard(event);
       var _this$state4 = this.state,
-          selectionStart = _this$state4.selectionStart,
-          selectionEnd = _this$state4.selectionEnd;
+        selectionStart = _this$state4.selectionStart,
+        selectionEnd = _this$state4.selectionEnd;
       var _this$props9 = this.props,
-          children = _this$props9.children,
-          value = _this$props9.value;
+        children = _this$props9.children,
+        value = _this$props9.value;
       var config = readConfigFromChildren(children);
       var markupStartIndex = mapPlainTextIndex(value, config, selectionStart, 'START');
       var markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, 'END');
@@ -2052,20 +1860,19 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         })
       };
       this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(value, config));
-    } // Handle input element's change event
+    }
 
+    // Handle input element's change event
+
+    // Handle input element's select event
   }]);
-
   return MentionsInput;
 }(React.Component);
 /**
  * Returns the computed length property value for the provided element.
  * Note: According to spec and testing, can count on length values coming back in pixels. See https://developer.mozilla.org/en-US/docs/Web/CSS/used_value#Difference_from_computed_value
  */
-
-
 _defineProperty(MentionsInput, "propTypes", propTypes);
-
 _defineProperty(MentionsInput, "defaultProps", {
   ignoreAccents: false,
   singleLine: false,
@@ -2080,12 +1887,10 @@ _defineProperty(MentionsInput, "defaultProps", {
     return null;
   }
 });
-
 var getComputedStyleLengthProp = function getComputedStyleLengthProp(forElement, propertyName) {
   var length = parseFloat(window.getComputedStyle(forElement, null).getPropertyValue(propertyName));
   return isFinite(length) ? length : 0;
 };
-
 var isMobileSafari = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
 var styled$3 = createDefaultStyle({
   position: 'relative',
@@ -2126,12 +1931,11 @@ var MentionsInput$1 = styled$3(MentionsInput);
 var defaultStyle = {
   fontWeight: 'inherit'
 };
-
 var Mention = function Mention(_ref) {
   var display = _ref.display,
-      style = _ref.style,
-      className = _ref.className,
-      classNames = _ref.classNames;
+    style = _ref.style,
+    className = _ref.className,
+    classNames = _ref.classNames;
   var styles = useStyles(defaultStyle, {
     style: style,
     className: className,
@@ -2139,7 +1943,6 @@ var Mention = function Mention(_ref) {
   });
   return /*#__PURE__*/React.createElement("strong", styles, display);
 };
-
 Mention.propTypes = {
   /**
    * Called when a new mention is added in the input
@@ -2158,7 +1961,6 @@ Mention.propTypes = {
   trigger: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(RegExp)]),
   markup: PropTypes.string,
   displayTransform: PropTypes.func,
-
   /**
    * If set to `true` spaces will not interrupt matching suggestions
    */
