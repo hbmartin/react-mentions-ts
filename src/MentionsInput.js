@@ -61,7 +61,7 @@ const getDataProvider = function(data, ignoreAccents) {
   }
 }
 
-const KEY = { TAB: 9, RETURN: 13, ESC: 27, UP: 38, DOWN: 40 }
+const KEY = { TAB: 9, RETURN: 13, ESC: 27, SPACE: 32, UP: 38, DOWN: 40 }
 
 let isComposing = false
 
@@ -73,6 +73,7 @@ const propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
+  selectLastSuggestionOnSpace: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
@@ -620,7 +621,7 @@ class MentionsInput extends React.Component {
       return
     }
 
-    if (Object.values(KEY).indexOf(ev.keyCode) >= 0) {
+    if (Object.values(KEY).indexOf(ev.keyCode) >= 0 && ev.keyCode!==KEY.SPACE) {
       ev.preventDefault()
       ev.stopPropagation()
     }
@@ -644,6 +645,12 @@ class MentionsInput extends React.Component {
       }
       case KEY.TAB: {
         this.selectFocused()
+        return
+      }
+      case KEY.SPACE: {
+        if (suggestionsCount === 1 && this.props.selectLastSuggestionOnSpace) {
+          this.selectFocused()
+        }
         return
       }
       default: {
