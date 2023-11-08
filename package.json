@@ -8,13 +8,16 @@
     "dist"
   ],
   "scripts": {
+    "build": "preconstruct build",
     "format": "prettier --write --no-semi --single-quote --trailing-comma es5 \"{src,test,demo/src}/**/*.js\"",
     "lint": "eslint --max-warnings=0 --ext .js src test demo",
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=development webpack-dev-server --config demo/webpack.config.js",
     "test": "jest",
+    "now-build": "webpack --config demo/webpack.config.js",
+    "prerelease": "yarn build",
     "release": "changeset publish",
     "change": "changeset",
-    "prepare": "yarn"
+    "prepare": "yarn build",
   },
   "repository": {
     "type": "git",
