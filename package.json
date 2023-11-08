@@ -17,7 +17,7 @@
     "prerelease": "yarn build",
     "release": "changeset publish",
     "change": "changeset",
-    "prepare": "yarn build",
+    "prepare": "yarn build"
   },
   "repository": {
     "type": "git",
