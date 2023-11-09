@@ -49,11 +49,10 @@
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-flow": "^7.0.0",
     "@babel/preset-react": "^7.0.0",
-    "@cfaester/enzyme-adapter-react-18": "^0.7.1",
     "@changesets/cli": "^2.23.0",
     "@testing-library/dom": "^8.13.0",
     "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "^13.2.0",
+    "@testing-library/react": "^12.1.4",
     "babel-eslint": "^7.2.3",
     "babel-loader": "^8.0.6",
     "case-sensitive-paths-webpack-plugin": "^2.2.0",
@@ -61,6 +60,7 @@
     "cross-env": "^5.2.1",
     "css-loader": "^3.0.0",
     "enzyme": "^3.11.0",
+    "enzyme-adapter-react-16": "1.14.0",
     "eslint": "^4.1.1",
     "eslint-config-react-app": "^2.1.0",
     "eslint-plugin-flowtype": "^2.34.1",
@@ -92,7 +92,7 @@
     "substyle": "^9.1.0"
   },
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react": ">=16.8.3",
+    "react-dom": ">=16.8.3"
   }
 }
