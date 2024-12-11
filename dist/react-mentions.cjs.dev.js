@@ -16,9 +16,9 @@ var React = require('react');
 var React__default = _interopDefault(React);
 var invariant = _interopDefault(require('invariant'));
 var _slicedToArray = _interopDefault(require('@babel/runtime/helpers/slicedToArray'));
-var _objectWithoutProperties = _interopDefault(require('@babel/runtime/helpers/objectWithoutProperties'));
 var useStyles = require('substyle');
 var useStyles__default = _interopDefault(useStyles);
+var _objectWithoutProperties = _interopDefault(require('@babel/runtime/helpers/objectWithoutProperties'));
 var PropTypes = _interopDefault(require('prop-types'));
 var ReactDOM = _interopDefault(require('react-dom'));
 
@@ -289,6 +289,67 @@ var markupToRegex = function markupToRegex(markup) {
   var charAfterId = markup[markup.indexOf(PLACEHOLDERS.id) + PLACEHOLDERS.id.length];
   return new RegExp(escapedMarkup.replace(PLACEHOLDERS.display, "([^".concat(escapeRegex(charAfterDisplay || ''), "]+?)")).replace(PLACEHOLDERS.id, "([^".concat(escapeRegex(charAfterId || ''), "]+?)")));
 };
+
+/**
+ * TODO: convert to interface/ty[e when TS is available
+
+Mention.propTypes = {
+  onAdd: PropTypes.func,
+  onRemove: PropTypes.func,
+
+  renderSuggestion: PropTypes.func,
+
+  trigger: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.instanceOf(RegExp),
+  ]),
+  markup: PropTypes.string,
+  displayTransform: PropTypes.func,
+  allowSpaceInQuery: PropTypes.bool,
+
+  isLoading: PropTypes.bool,
+}
+*/
+
+var DEFAULT_MENTION_PROPS = {
+  trigger: '@',
+  markup: '@[__display__](__id__)',
+  onAdd: function onAdd() {
+    return null;
+  },
+  onRemove: function onRemove() {
+    return null;
+  },
+  displayTransform: function displayTransform(id, display) {
+    return display || id;
+  },
+  renderSuggestion: null,
+  isLoading: false,
+  appendSpaceOnAdd: false
+};
+var defaultStyle = {
+  fontWeight: 'inherit'
+};
+function Mention(_ref) {
+  var display = _ref.display,
+    style = _ref.style,
+    className = _ref.className,
+    classNames = _ref.classNames,
+    _ref$trigger = _ref.trigger,
+    _ref$markup = _ref.markup,
+    _ref$displayTransform = _ref.displayTransform,
+    _ref$onAdd = _ref.onAdd,
+    _ref$onRemove = _ref.onRemove,
+    _ref$renderSuggestion = _ref.renderSuggestion,
+    _ref$isLoading = _ref.isLoading,
+    _ref$appendSpaceOnAdd = _ref.appendSpaceOnAdd;
+  var styles = useStyles__default(defaultStyle, {
+    style: style,
+    className: className,
+    classNames: classNames
+  });
+  return /*#__PURE__*/React__default.createElement("strong", styles, display);
+}
 
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
@@ -1941,30 +2002,6 @@ var styled$3 = createDefaultStyle({
   };
 });
 var MentionsInput$1 = styled$3(MentionsInput);
-
-var defaultStyle = {
-  fontWeight: 'inherit'
-};
-function Mention(_ref) {
-  var display = _ref.display,
-    style = _ref.style,
-    className = _ref.className,
-    classNames = _ref.classNames,
-    _ref$trigger = _ref.trigger,
-    _ref$markup = _ref.markup,
-    _ref$displayTransform = _ref.displayTransform,
-    _ref$onAdd = _ref.onAdd,
-    _ref$onRemove = _ref.onRemove,
-    _ref$renderSuggestion = _ref.renderSuggestion,
-    _ref$isLoading = _ref.isLoading,
-    _ref$appendSpaceOnAdd = _ref.appendSpaceOnAdd;
-  var styles = useStyles__default(defaultStyle, {
-    style: style,
-    className: className,
-    classNames: classNames
-  });
-  return /*#__PURE__*/React__default.createElement("strong", styles, display);
-}
 
 exports.Mention = Mention;
 exports.MentionsInput = MentionsInput$1;

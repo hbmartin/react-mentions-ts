@@ -8,7 +8,7 @@ Object.defineProperty(exports, "__esModule", {
   value: !0
 });
 
-var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsumableArray")), _extends = _interopDefault(require("@babel/runtime/helpers/extends")), _classCallCheck = _interopDefault(require("@babel/runtime/helpers/classCallCheck")), _createClass = _interopDefault(require("@babel/runtime/helpers/createClass")), _possibleConstructorReturn = _interopDefault(require("@babel/runtime/helpers/possibleConstructorReturn")), _getPrototypeOf = _interopDefault(require("@babel/runtime/helpers/getPrototypeOf")), _inherits = _interopDefault(require("@babel/runtime/helpers/inherits")), _defineProperty = _interopDefault(require("@babel/runtime/helpers/defineProperty")), React = require("react"), React__default = _interopDefault(React), invariant = _interopDefault(require("invariant")), _slicedToArray = _interopDefault(require("@babel/runtime/helpers/slicedToArray")), _objectWithoutProperties = _interopDefault(require("@babel/runtime/helpers/objectWithoutProperties")), useStyles = require("substyle"), useStyles__default = _interopDefault(useStyles), PropTypes = _interopDefault(require("prop-types")), ReactDOM = _interopDefault(require("react-dom")), escapeRegex = function(str) {
+var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsumableArray")), _extends = _interopDefault(require("@babel/runtime/helpers/extends")), _classCallCheck = _interopDefault(require("@babel/runtime/helpers/classCallCheck")), _createClass = _interopDefault(require("@babel/runtime/helpers/createClass")), _possibleConstructorReturn = _interopDefault(require("@babel/runtime/helpers/possibleConstructorReturn")), _getPrototypeOf = _interopDefault(require("@babel/runtime/helpers/getPrototypeOf")), _inherits = _interopDefault(require("@babel/runtime/helpers/inherits")), _defineProperty = _interopDefault(require("@babel/runtime/helpers/defineProperty")), React = require("react"), React__default = _interopDefault(React), invariant = _interopDefault(require("invariant")), _slicedToArray = _interopDefault(require("@babel/runtime/helpers/slicedToArray")), useStyles = require("substyle"), useStyles__default = _interopDefault(useStyles), _objectWithoutProperties = _interopDefault(require("@babel/runtime/helpers/objectWithoutProperties")), PropTypes = _interopDefault(require("prop-types")), ReactDOM = _interopDefault(require("react-dom")), escapeRegex = function(str) {
   return str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }, PLACEHOLDERS = {
   id: "__id__",
@@ -109,7 +109,35 @@ var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsu
 }, markupToRegex = function(markup) {
   var escapedMarkup = escapeRegex(markup), charAfterDisplay = markup[markup.indexOf(PLACEHOLDERS.display) + PLACEHOLDERS.display.length], charAfterId = markup[markup.indexOf(PLACEHOLDERS.id) + PLACEHOLDERS.id.length];
   return new RegExp(escapedMarkup.replace(PLACEHOLDERS.display, "([^".concat(escapeRegex(charAfterDisplay || ""), "]+?)")).replace(PLACEHOLDERS.id, "([^".concat(escapeRegex(charAfterId || ""), "]+?)")));
+}, DEFAULT_MENTION_PROPS = {
+  trigger: "@",
+  markup: "@[__display__](__id__)",
+  onAdd: function() {
+    return null;
+  },
+  onRemove: function() {
+    return null;
+  },
+  displayTransform: function(id, display) {
+    return display || id;
+  },
+  renderSuggestion: null,
+  isLoading: !1,
+  appendSpaceOnAdd: !1
+}, defaultStyle = {
+  fontWeight: "inherit"
 };
+
+function Mention(_ref) {
+  var display = _ref.display, style = _ref.style, className = _ref.className, classNames = _ref.classNames, styles = (_ref.trigger, 
+  _ref.markup, _ref.displayTransform, _ref.onAdd, _ref.onRemove, _ref.renderSuggestion, 
+  _ref.isLoading, _ref.appendSpaceOnAdd, useStyles__default(defaultStyle, {
+    style: style,
+    className: className,
+    classNames: classNames
+  }));
+  return React__default.createElement("strong", styles, display);
+}
 
 function ownKeys(e, r) {
   var t = Object.keys(e);
@@ -1241,19 +1269,6 @@ var getComputedStyleLengthProp = function(forElement, propertyName) {
     "&singleLine": singleLine,
     "&multiLine": !singleLine
   };
-}), MentionsInput$1 = styled$3(MentionsInput), defaultStyle = {
-  fontWeight: "inherit"
-};
-
-function Mention(_ref) {
-  var display = _ref.display, style = _ref.style, className = _ref.className, classNames = _ref.classNames, styles = (_ref.trigger, 
-  _ref.markup, _ref.displayTransform, _ref.onAdd, _ref.onRemove, _ref.renderSuggestion, 
-  _ref.isLoading, _ref.appendSpaceOnAdd, useStyles__default(defaultStyle, {
-    style: style,
-    className: className,
-    classNames: classNames
-  }));
-  return React__default.createElement("strong", styles, display);
-}
+}), MentionsInput$1 = styled$3(MentionsInput);
 
 exports.Mention = Mention, exports.MentionsInput = MentionsInput$1;

@@ -2,6 +2,7 @@ import { Children } from 'react'
 import invariant from 'invariant'
 import markupToRegex from './markupToRegex'
 import countPlaceholders from './countPlaceholders'
+import { DEFAULT_MENTION_PROPS } from '../Mention';
 
 /* Original function for reference
 
