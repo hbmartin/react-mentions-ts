@@ -163,7 +163,7 @@ function _objectSpread(e) {
 }
 
 function readConfigFromChildren(children) {
-  var config = React.Children.toArray(children).map(function(_ref) {
+  return React.Children.toArray(children).map(function(_ref) {
     var props = _ref.props, _props$markup = props.markup, markup = void 0 === _props$markup ? DEFAULT_MENTION_PROPS.markup : _props$markup, _props$regex = props.regex, regex = void 0 === _props$regex ? DEFAULT_MENTION_PROPS.regex : _props$regex, _props$displayTransfo = props.displayTransform, displayTransform = void 0 === _props$displayTransfo ? DEFAULT_MENTION_PROPS.displayTransform : _props$displayTransfo;
     return _objectSpread(_objectSpread({}, DEFAULT_MENTION_PROPS), {}, {
       markup: markup,
@@ -171,7 +171,6 @@ function readConfigFromChildren(children) {
       regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
     });
   });
-  return console.log("config:", config), config;
 }
 
 var coerceCapturingGroups = function(regex, markup) {

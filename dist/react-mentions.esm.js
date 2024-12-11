@@ -375,7 +375,6 @@ function readConfigFromChildren(children) {
       regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
     });
   });
-  console.log('config:', config);
   return config;
 }
 
