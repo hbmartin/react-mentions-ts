@@ -1,8 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
 
-import { provideExampleValue } from './higher-order'
 import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
@@ -13,7 +12,10 @@ const  CustomInput = React.forwardRef((props, ref) => {
   return <textarea ref={ref} {...props} className="custom-textarea" />
 })
 
-function CustomInputComponent({ value, data, onChange, onAdd }) {
+export default function CustomInputComponent({ data, onAdd = () => {}}) {
+  const [value, setValue] = useState('');
+  const onChange = (ev, newValue) => setValue(newValue);
+
   return (
     <div className="custom-input">
       <h3>Custom input component</h3>
@@ -31,7 +33,3 @@ function CustomInputComponent({ value, data, onChange, onAdd }) {
     </div>
   )
 }
-
-const asExample = provideExampleValue('')
-
-export default asExample(CustomInputComponent)

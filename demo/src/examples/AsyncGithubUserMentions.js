@@ -2,8 +2,6 @@ import React from 'react'
 
 import { MentionsInput, Mention } from '../../../src'
 
-import { provideExampleValue } from './higher-order'
-
 import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
@@ -19,7 +17,10 @@ function fetchUsers(query, callback) {
     .then(callback)
 }
 
-function AsyncGithubUserMentions({ value, data, onChange }) {
+export default function AsyncGithubUserMentions() {
+  const [value, setValue] = useState('');
+  const onChange = (ev, newValue) => setValue(newValue);
+
   return (
     <div className="async">
       <h3>Async Github user mentions</h3>
@@ -41,7 +42,3 @@ function AsyncGithubUserMentions({ value, data, onChange }) {
     </div>
   )
 }
-
-const asExample = provideExampleValue('')
-
-export default asExample(AsyncGithubUserMentions)

@@ -1,12 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
 
-import { provideExampleValue } from './higher-order'
 import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
-function SingleLine({ value, data, onChange, onAdd }) {
+export default function SingleLine({ value, data, onChange, onAdd }) {
+  const [value, setValue] = useState('');
+  const onChange = (ev, newValue) => setValue(newValue);
+
   return (
     <div className="single-line">
       <h3>Single line input</h3>
@@ -24,7 +26,3 @@ function SingleLine({ value, data, onChange, onAdd }) {
     </div>
   )
 }
-
-const asExample = provideExampleValue('')
-
-export default asExample(SingleLine)

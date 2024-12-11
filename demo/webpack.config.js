@@ -28,7 +28,6 @@ module.exports = {
     new CaseSensitivePathsPlugin(),
     new webpack.HashedModuleIdsPlugin(),
     new HTMLWebpackPlugin({
-      alwaysWriteToDisk: true,
       minify: true,
       template: path.resolve(__dirname, 'src/index.html'),
       filename: path.resolve(__dirname, 'build/index.html'),

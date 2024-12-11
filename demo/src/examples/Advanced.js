@@ -1,9 +1,6 @@
 import React from 'react'
-import { compose, withHandlers } from 'recompose'
 
 import { MentionsInput, Mention } from '../../../src'
-
-import { provideExampleValue } from './higher-order'
 
 import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
@@ -21,8 +18,11 @@ const style = merge({}, defaultStyle, {
   },
 })
 
-function Advanced({ value, data, onChange, onBlur, onAdd }) {
+export default function Advanced({ data, onBlur = () => {}, onAdd = () => {} }) {
   let inputEl = React.createRef()
+  const [value, setValue] = useState('Hi {{johndoe}}!');
+  const onChange = (ev, newValue) => setValue(newValue);
+
   return (
     <div className="advanced">
       <h3>Advanced options</h3>
@@ -54,14 +54,3 @@ function Advanced({ value, data, onChange, onBlur, onAdd }) {
     </div>
   )
 }
-
-export default compose(
-  provideExampleValue('Hi {{johndoe}}!'),
-  withHandlers({
-    onBlur: () => (ev, clickedOnSuggestion) => {
-      if (!clickedOnSuggestion) {
-        console.log('finished editing')
-      }
-    },
-  })
-)(Advanced)

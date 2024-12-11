@@ -15,7 +15,7 @@ module.exports = {
   plugins: [
     '@babel/transform-runtime',
     '@babel/plugin-transform-flow-strip-types',
-    '@babel/plugin-proposal-object-rest-spread',
+    '@babel/plugin-transform-object-rest-spread',
     '@babel/plugin-proposal-export-namespace-from',
     '@babel/plugin-proposal-class-properties',
   ],

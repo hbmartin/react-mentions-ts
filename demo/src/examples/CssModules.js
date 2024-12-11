@@ -1,12 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { MentionsInput, Mention } from '../../../src'
 
-import { provideExampleValue } from './higher-order'
-
 import classNames from './example.module.css'
 
-function CssModules({ value, data, onChange }) {
+export default function CssModules({ data }) {
+  const [value, setValue] = useState('Hi @[John Doe](johndoe)');
+  const onChange = (ev, newValue) => setValue(newValue);
+
   return (
     <div className="advanced">
       <h3>Styling with css modules</h3>
@@ -23,5 +24,3 @@ function CssModules({ value, data, onChange }) {
     </div>
   )
 }
-
-export default provideExampleValue('Hi @[John Doe](johndoe)')(CssModules)
