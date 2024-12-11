@@ -1,4 +1,7 @@
 import React, { Children } from 'react'
+import ReactDOM from 'react-dom'
+import PropTypes from 'prop-types'
+
 import {
   applyChangeToValue,
   countSuggestions,
@@ -18,9 +21,7 @@ import {
   omit,
   getSuggestionHtmlId,
 } from './utils'
-
 import Highlighter from './Highlighter'
-import ReactDOM from 'react-dom'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import { defaultStyle } from './utils'
 import { DEFAULT_MENTION_PROPS } from './Mention'
@@ -67,7 +68,7 @@ let isComposing = false
 
 /**
  * TODO: convert to interface/type when TS is available
- *
+ */
 const propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
@@ -102,7 +103,6 @@ const propTypes = {
     PropTypes.arrayOf(PropTypes.element),
   ]).isRequired,
 }
- */
 
 class MentionsInput extends React.Component {
 

@@ -7,12 +7,12 @@ import _getPrototypeOf from '@babel/runtime/helpers/esm/getPrototypeOf';
 import _inherits from '@babel/runtime/helpers/esm/inherits';
 import _defineProperty from '@babel/runtime/helpers/esm/defineProperty';
 import React, { Children, useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
+import PropTypes from 'prop-types';
 import invariant from 'invariant';
 import _slicedToArray from '@babel/runtime/helpers/esm/slicedToArray';
 import useStyles, { inline } from 'substyle';
 import _objectWithoutProperties from '@babel/runtime/helpers/esm/objectWithoutProperties';
-import PropTypes from 'prop-types';
-import ReactDOM from 'react-dom';
 
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 var escapeRegex = function escapeRegex(str) {
@@ -1165,42 +1165,27 @@ var isComposing = false;
 
 /**
  * TODO: convert to interface/type when TS is available
- *
-const propTypes = {
+ */
+var propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
-
   value: PropTypes.string,
   onKeyDown: PropTypes.func,
   customSuggestionsContainer: PropTypes.func,
   onSelect: PropTypes.func,
   onBlur: PropTypes.func,
   onChange: PropTypes.func,
-  suggestionsPortalHost:
-    typeof Element === 'undefined'
-      ? PropTypes.any
-      : PropTypes.PropTypes.instanceOf(Element),
-  inputRef: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({
-      current:
-        typeof Element === 'undefined'
-          ? PropTypes.any
-          : PropTypes.instanceOf(Element),
-    }),
-  ]),
+  suggestionsPortalHost: typeof Element === 'undefined' ? PropTypes.any : PropTypes.PropTypes.instanceOf(Element),
+  inputRef: PropTypes.oneOfType([PropTypes.func, PropTypes.shape({
+    current: typeof Element === 'undefined' ? PropTypes.any : PropTypes.instanceOf(Element)
+  })]),
   inputComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.elementType]),
-
-  children: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.arrayOf(PropTypes.element),
-  ]).isRequired,
-}
- */
+  children: PropTypes.oneOfType([PropTypes.element, PropTypes.arrayOf(PropTypes.element)]).isRequired
+};
 var MentionsInput = /*#__PURE__*/function (_React$Component) {
   function MentionsInput(_props) {
     var _this;

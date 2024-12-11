@@ -14,13 +14,13 @@ var _inherits = _interopDefault(require('@babel/runtime/helpers/inherits'));
 var _defineProperty = _interopDefault(require('@babel/runtime/helpers/defineProperty'));
 var React = require('react');
 var React__default = _interopDefault(React);
+var ReactDOM = _interopDefault(require('react-dom'));
+var PropTypes = _interopDefault(require('prop-types'));
 var invariant = _interopDefault(require('invariant'));
 var _slicedToArray = _interopDefault(require('@babel/runtime/helpers/slicedToArray'));
 var useStyles = require('substyle');
 var useStyles__default = _interopDefault(useStyles);
 var _objectWithoutProperties = _interopDefault(require('@babel/runtime/helpers/objectWithoutProperties'));
-var PropTypes = _interopDefault(require('prop-types'));
-var ReactDOM = _interopDefault(require('react-dom'));
 
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 var escapeRegex = function escapeRegex(str) {
@@ -1173,42 +1173,27 @@ var isComposing = false;
 
 /**
  * TODO: convert to interface/type when TS is available
- *
-const propTypes = {
+ */
+var propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
-
   value: PropTypes.string,
   onKeyDown: PropTypes.func,
   customSuggestionsContainer: PropTypes.func,
   onSelect: PropTypes.func,
   onBlur: PropTypes.func,
   onChange: PropTypes.func,
-  suggestionsPortalHost:
-    typeof Element === 'undefined'
-      ? PropTypes.any
-      : PropTypes.PropTypes.instanceOf(Element),
-  inputRef: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({
-      current:
-        typeof Element === 'undefined'
-          ? PropTypes.any
-          : PropTypes.instanceOf(Element),
-    }),
-  ]),
+  suggestionsPortalHost: typeof Element === 'undefined' ? PropTypes.any : PropTypes.PropTypes.instanceOf(Element),
+  inputRef: PropTypes.oneOfType([PropTypes.func, PropTypes.shape({
+    current: typeof Element === 'undefined' ? PropTypes.any : PropTypes.instanceOf(Element)
+  })]),
   inputComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.elementType]),
-
-  children: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.arrayOf(PropTypes.element),
-  ]).isRequired,
-}
- */
+  children: PropTypes.oneOfType([PropTypes.element, PropTypes.arrayOf(PropTypes.element)]).isRequired
+};
 var MentionsInput = /*#__PURE__*/function (_React$Component) {
   function MentionsInput(_props) {
     var _this;

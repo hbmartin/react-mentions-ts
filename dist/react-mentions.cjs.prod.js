@@ -8,7 +8,7 @@ Object.defineProperty(exports, "__esModule", {
   value: !0
 });
 
-var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsumableArray")), _extends = _interopDefault(require("@babel/runtime/helpers/extends")), _classCallCheck = _interopDefault(require("@babel/runtime/helpers/classCallCheck")), _createClass = _interopDefault(require("@babel/runtime/helpers/createClass")), _possibleConstructorReturn = _interopDefault(require("@babel/runtime/helpers/possibleConstructorReturn")), _getPrototypeOf = _interopDefault(require("@babel/runtime/helpers/getPrototypeOf")), _inherits = _interopDefault(require("@babel/runtime/helpers/inherits")), _defineProperty = _interopDefault(require("@babel/runtime/helpers/defineProperty")), React = require("react"), React__default = _interopDefault(React), invariant = _interopDefault(require("invariant")), _slicedToArray = _interopDefault(require("@babel/runtime/helpers/slicedToArray")), useStyles = require("substyle"), useStyles__default = _interopDefault(useStyles), _objectWithoutProperties = _interopDefault(require("@babel/runtime/helpers/objectWithoutProperties")), PropTypes = _interopDefault(require("prop-types")), ReactDOM = _interopDefault(require("react-dom")), escapeRegex = function(str) {
+var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsumableArray")), _extends = _interopDefault(require("@babel/runtime/helpers/extends")), _classCallCheck = _interopDefault(require("@babel/runtime/helpers/classCallCheck")), _createClass = _interopDefault(require("@babel/runtime/helpers/createClass")), _possibleConstructorReturn = _interopDefault(require("@babel/runtime/helpers/possibleConstructorReturn")), _getPrototypeOf = _interopDefault(require("@babel/runtime/helpers/getPrototypeOf")), _inherits = _interopDefault(require("@babel/runtime/helpers/inherits")), _defineProperty = _interopDefault(require("@babel/runtime/helpers/defineProperty")), React = require("react"), React__default = _interopDefault(React), ReactDOM = _interopDefault(require("react-dom")), PropTypes = _interopDefault(require("prop-types")), invariant = _interopDefault(require("invariant")), _slicedToArray = _interopDefault(require("@babel/runtime/helpers/slicedToArray")), useStyles = require("substyle"), useStyles__default = _interopDefault(useStyles), _objectWithoutProperties = _interopDefault(require("@babel/runtime/helpers/objectWithoutProperties")), escapeRegex = function(str) {
   return str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }, PLACEHOLDERS = {
   id: "__id__",
@@ -811,7 +811,26 @@ var makeTriggerRegex = function(trigger) {
   ESC: 27,
   UP: 38,
   DOWN: 40
-}, isComposing = !1, MentionsInput = function(_React$Component) {
+}, isComposing = !1, propTypes = {
+  singleLine: PropTypes.bool,
+  allowSpaceInQuery: PropTypes.bool,
+  allowSuggestionsAboveCursor: PropTypes.bool,
+  forceSuggestionsAboveCursor: PropTypes.bool,
+  ignoreAccents: PropTypes.bool,
+  a11ySuggestionsListLabel: PropTypes.string,
+  value: PropTypes.string,
+  onKeyDown: PropTypes.func,
+  customSuggestionsContainer: PropTypes.func,
+  onSelect: PropTypes.func,
+  onBlur: PropTypes.func,
+  onChange: PropTypes.func,
+  suggestionsPortalHost: "undefined" == typeof Element ? PropTypes.any : PropTypes.PropTypes.instanceOf(Element),
+  inputRef: PropTypes.oneOfType([ PropTypes.func, PropTypes.shape({
+    current: "undefined" == typeof Element ? PropTypes.any : PropTypes.instanceOf(Element)
+  }) ]),
+  inputComponent: PropTypes.oneOfType([ PropTypes.func, PropTypes.elementType ]),
+  children: PropTypes.oneOfType([ PropTypes.element, PropTypes.arrayOf(PropTypes.element) ]).isRequired
+}, MentionsInput = function(_React$Component) {
   function MentionsInput(_props) {
     var _this;
     return _classCallCheck(this, MentionsInput), _this = _callSuper(this, MentionsInput, [ _props ]), 
