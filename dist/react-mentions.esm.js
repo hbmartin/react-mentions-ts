@@ -375,6 +375,7 @@ function readConfigFromChildren(children) {
       regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
     });
   });
+  console.log('config:', config);
   return config;
 }
 
@@ -1031,7 +1032,8 @@ function SuggestionsOverlay(_ref) {
     var isFocused = index === focusIndex;
     var childIndex = queryInfo.childIndex,
       query = queryInfo.query;
-    var renderSuggestion = Children.toArray(children)[childIndex].props.renderSuggestion;
+    var _Children$toArray$chi = Children.toArray(children)[childIndex].props.renderSuggestion,
+      renderSuggestion = _Children$toArray$chi === void 0 ? DEFAULT_MENTION_PROPS.renderSuggestion : _Children$toArray$chi;
     return /*#__PURE__*/React.createElement(Suggestion$1, {
       style: style('item'),
       key: "".concat(childIndex, "-").concat(getID(result)),
@@ -1160,30 +1162,45 @@ var KEY = {
   DOWN: 40
 };
 var isComposing = false;
-var propTypes = {
-  /**
-   * If set to `true` a regular text input element will be rendered
-   * instead of a textarea
-   */
+
+/**
+ * TODO: convert to interface/type when TS is available
+ *
+const propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
+
   value: PropTypes.string,
   onKeyDown: PropTypes.func,
   customSuggestionsContainer: PropTypes.func,
   onSelect: PropTypes.func,
   onBlur: PropTypes.func,
   onChange: PropTypes.func,
-  suggestionsPortalHost: typeof Element === 'undefined' ? PropTypes.any : PropTypes.PropTypes.instanceOf(Element),
-  inputRef: PropTypes.oneOfType([PropTypes.func, PropTypes.shape({
-    current: typeof Element === 'undefined' ? PropTypes.any : PropTypes.instanceOf(Element)
-  })]),
+  suggestionsPortalHost:
+    typeof Element === 'undefined'
+      ? PropTypes.any
+      : PropTypes.PropTypes.instanceOf(Element),
+  inputRef: PropTypes.oneOfType([
+    PropTypes.func,
+    PropTypes.shape({
+      current:
+        typeof Element === 'undefined'
+          ? PropTypes.any
+          : PropTypes.instanceOf(Element),
+    }),
+  ]),
   inputComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.elementType]),
-  children: PropTypes.oneOfType([PropTypes.element, PropTypes.arrayOf(PropTypes.element)]).isRequired
-};
+
+  children: PropTypes.oneOfType([
+    PropTypes.element,
+    PropTypes.arrayOf(PropTypes.element),
+  ]).isRequired,
+}
+ */
 var MentionsInput = /*#__PURE__*/function (_React$Component) {
   function MentionsInput(_props) {
     var _this;
@@ -1717,10 +1734,14 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var config = readConfigFromChildren(_this.props.children);
       var mentionsChild = Children.toArray(_this.props.children)[childIndex];
       var _mentionsChild$props = mentionsChild.props,
-        markup = _mentionsChild$props.markup,
-        displayTransform = _mentionsChild$props.displayTransform,
-        appendSpaceOnAdd = _mentionsChild$props.appendSpaceOnAdd,
-        onAdd = _mentionsChild$props.onAdd;
+        _mentionsChild$props$ = _mentionsChild$props.markup,
+        markup = _mentionsChild$props$ === void 0 ? DEFAULT_MENTION_PROPS.markup : _mentionsChild$props$,
+        _mentionsChild$props$2 = _mentionsChild$props.displayTransform,
+        displayTransform = _mentionsChild$props$2 === void 0 ? DEFAULT_MENTION_PROPS.displayTransform : _mentionsChild$props$2,
+        _mentionsChild$props$3 = _mentionsChild$props.appendSpaceOnAdd,
+        appendSpaceOnAdd = _mentionsChild$props$3 === void 0 ? DEFAULT_MENTION_PROPS.appendSpaceOnAdd : _mentionsChild$props$3,
+        _mentionsChild$props$4 = _mentionsChild$props.onAdd,
+        onAdd = _mentionsChild$props$4 === void 0 ? DEFAULT_MENTION_PROPS.onAdd : _mentionsChild$props$4;
       var start = mapPlainTextIndex(value, config, querySequenceStart, 'START');
       var end = start + querySequenceEnd - querySequenceStart;
       var insert = makeMentionsMarkup(markup, id, display);
@@ -1939,7 +1960,6 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
  * Returns the computed length property value for the provided element.
  * Note: According to spec and testing, can count on length values coming back in pixels. See https://developer.mozilla.org/en-US/docs/Web/CSS/used_value#Difference_from_computed_value
  */
-_defineProperty(MentionsInput, "propTypes", propTypes);
 _defineProperty(MentionsInput, "defaultProps", {
   ignoreAccents: false,
   singleLine: false,

@@ -163,7 +163,7 @@ function _objectSpread(e) {
 }
 
 function readConfigFromChildren(children) {
-  return React.Children.toArray(children).map(function(_ref) {
+  var config = React.Children.toArray(children).map(function(_ref) {
     var props = _ref.props, _props$markup = props.markup, markup = void 0 === _props$markup ? DEFAULT_MENTION_PROPS.markup : _props$markup, _props$regex = props.regex, regex = void 0 === _props$regex ? DEFAULT_MENTION_PROPS.regex : _props$regex, _props$displayTransfo = props.displayTransform, displayTransform = void 0 === _props$displayTransfo ? DEFAULT_MENTION_PROPS.displayTransform : _props$displayTransfo;
     return _objectSpread(_objectSpread({}, DEFAULT_MENTION_PROPS), {}, {
       markup: markup,
@@ -171,6 +171,7 @@ function readConfigFromChildren(children) {
       regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
     });
   });
+  return console.log("config:", config), config;
 }
 
 var coerceCapturingGroups = function(regex, markup) {
@@ -673,7 +674,7 @@ function SuggestionsOverlay(_ref) {
     }
   }, [ focusIndex, scrollFocusedIntoView, ulElement ]);
   var suggestionsToRender, renderSuggestion = function(result, queryInfo, index) {
-    var isFocused = index === focusIndex, childIndex = queryInfo.childIndex, query = queryInfo.query, renderSuggestion = React.Children.toArray(children)[childIndex].props.renderSuggestion;
+    var isFocused = index === focusIndex, childIndex = queryInfo.childIndex, query = queryInfo.query, _Children$toArray$chi = React.Children.toArray(children)[childIndex].props.renderSuggestion, renderSuggestion = void 0 === _Children$toArray$chi ? DEFAULT_MENTION_PROPS.renderSuggestion : _Children$toArray$chi;
     return React__default.createElement(Suggestion$1, {
       style: style("item"),
       key: "".concat(childIndex, "-").concat(getID(result)),
@@ -810,26 +811,7 @@ var makeTriggerRegex = function(trigger) {
   ESC: 27,
   UP: 38,
   DOWN: 40
-}, isComposing = !1, propTypes = {
-  singleLine: PropTypes.bool,
-  allowSpaceInQuery: PropTypes.bool,
-  allowSuggestionsAboveCursor: PropTypes.bool,
-  forceSuggestionsAboveCursor: PropTypes.bool,
-  ignoreAccents: PropTypes.bool,
-  a11ySuggestionsListLabel: PropTypes.string,
-  value: PropTypes.string,
-  onKeyDown: PropTypes.func,
-  customSuggestionsContainer: PropTypes.func,
-  onSelect: PropTypes.func,
-  onBlur: PropTypes.func,
-  onChange: PropTypes.func,
-  suggestionsPortalHost: "undefined" == typeof Element ? PropTypes.any : PropTypes.PropTypes.instanceOf(Element),
-  inputRef: PropTypes.oneOfType([ PropTypes.func, PropTypes.shape({
-    current: "undefined" == typeof Element ? PropTypes.any : PropTypes.instanceOf(Element)
-  }) ]),
-  inputComponent: PropTypes.oneOfType([ PropTypes.func, PropTypes.elementType ]),
-  children: PropTypes.oneOfType([ PropTypes.element, PropTypes.arrayOf(PropTypes.element) ]).isRequired
-}, MentionsInput = function(_React$Component) {
+}, isComposing = !1, MentionsInput = function(_React$Component) {
   function MentionsInput(_props) {
     var _this;
     return _classCallCheck(this, MentionsInput), _this = _callSuper(this, MentionsInput, [ _props ]), 
@@ -1098,7 +1080,7 @@ var makeTriggerRegex = function(trigger) {
         });
       }
     }), _defineProperty(_this, "addMention", function(_ref2, _ref3) {
-      var id = _ref2.id, display = _ref2.display, childIndex = _ref3.childIndex, querySequenceStart = _ref3.querySequenceStart, querySequenceEnd = _ref3.querySequenceEnd, plainTextValue = _ref3.plainTextValue, value = _this.props.value || "", config = readConfigFromChildren(_this.props.children), _mentionsChild$props = React.Children.toArray(_this.props.children)[childIndex].props, markup = _mentionsChild$props.markup, displayTransform = _mentionsChild$props.displayTransform, appendSpaceOnAdd = _mentionsChild$props.appendSpaceOnAdd, onAdd = _mentionsChild$props.onAdd, start = mapPlainTextIndex(value, config, querySequenceStart, "START"), end = start + querySequenceEnd - querySequenceStart, insert = makeMentionsMarkup(markup, id, display);
+      var id = _ref2.id, display = _ref2.display, childIndex = _ref3.childIndex, querySequenceStart = _ref3.querySequenceStart, querySequenceEnd = _ref3.querySequenceEnd, plainTextValue = _ref3.plainTextValue, value = _this.props.value || "", config = readConfigFromChildren(_this.props.children), _mentionsChild$props = React.Children.toArray(_this.props.children)[childIndex].props, _mentionsChild$props$ = _mentionsChild$props.markup, markup = void 0 === _mentionsChild$props$ ? DEFAULT_MENTION_PROPS.markup : _mentionsChild$props$, _mentionsChild$props$2 = _mentionsChild$props.displayTransform, displayTransform = void 0 === _mentionsChild$props$2 ? DEFAULT_MENTION_PROPS.displayTransform : _mentionsChild$props$2, _mentionsChild$props$3 = _mentionsChild$props.appendSpaceOnAdd, appendSpaceOnAdd = void 0 === _mentionsChild$props$3 ? DEFAULT_MENTION_PROPS.appendSpaceOnAdd : _mentionsChild$props$3, _mentionsChild$props$4 = _mentionsChild$props.onAdd, onAdd = void 0 === _mentionsChild$props$4 ? DEFAULT_MENTION_PROPS.onAdd : _mentionsChild$props$4, start = mapPlainTextIndex(value, config, querySequenceStart, "START"), end = start + querySequenceEnd - querySequenceStart, insert = makeMentionsMarkup(markup, id, display);
       appendSpaceOnAdd && (insert += " ");
       var newValue = spliceString(value, start, end, insert);
       _this.inputElement.focus();
@@ -1218,7 +1200,7 @@ var makeTriggerRegex = function(trigger) {
   } ]);
 }(React__default.Component);
 
-_defineProperty(MentionsInput, "propTypes", propTypes), _defineProperty(MentionsInput, "defaultProps", {
+_defineProperty(MentionsInput, "defaultProps", {
   ignoreAccents: !1,
   singleLine: !1,
   allowSuggestionsAboveCursor: !1,

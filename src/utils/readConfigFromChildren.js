@@ -38,6 +38,8 @@ export function readConfigFromChildren(children) {
     }
   );
 
+  console.log('config:', config)
+
   return config;
 }
 
