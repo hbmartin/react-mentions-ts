@@ -109,18 +109,43 @@ var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsu
 }, markupToRegex = function(markup) {
   var escapedMarkup = escapeRegex(markup), charAfterDisplay = markup[markup.indexOf(PLACEHOLDERS.display) + PLACEHOLDERS.display.length], charAfterId = markup[markup.indexOf(PLACEHOLDERS.id) + PLACEHOLDERS.id.length];
   return new RegExp(escapedMarkup.replace(PLACEHOLDERS.display, "([^".concat(escapeRegex(charAfterDisplay || ""), "]+?)")).replace(PLACEHOLDERS.id, "([^".concat(escapeRegex(charAfterId || ""), "]+?)")));
-}, readConfigFromChildren = function(children) {
+};
+
+function ownKeys(e, r) {
+  var t = Object.keys(e);
+  if (Object.getOwnPropertySymbols) {
+    var o = Object.getOwnPropertySymbols(e);
+    r && (o = o.filter(function(r) {
+      return Object.getOwnPropertyDescriptor(e, r).enumerable;
+    })), t.push.apply(t, o);
+  }
+  return t;
+}
+
+function _objectSpread(e) {
+  for (var r = 1; r < arguments.length; r++) {
+    var t = null != arguments[r] ? arguments[r] : {};
+    r % 2 ? ownKeys(Object(t), !0).forEach(function(r) {
+      _defineProperty(e, r, t[r]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function(r) {
+      Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+    });
+  }
+  return e;
+}
+
+function readConfigFromChildren(children) {
   return React.Children.toArray(children).map(function(_ref) {
-    var _ref$props = _ref.props, markup = _ref$props.markup, regex = _ref$props.regex, displayTransform = _ref$props.displayTransform;
-    return {
+    var props = _ref.props, _props$markup = props.markup, markup = void 0 === _props$markup ? DEFAULT_MENTION_PROPS.markup : _props$markup, _props$regex = props.regex, regex = void 0 === _props$regex ? DEFAULT_MENTION_PROPS.regex : _props$regex, _props$displayTransfo = props.displayTransform, displayTransform = void 0 === _props$displayTransfo ? DEFAULT_MENTION_PROPS.displayTransform : _props$displayTransfo;
+    return _objectSpread(_objectSpread({}, DEFAULT_MENTION_PROPS), {}, {
       markup: markup,
-      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup),
-      displayTransform: displayTransform || function(id, display) {
-        return display || id;
-      }
-    };
+      displayTransform: displayTransform,
+      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
+    });
   });
-}, coerceCapturingGroups = function(regex, markup) {
+}
+
+var coerceCapturingGroups = function(regex, markup) {
   var numberOfGroups = new RegExp(regex.toString() + "|").exec("").length - 1, numberOfPlaceholders = countPlaceholders(markup);
   return invariant(numberOfGroups === numberOfPlaceholders, "Number of capturing groups in RegExp ".concat(regex.toString(), " (").concat(numberOfGroups, ") does not match the number of placeholders in the markup '").concat(markup, "' (").concat(numberOfPlaceholders, ")")), 
   regex;
@@ -420,7 +445,7 @@ var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsu
   }, {});
 }, _excluded = [ "style", "className", "classNames" ];
 
-function ownKeys(e, r) {
+function ownKeys$1(e, r) {
   var t = Object.keys(e);
   if (Object.getOwnPropertySymbols) {
     var o = Object.getOwnPropertySymbols(e);
@@ -431,12 +456,12 @@ function ownKeys(e, r) {
   return t;
 }
 
-function _objectSpread(e) {
+function _objectSpread$1(e) {
   for (var r = 1; r < arguments.length; r++) {
     var t = null != arguments[r] ? arguments[r] : {};
-    r % 2 ? ownKeys(Object(t), !0).forEach(function(r) {
+    r % 2 ? ownKeys$1(Object(t), !0).forEach(function(r) {
       _defineProperty(e, r, t[r]);
-    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function(r) {
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$1(Object(t)).forEach(function(r) {
       Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
     });
   }
@@ -457,7 +482,7 @@ function createDefaultStyle(defaultStyle, getModifiers) {
     }, displayName = ComponentToWrap.displayName || ComponentToWrap.name || "Component";
     return DefaultStyleEnhancer.displayName = "defaultStyle(".concat(displayName, ")"), 
     React__default.forwardRef(function(props, ref) {
-      return DefaultStyleEnhancer(_objectSpread(_objectSpread({}, props), {}, {
+      return DefaultStyleEnhancer(_objectSpread$1(_objectSpread$1({}, props), {}, {
         ref: ref
       }));
     });
@@ -702,7 +727,7 @@ var styled$2 = createDefaultStyle({
   }
 }), SuggestionsOverlay$1 = styled$2(SuggestionsOverlay);
 
-function ownKeys$1(e, r) {
+function ownKeys$2(e, r) {
   var t = Object.keys(e);
   if (Object.getOwnPropertySymbols) {
     var o = Object.getOwnPropertySymbols(e);
@@ -713,12 +738,12 @@ function ownKeys$1(e, r) {
   return t;
 }
 
-function _objectSpread$1(e) {
+function _objectSpread$2(e) {
   for (var r = 1; r < arguments.length; r++) {
     var t = null != arguments[r] ? arguments[r] : {};
-    r % 2 ? ownKeys$1(Object(t), !0).forEach(function(r) {
+    r % 2 ? ownKeys$2(Object(t), !0).forEach(function(r) {
       _defineProperty(e, r, t[r]);
-    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$1(Object(t)).forEach(function(r) {
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$2(Object(t)).forEach(function(r) {
       Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
     });
   }
@@ -784,7 +809,7 @@ var makeTriggerRegex = function(trigger) {
       _this.containerElement = el;
     }), _defineProperty(_this, "getInputProps", function() {
       var _this$props = _this.props, readOnly = _this$props.readOnly, disabled = _this$props.disabled, style = _this$props.style;
-      return _objectSpread$1(_objectSpread$1(_objectSpread$1(_objectSpread$1({}, omit(_this.props, [ "style", "classNames", "className" ], keys(propTypes))), style("input")), {}, {
+      return _objectSpread$2(_objectSpread$2(_objectSpread$2(_objectSpread$2({}, omit(_this.props, [ "style", "classNames", "className" ], keys(propTypes))), style("input")), {}, {
         value: _this.getPlainText(),
         onScroll: _this.updateHighlighterScroll
       }, !readOnly && !disabled && {
@@ -1028,7 +1053,7 @@ var makeTriggerRegex = function(trigger) {
       syncResult instanceof Array && _this.updateSuggestions(_this._queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, syncResult);
     }), _defineProperty(_this, "updateSuggestions", function(queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, results) {
       if (queryId === _this._queryId) {
-        _this.suggestions = _objectSpread$1(_objectSpread$1({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
+        _this.suggestions = _objectSpread$2(_objectSpread$2({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
           queryInfo: {
             childIndex: childIndex,
             query: query,
@@ -1117,8 +1142,8 @@ var makeTriggerRegex = function(trigger) {
     value: function(event) {
       if (event.target === this.inputElement && this.supportsClipboardActions(event)) {
         event.preventDefault();
-        var _this$state3 = this.state, selectionStart = _this$state3.selectionStart, selectionEnd = _this$state3.selectionEnd, _this$props7 = this.props, value = _this$props7.value, children = _this$props7.children, config = readConfigFromChildren(children), markupStartIndex = mapPlainTextIndex(value, config, selectionStart, "START"), markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, "END"), pastedMentions = event.clipboardData.getData("text/react-mentions"), pastedData = event.clipboardData.getData("text/plain"), newValue = spliceString(value, markupStartIndex, markupEndIndex, pastedMentions || pastedData).replace(/\r/g, ""), newPlainTextValue = getPlainText(newValue, config), eventMock = {
-          target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+        var _this$state3 = this.state, selectionStart = _this$state3.selectionStart, selectionEnd = _this$state3.selectionEnd, _this$props7 = this.props, value = _this$props7.value, config = readConfigFromChildren(_this$props7.children), markupStartIndex = mapPlainTextIndex(value, config, selectionStart, "START"), markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, "END"), pastedMentions = event.clipboardData.getData("text/react-mentions"), pastedData = event.clipboardData.getData("text/plain"), newValue = spliceString(value, markupStartIndex, markupEndIndex, pastedMentions || pastedData).replace(/\r/g, ""), newPlainTextValue = getPlainText(newValue, config), eventMock = {
+          target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
             value: newValue
           })
         };
@@ -1155,7 +1180,7 @@ var makeTriggerRegex = function(trigger) {
       if (event.target === this.inputElement && this.supportsClipboardActions(event)) {
         event.preventDefault(), this.saveSelectionToClipboard(event);
         var _this$state4 = this.state, selectionStart = _this$state4.selectionStart, selectionEnd = _this$state4.selectionEnd, _this$props9 = this.props, children = _this$props9.children, value = _this$props9.value, config = readConfigFromChildren(children), markupStartIndex = mapPlainTextIndex(value, config, selectionStart, "START"), markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, "END"), newValue = [ value.slice(0, markupStartIndex), value.slice(markupEndIndex) ].join(""), newPlainTextValue = getPlainText(newValue, config), eventMock = {
-          target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+          target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
             value: newPlainTextValue
           })
         };
@@ -1200,7 +1225,7 @@ var getComputedStyleLengthProp = function(forElement, propertyName) {
     letterSpacing: "inherit"
   },
   "&multiLine": {
-    input: _objectSpread$1({
+    input: _objectSpread$2({
       height: "100%",
       bottom: 0,
       overflow: "hidden",
@@ -1218,37 +1243,17 @@ var getComputedStyleLengthProp = function(forElement, propertyName) {
   };
 }), MentionsInput$1 = styled$3(MentionsInput), defaultStyle = {
   fontWeight: "inherit"
-}, Mention = function(_ref) {
-  var display = _ref.display, style = _ref.style, className = _ref.className, classNames = _ref.classNames, styles = useStyles__default(defaultStyle, {
+};
+
+function Mention(_ref) {
+  var display = _ref.display, style = _ref.style, className = _ref.className, classNames = _ref.classNames, styles = (_ref.trigger, 
+  _ref.markup, _ref.displayTransform, _ref.onAdd, _ref.onRemove, _ref.renderSuggestion, 
+  _ref.isLoading, _ref.appendSpaceOnAdd, useStyles__default(defaultStyle, {
     style: style,
     className: className,
     classNames: classNames
-  });
+  }));
   return React__default.createElement("strong", styles, display);
-};
+}
 
-Mention.propTypes = {
-  onAdd: PropTypes.func,
-  onRemove: PropTypes.func,
-  renderSuggestion: PropTypes.func,
-  trigger: PropTypes.oneOfType([ PropTypes.string, PropTypes.instanceOf(RegExp) ]),
-  markup: PropTypes.string,
-  displayTransform: PropTypes.func,
-  allowSpaceInQuery: PropTypes.bool,
-  isLoading: PropTypes.bool
-}, Mention.defaultProps = {
-  trigger: "@",
-  markup: "@[__display__](__id__)",
-  displayTransform: function(id, display) {
-    return display || id;
-  },
-  onAdd: function() {
-    return null;
-  },
-  onRemove: function() {
-    return null;
-  },
-  renderSuggestion: null,
-  isLoading: !1,
-  appendSpaceOnAdd: !1
-}, exports.Mention = Mention, exports.MentionsInput = MentionsInput$1;
+exports.Mention = Mention, exports.MentionsInput = MentionsInput$1;

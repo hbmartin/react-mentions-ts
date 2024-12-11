@@ -282,21 +282,40 @@ var markupToRegex = function markupToRegex(markup) {
   return new RegExp(escapedMarkup.replace(PLACEHOLDERS.display, "([^".concat(escapeRegex(charAfterDisplay || ''), "]+?)")).replace(PLACEHOLDERS.id, "([^".concat(escapeRegex(charAfterId || ''), "]+?)")));
 };
 
-var readConfigFromChildren = function readConfigFromChildren(children) {
-  return Children.toArray(children).map(function (_ref) {
-    var _ref$props = _ref.props,
-      markup = _ref$props.markup,
-      regex = _ref$props.regex,
-      displayTransform = _ref$props.displayTransform;
-    return {
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+
+/* Original function for reference
+
+const readConfigFromChildren = children =>
+  Children.toArray(children).map(
+    ({ props: { markup, regex, displayTransform } }) => ({
+      markup,
+      regex: regex
+        ? coerceCapturingGroups(regex, markup)
+        : markupToRegex(markup),
+      displayTransform: displayTransform || ((id, display) => display || id),
+    })
+  )
+*/
+
+function readConfigFromChildren(children) {
+  var config = Children.toArray(children).map(function (_ref) {
+    var props = _ref.props;
+    var _props$markup = props.markup,
+      markup = _props$markup === void 0 ? DEFAULT_MENTION_PROPS.markup : _props$markup,
+      _props$regex = props.regex,
+      regex = _props$regex === void 0 ? DEFAULT_MENTION_PROPS.regex : _props$regex,
+      _props$displayTransfo = props.displayTransform,
+      displayTransform = _props$displayTransfo === void 0 ? DEFAULT_MENTION_PROPS.displayTransform : _props$displayTransfo;
+    return _objectSpread(_objectSpread({}, DEFAULT_MENTION_PROPS), {}, {
       markup: markup,
-      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup),
-      displayTransform: displayTransform || function (id, display) {
-        return display || id;
-      }
-    };
+      displayTransform: displayTransform,
+      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
+    });
   });
-};
+  return config;
+}
 
 // make sure that the custom regex defines the correct number of capturing groups
 var coerceCapturingGroups = function coerceCapturingGroups(regex, markup) {
@@ -628,8 +647,8 @@ var omit = function omit(obj) {
 };
 
 var _excluded = ["style", "className", "classNames"];
-function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
-function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function ownKeys$1(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread$1(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys$1(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$1(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function createDefaultStyle(defaultStyle, getModifiers) {
   var enhance = function enhance(ComponentToWrap) {
     var DefaultStyleEnhancer = function DefaultStyleEnhancer(_ref) {
@@ -652,7 +671,7 @@ function createDefaultStyle(defaultStyle, getModifiers) {
 
     // return DefaultStyleEnhancer
     return /*#__PURE__*/React.forwardRef(function (props, ref) {
-      return DefaultStyleEnhancer(_objectSpread(_objectSpread({}, props), {}, {
+      return DefaultStyleEnhancer(_objectSpread$1(_objectSpread$1({}, props), {}, {
         ref: ref
       }));
     });
@@ -1037,8 +1056,8 @@ var styled$2 = createDefaultStyle({
 });
 var SuggestionsOverlay$1 = styled$2(SuggestionsOverlay);
 
-function ownKeys$1(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
-function _objectSpread$1(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys$1(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$1(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function ownKeys$2(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread$2(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys$2(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$2(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _callSuper(t, o, e) { return o = _getPrototypeOf(o), _possibleConstructorReturn(t, _isNativeReflectConstruct() ? Reflect.construct(o, e || [], _getPrototypeOf(t).constructor) : o.apply(t, e)); }
 function _isNativeReflectConstruct() { try { var t = !Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); } catch (t) {} return (_isNativeReflectConstruct = function _isNativeReflectConstruct() { return !!t; })(); }
 var makeTriggerRegex = function makeTriggerRegex(trigger) {
@@ -1122,7 +1141,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var props = omit(_this.props, ['style', 'classNames', 'className'],
       // substyle props
       keys(propTypes));
-      return _objectSpread$1(_objectSpread$1(_objectSpread$1(_objectSpread$1({}, props), style('input')), {}, {
+      return _objectSpread$2(_objectSpread$2(_objectSpread$2(_objectSpread$2({}, props), style('input')), {}, {
         value: _this.getPlainText(),
         onScroll: _this.updateHighlighterScroll
       }, !readOnly && !disabled && {
@@ -1608,7 +1627,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
 
       // save in property so that multiple sync state updates from different mentions sources
       // won't overwrite each other
-      _this.suggestions = _objectSpread$1(_objectSpread$1({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
+      _this.suggestions = _objectSpread$2(_objectSpread$2({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
         queryInfo: {
           childIndex: childIndex,
           query: query,
@@ -1776,7 +1795,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var newValue = spliceString(value, markupStartIndex, markupEndIndex, pastedMentions || pastedData).replace(/\r/g, '');
       var newPlainTextValue = getPlainText(newValue, config);
       var eventMock = {
-        target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+        target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
           value: newValue
         })
       };
@@ -1847,7 +1866,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var newValue = [value.slice(0, markupStartIndex), value.slice(markupEndIndex)].join('');
       var newPlainTextValue = getPlainText(newValue, config);
       var eventMock = {
-        target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+        target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
           value: newPlainTextValue
         })
       };
@@ -1896,7 +1915,7 @@ var styled$3 = createDefaultStyle({
     letterSpacing: 'inherit'
   },
   '&multiLine': {
-    input: _objectSpread$1({
+    input: _objectSpread$2({
       height: '100%',
       bottom: 0,
       overflow: 'hidden',
@@ -1918,57 +1937,25 @@ var MentionsInput$1 = styled$3(MentionsInput);
 var defaultStyle = {
   fontWeight: 'inherit'
 };
-var Mention = function Mention(_ref) {
+function Mention(_ref) {
   var display = _ref.display,
     style = _ref.style,
     className = _ref.className,
-    classNames = _ref.classNames;
+    classNames = _ref.classNames,
+    _ref$trigger = _ref.trigger,
+    _ref$markup = _ref.markup,
+    _ref$displayTransform = _ref.displayTransform,
+    _ref$onAdd = _ref.onAdd,
+    _ref$onRemove = _ref.onRemove,
+    _ref$renderSuggestion = _ref.renderSuggestion,
+    _ref$isLoading = _ref.isLoading,
+    _ref$appendSpaceOnAdd = _ref.appendSpaceOnAdd;
   var styles = useStyles(defaultStyle, {
     style: style,
     className: className,
     classNames: classNames
   });
   return /*#__PURE__*/React.createElement("strong", styles, display);
-};
-Mention.propTypes = {
-  /**
-   * Called when a new mention is added in the input
-   *
-   * Example:
-   *
-   * ```js
-   * function(id, display) {
-   *   console.log("user " + display + " was mentioned!");
-   * }
-   * ```
-   */
-  onAdd: PropTypes.func,
-  onRemove: PropTypes.func,
-  renderSuggestion: PropTypes.func,
-  trigger: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(RegExp)]),
-  markup: PropTypes.string,
-  displayTransform: PropTypes.func,
-  /**
-   * If set to `true` spaces will not interrupt matching suggestions
-   */
-  allowSpaceInQuery: PropTypes.bool,
-  isLoading: PropTypes.bool
-};
-Mention.defaultProps = {
-  trigger: '@',
-  markup: '@[__display__](__id__)',
-  displayTransform: function displayTransform(id, display) {
-    return display || id;
-  },
-  onAdd: function onAdd() {
-    return null;
-  },
-  onRemove: function onRemove() {
-    return null;
-  },
-  renderSuggestion: null,
-  isLoading: false,
-  appendSpaceOnAdd: false
-};
+}
 
 export { Mention, MentionsInput$1 as MentionsInput };
