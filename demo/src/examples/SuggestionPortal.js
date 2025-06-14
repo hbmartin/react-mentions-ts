@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { merge } from '../../../src/utils'
 import { Mention, MentionsInput } from '../../../src'
 

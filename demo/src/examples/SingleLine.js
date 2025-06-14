@@ -5,9 +5,9 @@ import { Mention, MentionsInput } from '../../../src'
 import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
-export default function SingleLine({ value, data, onChange, onAdd }) {
-  const [value, setValue] = useState('');
-  const onChange = (ev, newValue) => setValue(newValue);
+export default function SingleLine({ data, onAdd }) {
+  const [value, setValue] = useState('')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div className="single-line">

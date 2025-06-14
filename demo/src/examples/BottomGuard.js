@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Mention, MentionsInput } from '../../../src'
 
 import defaultStyle from './defaultStyle'
