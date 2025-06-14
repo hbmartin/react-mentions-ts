@@ -901,7 +901,8 @@ class MentionsInput extends React.Component {
         return
       }
 
-      const regex = makeTriggerRegex(child.props.trigger, this.props)
+      const trigger = child.props.trigger || '@'
+      const regex = makeTriggerRegex(trigger, this.props)
       const match = substring.match(regex)
       if (match) {
         const querySequenceStart =
