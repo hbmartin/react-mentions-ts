@@ -578,7 +578,7 @@ function Highlighter(_ref) {
 Highlighter.propTypes = {
   selectionStart: PropTypes.number,
   selectionEnd: PropTypes.number,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onCaretPositionChange: PropTypes.func.isRequired,
   containerRef: PropTypes.oneOfType([ PropTypes.func, PropTypes.shape({
     current: "undefined" == typeof Element ? PropTypes.any : PropTypes.instanceOf(Element)
@@ -791,9 +791,9 @@ function _isNativeReflectConstruct() {
   })();
 }
 
-var makeTriggerRegex = function(trigger) {
-  var options = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {};
-  if (trigger instanceof RegExp) return trigger;
+var makeTriggerRegex = function() {
+  var trigger = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "@", options = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {};
+  if (null == trigger && (trigger = "@"), trigger instanceof RegExp) return trigger;
   var allowSpaceInQuery = options.allowSpaceInQuery, escapedTriggerChar = escapeRegex(trigger);
   return new RegExp("(?:^|\\s)(".concat(escapedTriggerChar, "([^").concat(allowSpaceInQuery ? "" : "\\s").concat(escapedTriggerChar, "]*))$"));
 }, getDataProvider = function(data, ignoreAccents) {

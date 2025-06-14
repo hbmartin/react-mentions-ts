@@ -850,7 +850,7 @@ function Highlighter(_ref) {
 Highlighter.propTypes = {
   selectionStart: PropTypes.number,
   selectionEnd: PropTypes.number,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onCaretPositionChange: PropTypes.func.isRequired,
   containerRef: PropTypes.oneOfType([PropTypes.func, PropTypes.shape({
     current: typeof Element === 'undefined' ? PropTypes.any : PropTypes.instanceOf(Element)
@@ -1122,8 +1122,12 @@ function ownKeys$2(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymb
 function _objectSpread$2(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys$2(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$2(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _callSuper(t, o, e) { return o = _getPrototypeOf(o), _possibleConstructorReturn(t, _isNativeReflectConstruct() ? Reflect.construct(o, e || [], _getPrototypeOf(t).constructor) : o.apply(t, e)); }
 function _isNativeReflectConstruct() { try { var t = !Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); } catch (t) {} return (_isNativeReflectConstruct = function _isNativeReflectConstruct() { return !!t; })(); }
-var makeTriggerRegex = function makeTriggerRegex(trigger) {
+var makeTriggerRegex = function makeTriggerRegex() {
+  var trigger = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '@';
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  if (trigger == null) {
+    trigger = '@';
+  }
   if (trigger instanceof RegExp) {
     return trigger;
   } else {
