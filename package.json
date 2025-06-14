@@ -12,7 +12,7 @@
     "format": "prettier --write --no-semi --single-quote --trailing-comma es5 \"{src,test,demo/src}/**/*.js\"",
     "lint": "eslint --max-warnings=0 --ext .js src test demo",
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=development webpack-dev-server --config demo/webpack.config.js",
-    "test": "jest",
+    "test": "BROWSERSLIST_IGNORE_OLD_DATA=true jest",
     "now-build": "webpack --config demo/webpack.config.js",
     "prerelease": "npm run build",
     "release": "changeset publish",
