@@ -1063,7 +1063,7 @@ var makeTriggerRegex = function() {
         var substringStartIndex = getEndOfLastMention(value.substring(0, positionInValue), config), substring = plainTextValue.substring(substringStartIndex, caretPosition);
         React__default.Children.forEach(children, function(child, childIndex) {
           if (child) {
-            var regex = makeTriggerRegex(child.props.trigger, _this.props), match = substring.match(regex);
+            var trigger = child.props.trigger || "@", regex = makeTriggerRegex(trigger, _this.props), match = substring.match(regex);
             if (match) {
               var querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index);
               _this.queryData(match[2], childIndex, querySequenceStart, querySequenceStart + match[1].length, plainTextValue);

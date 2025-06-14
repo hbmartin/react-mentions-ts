@@ -1659,7 +1659,8 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         if (!child) {
           return;
         }
-        var regex = makeTriggerRegex(child.props.trigger, _this.props);
+        var trigger = child.props.trigger || '@';
+        var regex = makeTriggerRegex(trigger, _this.props);
         var match = substring.match(regex);
         if (match) {
           var querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index);
