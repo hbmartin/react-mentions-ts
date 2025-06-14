@@ -27,6 +27,9 @@ import { defaultStyle } from './utils'
 import { DEFAULT_MENTION_PROPS } from './Mention'
 
 export const makeTriggerRegex = function(trigger = '@', options = {}) {
+  if (trigger == null) {
+    trigger = '@'
+  }
   if (trigger instanceof RegExp) {
     return trigger
   } else {
