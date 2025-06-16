@@ -1161,6 +1161,7 @@ var KEY = {
   TAB: 9,
   RETURN: 13,
   ESC: 27,
+  SPACE: 32,
   UP: 38,
   DOWN: 40
 };
@@ -1173,6 +1174,7 @@ var propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
+  selectLastSuggestionOnSpace: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
@@ -1436,7 +1438,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         _this.props.onKeyDown(ev);
         return;
       }
-      if (Object.values(KEY).indexOf(ev.keyCode) >= 0) {
+      if (Object.values(KEY).indexOf(ev.keyCode) >= 0 && ev.keyCode !== KEY.SPACE) {
         ev.preventDefault();
         ev.stopPropagation();
       }
@@ -1464,6 +1466,13 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         case KEY.TAB:
           {
             _this.selectFocused();
+            return;
+          }
+        case KEY.SPACE:
+          {
+            if (suggestionsCount === 1 && _this.props.selectLastSuggestionOnSpace) {
+              _this.selectFocused();
+            }
             return;
           }
         default:

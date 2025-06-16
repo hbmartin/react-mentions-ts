@@ -808,12 +808,14 @@ var makeTriggerRegex = function() {
   TAB: 9,
   RETURN: 13,
   ESC: 27,
+  SPACE: 32,
   UP: 38,
   DOWN: 40
 }, isComposing = !1, propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
+  selectLastSuggestionOnSpace: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
@@ -958,7 +960,8 @@ var makeTriggerRegex = function() {
         _this.updateHighlighterScroll(), _this.props.onSelect(ev);
       }
     }), _defineProperty(_this, "handleKeyDown", function(ev) {
-      if (0 !== countSuggestions(_this.state.suggestions) && _this.suggestionsElement) switch (Object.values(KEY).indexOf(ev.keyCode) >= 0 && (ev.preventDefault(), 
+      var suggestionsCount = countSuggestions(_this.state.suggestions);
+      if (0 !== suggestionsCount && _this.suggestionsElement) switch (Object.values(KEY).indexOf(ev.keyCode) >= 0 && ev.keyCode !== KEY.SPACE && (ev.preventDefault(), 
       ev.stopPropagation()), ev.keyCode) {
        case KEY.ESC:
         return void _this.clearSuggestions();
@@ -972,6 +975,9 @@ var makeTriggerRegex = function() {
        case KEY.RETURN:
        case KEY.TAB:
         return void _this.selectFocused();
+
+       case KEY.SPACE:
+        return void (1 === suggestionsCount && _this.props.selectLastSuggestionOnSpace && _this.selectFocused());
 
        default:
         return;
