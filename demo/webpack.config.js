@@ -3,7 +3,6 @@ const path = require('path')
 
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin')
 const HTMLWebpackPlugin = require('html-webpack-plugin')
-const HTMLWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin')
 
 const { NODE_ENV } = process.env
 
@@ -28,12 +27,11 @@ module.exports = {
     new CaseSensitivePathsPlugin(),
     new webpack.HashedModuleIdsPlugin(),
     new HTMLWebpackPlugin({
-      alwaysWriteToDisk: true,
       minify: true,
       template: path.resolve(__dirname, 'src/index.html'),
       filename: path.resolve(__dirname, 'build/index.html'),
+      alwaysWriteToDisk: inDev,
     }),
-    new HTMLWebpackHarddiskPlugin(),
   ],
   resolve: {
     extensions: ['.js', '.css'],

@@ -1,13 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { merge } from '../../../src/utils'
 import { Mention, MentionsInput } from '../../../src'
-
-import { provideExampleValue } from './higher-order'
 
 import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
-function Scrollable({ value, data, onChange, onAdd }) {
+export default function Scrollable({ data, onAdd = () => {} }) {
+  const [value, setValue] = useState("Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... ");
+  const onChange = (ev, newValue) => setValue(newValue);
+
   let style = merge({}, defaultStyle, {
     input: {
       overflow: 'auto',
@@ -50,9 +51,3 @@ function Scrollable({ value, data, onChange, onAdd }) {
     </div>
   )
 }
-
-const asExample = provideExampleValue(
-  "Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... "
-)
-
-export default asExample(Scrollable)

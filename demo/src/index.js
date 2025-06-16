@@ -1,5 +1,5 @@
 import React, { StrictMode } from 'react'
-import { render } from 'react-dom'
+import { createRoot } from 'react-dom/client'
 
 import Examples from './examples'
 
@@ -22,4 +22,5 @@ const Demo = () => (
   </div>
 )
 
-render(<Demo />, document.querySelector('#demo'))
+const root = createRoot(document.querySelector('#demo'))
+root.render(<Demo />)

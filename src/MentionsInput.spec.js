@@ -2,7 +2,7 @@ import { Mention, MentionsInput } from './index'
 
 import React from 'react'
 import { makeTriggerRegex } from './MentionsInput'
-import { mount } from 'enzyme'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 const data = [
   { id: 'first', value: 'First entry' },
@@ -11,34 +11,30 @@ const data = [
 ]
 
 describe('MentionsInput', () => {
-  let wrapper, host
-
-  beforeEach(() => {
-    // I don't know where enzmye mounts this, but apparently it is somewhere
-    // where our input cannot have a `scollHeight`/`offsetHeight`. Therefore, some tests would fail.
-    // By manually creating a wrapper in the DOM, we can work around that
-    host = document.createElement('div')
-    document.body.appendChild(host)
-
-    wrapper = mount(
+  it('should render a textarea by default.', () => {
+    render(
       <MentionsInput value="">
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
-  })
 
-  it('should render a textarea by default.', () => {
-    expect(wrapper.find('textarea').length).toEqual(1)
-    expect(wrapper.find('input').length).toEqual(0)
+    // MentionsInput renders both textarea and input, but only one is visible
+    const textarea = screen.getByDisplayValue('')
+    expect(textarea).toBeInTheDocument()
+    expect(textarea.tagName).toBe('TEXTAREA')
   })
 
   it('should render a regular input when singleLine is set to true.', () => {
-    wrapper.setProps({
-      singleLine: true,
-    })
+    render(
+      <MentionsInput value="" singleLine={true}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
 
-    expect(wrapper.find('textarea').length).toEqual(0)
-    expect(wrapper.find('input').length).toEqual(1)
+    // When singleLine is true, the visible input should be an input element
+    const input = screen.getByDisplayValue('')
+    expect(input).toBeInTheDocument()
+    expect(input.tagName).toBe('INPUT')
   })
 
   it.todo(
@@ -50,29 +46,35 @@ describe('MentionsInput', () => {
   it.todo('should be possible to select a suggestion with enter.')
   it.todo('should be possible to close the suggestions with esc.')
 
-  it('should be able to handle sync responses from multiple mentions sources', () => {
-    const extraData = [{ id: 'a', value: 'A' }, { id: 'b', value: 'B' }]
+  it('should be able to handle sync responses from multiple mentions sources', async () => {
+    const extraData = [
+      { id: 'a', value: 'A' },
+      { id: 'b', value: 'B' },
+    ]
 
-    const wrapper = mount(
+    render(
       <MentionsInput value="@">
         <Mention trigger="@" data={data} />
         <Mention trigger="@" data={extraData} />
       </MentionsInput>
     )
 
-    wrapper.find('textarea').simulate('focus')
-    wrapper.find('textarea').simulate('select', {
-      target: { selectionStart: 1, selectionEnd: 1 },
-    })
-    wrapper.find('textarea').getDOMNode().setSelectionRange(1, 1)
+    const textarea = screen.getByRole('textbox')
+    fireEvent.focus(textarea)
 
-    expect(
-      wrapper.find('SuggestionsOverlay').find('Suggestion').length
-    ).toEqual(data.length + extraData.length)
+    // Set selection to position 1 (after @)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    // Wait for suggestions to appear and check count
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions).toHaveLength(data.length + extraData.length)
+    })
   })
 
   it('should scroll the highlighter in sync with the textarea', () => {
-    const wrapper = mount(
+    const { container } = render(
       <MentionsInput
         style={{
           input: {
@@ -86,55 +88,61 @@ describe('MentionsInput', () => {
         }
       >
         <Mention trigger="@" data={data} />
-      </MentionsInput>,
-      {
-        attachTo: host,
-      }
+      </MentionsInput>
     )
 
-    wrapper.find('textarea').getDOMNode().scrollTop = 23
-    wrapper.find('textarea').simulate('scroll', { deltaY: 23 })
+    const textarea = screen.getByRole('textbox')
+    const highlighter = container.querySelector('.mi__highlighter')
 
-    expect(wrapper.find('.mi__highlighter').getDOMNode().scrollTop).toBe(23)
+    // Set scroll position and trigger scroll event
+    textarea.scrollTop = 23
+    fireEvent.scroll(textarea, { target: { scrollTop: 23 } })
+
+    expect(highlighter.scrollTop).toBe(23)
   })
 
-  it('should place suggestions in suggestionsPortalHost', () => {
-    let portalNode
-    const rootWrapper = mount(
-      <div id="root">
-        <div
-          id="portalDiv"
-          ref={(el) => {
-            portalNode = el
-          }}
-        >
-          <p>menu goes here</p>
-        </div>
-      </div>
-    )
-    const wrapper = mount(
+  it('should place suggestions in suggestionsPortalHost', async () => {
+    // Create a portal container
+    const portalContainer = document.createElement('div')
+    portalContainer.id = 'portalDiv'
+    document.body.appendChild(portalContainer)
+
+    render(
       <MentionsInput
         className={'testClass'}
         value={'@'}
-        suggestionsPortalHost={portalNode}
+        suggestionsPortalHost={portalContainer}
       >
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
-    // focus & select to show suggestions
-    wrapper.find('textarea').simulate('focus')
-    wrapper.find('textarea').simulate('select', {
-      target: { selectionStart: 1, selectionEnd: 1 },
+
+    const textarea = screen.getByRole('textbox')
+    fireEvent.focus(textarea)
+
+    // Set selection to position 1 (after @)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    // Check that suggestions are rendered in the portal
+    await waitFor(() => {
+      const suggestionsNode = portalContainer.querySelector(
+        '.testClass__suggestions'
+      )
+      expect(suggestionsNode).toBeTruthy()
     })
 
-    let portalDiv = rootWrapper.find('#portalDiv').getDOMNode()
-    const suggestionsNode = portalDiv.querySelector('.testClass__suggestions')
-    expect(suggestionsNode).toBeTruthy()
+    // Cleanup
+    document.body.removeChild(portalContainer)
   })
 
   it('should accept a custom regex attribute', () => {
-    const data = [{ id: 'aaaa', display: '@A' }, { id: 'bbbb', display: '@B' }]
-    const wrapper = mount(
+    const data = [
+      { id: 'aaaa', display: '@A' },
+      { id: 'bbbb', display: '@B' },
+    ]
+
+    render(
       <MentionsInput value=":aaaa and :bbbb and :invalidId">
         <Mention
           trigger="@"
@@ -148,33 +156,58 @@ describe('MentionsInput', () => {
         />
       </MentionsInput>
     )
-    wrapper.find('textarea').simulate('focus')
-    expect(wrapper.find('textarea').getDOMNode().value).toEqual(
-      '@A and @B and :invalidId'
-    )
+
+    const textarea = screen.getByRole('textbox')
+    fireEvent.focus(textarea)
+
+    expect(textarea.value).toEqual('@A and @B and :invalidId')
   })
 
   it('should forward the `inputRef` prop to become the `ref` of the input', () => {
     const inputRef = React.createRef()
-    const wrapper = mount(
+
+    render(
       <MentionsInput value="test" inputRef={inputRef}>
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
-    const el = wrapper.find('textarea').getDOMNode()
+
+    const textarea = screen.getByRole('textbox')
     expect(inputRef.current).toBeTruthy()
-    expect(inputRef.current).toEqual(el)
+    expect(inputRef.current).toEqual(textarea)
   })
 
   it('should forward the `inputRef` prop to become the `ref` of the input (callback ref)', () => {
     const inputRef = jest.fn()
-    const wrapper = mount(
+
+    render(
       <MentionsInput value="test" inputRef={inputRef}>
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
-    const el = wrapper.find('textarea').getDOMNode()
-    expect(inputRef).toHaveBeenCalledWith(el)
+
+    const textarea = screen.getByRole('textbox')
+    expect(inputRef).toHaveBeenCalledWith(textarea)
+  })
+
+  it('should render a custom input when supplied.', () => {
+    const CustomInput = React.forwardRef((props, ref) => {
+      return <input data-testid="testInput" ref={ref} {...props} />
+    })
+
+    const { container } = render(
+      <MentionsInput value="test" inputComponent={CustomInput}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    // Should find the custom input by test id
+    expect(screen.getByTestId('testInput')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('test')).toBeInTheDocument()
+
+    // Should not find a textarea element
+    expect(container.querySelector('textarea')).not.toBeInTheDocument()
+    expect(container.querySelector('input')).toBeInTheDocument()
   })
 
   describe('makeTriggerRegex', () => {
@@ -194,45 +227,48 @@ describe('MentionsInput', () => {
       }).toString()
       expect(result).toEqual('/(?:^|\\s)(trigger([^trigger]*))$/')
     })
+
+    it('should default to "@" for undefined trigger', () => {
+      const result = makeTriggerRegex(undefined).toString()
+      expect(result).toEqual('/(?:^|\\s)(@([^\\s@]*))$/')
+    })
+
+    it('should default to "@" for null trigger', () => {
+      const result = makeTriggerRegex(null).toString()
+      expect(result).toEqual('/(?:^|\\s)(@([^\\s@]*))$/')
+    })
   })
 
   describe('custom cut/copy/paste', () => {
-    let component
-
     const plainTextValue = "Hi First, \n\nlet's add Second to the conversation."
     const value =
       "Hi @[First](first), \n\nlet's add @[Second](second) to the conversation."
 
-    beforeEach(() => {
-      component = mount(
-        <MentionsInput value={value}>
-          <Mention trigger="@[__display__](__id__)" data={data} />
-        </MentionsInput>,
-        {
-          attachTo: host,
-        }
-      )
-    })
-
     it.each(['cut', 'copy'])(
       'should include the whole mention for a "%s" event when the selection starts in one.',
       (eventType) => {
-        const textarea = component.find('textarea')
+        render(
+          <MentionsInput value={value}>
+            <Mention trigger="@[__display__](__id__)" data={data} />
+          </MentionsInput>
+        )
+
+        const textarea = screen.getByRole('textbox')
 
         const selectionStart = plainTextValue.indexOf('First') + 2
         const selectionEnd = plainTextValue.length
 
-        textarea.simulate('select', {
+        textarea.setSelectionRange(selectionStart, selectionEnd)
+        fireEvent.select(textarea, {
           target: { selectionStart, selectionEnd },
         })
-        textarea.getDOMNode().setSelectionRange(selectionStart, selectionEnd)
 
         const setData = jest.fn()
 
         const event = new Event(eventType, { bubbles: true })
         event.clipboardData = { setData }
 
-        textarea.getDOMNode().dispatchEvent(event)
+        fireEvent(textarea, event)
 
         expect(setData).toHaveBeenCalledTimes(2)
 
@@ -252,22 +288,28 @@ describe('MentionsInput', () => {
     it.each(['cut', 'copy'])(
       'should include the whole mention for a "%s" event when the selection ends in one.',
       (eventType) => {
-        const textarea = component.find('textarea')
+        render(
+          <MentionsInput value={value}>
+            <Mention trigger="@[__display__](__id__)" data={data} />
+          </MentionsInput>
+        )
+
+        const textarea = screen.getByRole('textbox')
 
         const selectionStart = 0
         const selectionEnd = plainTextValue.indexOf('Second') + 2
 
-        textarea.simulate('select', {
+        textarea.setSelectionRange(selectionStart, selectionEnd)
+        fireEvent.select(textarea, {
           target: { selectionStart, selectionEnd },
         })
-        textarea.getDOMNode().setSelectionRange(selectionStart, selectionEnd)
 
         const setData = jest.fn()
 
         const event = new Event(eventType, { bubbles: true })
         event.clipboardData = { setData }
 
-        textarea.getDOMNode().dispatchEvent(event)
+        fireEvent(textarea, event)
 
         expect(setData).toHaveBeenCalledTimes(2)
 
@@ -289,21 +331,27 @@ describe('MentionsInput', () => {
       (eventType) => {
         // IE 11 has no clipboardData attached to the event and only supports mime type "text"
         // therefore, the new mechanism should ignore those events and let the browser handle them
-        const textarea = component.find('textarea')
+        render(
+          <MentionsInput value={value}>
+            <Mention trigger="@[__display__](__id__)" data={data} />
+          </MentionsInput>
+        )
+
+        const textarea = screen.getByRole('textbox')
 
         const selectionStart = plainTextValue.indexOf('First') + 2
         const selectionEnd = plainTextValue.length
 
-        textarea.simulate('select', {
+        textarea.setSelectionRange(selectionStart, selectionEnd)
+        fireEvent.select(textarea, {
           target: { selectionStart, selectionEnd },
         })
-        textarea.getDOMNode().setSelectionRange(selectionStart, selectionEnd)
 
         const preventDefault = jest.fn()
         const event = new Event(eventType, { bubbles: true })
         event.preventDefault = preventDefault
 
-        textarea.getDOMNode().dispatchEvent(event)
+        fireEvent(textarea, event)
 
         expect(preventDefault).not.toHaveBeenCalled()
       }
@@ -312,24 +360,28 @@ describe('MentionsInput', () => {
     it('should remove a leading mention from the value when the text is cut.', () => {
       const onChange = jest.fn()
 
-      component.setProps({ onChange })
+      render(
+        <MentionsInput value={value} onChange={onChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
 
-      const textarea = component.find('textarea')
+      const textarea = screen.getByRole('textbox')
 
       const selectionStart = plainTextValue.indexOf('First') + 2
       const selectionEnd = plainTextValue.indexOf('First') + 'First'.length + 5
 
-      textarea.simulate('select', {
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+      fireEvent.select(textarea, {
         target: { selectionStart, selectionEnd },
       })
-      textarea.getDOMNode().setSelectionRange(selectionStart, selectionEnd)
 
       const event = new Event('cut', { bubbles: true })
       event.clipboardData = { setData: jest.fn() }
 
       expect(onChange).not.toHaveBeenCalled()
 
-      textarea.getDOMNode().dispatchEvent(event)
+      fireEvent(textarea, event)
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
@@ -342,24 +394,28 @@ describe('MentionsInput', () => {
     it('should remove a trailing mention from the value when the text is cut.', () => {
       const onChange = jest.fn()
 
-      component.setProps({ onChange })
+      render(
+        <MentionsInput value={value} onChange={onChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
 
-      const textarea = component.find('textarea')
+      const textarea = screen.getByRole('textbox')
 
       const selectionStart = plainTextValue.indexOf('First') + 'First'.length
       const selectionEnd = plainTextValue.indexOf('Second') + 2
 
-      textarea.simulate('select', {
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+      fireEvent.select(textarea, {
         target: { selectionStart, selectionEnd },
       })
-      textarea.getDOMNode().setSelectionRange(selectionStart, selectionEnd)
 
       const event = new Event('cut', { bubbles: true })
       event.clipboardData = { setData: jest.fn() }
 
       expect(onChange).not.toHaveBeenCalled()
 
-      textarea.getDOMNode().dispatchEvent(event)
+      fireEvent(textarea, event)
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
@@ -372,9 +428,13 @@ describe('MentionsInput', () => {
     it('should read mentions markup from a paste event.', () => {
       const onChange = jest.fn()
 
-      component.setProps({ onChange })
+      render(
+        <MentionsInput value={value} onChange={onChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
 
-      const textarea = component.find('textarea')
+      const textarea = screen.getByRole('textbox')
 
       const pastedText = 'Not forget about @[Third](third)!'
 
@@ -387,7 +447,7 @@ describe('MentionsInput', () => {
 
       expect(onChange).not.toHaveBeenCalled()
 
-      textarea.getDOMNode().dispatchEvent(event)
+      fireEvent(textarea, event)
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
@@ -400,9 +460,13 @@ describe('MentionsInput', () => {
     it('should default to the standard pasted text.', () => {
       const onChange = jest.fn()
 
-      component.setProps({ onChange })
+      render(
+        <MentionsInput value={value} onChange={onChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
 
-      const textarea = component.find('textarea')
+      const textarea = screen.getByRole('textbox')
 
       const pastedText = 'Not forget about @[Third](third)!'
 
@@ -413,7 +477,7 @@ describe('MentionsInput', () => {
 
       expect(onChange).not.toHaveBeenCalled()
 
-      textarea.getDOMNode().dispatchEvent(event)
+      fireEvent(textarea, event)
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
@@ -435,13 +499,17 @@ describe('MentionsInput', () => {
 
       const onChange = jest.fn()
 
-      component.setProps({ onChange, value: '' })
+      render(
+        <MentionsInput value="" onChange={onChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
 
       expect(onChange).not.toHaveBeenCalled()
 
-      const textarea = component.find('textarea')
+      const textarea = screen.getByRole('textbox')
 
-      textarea.getDOMNode().dispatchEvent(event)
+      fireEvent(textarea, event)
 
       const [[, newValue, newPlainTextValue]] = onChange.mock.calls
 
@@ -457,21 +525,27 @@ describe('MentionsInput', () => {
     it('should fallback to the browsers behaviour if the "paste" event does not support clipboardData', () => {
       // IE 11 has no clipboardData attached to the event and only supports mime type "text"
       // therefore, the new mechanism should ignore those events and let the browser handle them
-      const textarea = component.find('textarea')
+      render(
+        <MentionsInput value={value}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('textbox')
 
       const selectionStart = plainTextValue.indexOf('First') + 2
       const selectionEnd = plainTextValue.length
 
-      textarea.simulate('select', {
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+      fireEvent.select(textarea, {
         target: { selectionStart, selectionEnd },
       })
-      textarea.getDOMNode().setSelectionRange(selectionStart, selectionEnd)
 
       const preventDefault = jest.fn()
       const event = new Event('paste', { bubbles: true })
       event.preventDefault = preventDefault
 
-      textarea.getDOMNode().dispatchEvent(event)
+      fireEvent(textarea, event)
 
       expect(preventDefault).not.toHaveBeenCalled()
     })

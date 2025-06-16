@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
 
-import { provideExampleValue } from './higher-order'
 import emojiExampleStyle from './emojiExampleStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
 const neverMatchingRegex = /($a)/
 
-function Emojis({ value, data, onChange, onAdd }) {
+export default function Emojis({ data }) {
   const [emojis, setEmojis] = useState([])
+  const [value, setValue] = useState('');
+  const onChange = (ev, newValue) => setValue(newValue);
 
   useEffect(() => {
     fetch(
@@ -63,7 +64,3 @@ function Emojis({ value, data, onChange, onAdd }) {
     </div>
   )
 }
-
-const asExample = provideExampleValue('')
-
-export default asExample(Emojis)

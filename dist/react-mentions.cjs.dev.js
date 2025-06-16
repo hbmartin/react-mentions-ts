@@ -8,20 +8,19 @@ var _toConsumableArray = _interopDefault(require('@babel/runtime/helpers/toConsu
 var _extends = _interopDefault(require('@babel/runtime/helpers/extends'));
 var _classCallCheck = _interopDefault(require('@babel/runtime/helpers/classCallCheck'));
 var _createClass = _interopDefault(require('@babel/runtime/helpers/createClass'));
-var _assertThisInitialized = _interopDefault(require('@babel/runtime/helpers/assertThisInitialized'));
-var _inherits = _interopDefault(require('@babel/runtime/helpers/inherits'));
 var _possibleConstructorReturn = _interopDefault(require('@babel/runtime/helpers/possibleConstructorReturn'));
 var _getPrototypeOf = _interopDefault(require('@babel/runtime/helpers/getPrototypeOf'));
+var _inherits = _interopDefault(require('@babel/runtime/helpers/inherits'));
 var _defineProperty = _interopDefault(require('@babel/runtime/helpers/defineProperty'));
 var React = require('react');
 var React__default = _interopDefault(React);
+var ReactDOM = _interopDefault(require('react-dom'));
+var PropTypes = _interopDefault(require('prop-types'));
 var invariant = _interopDefault(require('invariant'));
 var _slicedToArray = _interopDefault(require('@babel/runtime/helpers/slicedToArray'));
-var _objectWithoutProperties = _interopDefault(require('@babel/runtime/helpers/objectWithoutProperties'));
 var useStyles = require('substyle');
 var useStyles__default = _interopDefault(useStyles);
-var PropTypes = _interopDefault(require('prop-types'));
-var ReactDOM = _interopDefault(require('react-dom'));
+var _objectWithoutProperties = _interopDefault(require('@babel/runtime/helpers/objectWithoutProperties'));
 
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 var escapeRegex = function escapeRegex(str) {
@@ -218,9 +217,7 @@ var applyChangeToValue = function applyChangeToValue(value, plainTextValue, _ref
 
       // find start of diff
       spliceStart = 0;
-      while (plainTextValue[spliceStart] === controlPlainTextValue[spliceStart]) {
-        spliceStart++;
-      }
+      while (plainTextValue[spliceStart] === controlPlainTextValue[spliceStart]) spliceStart++;
 
       // extract auto-corrected insertion
       insert = plainTextValue.slice(spliceStart, selectionEndAfter);
@@ -293,21 +290,101 @@ var markupToRegex = function markupToRegex(markup) {
   return new RegExp(escapedMarkup.replace(PLACEHOLDERS.display, "([^".concat(escapeRegex(charAfterDisplay || ''), "]+?)")).replace(PLACEHOLDERS.id, "([^".concat(escapeRegex(charAfterId || ''), "]+?)")));
 };
 
-var readConfigFromChildren = function readConfigFromChildren(children) {
-  return React.Children.toArray(children).map(function (_ref) {
-    var _ref$props = _ref.props,
-      markup = _ref$props.markup,
-      regex = _ref$props.regex,
-      displayTransform = _ref$props.displayTransform;
-    return {
-      markup: markup,
-      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup),
-      displayTransform: displayTransform || function (id, display) {
-        return display || id;
-      }
-    };
-  });
+/**
+ * TODO: convert to interface/ty[e when TS is available
+
+Mention.propTypes = {
+  onAdd: PropTypes.func,
+  onRemove: PropTypes.func,
+
+  renderSuggestion: PropTypes.func,
+
+  trigger: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.instanceOf(RegExp),
+  ]),
+  markup: PropTypes.string,
+  displayTransform: PropTypes.func,
+  allowSpaceInQuery: PropTypes.bool,
+
+  isLoading: PropTypes.bool,
+}
+*/
+
+var DEFAULT_MENTION_PROPS = {
+  trigger: '@',
+  markup: '@[__display__](__id__)',
+  onAdd: function onAdd() {
+    return null;
+  },
+  onRemove: function onRemove() {
+    return null;
+  },
+  displayTransform: function displayTransform(id, display) {
+    return display || id;
+  },
+  renderSuggestion: null,
+  isLoading: false,
+  appendSpaceOnAdd: false
 };
+var defaultStyle = {
+  fontWeight: 'inherit'
+};
+function Mention(_ref) {
+  var display = _ref.display,
+    style = _ref.style,
+    className = _ref.className,
+    classNames = _ref.classNames,
+    _ref$trigger = _ref.trigger,
+    _ref$markup = _ref.markup,
+    _ref$displayTransform = _ref.displayTransform,
+    _ref$onAdd = _ref.onAdd,
+    _ref$onRemove = _ref.onRemove,
+    _ref$renderSuggestion = _ref.renderSuggestion,
+    _ref$isLoading = _ref.isLoading,
+    _ref$appendSpaceOnAdd = _ref.appendSpaceOnAdd;
+  var styles = useStyles__default(defaultStyle, {
+    style: style,
+    className: className,
+    classNames: classNames
+  });
+  return /*#__PURE__*/React__default.createElement("strong", styles, display);
+}
+
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+
+/* Original function for reference
+
+const readConfigFromChildren = children =>
+  Children.toArray(children).map(
+    ({ props: { markup, regex, displayTransform } }) => ({
+      markup,
+      regex: regex
+        ? coerceCapturingGroups(regex, markup)
+        : markupToRegex(markup),
+      displayTransform: displayTransform || ((id, display) => display || id),
+    })
+  )
+*/
+
+function readConfigFromChildren(children) {
+  var config = React.Children.toArray(children).map(function (_ref) {
+    var props = _ref.props;
+    var _props$markup = props.markup,
+      markup = _props$markup === void 0 ? DEFAULT_MENTION_PROPS.markup : _props$markup,
+      _props$regex = props.regex,
+      regex = _props$regex === void 0 ? DEFAULT_MENTION_PROPS.regex : _props$regex,
+      _props$displayTransfo = props.displayTransform,
+      displayTransform = _props$displayTransfo === void 0 ? DEFAULT_MENTION_PROPS.displayTransform : _props$displayTransfo;
+    return _objectSpread(_objectSpread({}, DEFAULT_MENTION_PROPS), {}, {
+      markup: markup,
+      displayTransform: displayTransform,
+      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
+    });
+  });
+  return config;
+}
 
 // make sure that the custom regex defines the correct number of capturing groups
 var coerceCapturingGroups = function coerceCapturingGroups(regex, markup) {
@@ -639,8 +716,8 @@ var omit = function omit(obj) {
 };
 
 var _excluded = ["style", "className", "classNames"];
-function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+function ownKeys$1(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread$1(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys$1(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$1(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function createDefaultStyle(defaultStyle, getModifiers) {
   var enhance = function enhance(ComponentToWrap) {
     var DefaultStyleEnhancer = function DefaultStyleEnhancer(_ref) {
@@ -663,7 +740,7 @@ function createDefaultStyle(defaultStyle, getModifiers) {
 
     // return DefaultStyleEnhancer
     return /*#__PURE__*/React__default.forwardRef(function (props, ref) {
-      return DefaultStyleEnhancer(_objectSpread(_objectSpread({}, props), {}, {
+      return DefaultStyleEnhancer(_objectSpread$1(_objectSpread$1({}, props), {}, {
         ref: ref
       }));
     });
@@ -781,7 +858,7 @@ function Highlighter(_ref) {
 Highlighter.propTypes = {
   selectionStart: PropTypes.number,
   selectionEnd: PropTypes.number,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onCaretPositionChange: PropTypes.func.isRequired,
   containerRef: PropTypes.oneOfType([PropTypes.func, PropTypes.shape({
     current: typeof Element === 'undefined' ? PropTypes.any : PropTypes.instanceOf(Element)
@@ -962,7 +1039,8 @@ function SuggestionsOverlay(_ref) {
     var isFocused = index === focusIndex;
     var childIndex = queryInfo.childIndex,
       query = queryInfo.query;
-    var renderSuggestion = React.Children.toArray(children)[childIndex].props.renderSuggestion;
+    var _Children$toArray$chi = React.Children.toArray(children)[childIndex].props.renderSuggestion,
+      renderSuggestion = _Children$toArray$chi === void 0 ? DEFAULT_MENTION_PROPS.renderSuggestion : _Children$toArray$chi;
     return /*#__PURE__*/React__default.createElement(Suggestion$1, {
       style: style('item'),
       key: "".concat(childIndex, "-").concat(getID(result)),
@@ -1048,12 +1126,16 @@ var styled$2 = createDefaultStyle({
 });
 var SuggestionsOverlay$1 = styled$2(SuggestionsOverlay);
 
-function ownKeys$1(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
-function _objectSpread$1(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys$1(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$1(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
-var makeTriggerRegex = function makeTriggerRegex(trigger) {
+function ownKeys$2(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread$2(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys$2(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$2(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _callSuper(t, o, e) { return o = _getPrototypeOf(o), _possibleConstructorReturn(t, _isNativeReflectConstruct() ? Reflect.construct(o, e || [], _getPrototypeOf(t).constructor) : o.apply(t, e)); }
+function _isNativeReflectConstruct() { try { var t = !Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); } catch (t) {} return (_isNativeReflectConstruct = function _isNativeReflectConstruct() { return !!t; })(); }
+var makeTriggerRegex = function makeTriggerRegex() {
+  var trigger = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '@';
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  if (trigger == null) {
+    trigger = '@';
+  }
   if (trigger instanceof RegExp) {
     return trigger;
   } else {
@@ -1087,20 +1169,18 @@ var KEY = {
   TAB: 9,
   RETURN: 13,
   ESC: 27,
-  SPACE: 32,
   UP: 38,
   DOWN: 40
 };
 var isComposing = false;
+
+/**
+ * TODO: convert to interface/type when TS is available
+ */
 var propTypes = {
-  /**
-   * If set to `true` a regular text input element will be rendered
-   * instead of a textarea
-   */
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
-  selectLastSuggestionOnSpace: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
@@ -1114,19 +1194,18 @@ var propTypes = {
   inputRef: PropTypes.oneOfType([PropTypes.func, PropTypes.shape({
     current: typeof Element === 'undefined' ? PropTypes.any : PropTypes.instanceOf(Element)
   })]),
+  inputComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.elementType]),
   children: PropTypes.oneOfType([PropTypes.element, PropTypes.arrayOf(PropTypes.element)]).isRequired
 };
 var MentionsInput = /*#__PURE__*/function (_React$Component) {
-  _inherits(MentionsInput, _React$Component);
-  var _super = _createSuper(MentionsInput);
   function MentionsInput(_props) {
     var _this;
     _classCallCheck(this, MentionsInput);
-    _this = _super.call(this, _props);
-    _defineProperty(_assertThisInitialized(_this), "setContainerElement", function (el) {
+    _this = _callSuper(this, MentionsInput, [_props]);
+    _defineProperty(_this, "setContainerElement", function (el) {
       _this.containerElement = el;
     });
-    _defineProperty(_assertThisInitialized(_this), "getInputProps", function () {
+    _defineProperty(_this, "getInputProps", function () {
       var _this$props = _this.props,
         readOnly = _this$props.readOnly,
         disabled = _this$props.disabled,
@@ -1136,7 +1215,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var props = omit(_this.props, ['style', 'classNames', 'className'],
       // substyle props
       keys(propTypes));
-      return _objectSpread$1(_objectSpread$1(_objectSpread$1(_objectSpread$1({}, props), style('input')), {}, {
+      return _objectSpread$2(_objectSpread$2(_objectSpread$2(_objectSpread$2({}, props), style('input')), {}, {
         value: _this.getPlainText(),
         onScroll: _this.updateHighlighterScroll
       }, !readOnly && !disabled && {
@@ -1155,25 +1234,28 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         'aria-activedescendant': getSuggestionHtmlId(_this.uuidSuggestionsOverlay, _this.state.focusIndex)
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "renderControl", function () {
+    _defineProperty(_this, "renderControl", function () {
       var _this$props2 = _this.props,
         singleLine = _this$props2.singleLine,
-        style = _this$props2.style;
+        style = _this$props2.style,
+        CustomInput = _this$props2.inputComponent;
       var inputProps = _this.getInputProps();
-      return /*#__PURE__*/React__default.createElement("div", style('control'), _this.renderHighlighter(), singleLine ? _this.renderInput(inputProps) : _this.renderTextarea(inputProps));
+      return /*#__PURE__*/React__default.createElement("div", style('control'), _this.renderHighlighter(), CustomInput ? /*#__PURE__*/React__default.createElement(CustomInput, _extends({
+        ref: _this.setInputRef
+      }, inputProps)) : singleLine ? _this.renderInput(inputProps) : _this.renderTextarea(inputProps));
     });
-    _defineProperty(_assertThisInitialized(_this), "renderInput", function (props) {
+    _defineProperty(_this, "renderInput", function (props) {
       return /*#__PURE__*/React__default.createElement("input", _extends({
         type: "text",
         ref: _this.setInputRef
       }, props));
     });
-    _defineProperty(_assertThisInitialized(_this), "renderTextarea", function (props) {
+    _defineProperty(_this, "renderTextarea", function (props) {
       return /*#__PURE__*/React__default.createElement("textarea", _extends({
         ref: _this.setInputRef
       }, props));
     });
-    _defineProperty(_assertThisInitialized(_this), "setInputRef", function (el) {
+    _defineProperty(_this, "setInputRef", function (el) {
       _this.inputElement = el;
       var inputRef = _this.props.inputRef;
       if (typeof inputRef === 'function') {
@@ -1182,10 +1264,10 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         inputRef.current = el;
       }
     });
-    _defineProperty(_assertThisInitialized(_this), "setSuggestionsElement", function (el) {
+    _defineProperty(_this, "setSuggestionsElement", function (el) {
       _this.suggestionsElement = el;
     });
-    _defineProperty(_assertThisInitialized(_this), "renderSuggestionsOverlay", function () {
+    _defineProperty(_this, "renderSuggestionsOverlay", function () {
       if (!isNumber(_this.state.selectionStart)) {
         // do not show suggestions when the input does not have the focus
         return null;
@@ -1221,7 +1303,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         return suggestionsNode;
       }
     });
-    _defineProperty(_assertThisInitialized(_this), "renderHighlighter", function () {
+    _defineProperty(_this, "renderHighlighter", function () {
       var _this$state = _this.state,
         selectionStart = _this$state.selectionStart,
         selectionEnd = _this$state.selectionEnd;
@@ -1240,18 +1322,19 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         onCaretPositionChange: _this.handleCaretPositionChange
       }, children);
     });
-    _defineProperty(_assertThisInitialized(_this), "setHighlighterElement", function (el) {
+    _defineProperty(_this, "setHighlighterElement", function (el) {
       _this.highlighterElement = el;
     });
-    _defineProperty(_assertThisInitialized(_this), "handleCaretPositionChange", function (position) {
+    _defineProperty(_this, "handleCaretPositionChange", function (position) {
       _this.setState({
         caretPosition: position
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "getPlainText", function () {
+    // Returns the text to set as the value of the textarea with all markups removed
+    _defineProperty(_this, "getPlainText", function () {
       return getPlainText(_this.props.value || '', readConfigFromChildren(_this.props.children));
     });
-    _defineProperty(_assertThisInitialized(_this), "executeOnChange", function (event) {
+    _defineProperty(_this, "executeOnChange", function (event) {
       for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
         args[_key - 1] = arguments[_key];
       }
@@ -1264,7 +1347,8 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         return (_this$props$valueLink = _this.props.valueLink).requestChange.apply(_this$props$valueLink, [event.target.value].concat(args));
       }
     });
-    _defineProperty(_assertThisInitialized(_this), "handleChange", function (ev) {
+    // Handle input element's change event
+    _defineProperty(_this, "handleChange", function (ev) {
       isComposing = false;
       if (isIE()) {
         // if we are inside iframe, we need to find activeElement within its contentDocument
@@ -1330,7 +1414,8 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       // this.props.onChange.call(this, eventMock, newValue, newPlainTextValue, mentions);
       _this.executeOnChange(eventMock, newValue, newPlainTextValue, mentions);
     });
-    _defineProperty(_assertThisInitialized(_this), "handleSelect", function (ev) {
+    // Handle input element's select event
+    _defineProperty(_this, "handleSelect", function (ev) {
       // keep track of selection range / caret position
       _this.setState({
         selectionStart: ev.target.selectionStart,
@@ -1352,14 +1437,14 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       _this.updateHighlighterScroll();
       _this.props.onSelect(ev);
     });
-    _defineProperty(_assertThisInitialized(_this), "handleKeyDown", function (ev) {
+    _defineProperty(_this, "handleKeyDown", function (ev) {
       // do not intercept key events if the suggestions overlay is not shown
       var suggestionsCount = countSuggestions(_this.state.suggestions);
       if (suggestionsCount === 0 || !_this.suggestionsElement) {
         _this.props.onKeyDown(ev);
         return;
       }
-      if (Object.values(KEY).indexOf(ev.keyCode) >= 0 && ev.keyCode !== KEY.SPACE) {
+      if (Object.values(KEY).indexOf(ev.keyCode) >= 0) {
         ev.preventDefault();
         ev.stopPropagation();
       }
@@ -1389,27 +1474,20 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
             _this.selectFocused();
             return;
           }
-        case KEY.SPACE:
-          {
-            if (suggestionsCount === 1 && _this.props.selectLastSuggestionOnSpace) {
-              _this.selectFocused();
-            }
-            return;
-          }
         default:
           {
             return;
           }
       }
     });
-    _defineProperty(_assertThisInitialized(_this), "shiftFocus", function (delta) {
+    _defineProperty(_this, "shiftFocus", function (delta) {
       var suggestionsCount = countSuggestions(_this.state.suggestions);
       _this.setState({
         focusIndex: (suggestionsCount + _this.state.focusIndex + delta) % suggestionsCount,
         scrollFocusedIntoView: true
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "selectFocused", function () {
+    _defineProperty(_this, "selectFocused", function () {
       var _this$state2 = _this.state,
         suggestions = _this$state2.suggestions,
         focusIndex = _this$state2.focusIndex;
@@ -1430,7 +1508,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         focusIndex: 0
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "handleBlur", function (ev) {
+    _defineProperty(_this, "handleBlur", function (ev) {
       var clickedSuggestion = _this._suggestionsMouseDown;
       _this._suggestionsMouseDown = false;
 
@@ -1447,16 +1525,16 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       }, 1);
       _this.props.onBlur(ev, clickedSuggestion);
     });
-    _defineProperty(_assertThisInitialized(_this), "handleSuggestionsMouseDown", function (ev) {
+    _defineProperty(_this, "handleSuggestionsMouseDown", function (ev) {
       _this._suggestionsMouseDown = true;
     });
-    _defineProperty(_assertThisInitialized(_this), "handleSuggestionsMouseEnter", function (focusIndex) {
+    _defineProperty(_this, "handleSuggestionsMouseEnter", function (focusIndex) {
       _this.setState({
         focusIndex: focusIndex,
         scrollFocusedIntoView: false
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "updateSuggestionsPosition", function () {
+    _defineProperty(_this, "updateSuggestionsPosition", function () {
       var caretPosition = _this.state.caretPosition;
       var _this$props5 = _this.props,
         suggestionsPortalHost = _this$props5.suggestionsPortalHost,
@@ -1531,7 +1609,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         suggestionsPosition: position
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "updateHighlighterScroll", function () {
+    _defineProperty(_this, "updateHighlighterScroll", function () {
       var input = _this.inputElement;
       var highlighter = _this.highlighterElement;
       if (!input || !highlighter) {
@@ -1543,13 +1621,13 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       highlighter.scrollTop = input.scrollTop;
       highlighter.height = input.height;
     });
-    _defineProperty(_assertThisInitialized(_this), "handleCompositionStart", function () {
+    _defineProperty(_this, "handleCompositionStart", function () {
       isComposing = true;
     });
-    _defineProperty(_assertThisInitialized(_this), "handleCompositionEnd", function () {
+    _defineProperty(_this, "handleCompositionEnd", function () {
       isComposing = false;
     });
-    _defineProperty(_assertThisInitialized(_this), "setSelection", function (selectionStart, selectionEnd) {
+    _defineProperty(_this, "setSelection", function (selectionStart, selectionEnd) {
       if (selectionStart === null || selectionEnd === null) return;
       var el = _this.inputElement;
       if (el.setSelectionRange) {
@@ -1562,7 +1640,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         range.select();
       }
     });
-    _defineProperty(_assertThisInitialized(_this), "updateMentionsQueries", function (plainTextValue, caretPosition) {
+    _defineProperty(_this, "updateMentionsQueries", function (plainTextValue, caretPosition) {
       // Invalidate previous queries. Async results for previous queries will be neglected.
       _this._queryId++;
       _this.suggestions = {};
@@ -1589,7 +1667,8 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         if (!child) {
           return;
         }
-        var regex = makeTriggerRegex(child.props.trigger, _this.props);
+        var trigger = child.props.trigger || '@';
+        var regex = makeTriggerRegex(trigger, _this.props);
         var match = substring.match(regex);
         if (match) {
           var querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index);
@@ -1597,7 +1676,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         }
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "clearSuggestions", function () {
+    _defineProperty(_this, "clearSuggestions", function () {
       // Invalidate previous queries. Async results for previous queries will be neglected.
       _this._queryId++;
       _this.suggestions = {};
@@ -1606,7 +1685,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         focusIndex: 0
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "queryData", function (query, childIndex, querySequenceStart, querySequenceEnd, plainTextValue) {
+    _defineProperty(_this, "queryData", function (query, childIndex, querySequenceStart, querySequenceEnd, plainTextValue) {
       var _this$props6 = _this.props,
         children = _this$props6.children,
         ignoreAccents = _this$props6.ignoreAccents;
@@ -1617,13 +1696,13 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         _this.updateSuggestions(_this._queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, syncResult);
       }
     });
-    _defineProperty(_assertThisInitialized(_this), "updateSuggestions", function (queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, results) {
+    _defineProperty(_this, "updateSuggestions", function (queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, results) {
       // neglect async results from previous queries
       if (queryId !== _this._queryId) return;
 
       // save in property so that multiple sync state updates from different mentions sources
       // won't overwrite each other
-      _this.suggestions = _objectSpread$1(_objectSpread$1({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
+      _this.suggestions = _objectSpread$2(_objectSpread$2({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
         queryInfo: {
           childIndex: childIndex,
           query: query,
@@ -1640,7 +1719,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex
       });
     });
-    _defineProperty(_assertThisInitialized(_this), "addMention", function (_ref2, _ref3) {
+    _defineProperty(_this, "addMention", function (_ref2, _ref3) {
       var id = _ref2.id,
         display = _ref2.display;
       var childIndex = _ref3.childIndex,
@@ -1652,10 +1731,14 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var config = readConfigFromChildren(_this.props.children);
       var mentionsChild = React.Children.toArray(_this.props.children)[childIndex];
       var _mentionsChild$props = mentionsChild.props,
-        markup = _mentionsChild$props.markup,
-        displayTransform = _mentionsChild$props.displayTransform,
-        appendSpaceOnAdd = _mentionsChild$props.appendSpaceOnAdd,
-        onAdd = _mentionsChild$props.onAdd;
+        _mentionsChild$props$ = _mentionsChild$props.markup,
+        markup = _mentionsChild$props$ === void 0 ? DEFAULT_MENTION_PROPS.markup : _mentionsChild$props$,
+        _mentionsChild$props$2 = _mentionsChild$props.displayTransform,
+        displayTransform = _mentionsChild$props$2 === void 0 ? DEFAULT_MENTION_PROPS.displayTransform : _mentionsChild$props$2,
+        _mentionsChild$props$3 = _mentionsChild$props.appendSpaceOnAdd,
+        appendSpaceOnAdd = _mentionsChild$props$3 === void 0 ? DEFAULT_MENTION_PROPS.appendSpaceOnAdd : _mentionsChild$props$3,
+        _mentionsChild$props$4 = _mentionsChild$props.onAdd,
+        onAdd = _mentionsChild$props$4 === void 0 ? DEFAULT_MENTION_PROPS.onAdd : _mentionsChild$props$4;
       var start = mapPlainTextIndex(value, config, querySequenceStart, 'START');
       var end = start + querySequenceEnd - querySequenceStart;
       var insert = makeMentionsMarkup(markup, id, display);
@@ -1693,22 +1776,22 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       // Make sure the suggestions overlay is closed
       _this.clearSuggestions();
     });
-    _defineProperty(_assertThisInitialized(_this), "isLoading", function () {
+    _defineProperty(_this, "isLoading", function () {
       var isLoading = false;
       React__default.Children.forEach(_this.props.children, function (child) {
         isLoading = isLoading || child && child.props.isLoading;
       });
       return isLoading;
     });
-    _defineProperty(_assertThisInitialized(_this), "isOpened", function () {
+    _defineProperty(_this, "isOpened", function () {
       return isNumber(_this.state.selectionStart) && (countSuggestions(_this.state.suggestions) !== 0 || _this.isLoading());
     });
-    _defineProperty(_assertThisInitialized(_this), "_queryId", 0);
+    _defineProperty(_this, "_queryId", 0);
     _this.suggestions = {};
     _this.uuidSuggestionsOverlay = Math.random().toString(16).substring(2);
-    _this.handleCopy = _this.handleCopy.bind(_assertThisInitialized(_this));
-    _this.handleCut = _this.handleCut.bind(_assertThisInitialized(_this));
-    _this.handlePaste = _this.handlePaste.bind(_assertThisInitialized(_this));
+    _this.handleCopy = _this.handleCopy.bind(_this);
+    _this.handleCut = _this.handleCut.bind(_this);
+    _this.handlePaste = _this.handlePaste.bind(_this);
     _this.state = {
       focusIndex: 0,
       selectionStart: null,
@@ -1720,7 +1803,8 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
     };
     return _this;
   }
-  _createClass(MentionsInput, [{
+  _inherits(MentionsInput, _React$Component);
+  return _createClass(MentionsInput, [{
     key: "componentDidMount",
     value: function componentDidMount() {
       document.addEventListener('copy', this.handleCopy);
@@ -1766,8 +1850,6 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
         ref: this.setContainerElement
       }, this.props.style), this.renderControl(), this.renderSuggestionsOverlay());
     }
-
-    // Returns the text to set as the value of the textarea with all markups removed
   }, {
     key: "handlePaste",
     value: function handlePaste(event) {
@@ -1792,7 +1874,7 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var newValue = spliceString(value, markupStartIndex, markupEndIndex, pastedMentions || pastedData).replace(/\r/g, '');
       var newPlainTextValue = getPlainText(newValue, config);
       var eventMock = {
-        target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+        target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
           value: newValue
         })
       };
@@ -1863,24 +1945,18 @@ var MentionsInput = /*#__PURE__*/function (_React$Component) {
       var newValue = [value.slice(0, markupStartIndex), value.slice(markupEndIndex)].join('');
       var newPlainTextValue = getPlainText(newValue, config);
       var eventMock = {
-        target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+        target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
           value: newPlainTextValue
         })
       };
       this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(value, config));
     }
-
-    // Handle input element's change event
-
-    // Handle input element's select event
   }]);
-  return MentionsInput;
 }(React__default.Component);
 /**
  * Returns the computed length property value for the provided element.
  * Note: According to spec and testing, can count on length values coming back in pixels. See https://developer.mozilla.org/en-US/docs/Web/CSS/used_value#Difference_from_computed_value
  */
-_defineProperty(MentionsInput, "propTypes", propTypes);
 _defineProperty(MentionsInput, "defaultProps", {
   ignoreAccents: false,
   singleLine: false,
@@ -1917,7 +1993,7 @@ var styled$3 = createDefaultStyle({
     letterSpacing: 'inherit'
   },
   '&multiLine': {
-    input: _objectSpread$1({
+    input: _objectSpread$2({
       height: '100%',
       bottom: 0,
       overflow: 'hidden',
@@ -1935,62 +2011,6 @@ var styled$3 = createDefaultStyle({
   };
 });
 var MentionsInput$1 = styled$3(MentionsInput);
-
-var defaultStyle = {
-  fontWeight: 'inherit'
-};
-var Mention = function Mention(_ref) {
-  var display = _ref.display,
-    style = _ref.style,
-    className = _ref.className,
-    classNames = _ref.classNames;
-  var styles = useStyles__default(defaultStyle, {
-    style: style,
-    className: className,
-    classNames: classNames
-  });
-  return /*#__PURE__*/React__default.createElement("strong", styles, display);
-};
-Mention.propTypes = {
-  /**
-   * Called when a new mention is added in the input
-   *
-   * Example:
-   *
-   * ```js
-   * function(id, display) {
-   *   console.log("user " + display + " was mentioned!");
-   * }
-   * ```
-   */
-  onAdd: PropTypes.func,
-  onRemove: PropTypes.func,
-  renderSuggestion: PropTypes.func,
-  trigger: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(RegExp)]),
-  markup: PropTypes.string,
-  displayTransform: PropTypes.func,
-  /**
-   * If set to `true` spaces will not interrupt matching suggestions
-   */
-  allowSpaceInQuery: PropTypes.bool,
-  isLoading: PropTypes.bool
-};
-Mention.defaultProps = {
-  trigger: '@',
-  markup: '@[__display__](__id__)',
-  displayTransform: function displayTransform(id, display) {
-    return display || id;
-  },
-  onAdd: function onAdd() {
-    return null;
-  },
-  onRemove: function onRemove() {
-    return null;
-  },
-  renderSuggestion: null,
-  isLoading: false,
-  appendSpaceOnAdd: false
-};
 
 exports.Mention = Mention;
 exports.MentionsInput = MentionsInput$1;

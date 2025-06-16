@@ -1,8 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
-
-import { provideExampleValue } from './higher-order'
 
 import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
@@ -11,7 +9,10 @@ import defaultMentionStyle from './defaultMentionStyle'
 // and second/inner capture group to extract search string from the match
 const emailRegex = /(([^\s@]+@[^\s@]+\.[^\s@]+))$/
 
-function MultipleTriggers({ value, data, onChange, onAdd }) {
+export default function MultipleTriggers({ data, onAdd = () => {} }) {
+  const [value, setValue] = useState( "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... ");
+  const onChange = (ev, newValue) => setValue(newValue);
+
   return (
     <div className="multiple-triggers">
       <h3>Multiple trigger patterns</h3>
@@ -54,9 +55,3 @@ function MultipleTriggers({ value, data, onChange, onAdd }) {
     </div>
   )
 }
-
-const asExample = provideExampleValue(
-  "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... "
-)
-
-export default asExample(MultipleTriggers)

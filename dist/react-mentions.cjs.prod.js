@@ -8,7 +8,7 @@ Object.defineProperty(exports, "__esModule", {
   value: !0
 });
 
-var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsumableArray")), _extends = _interopDefault(require("@babel/runtime/helpers/extends")), _classCallCheck = _interopDefault(require("@babel/runtime/helpers/classCallCheck")), _createClass = _interopDefault(require("@babel/runtime/helpers/createClass")), _assertThisInitialized = _interopDefault(require("@babel/runtime/helpers/assertThisInitialized")), _inherits = _interopDefault(require("@babel/runtime/helpers/inherits")), _possibleConstructorReturn = _interopDefault(require("@babel/runtime/helpers/possibleConstructorReturn")), _getPrototypeOf = _interopDefault(require("@babel/runtime/helpers/getPrototypeOf")), _defineProperty = _interopDefault(require("@babel/runtime/helpers/defineProperty")), React = require("react"), React__default = _interopDefault(React), invariant = _interopDefault(require("invariant")), _slicedToArray = _interopDefault(require("@babel/runtime/helpers/slicedToArray")), _objectWithoutProperties = _interopDefault(require("@babel/runtime/helpers/objectWithoutProperties")), useStyles = require("substyle"), useStyles__default = _interopDefault(useStyles), PropTypes = _interopDefault(require("prop-types")), ReactDOM = _interopDefault(require("react-dom")), escapeRegex = function(str) {
+var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsumableArray")), _extends = _interopDefault(require("@babel/runtime/helpers/extends")), _classCallCheck = _interopDefault(require("@babel/runtime/helpers/classCallCheck")), _createClass = _interopDefault(require("@babel/runtime/helpers/createClass")), _possibleConstructorReturn = _interopDefault(require("@babel/runtime/helpers/possibleConstructorReturn")), _getPrototypeOf = _interopDefault(require("@babel/runtime/helpers/getPrototypeOf")), _inherits = _interopDefault(require("@babel/runtime/helpers/inherits")), _defineProperty = _interopDefault(require("@babel/runtime/helpers/defineProperty")), React = require("react"), React__default = _interopDefault(React), ReactDOM = _interopDefault(require("react-dom")), PropTypes = _interopDefault(require("prop-types")), invariant = _interopDefault(require("invariant")), _slicedToArray = _interopDefault(require("@babel/runtime/helpers/slicedToArray")), useStyles = require("substyle"), useStyles__default = _interopDefault(useStyles), _objectWithoutProperties = _interopDefault(require("@babel/runtime/helpers/objectWithoutProperties")), escapeRegex = function(str) {
   return str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }, PLACEHOLDERS = {
   id: "__id__",
@@ -109,18 +109,71 @@ var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsu
 }, markupToRegex = function(markup) {
   var escapedMarkup = escapeRegex(markup), charAfterDisplay = markup[markup.indexOf(PLACEHOLDERS.display) + PLACEHOLDERS.display.length], charAfterId = markup[markup.indexOf(PLACEHOLDERS.id) + PLACEHOLDERS.id.length];
   return new RegExp(escapedMarkup.replace(PLACEHOLDERS.display, "([^".concat(escapeRegex(charAfterDisplay || ""), "]+?)")).replace(PLACEHOLDERS.id, "([^".concat(escapeRegex(charAfterId || ""), "]+?)")));
-}, readConfigFromChildren = function(children) {
+}, DEFAULT_MENTION_PROPS = {
+  trigger: "@",
+  markup: "@[__display__](__id__)",
+  onAdd: function() {
+    return null;
+  },
+  onRemove: function() {
+    return null;
+  },
+  displayTransform: function(id, display) {
+    return display || id;
+  },
+  renderSuggestion: null,
+  isLoading: !1,
+  appendSpaceOnAdd: !1
+}, defaultStyle = {
+  fontWeight: "inherit"
+};
+
+function Mention(_ref) {
+  var display = _ref.display, style = _ref.style, className = _ref.className, classNames = _ref.classNames, styles = (_ref.trigger, 
+  _ref.markup, _ref.displayTransform, _ref.onAdd, _ref.onRemove, _ref.renderSuggestion, 
+  _ref.isLoading, _ref.appendSpaceOnAdd, useStyles__default(defaultStyle, {
+    style: style,
+    className: className,
+    classNames: classNames
+  }));
+  return React__default.createElement("strong", styles, display);
+}
+
+function ownKeys(e, r) {
+  var t = Object.keys(e);
+  if (Object.getOwnPropertySymbols) {
+    var o = Object.getOwnPropertySymbols(e);
+    r && (o = o.filter(function(r) {
+      return Object.getOwnPropertyDescriptor(e, r).enumerable;
+    })), t.push.apply(t, o);
+  }
+  return t;
+}
+
+function _objectSpread(e) {
+  for (var r = 1; r < arguments.length; r++) {
+    var t = null != arguments[r] ? arguments[r] : {};
+    r % 2 ? ownKeys(Object(t), !0).forEach(function(r) {
+      _defineProperty(e, r, t[r]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function(r) {
+      Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
+    });
+  }
+  return e;
+}
+
+function readConfigFromChildren(children) {
   return React.Children.toArray(children).map(function(_ref) {
-    var _ref$props = _ref.props, markup = _ref$props.markup, regex = _ref$props.regex, displayTransform = _ref$props.displayTransform;
-    return {
+    var props = _ref.props, _props$markup = props.markup, markup = void 0 === _props$markup ? DEFAULT_MENTION_PROPS.markup : _props$markup, _props$regex = props.regex, regex = void 0 === _props$regex ? DEFAULT_MENTION_PROPS.regex : _props$regex, _props$displayTransfo = props.displayTransform, displayTransform = void 0 === _props$displayTransfo ? DEFAULT_MENTION_PROPS.displayTransform : _props$displayTransfo;
+    return _objectSpread(_objectSpread({}, DEFAULT_MENTION_PROPS), {}, {
       markup: markup,
-      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup),
-      displayTransform: displayTransform || function(id, display) {
-        return display || id;
-      }
-    };
+      displayTransform: displayTransform,
+      regex: regex ? coerceCapturingGroups(regex, markup) : markupToRegex(markup)
+    });
   });
-}, coerceCapturingGroups = function(regex, markup) {
+}
+
+var coerceCapturingGroups = function(regex, markup) {
   var numberOfGroups = new RegExp(regex.toString() + "|").exec("").length - 1, numberOfPlaceholders = countPlaceholders(markup);
   return invariant(numberOfGroups === numberOfPlaceholders, "Number of capturing groups in RegExp ".concat(regex.toString(), " (").concat(numberOfGroups, ") does not match the number of placeholders in the markup '").concat(markup, "' (").concat(numberOfPlaceholders, ")")), 
   regex;
@@ -420,27 +473,27 @@ var _toConsumableArray = _interopDefault(require("@babel/runtime/helpers/toConsu
   }, {});
 }, _excluded = [ "style", "className", "classNames" ];
 
-function ownKeys(object, enumerableOnly) {
-  var keys = Object.keys(object);
+function ownKeys$1(e, r) {
+  var t = Object.keys(e);
   if (Object.getOwnPropertySymbols) {
-    var symbols = Object.getOwnPropertySymbols(object);
-    enumerableOnly && (symbols = symbols.filter(function(sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    })), keys.push.apply(keys, symbols);
+    var o = Object.getOwnPropertySymbols(e);
+    r && (o = o.filter(function(r) {
+      return Object.getOwnPropertyDescriptor(e, r).enumerable;
+    })), t.push.apply(t, o);
   }
-  return keys;
+  return t;
 }
 
-function _objectSpread(target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = null != arguments[i] ? arguments[i] : {};
-    i % 2 ? ownKeys(Object(source), !0).forEach(function(key) {
-      _defineProperty(target, key, source[key]);
-    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function(key) {
-      Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+function _objectSpread$1(e) {
+  for (var r = 1; r < arguments.length; r++) {
+    var t = null != arguments[r] ? arguments[r] : {};
+    r % 2 ? ownKeys$1(Object(t), !0).forEach(function(r) {
+      _defineProperty(e, r, t[r]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$1(Object(t)).forEach(function(r) {
+      Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
     });
   }
-  return target;
+  return e;
 }
 
 function createDefaultStyle(defaultStyle, getModifiers) {
@@ -457,7 +510,7 @@ function createDefaultStyle(defaultStyle, getModifiers) {
     }, displayName = ComponentToWrap.displayName || ComponentToWrap.name || "Component";
     return DefaultStyleEnhancer.displayName = "defaultStyle(".concat(displayName, ")"), 
     React__default.forwardRef(function(props, ref) {
-      return DefaultStyleEnhancer(_objectSpread(_objectSpread({}, props), {}, {
+      return DefaultStyleEnhancer(_objectSpread$1(_objectSpread$1({}, props), {}, {
         ref: ref
       }));
     });
@@ -525,7 +578,7 @@ function Highlighter(_ref) {
 Highlighter.propTypes = {
   selectionStart: PropTypes.number,
   selectionEnd: PropTypes.number,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onCaretPositionChange: PropTypes.func.isRequired,
   containerRef: PropTypes.oneOfType([ PropTypes.func, PropTypes.shape({
     current: "undefined" == typeof Element ? PropTypes.any : PropTypes.instanceOf(Element)
@@ -620,7 +673,7 @@ function SuggestionsOverlay(_ref) {
     }
   }, [ focusIndex, scrollFocusedIntoView, ulElement ]);
   var suggestionsToRender, renderSuggestion = function(result, queryInfo, index) {
-    var isFocused = index === focusIndex, childIndex = queryInfo.childIndex, query = queryInfo.query, renderSuggestion = React.Children.toArray(children)[childIndex].props.renderSuggestion;
+    var isFocused = index === focusIndex, childIndex = queryInfo.childIndex, query = queryInfo.query, _Children$toArray$chi = React.Children.toArray(children)[childIndex].props.renderSuggestion, renderSuggestion = void 0 === _Children$toArray$chi ? DEFAULT_MENTION_PROPS.renderSuggestion : _Children$toArray$chi;
     return React__default.createElement(Suggestion$1, {
       style: style("item"),
       key: "".concat(childIndex, "-").concat(getID(result)),
@@ -702,56 +755,45 @@ var styled$2 = createDefaultStyle({
   }
 }), SuggestionsOverlay$1 = styled$2(SuggestionsOverlay);
 
-function ownKeys$1(object, enumerableOnly) {
-  var keys = Object.keys(object);
+function ownKeys$2(e, r) {
+  var t = Object.keys(e);
   if (Object.getOwnPropertySymbols) {
-    var symbols = Object.getOwnPropertySymbols(object);
-    enumerableOnly && (symbols = symbols.filter(function(sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    })), keys.push.apply(keys, symbols);
+    var o = Object.getOwnPropertySymbols(e);
+    r && (o = o.filter(function(r) {
+      return Object.getOwnPropertyDescriptor(e, r).enumerable;
+    })), t.push.apply(t, o);
   }
-  return keys;
+  return t;
 }
 
-function _objectSpread$1(target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = null != arguments[i] ? arguments[i] : {};
-    i % 2 ? ownKeys$1(Object(source), !0).forEach(function(key) {
-      _defineProperty(target, key, source[key]);
-    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys$1(Object(source)).forEach(function(key) {
-      Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+function _objectSpread$2(e) {
+  for (var r = 1; r < arguments.length; r++) {
+    var t = null != arguments[r] ? arguments[r] : {};
+    r % 2 ? ownKeys$2(Object(t), !0).forEach(function(r) {
+      _defineProperty(e, r, t[r]);
+    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys$2(Object(t)).forEach(function(r) {
+      Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
     });
   }
-  return target;
+  return e;
 }
 
-function _createSuper(Derived) {
-  var hasNativeReflectConstruct = _isNativeReflectConstruct();
-  return function() {
-    var result, Super = _getPrototypeOf(Derived);
-    if (hasNativeReflectConstruct) {
-      var NewTarget = _getPrototypeOf(this).constructor;
-      result = Reflect.construct(Super, arguments, NewTarget);
-    } else result = Super.apply(this, arguments);
-    return _possibleConstructorReturn(this, result);
-  };
+function _callSuper(t, o, e) {
+  return o = _getPrototypeOf(o), _possibleConstructorReturn(t, _isNativeReflectConstruct() ? Reflect.construct(o, e || [], _getPrototypeOf(t).constructor) : o.apply(t, e));
 }
 
 function _isNativeReflectConstruct() {
-  if ("undefined" == typeof Reflect || !Reflect.construct) return !1;
-  if (Reflect.construct.sham) return !1;
-  if ("function" == typeof Proxy) return !0;
   try {
-    return Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function() {})), 
-    !0;
-  } catch (e) {
-    return !1;
-  }
+    var t = !Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function() {}));
+  } catch (t) {}
+  return (_isNativeReflectConstruct = function() {
+    return !!t;
+  })();
 }
 
-var makeTriggerRegex = function(trigger) {
-  var options = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {};
-  if (trigger instanceof RegExp) return trigger;
+var makeTriggerRegex = function() {
+  var trigger = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : "@", options = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {};
+  if (null == trigger && (trigger = "@"), trigger instanceof RegExp) return trigger;
   var allowSpaceInQuery = options.allowSpaceInQuery, escapedTriggerChar = escapeRegex(trigger);
   return new RegExp("(?:^|\\s)(".concat(escapedTriggerChar, "([^").concat(allowSpaceInQuery ? "" : "\\s").concat(escapedTriggerChar, "]*))$"));
 }, getDataProvider = function(data, ignoreAccents) {
@@ -766,14 +808,12 @@ var makeTriggerRegex = function(trigger) {
   TAB: 9,
   RETURN: 13,
   ESC: 27,
-  SPACE: 32,
   UP: 38,
   DOWN: 40
 }, isComposing = !1, propTypes = {
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
-  selectLastSuggestionOnSpace: PropTypes.bool,
   forceSuggestionsAboveCursor: PropTypes.bool,
   ignoreAccents: PropTypes.bool,
   a11ySuggestionsListLabel: PropTypes.string,
@@ -787,18 +827,17 @@ var makeTriggerRegex = function(trigger) {
   inputRef: PropTypes.oneOfType([ PropTypes.func, PropTypes.shape({
     current: "undefined" == typeof Element ? PropTypes.any : PropTypes.instanceOf(Element)
   }) ]),
+  inputComponent: PropTypes.oneOfType([ PropTypes.func, PropTypes.elementType ]),
   children: PropTypes.oneOfType([ PropTypes.element, PropTypes.arrayOf(PropTypes.element) ]).isRequired
 }, MentionsInput = function(_React$Component) {
-  _inherits(MentionsInput, _React$Component);
-  var _super = _createSuper(MentionsInput);
   function MentionsInput(_props) {
     var _this;
-    return _classCallCheck(this, MentionsInput), _this = _super.call(this, _props), 
-    _defineProperty(_assertThisInitialized(_this), "setContainerElement", function(el) {
+    return _classCallCheck(this, MentionsInput), _this = _callSuper(this, MentionsInput, [ _props ]), 
+    _defineProperty(_this, "setContainerElement", function(el) {
       _this.containerElement = el;
-    }), _defineProperty(_assertThisInitialized(_this), "getInputProps", function() {
+    }), _defineProperty(_this, "getInputProps", function() {
       var _this$props = _this.props, readOnly = _this$props.readOnly, disabled = _this$props.disabled, style = _this$props.style;
-      return _objectSpread$1(_objectSpread$1(_objectSpread$1(_objectSpread$1({}, omit(_this.props, [ "style", "classNames", "className" ], keys(propTypes))), style("input")), {}, {
+      return _objectSpread$2(_objectSpread$2(_objectSpread$2(_objectSpread$2({}, omit(_this.props, [ "style", "classNames", "className" ], keys(propTypes))), style("input")), {}, {
         value: _this.getPlainText(),
         onScroll: _this.updateHighlighterScroll
       }, !readOnly && !disabled && {
@@ -816,25 +855,27 @@ var makeTriggerRegex = function(trigger) {
         "aria-haspopup": "listbox",
         "aria-activedescendant": getSuggestionHtmlId(_this.uuidSuggestionsOverlay, _this.state.focusIndex)
       });
-    }), _defineProperty(_assertThisInitialized(_this), "renderControl", function() {
-      var _this$props2 = _this.props, singleLine = _this$props2.singleLine, style = _this$props2.style, inputProps = _this.getInputProps();
-      return React__default.createElement("div", style("control"), _this.renderHighlighter(), singleLine ? _this.renderInput(inputProps) : _this.renderTextarea(inputProps));
-    }), _defineProperty(_assertThisInitialized(_this), "renderInput", function(props) {
+    }), _defineProperty(_this, "renderControl", function() {
+      var _this$props2 = _this.props, singleLine = _this$props2.singleLine, style = _this$props2.style, CustomInput = _this$props2.inputComponent, inputProps = _this.getInputProps();
+      return React__default.createElement("div", style("control"), _this.renderHighlighter(), CustomInput ? React__default.createElement(CustomInput, _extends({
+        ref: _this.setInputRef
+      }, inputProps)) : singleLine ? _this.renderInput(inputProps) : _this.renderTextarea(inputProps));
+    }), _defineProperty(_this, "renderInput", function(props) {
       return React__default.createElement("input", _extends({
         type: "text",
         ref: _this.setInputRef
       }, props));
-    }), _defineProperty(_assertThisInitialized(_this), "renderTextarea", function(props) {
+    }), _defineProperty(_this, "renderTextarea", function(props) {
       return React__default.createElement("textarea", _extends({
         ref: _this.setInputRef
       }, props));
-    }), _defineProperty(_assertThisInitialized(_this), "setInputRef", function(el) {
+    }), _defineProperty(_this, "setInputRef", function(el) {
       _this.inputElement = el;
       var inputRef = _this.props.inputRef;
       "function" == typeof inputRef ? inputRef(el) : inputRef && (inputRef.current = el);
-    }), _defineProperty(_assertThisInitialized(_this), "setSuggestionsElement", function(el) {
+    }), _defineProperty(_this, "setSuggestionsElement", function(el) {
       _this.suggestionsElement = el;
-    }), _defineProperty(_assertThisInitialized(_this), "renderSuggestionsOverlay", function() {
+    }), _defineProperty(_this, "renderSuggestionsOverlay", function() {
       if (!isNumber(_this.state.selectionStart)) return null;
       var _this$state$suggestio = _this.state.suggestionsPosition, position = _this$state$suggestio.position, left = _this$state$suggestio.left, top = _this$state$suggestio.top, right = _this$state$suggestio.right, suggestionsNode = React__default.createElement(SuggestionsOverlay$1, {
         id: _this.uuidSuggestionsOverlay,
@@ -857,7 +898,7 @@ var makeTriggerRegex = function(trigger) {
         a11ySuggestionsListLabel: _this.props.a11ySuggestionsListLabel
       }, _this.props.children);
       return _this.props.suggestionsPortalHost ? ReactDOM.createPortal(suggestionsNode, _this.props.suggestionsPortalHost) : suggestionsNode;
-    }), _defineProperty(_assertThisInitialized(_this), "renderHighlighter", function() {
+    }), _defineProperty(_this, "renderHighlighter", function() {
       var _this$state = _this.state, selectionStart = _this$state.selectionStart, selectionEnd = _this$state.selectionEnd, _this$props3 = _this.props, singleLine = _this$props3.singleLine, children = _this$props3.children, value = _this$props3.value, style = _this$props3.style;
       return React__default.createElement(Highlighter$1, {
         containerRef: _this.setHighlighterElement,
@@ -868,19 +909,19 @@ var makeTriggerRegex = function(trigger) {
         selectionEnd: selectionEnd,
         onCaretPositionChange: _this.handleCaretPositionChange
       }, children);
-    }), _defineProperty(_assertThisInitialized(_this), "setHighlighterElement", function(el) {
+    }), _defineProperty(_this, "setHighlighterElement", function(el) {
       _this.highlighterElement = el;
-    }), _defineProperty(_assertThisInitialized(_this), "handleCaretPositionChange", function(position) {
+    }), _defineProperty(_this, "handleCaretPositionChange", function(position) {
       _this.setState({
         caretPosition: position
       });
-    }), _defineProperty(_assertThisInitialized(_this), "getPlainText", function() {
+    }), _defineProperty(_this, "getPlainText", function() {
       return getPlainText(_this.props.value || "", readConfigFromChildren(_this.props.children));
-    }), _defineProperty(_assertThisInitialized(_this), "executeOnChange", function(event) {
+    }), _defineProperty(_this, "executeOnChange", function(event) {
       for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) args[_key - 1] = arguments[_key];
       var _this$props4, _this$props$valueLink;
       return _this.props.onChange ? (_this$props4 = _this.props).onChange.apply(_this$props4, [ event ].concat(args)) : _this.props.valueLink ? (_this$props$valueLink = _this.props.valueLink).requestChange.apply(_this$props$valueLink, [ event.target.value ].concat(args)) : void 0;
-    }), _defineProperty(_assertThisInitialized(_this), "handleChange", function(ev) {
+    }), _defineProperty(_this, "handleChange", function(ev) {
       if ((isComposing = !1, isIE()) && (document.activeElement && document.activeElement.contentDocument || document).activeElement !== ev.target) return;
       var value = _this.props.value || "", config = readConfigFromChildren(_this.props.children), newPlainTextValue = ev.target.value, selectionStartBefore = _this.state.selectionStart;
       null == selectionStartBefore && (selectionStartBefore = ev.target.selectionStart);
@@ -907,7 +948,7 @@ var makeTriggerRegex = function(trigger) {
         }
       };
       _this.executeOnChange(eventMock, newValue, newPlainTextValue, mentions);
-    }), _defineProperty(_assertThisInitialized(_this), "handleSelect", function(ev) {
+    }), _defineProperty(_this, "handleSelect", function(ev) {
       if (_this.setState({
         selectionStart: ev.target.selectionStart,
         selectionEnd: ev.target.selectionEnd
@@ -916,9 +957,8 @@ var makeTriggerRegex = function(trigger) {
         ev.target.selectionStart === ev.target.selectionEnd ? _this.updateMentionsQueries(el.value, ev.target.selectionStart) : _this.clearSuggestions(), 
         _this.updateHighlighterScroll(), _this.props.onSelect(ev);
       }
-    }), _defineProperty(_assertThisInitialized(_this), "handleKeyDown", function(ev) {
-      var suggestionsCount = countSuggestions(_this.state.suggestions);
-      if (0 !== suggestionsCount && _this.suggestionsElement) switch (Object.values(KEY).indexOf(ev.keyCode) >= 0 && ev.keyCode !== KEY.SPACE && (ev.preventDefault(), 
+    }), _defineProperty(_this, "handleKeyDown", function(ev) {
+      if (0 !== countSuggestions(_this.state.suggestions) && _this.suggestionsElement) switch (Object.values(KEY).indexOf(ev.keyCode) >= 0 && (ev.preventDefault(), 
       ev.stopPropagation()), ev.keyCode) {
        case KEY.ESC:
         return void _this.clearSuggestions();
@@ -933,19 +973,16 @@ var makeTriggerRegex = function(trigger) {
        case KEY.TAB:
         return void _this.selectFocused();
 
-       case KEY.SPACE:
-        return void (1 === suggestionsCount && _this.props.selectLastSuggestionOnSpace && _this.selectFocused());
-
        default:
         return;
       } else _this.props.onKeyDown(ev);
-    }), _defineProperty(_assertThisInitialized(_this), "shiftFocus", function(delta) {
+    }), _defineProperty(_this, "shiftFocus", function(delta) {
       var suggestionsCount = countSuggestions(_this.state.suggestions);
       _this.setState({
         focusIndex: (suggestionsCount + _this.state.focusIndex + delta) % suggestionsCount,
         scrollFocusedIntoView: !0
       });
-    }), _defineProperty(_assertThisInitialized(_this), "selectFocused", function() {
+    }), _defineProperty(_this, "selectFocused", function() {
       var _this$state2 = _this.state, suggestions = _this$state2.suggestions, focusIndex = _this$state2.focusIndex, _Object$values$reduce = Object.values(suggestions).reduce(function(acc, _ref) {
         var results = _ref.results, queryInfo = _ref.queryInfo;
         return [].concat(_toConsumableArray(acc), _toConsumableArray(results.map(function(result) {
@@ -958,7 +995,7 @@ var makeTriggerRegex = function(trigger) {
       _this.addMention(result, queryInfo), _this.setState({
         focusIndex: 0
       });
-    }), _defineProperty(_assertThisInitialized(_this), "handleBlur", function(ev) {
+    }), _defineProperty(_this, "handleBlur", function(ev) {
       var clickedSuggestion = _this._suggestionsMouseDown;
       _this._suggestionsMouseDown = !1, clickedSuggestion || _this.setState({
         selectionStart: null,
@@ -966,14 +1003,14 @@ var makeTriggerRegex = function(trigger) {
       }), window.setTimeout(function() {
         _this.updateHighlighterScroll();
       }, 1), _this.props.onBlur(ev, clickedSuggestion);
-    }), _defineProperty(_assertThisInitialized(_this), "handleSuggestionsMouseDown", function(ev) {
+    }), _defineProperty(_this, "handleSuggestionsMouseDown", function(ev) {
       _this._suggestionsMouseDown = !0;
-    }), _defineProperty(_assertThisInitialized(_this), "handleSuggestionsMouseEnter", function(focusIndex) {
+    }), _defineProperty(_this, "handleSuggestionsMouseEnter", function(focusIndex) {
       _this.setState({
         focusIndex: focusIndex,
         scrollFocusedIntoView: !1
       });
-    }), _defineProperty(_assertThisInitialized(_this), "updateSuggestionsPosition", function() {
+    }), _defineProperty(_this, "updateSuggestionsPosition", function() {
       var caretPosition = _this.state.caretPosition, _this$props5 = _this.props, suggestionsPortalHost = _this$props5.suggestionsPortalHost, allowSuggestionsAboveCursor = _this$props5.allowSuggestionsAboveCursor, forceSuggestionsAboveCursor = _this$props5.forceSuggestionsAboveCursor;
       if (caretPosition && _this.suggestionsElement) {
         var suggestions = _this.suggestionsElement, highlighter = _this.highlighterElement, caretOffsetParentRect = highlighter.getBoundingClientRect(), caretHeight = getComputedStyleLengthProp(highlighter, "font-size"), viewportRelative = {
@@ -1000,15 +1037,15 @@ var makeTriggerRegex = function(trigger) {
           });
         }
       }
-    }), _defineProperty(_assertThisInitialized(_this), "updateHighlighterScroll", function() {
+    }), _defineProperty(_this, "updateHighlighterScroll", function() {
       var input = _this.inputElement, highlighter = _this.highlighterElement;
       input && highlighter && (highlighter.scrollLeft = input.scrollLeft, highlighter.scrollTop = input.scrollTop, 
       highlighter.height = input.height);
-    }), _defineProperty(_assertThisInitialized(_this), "handleCompositionStart", function() {
+    }), _defineProperty(_this, "handleCompositionStart", function() {
       isComposing = !0;
-    }), _defineProperty(_assertThisInitialized(_this), "handleCompositionEnd", function() {
+    }), _defineProperty(_this, "handleCompositionEnd", function() {
       isComposing = !1;
-    }), _defineProperty(_assertThisInitialized(_this), "setSelection", function(selectionStart, selectionEnd) {
+    }), _defineProperty(_this, "setSelection", function(selectionStart, selectionEnd) {
       if (null !== selectionStart && null !== selectionEnd) {
         var el = _this.inputElement;
         if (el.setSelectionRange) el.setSelectionRange(selectionStart, selectionEnd); else if (el.createTextRange) {
@@ -1017,7 +1054,7 @@ var makeTriggerRegex = function(trigger) {
           range.select();
         }
       }
-    }), _defineProperty(_assertThisInitialized(_this), "updateMentionsQueries", function(plainTextValue, caretPosition) {
+    }), _defineProperty(_this, "updateMentionsQueries", function(plainTextValue, caretPosition) {
       _this._queryId++, _this.suggestions = {}, _this.setState({
         suggestions: {}
       });
@@ -1026,7 +1063,7 @@ var makeTriggerRegex = function(trigger) {
         var substringStartIndex = getEndOfLastMention(value.substring(0, positionInValue), config), substring = plainTextValue.substring(substringStartIndex, caretPosition);
         React__default.Children.forEach(children, function(child, childIndex) {
           if (child) {
-            var regex = makeTriggerRegex(child.props.trigger, _this.props), match = substring.match(regex);
+            var trigger = child.props.trigger || "@", regex = makeTriggerRegex(trigger, _this.props), match = substring.match(regex);
             if (match) {
               var querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index);
               _this.queryData(match[2], childIndex, querySequenceStart, querySequenceStart + match[1].length, plainTextValue);
@@ -1034,17 +1071,17 @@ var makeTriggerRegex = function(trigger) {
           }
         });
       }
-    }), _defineProperty(_assertThisInitialized(_this), "clearSuggestions", function() {
+    }), _defineProperty(_this, "clearSuggestions", function() {
       _this._queryId++, _this.suggestions = {}, _this.setState({
         suggestions: {},
         focusIndex: 0
       });
-    }), _defineProperty(_assertThisInitialized(_this), "queryData", function(query, childIndex, querySequenceStart, querySequenceEnd, plainTextValue) {
+    }), _defineProperty(_this, "queryData", function(query, childIndex, querySequenceStart, querySequenceEnd, plainTextValue) {
       var _this$props6 = _this.props, children = _this$props6.children, ignoreAccents = _this$props6.ignoreAccents, mentionChild = React.Children.toArray(children)[childIndex], syncResult = getDataProvider(mentionChild.props.data, ignoreAccents)(query, _this.updateSuggestions.bind(null, _this._queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue));
       syncResult instanceof Array && _this.updateSuggestions(_this._queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, syncResult);
-    }), _defineProperty(_assertThisInitialized(_this), "updateSuggestions", function(queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, results) {
+    }), _defineProperty(_this, "updateSuggestions", function(queryId, childIndex, query, querySequenceStart, querySequenceEnd, plainTextValue, results) {
       if (queryId === _this._queryId) {
-        _this.suggestions = _objectSpread$1(_objectSpread$1({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
+        _this.suggestions = _objectSpread$2(_objectSpread$2({}, _this.suggestions), {}, _defineProperty({}, childIndex, {
           queryInfo: {
             childIndex: childIndex,
             query: query,
@@ -1060,8 +1097,8 @@ var makeTriggerRegex = function(trigger) {
           focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex
         });
       }
-    }), _defineProperty(_assertThisInitialized(_this), "addMention", function(_ref2, _ref3) {
-      var id = _ref2.id, display = _ref2.display, childIndex = _ref3.childIndex, querySequenceStart = _ref3.querySequenceStart, querySequenceEnd = _ref3.querySequenceEnd, plainTextValue = _ref3.plainTextValue, value = _this.props.value || "", config = readConfigFromChildren(_this.props.children), _mentionsChild$props = React.Children.toArray(_this.props.children)[childIndex].props, markup = _mentionsChild$props.markup, displayTransform = _mentionsChild$props.displayTransform, appendSpaceOnAdd = _mentionsChild$props.appendSpaceOnAdd, onAdd = _mentionsChild$props.onAdd, start = mapPlainTextIndex(value, config, querySequenceStart, "START"), end = start + querySequenceEnd - querySequenceStart, insert = makeMentionsMarkup(markup, id, display);
+    }), _defineProperty(_this, "addMention", function(_ref2, _ref3) {
+      var id = _ref2.id, display = _ref2.display, childIndex = _ref3.childIndex, querySequenceStart = _ref3.querySequenceStart, querySequenceEnd = _ref3.querySequenceEnd, plainTextValue = _ref3.plainTextValue, value = _this.props.value || "", config = readConfigFromChildren(_this.props.children), _mentionsChild$props = React.Children.toArray(_this.props.children)[childIndex].props, _mentionsChild$props$ = _mentionsChild$props.markup, markup = void 0 === _mentionsChild$props$ ? DEFAULT_MENTION_PROPS.markup : _mentionsChild$props$, _mentionsChild$props$2 = _mentionsChild$props.displayTransform, displayTransform = void 0 === _mentionsChild$props$2 ? DEFAULT_MENTION_PROPS.displayTransform : _mentionsChild$props$2, _mentionsChild$props$3 = _mentionsChild$props.appendSpaceOnAdd, appendSpaceOnAdd = void 0 === _mentionsChild$props$3 ? DEFAULT_MENTION_PROPS.appendSpaceOnAdd : _mentionsChild$props$3, _mentionsChild$props$4 = _mentionsChild$props.onAdd, onAdd = void 0 === _mentionsChild$props$4 ? DEFAULT_MENTION_PROPS.onAdd : _mentionsChild$props$4, start = mapPlainTextIndex(value, config, querySequenceStart, "START"), end = start + querySequenceEnd - querySequenceStart, insert = makeMentionsMarkup(markup, id, display);
       appendSpaceOnAdd && (insert += " ");
       var newValue = spliceString(value, start, end, insert);
       _this.inputElement.focus();
@@ -1080,17 +1117,16 @@ var makeTriggerRegex = function(trigger) {
       }, mentions = getMentions(newValue, config), newPlainTextValue = spliceString(plainTextValue, querySequenceStart, querySequenceEnd, displayValue);
       _this.executeOnChange(eventMock, newValue, newPlainTextValue, mentions), onAdd && onAdd(id, display, start, end), 
       _this.clearSuggestions();
-    }), _defineProperty(_assertThisInitialized(_this), "isLoading", function() {
+    }), _defineProperty(_this, "isLoading", function() {
       var isLoading = !1;
       return React__default.Children.forEach(_this.props.children, function(child) {
         isLoading = isLoading || child && child.props.isLoading;
       }), isLoading;
-    }), _defineProperty(_assertThisInitialized(_this), "isOpened", function() {
+    }), _defineProperty(_this, "isOpened", function() {
       return isNumber(_this.state.selectionStart) && (0 !== countSuggestions(_this.state.suggestions) || _this.isLoading());
-    }), _defineProperty(_assertThisInitialized(_this), "_queryId", 0), _this.suggestions = {}, 
-    _this.uuidSuggestionsOverlay = Math.random().toString(16).substring(2), _this.handleCopy = _this.handleCopy.bind(_assertThisInitialized(_this)), 
-    _this.handleCut = _this.handleCut.bind(_assertThisInitialized(_this)), _this.handlePaste = _this.handlePaste.bind(_assertThisInitialized(_this)), 
-    _this.state = {
+    }), _defineProperty(_this, "_queryId", 0), _this.suggestions = {}, _this.uuidSuggestionsOverlay = Math.random().toString(16).substring(2), 
+    _this.handleCopy = _this.handleCopy.bind(_this), _this.handleCut = _this.handleCut.bind(_this), 
+    _this.handlePaste = _this.handlePaste.bind(_this), _this.state = {
       focusIndex: 0,
       selectionStart: null,
       selectionEnd: null,
@@ -1100,7 +1136,7 @@ var makeTriggerRegex = function(trigger) {
       setSelectionAfterHandlePaste: !1
     }, _this;
   }
-  return _createClass(MentionsInput, [ {
+  return _inherits(MentionsInput, _React$Component), _createClass(MentionsInput, [ {
     key: "componentDidMount",
     value: function() {
       document.addEventListener("copy", this.handleCopy), document.addEventListener("cut", this.handleCut), 
@@ -1134,8 +1170,8 @@ var makeTriggerRegex = function(trigger) {
     value: function(event) {
       if (event.target === this.inputElement && this.supportsClipboardActions(event)) {
         event.preventDefault();
-        var _this$state3 = this.state, selectionStart = _this$state3.selectionStart, selectionEnd = _this$state3.selectionEnd, _this$props7 = this.props, value = _this$props7.value, children = _this$props7.children, config = readConfigFromChildren(children), markupStartIndex = mapPlainTextIndex(value, config, selectionStart, "START"), markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, "END"), pastedMentions = event.clipboardData.getData("text/react-mentions"), pastedData = event.clipboardData.getData("text/plain"), newValue = spliceString(value, markupStartIndex, markupEndIndex, pastedMentions || pastedData).replace(/\r/g, ""), newPlainTextValue = getPlainText(newValue, config), eventMock = {
-          target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+        var _this$state3 = this.state, selectionStart = _this$state3.selectionStart, selectionEnd = _this$state3.selectionEnd, _this$props7 = this.props, value = _this$props7.value, config = readConfigFromChildren(_this$props7.children), markupStartIndex = mapPlainTextIndex(value, config, selectionStart, "START"), markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, "END"), pastedMentions = event.clipboardData.getData("text/react-mentions"), pastedData = event.clipboardData.getData("text/plain"), newValue = spliceString(value, markupStartIndex, markupEndIndex, pastedMentions || pastedData).replace(/\r/g, ""), newPlainTextValue = getPlainText(newValue, config), eventMock = {
+          target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
             value: newValue
           })
         };
@@ -1172,17 +1208,17 @@ var makeTriggerRegex = function(trigger) {
       if (event.target === this.inputElement && this.supportsClipboardActions(event)) {
         event.preventDefault(), this.saveSelectionToClipboard(event);
         var _this$state4 = this.state, selectionStart = _this$state4.selectionStart, selectionEnd = _this$state4.selectionEnd, _this$props9 = this.props, children = _this$props9.children, value = _this$props9.value, config = readConfigFromChildren(children), markupStartIndex = mapPlainTextIndex(value, config, selectionStart, "START"), markupEndIndex = mapPlainTextIndex(value, config, selectionEnd, "END"), newValue = [ value.slice(0, markupStartIndex), value.slice(markupEndIndex) ].join(""), newPlainTextValue = getPlainText(newValue, config), eventMock = {
-          target: _objectSpread$1(_objectSpread$1({}, event.target), {}, {
+          target: _objectSpread$2(_objectSpread$2({}, event.target), {}, {
             value: newPlainTextValue
           })
         };
         this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(value, config));
       }
     }
-  } ]), MentionsInput;
+  } ]);
 }(React__default.Component);
 
-_defineProperty(MentionsInput, "propTypes", propTypes), _defineProperty(MentionsInput, "defaultProps", {
+_defineProperty(MentionsInput, "defaultProps", {
   ignoreAccents: !1,
   singleLine: !1,
   allowSuggestionsAboveCursor: !1,
@@ -1217,7 +1253,7 @@ var getComputedStyleLengthProp = function(forElement, propertyName) {
     letterSpacing: "inherit"
   },
   "&multiLine": {
-    input: _objectSpread$1({
+    input: _objectSpread$2({
       height: "100%",
       bottom: 0,
       overflow: "hidden",
@@ -1233,39 +1269,6 @@ var getComputedStyleLengthProp = function(forElement, propertyName) {
     "&singleLine": singleLine,
     "&multiLine": !singleLine
   };
-}), MentionsInput$1 = styled$3(MentionsInput), defaultStyle = {
-  fontWeight: "inherit"
-}, Mention = function(_ref) {
-  var display = _ref.display, style = _ref.style, className = _ref.className, classNames = _ref.classNames, styles = useStyles__default(defaultStyle, {
-    style: style,
-    className: className,
-    classNames: classNames
-  });
-  return React__default.createElement("strong", styles, display);
-};
+}), MentionsInput$1 = styled$3(MentionsInput);
 
-Mention.propTypes = {
-  onAdd: PropTypes.func,
-  onRemove: PropTypes.func,
-  renderSuggestion: PropTypes.func,
-  trigger: PropTypes.oneOfType([ PropTypes.string, PropTypes.instanceOf(RegExp) ]),
-  markup: PropTypes.string,
-  displayTransform: PropTypes.func,
-  allowSpaceInQuery: PropTypes.bool,
-  isLoading: PropTypes.bool
-}, Mention.defaultProps = {
-  trigger: "@",
-  markup: "@[__display__](__id__)",
-  displayTransform: function(id, display) {
-    return display || id;
-  },
-  onAdd: function() {
-    return null;
-  },
-  onRemove: function() {
-    return null;
-  },
-  renderSuggestion: null,
-  isLoading: !1,
-  appendSpaceOnAdd: !1
-}, exports.Mention = Mention, exports.MentionsInput = MentionsInput$1;
+exports.Mention = Mention, exports.MentionsInput = MentionsInput$1;

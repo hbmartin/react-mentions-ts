@@ -1,4 +1,7 @@
 import React, { Children } from 'react'
+import ReactDOM from 'react-dom'
+import PropTypes from 'prop-types'
+
 import {
   applyChangeToValue,
   countSuggestions,
@@ -18,14 +21,15 @@ import {
   omit,
   getSuggestionHtmlId,
 } from './utils'
-
 import Highlighter from './Highlighter'
-import PropTypes from 'prop-types'
-import ReactDOM from 'react-dom'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import { defaultStyle } from './utils'
+import { DEFAULT_MENTION_PROPS } from './Mention'
 
-export const makeTriggerRegex = function(trigger, options = {}) {
+export const makeTriggerRegex = function(trigger = '@', options = {}) {
+  if (trigger == null) {
+    trigger = '@'
+  }
   if (trigger instanceof RegExp) {
     return trigger
   } else {
@@ -65,11 +69,10 @@ const KEY = { TAB: 9, RETURN: 13, ESC: 27, SPACE: 32, UP: 38, DOWN: 40 }
 
 let isComposing = false
 
+/**
+ * TODO: convert to interface/type when TS is available
+ */
 const propTypes = {
-  /**
-   * If set to `true` a regular text input element will be rendered
-   * instead of a textarea
-   */
   singleLine: PropTypes.bool,
   allowSpaceInQuery: PropTypes.bool,
   allowSuggestionsAboveCursor: PropTypes.bool,
@@ -97,6 +100,7 @@ const propTypes = {
           : PropTypes.instanceOf(Element),
     }),
   ]),
+  inputComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.elementType]),
 
   children: PropTypes.oneOfType([
     PropTypes.element,
@@ -105,7 +109,6 @@ const propTypes = {
 }
 
 class MentionsInput extends React.Component {
-  static propTypes = propTypes
 
   static defaultProps = {
     ignoreAccents: false,
@@ -230,15 +233,18 @@ class MentionsInput extends React.Component {
   }
 
   renderControl = () => {
-    let { singleLine, style } = this.props
+    let { singleLine, style, inputComponent: CustomInput } = this.props
     let inputProps = this.getInputProps()
 
     return (
       <div {...style('control')}>
         {this.renderHighlighter()}
-        {singleLine
-          ? this.renderInput(inputProps)
-          : this.renderTextarea(inputProps)}
+        {CustomInput
+          ? <CustomInput ref={this.setInputRef} {...inputProps} />
+          : singleLine
+            ? this.renderInput(inputProps)
+            : this.renderTextarea(inputProps)
+        }
       </div>
     )
   }
@@ -902,7 +908,8 @@ class MentionsInput extends React.Component {
         return
       }
 
-      const regex = makeTriggerRegex(child.props.trigger, this.props)
+      const trigger = child.props.trigger || '@'
+      const regex = makeTriggerRegex(trigger, this.props)
       const match = substring.match(regex)
       if (match) {
         const querySequenceStart =
@@ -1011,10 +1018,10 @@ class MentionsInput extends React.Component {
     const config = readConfigFromChildren(this.props.children)
     const mentionsChild = Children.toArray(this.props.children)[childIndex]
     const {
-      markup,
-      displayTransform,
-      appendSpaceOnAdd,
-      onAdd,
+      markup = DEFAULT_MENTION_PROPS.markup,
+      displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
+      appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
+      onAdd = DEFAULT_MENTION_PROPS.onAdd,
     } = mentionsChild.props
 
     const start = mapPlainTextIndex(value, config, querySequenceStart, 'START')

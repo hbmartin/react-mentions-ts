@@ -1,28 +1,10 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import useStyles from 'substyle'
 
-const defaultStyle = {
-  fontWeight: 'inherit',
-}
-
-const Mention = ({ display, style, className, classNames }) => {
-  const styles = useStyles(defaultStyle, { style, className, classNames })
-  return <strong {...styles}>{display}</strong>
-}
+/**
+ * TODO: convert to interface/ty[e when TS is available
 
 Mention.propTypes = {
-  /**
-   * Called when a new mention is added in the input
-   *
-   * Example:
-   *
-   * ```js
-   * function(id, display) {
-   *   console.log("user " + display + " was mentioned!");
-   * }
-   * ```
-   */
   onAdd: PropTypes.func,
   onRemove: PropTypes.func,
 
@@ -34,25 +16,43 @@ Mention.propTypes = {
   ]),
   markup: PropTypes.string,
   displayTransform: PropTypes.func,
-  /**
-   * If set to `true` spaces will not interrupt matching suggestions
-   */
   allowSpaceInQuery: PropTypes.bool,
 
   isLoading: PropTypes.bool,
 }
+*/
 
-Mention.defaultProps = {
+
+export const DEFAULT_MENTION_PROPS = {
   trigger: '@',
   markup: '@[__display__](__id__)',
-  displayTransform: function(id, display) {
-    return display || id
-  },
   onAdd: () => null,
   onRemove: () => null,
+  displayTransform: (id, display) => display || id,
   renderSuggestion: null,
   isLoading: false,
   appendSpaceOnAdd: false,
 }
 
-export default Mention
+const defaultStyle = {
+  fontWeight: 'inherit',
+}
+
+export default function Mention({
+  display,
+  style,
+  className,
+  classNames,
+  trigger = DEFAULT_MENTION_PROPS.trigger,
+  markup = DEFAULT_MENTION_PROPS.markup,
+  displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
+  onAdd = DEFAULT_MENTION_PROPS.onAdd,
+  onRemove = DEFAULT_MENTION_PROPS.onRemove,
+  renderSuggestion = DEFAULT_MENTION_PROPS.renderSuggestion,
+  isLoading = DEFAULT_MENTION_PROPS.isLoading,
+  appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
+}) {
+  const styles = useStyles(defaultStyle, { style, className, classNames })
+
+  return <strong {...styles}>{display}</strong>
+}

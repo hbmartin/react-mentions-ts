@@ -1,11 +1,7 @@
-/* global jasmine */
-import 'jest-enzyme'
+import '@testing-library/jest-dom'
 
-import { configure } from 'enzyme'
-import Adapter from 'enzyme-adapter-react-16'
-// import jasmineReporters from 'jasmine-reporters'
-
-configure({ adapter: new Adapter() })
+// No additional setup needed for React Testing Library
+// jest-dom provides additional matchers like toBeInTheDocument(), toHaveClass(), etc.
 
 // jasmine.VERBOSE = true
 
