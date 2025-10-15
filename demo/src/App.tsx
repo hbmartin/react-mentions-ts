@@ -3,14 +3,14 @@ import Examples from './examples'
 
 const App: React.FC = () => (
   <div className="demo">
-    <h1>react-mentions</h1>
+    <h1>react-mentions-ts</h1>
     <p>
       <span role="img" aria-label="hooray">
         🙌
       </span>
-      &nbsp; brought to you by Signavio, docs and code on GitHub:{' '}
-      <a href="https://github.com/signavio/react-mentions" target="_blank" rel="noreferrer">
-        https://github.com/signavio/react-mentions
+      &nbsp; brought to you by HM & Signavio, docs and code on GitHub:{' '}
+      <a href="https://github.com/hbmartin/react-mentions-ts" target="_blank" rel="noreferrer">
+        https://github.com/hbmartin/react-mentions-ts
       </a>{' '}
       (BSD license)
     </p>
