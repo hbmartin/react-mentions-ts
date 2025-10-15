@@ -22,6 +22,7 @@
 	"scripts": {
 		"clean": "rimraf dist",
 		"build": "yarn clean && tsc --build tsconfig.build.json && node ./scripts/postbuild.cjs",
+		"build:demo": "vite build --config demo/vite.config.ts",
 		"typecheck": "tsc --project tsconfig.build.esm.json --noEmit",
 		"format": "prettier --write \"{src,test,demo/src}/**/*.{ts,tsx}\"",
 		"lint": "eslint .",
@@ -36,7 +37,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https@github.com:hbmartin/react-mentions-ts.git"
+		"url": "git+https://github.com/hbmartin/react-mentions-ts.git"
 	},
 	"keywords": [
 		"react",
@@ -83,12 +84,14 @@
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
 		"@vitejs/plugin-react": "^5.0.4",
-		"eslint": "^9.11.1",
+		"eslint": "^9.37.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-code-complete": "^1.1.2",
 		"eslint-plugin-import": "^2.31.0",
+		"eslint-plugin-jest": "^29.0.1",
 		"eslint-plugin-jsx-a11y": "^6.9.0",
 		"eslint-plugin-prettier": "^5.5.4",
+		"eslint-plugin-promise": "^7.2.1",
 		"eslint-plugin-react": "^7.37.1",
 		"eslint-plugin-react-hooks": "^7.0.0",
 		"eslint-plugin-react-refresh": "^0.4.24",
@@ -100,6 +103,7 @@
 		"jest-environment-jsdom": "^30.2.0",
 		"jiti": "^2.6.1",
 		"prettier": "^3.3.3",
+		"publint": "^0.3.14",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"rimraf": "^6.0.1",
