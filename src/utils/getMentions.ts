@@ -11,7 +11,7 @@ const getMentions = (
 		config,
 		(_match, index, plainTextIndex, id, display, childIndex) => {
 			mentions.push({
-				id: id,
+				id: String(id),
 				display,
 				childIndex,
 				index,

@@ -1,4 +1,4 @@
-import React, { Children, useEffect, useState } from "react";
+import React, { Children, useLayoutEffect, useMemo, useState } from "react";
 import { inline } from "substyle";
 import { defaultStyle } from "./utils";
 import { getSuggestionHtmlId } from "./utils";
@@ -8,6 +8,7 @@ import { DEFAULT_MENTION_PROPS } from "./Mention";
 import type {
 	ClassNamesProp,
 	MentionComponentProps,
+	MentionRenderSuggestion,
 	QueryInfo,
 	StyleOverride,
 	Substyle,
@@ -52,7 +53,7 @@ function SuggestionsOverlay({
 	left,
 	right,
 	top,
-	scrollFocusedIntoView,
+	scrollFocusedIntoView = true,
 	isLoading,
 	isOpened,
 	onSelect,
@@ -65,12 +66,26 @@ function SuggestionsOverlay({
 	onMouseEnter,
 }: SuggestionsOverlayProps) {
 	const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null);
+	const childRenderSuggestions: (MentionRenderSuggestion | null)[] = useMemo(
+		() =>
+			Children.toArray(children).map((child) =>
+				typeof child === "object" &&
+				"props" in child &&
+				typeof child.props === "object" &&
+				child.props !== null &&
+				"renderSuggestion" in child.props &&
+				typeof child.props.renderSuggestion === "function"
+					? (child.props.renderSuggestion as MentionRenderSuggestion)
+					: null,
+			),
+		[children],
+	);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (
 			!ulElement ||
 			ulElement.offsetHeight >= ulElement.scrollHeight ||
-			!scrollFocusedIntoView
+			scrollFocusedIntoView === false
 		) {
 			return;
 		}
@@ -118,13 +133,10 @@ function SuggestionsOverlay({
 	) => {
 		const isFocused = index === focusIndex;
 		const { childIndex, query } = queryInfo;
-		const child = Children.toArray(children)[
-			childIndex
-		] as React.ReactElement<MentionComponentProps>;
-		const {
-			renderSuggestion:
-				renderSuggestionFromChild = DEFAULT_MENTION_PROPS.renderSuggestion,
-		} = child.props;
+
+		const renderSuggestionFromChild =
+			childRenderSuggestions[childIndex] ??
+			DEFAULT_MENTION_PROPS.renderSuggestion;
 
 		return (
 			<Suggestion
@@ -153,12 +165,13 @@ function SuggestionsOverlay({
 				{...style("list")}
 			>
 				{Object.values(suggestions).reduce<React.ReactNode[]>(
-					(accResults, { results, queryInfo }) => [
-						...accResults,
-						...results.map((result, index) =>
-							renderSuggestion(result, queryInfo, accResults.length + index),
-						),
-					],
+					(acc, { results, queryInfo }) => {
+						const start = acc.length;
+						results.forEach((result, i) => {
+							acc.push(renderSuggestion(result, queryInfo, start + i));
+						});
+						return acc;
+					},
 					[],
 				)}
 			</ul>

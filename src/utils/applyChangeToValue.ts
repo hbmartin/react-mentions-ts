@@ -61,12 +61,9 @@ const applyChangeToValue = (
 		selectionEndBefore === selectionEndAfter &&
 		oldPlainTextValue.length === plainTextValue.length
 	) {
-		selectionStartBefore -= 1;
-		selectionEndBefore -= 1;
 		// TODO: write tests to determine if this should instead be:
-		// Prevent selectionStartBefore and selectionEndBefore from becoming negative by
-		// selectionStartBefore = Math.max(0, selectionStartBefore - 1)
-		// selectionEndBefore = Math.max(0, selectionEndBefore - 1)
+		selectionStartBefore = Math.max(0, selectionStartBefore - 1);
+		selectionEndBefore = Math.max(0, selectionEndBefore - 1);
 	}
 
 	// extract the insertion from the new plain text value

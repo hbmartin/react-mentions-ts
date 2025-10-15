@@ -1,11 +1,12 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - master
+  release:
+    types: [published]
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   release:
@@ -15,14 +16,27 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
 
-      - name: Setup Node.js 12.x
-        uses: actions/setup-node@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 12.x
-
+          node-version: 20.x
+          cache: 'yarn'
+          cache-dependency-path: yarn.lock
+      - name: Upgrade npm to latest
+        run: |
+          npm -v
+          npm config set prefix ~/.local
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          npm install -g npm@latest np
+          hash -r
+          npm -v
       - name: Install Dependencies
         run: yarn
-
+      - name: Lint
+        run: yarn lint
+      - name: Run tests
+        run: yarn test
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1

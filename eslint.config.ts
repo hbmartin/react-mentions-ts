@@ -55,11 +55,7 @@ export default defineConfig([
 				React: "readonly",
 			},
 			parserOptions: {
-				project: [
-					"./tsconfig.app.json",
-					"./tsconfig.node.json",
-					"./tsconfig.storybook.json",
-				],
+				project: ["./tsconfig.json", "./tsconfig.node.json"],
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
@@ -111,16 +107,6 @@ export default defineConfig([
 							pattern: "react",
 							group: "builtin",
 							position: "before",
-						},
-						{
-							pattern: "@ai-sdk/**",
-							group: "external",
-							position: "after",
-						},
-						{
-							pattern: "ai",
-							group: "external",
-							position: "after",
 						},
 						{
 							pattern: "../types",
@@ -235,15 +221,6 @@ export default defineConfig([
 		},
 	},
 	{
-		// AI provider rules
-		files: ["src/lib/providers/**/*.ts"],
-		rules: {
-			"code-complete/no-magic-numbers-except-zero-one": "off",
-			"@typescript-eslint/consistent-type-imports": "off",
-			"no-duplicate-imports": "off",
-		},
-	},
-	{
 		// Test files - more relaxed rules
 		files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
 		languageOptions: {
@@ -275,33 +252,6 @@ export default defineConfig([
 			"@typescript-eslint/no-unsafe-member-access": "off",
 			"code-complete/no-boolean-params": "off",
 			"@typescript-eslint/no-unsafe-argument": "off",
-		},
-	},
-	{
-		// Storybook files - disable some rules
-		files: ["stories/**/*.{ts,tsx}"],
-		extends: [
-			js.configs.recommended,
-			...tsConfigs.recommended, // Use non-type-checked config for stories
-			reactRefresh.configs.vite,
-			eslintPluginUnicorn.configs.recommended,
-			eslintPluginPrettierRecommended,
-		],
-		languageOptions: {
-			parserOptions: {
-				project: "./tsconfig.storybook.json",
-				tsconfigRootDir: import.meta.dirname,
-			},
-		},
-		rules: {
-			"@typescript-eslint/no-var-requires": "off",
-			"unicorn/prefer-module": "off",
-			"unicorn/prevent-abbreviations": "off",
-			"unicorn/filename-case": "off",
-			"react-hooks/rules-of-hooks": "off",
-			"import/no-default-export": "off",
-			"@typescript-eslint/no-unused-vars": "off", // Use unused-imports plugin
-			"@typescript-eslint/no-unsafe-assignment": "off",
 		},
 	},
 ]);
