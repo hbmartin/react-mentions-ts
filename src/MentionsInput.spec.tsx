@@ -1,8 +1,7 @@
-import { Mention, MentionsInput } from './index'
-
 import React from 'react'
-import { makeTriggerRegex } from './MentionsInput'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { makeTriggerRegex } from './MentionsInput'
+import { Mention, MentionsInput } from './index'
 
 const data = [
   { id: 'first', value: 'First entry' },
@@ -26,7 +25,7 @@ describe('MentionsInput', () => {
 
   it('should render a regular input when singleLine is set to true.', () => {
     render(
-      <MentionsInput value="" singleLine={true}>
+      <MentionsInput value="" singleLine>
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
@@ -37,12 +36,8 @@ describe('MentionsInput', () => {
     expect(input.tagName).toBe('INPUT')
   })
 
-  it.todo(
-    'should show a list of suggestions once the trigger key has been entered.'
-  )
-  it.todo(
-    'should be possible to navigate through the suggestions with the up and down arrows.'
-  )
+  it.todo('should show a list of suggestions once the trigger key has been entered.')
+  it.todo('should be possible to navigate through the suggestions with the up and down arrows.')
   it.todo('should be possible to select a suggestion with enter.')
   it.todo('should be possible to close the suggestions with esc.')
 
@@ -83,9 +78,7 @@ describe('MentionsInput', () => {
           },
         }}
         className="mi"
-        value={
-          'multiple lines causing \n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n the textarea to scroll'
-        }
+        value={'multiple lines causing \n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n the textarea to scroll'}
       >
         <Mention trigger="@" data={data} />
       </MentionsInput>
@@ -105,14 +98,10 @@ describe('MentionsInput', () => {
     // Create a portal container
     const portalContainer = document.createElement('div')
     portalContainer.id = 'portalDiv'
-    document.body.appendChild(portalContainer)
+    document.body.append(portalContainer)
 
     render(
-      <MentionsInput
-        className={'testClass'}
-        value={'@'}
-        suggestionsPortalHost={portalContainer}
-      >
+      <MentionsInput className="testClass" value="@" suggestionsPortalHost={portalContainer}>
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
@@ -126,14 +115,12 @@ describe('MentionsInput', () => {
 
     // Check that suggestions are rendered in the portal
     await waitFor(() => {
-      const suggestionsNode = portalContainer.querySelector(
-        '.testClass__suggestions'
-      )
+      const suggestionsNode = portalContainer.querySelector('.testClass__suggestions')
       expect(suggestionsNode).toBeTruthy()
     })
 
     // Cleanup
-    document.body.removeChild(portalContainer)
+    portalContainer.remove()
   })
 
   it('should accept a custom regex attribute', () => {
@@ -150,7 +137,7 @@ describe('MentionsInput', () => {
           markup=":__id__"
           regex={/:(\S+)/}
           displayTransform={(id) => {
-            let mention = data.find((item) => item.id === id)
+            const mention = data.find((item) => item.id === id)
             return mention ? mention.display : `:${id}`
           }}
         />
@@ -218,31 +205,30 @@ describe('MentionsInput', () => {
 
     it('should escape and capture a string trigger', () => {
       const result = makeTriggerRegex('trigger').toString()
-      expect(result).toEqual('/(?:^|\\s)(trigger([^\\strigger]*))$/')
+      expect(result).toEqual(String.raw`/(?:^|\s)(trigger([^\strigger]*))$/`)
     })
 
     it('should allow spaces in search', () => {
       const result = makeTriggerRegex('trigger', {
         allowSpaceInQuery: true,
       }).toString()
-      expect(result).toEqual('/(?:^|\\s)(trigger([^trigger]*))$/')
+      expect(result).toEqual(String.raw`/(?:^|\s)(trigger([^trigger]*))$/`)
     })
 
     it('should default to "@" for undefined trigger', () => {
       const result = makeTriggerRegex(undefined).toString()
-      expect(result).toEqual('/(?:^|\\s)(@([^\\s@]*))$/')
+      expect(result).toEqual(String.raw`/(?:^|\s)(@([^\s@]*))$/`)
     })
 
     it('should default to "@" for null trigger', () => {
       const result = makeTriggerRegex(null).toString()
-      expect(result).toEqual('/(?:^|\\s)(@([^\\s@]*))$/')
+      expect(result).toEqual(String.raw`/(?:^|\s)(@([^\s@]*))$/`)
     })
   })
 
   describe('custom cut/copy/paste', () => {
     const plainTextValue = "Hi First, \n\nlet's add Second to the conversation."
-    const value =
-      "Hi @[First](first), \n\nlet's add @[Second](second) to the conversation."
+    const value = "Hi @[First](first), \n\nlet's add @[Second](second) to the conversation."
 
     it.each(['cut', 'copy'])(
       'should include the whole mention for a "%s" event when the selection starts in one.',
@@ -440,9 +426,7 @@ describe('MentionsInput', () => {
 
       const event = new Event('paste', { bubbles: true })
       event.clipboardData = {
-        getData: jest.fn((type) =>
-          type === 'text/react-mentions' ? pastedText : ''
-        ),
+        getData: jest.fn((type) => (type === 'text/react-mentions' ? pastedText : '')),
       }
 
       expect(onChange).not.toHaveBeenCalled()
@@ -488,8 +472,7 @@ describe('MentionsInput', () => {
     })
 
     it('should remove carriage returns from pasted values', () => {
-      const pastedText =
-        "Hi First, \r\n\r\nlet's add Second to the conversation."
+      const pastedText = "Hi First, \r\n\r\nlet's add Second to the conversation."
 
       const event = new Event('paste', { bubbles: true })
 
@@ -513,13 +496,9 @@ describe('MentionsInput', () => {
 
       const [[, newValue, newPlainTextValue]] = onChange.mock.calls
 
-      expect(newValue).toEqual(
-        "Hi First, \n\nlet's add Second to the conversation."
-      )
+      expect(newValue).toEqual("Hi First, \n\nlet's add Second to the conversation.")
 
-      expect(newPlainTextValue).toEqual(
-        "Hi First, \n\nlet's add Second to the conversation."
-      )
+      expect(newPlainTextValue).toEqual("Hi First, \n\nlet's add Second to the conversation.")
     })
 
     it('should fallback to the browsers behaviour if the "paste" event does not support clipboardData', () => {

@@ -84,6 +84,7 @@
 		"@types/react-dom": "^19.2.2",
 		"@vitejs/plugin-react": "^5.0.4",
 		"eslint": "^9.11.1",
+		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-code-complete": "^1.1.2",
 		"eslint-plugin-import": "^2.31.0",
 		"eslint-plugin-jsx-a11y": "^6.9.0",

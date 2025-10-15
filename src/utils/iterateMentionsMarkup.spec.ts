@@ -20,10 +20,9 @@ describe('#iterateMentionsMarkup', () => {
 
   const value =
     "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) to this conversation..."
-  const plainText =
-    "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
+  const plainText = "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
 
-  const displayTransform = id => `<--${id}-->`
+  const displayTransform = (id) => `<--${id}-->`
   const plainTextDisplayTransform =
     "Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation..."
 
@@ -48,8 +47,7 @@ describe('#iterateMentionsMarkup', () => {
       'joe@smoe.com',
       'joe@smoe.com',
       1,
-      value.indexOf('@[John Doe](user:johndoe)') +
-        '@[John Doe](user:johndoe)'.length
+      value.indexOf('@[John Doe](user:johndoe)') + '@[John Doe](user:johndoe)'.length
     )
   })
 
@@ -58,7 +56,7 @@ describe('#iterateMentionsMarkup', () => {
     const displayTransform = (id, display) => `[${display}]`
     iterateMentionsMarkup(
       value,
-      config.map(c => ({ ...c, displayTransform })),
+      config.map((c) => ({ ...c, displayTransform })),
       markupIteratee
     )
     const plainTextWithDisplayTransform =
@@ -81,8 +79,7 @@ describe('#iterateMentionsMarkup', () => {
       'joe@smoe.com',
       '[joe@smoe.com]',
       1,
-      value.indexOf('@[John Doe](user:johndoe)') +
-        '@[John Doe](user:johndoe)'.length
+      value.indexOf('@[John Doe](user:johndoe)') + '@[John Doe](user:johndoe)'.length
     )
   })
 
@@ -108,7 +105,7 @@ describe('#iterateMentionsMarkup', () => {
     const markupIteratee = jest.fn()
     iterateMentionsMarkup(
       value,
-      config.map(c => ({ ...c, displayTransform })),
+      config.map((c) => ({ ...c, displayTransform })),
       markupIteratee
     )
 
@@ -129,8 +126,7 @@ describe('#iterateMentionsMarkup', () => {
       'joe@smoe.com',
       '<--joe@smoe.com-->',
       1,
-      value.indexOf('@[John Doe](user:johndoe)') +
-        '@[John Doe](user:johndoe)'.length
+      value.indexOf('@[John Doe](user:johndoe)') + '@[John Doe](user:johndoe)'.length
     )
   })
 
@@ -138,7 +134,7 @@ describe('#iterateMentionsMarkup', () => {
     const textIteratee = jest.fn()
     iterateMentionsMarkup(
       value,
-      config.map(c => ({ ...c, displayTransform })),
+      config.map((c) => ({ ...c, displayTransform })),
       () => {},
       textIteratee
     )

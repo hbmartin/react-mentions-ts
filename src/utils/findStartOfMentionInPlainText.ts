@@ -1,5 +1,5 @@
-import iterateMentionsMarkup from './iterateMentionsMarkup'
 import type { MentionChildConfig } from '../types'
+import iterateMentionsMarkup from './iterateMentionsMarkup'
 
 // For a given indexInPlainText that lies inside a mention,
 // returns the index of the first char of the mention in the plain text.

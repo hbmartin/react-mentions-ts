@@ -3,10 +3,7 @@ import PLACEHOLDERS from './placeholders'
 
 type PlaceholderName = 'id' | 'display'
 
-const findPositionOfCapturingGroup = (
-  markup: string,
-  parameterName: PlaceholderName
-): number => {
+const findPositionOfCapturingGroup = (markup: string, parameterName: PlaceholderName): number => {
   invariant(
     parameterName === 'id' || parameterName === 'display',
     `Second arg must be either "id" or "display", got: "${parameterName}"`
@@ -17,8 +14,12 @@ const findPositionOfCapturingGroup = (
   let indexId: number | null = markup.indexOf(PLACEHOLDERS.id)
 
   // set indices to null if not found
-  if (indexDisplay < 0) indexDisplay = null
-  if (indexId < 0) indexId = null
+  if (indexDisplay < 0) {
+    indexDisplay = null
+  }
+  if (indexId < 0) {
+    indexId = null
+  }
 
   // markup must contain one of the mandatory placeholders
   invariant(

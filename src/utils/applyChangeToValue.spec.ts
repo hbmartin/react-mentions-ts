@@ -20,15 +20,14 @@ describe('#applyChangeToValue', () => {
 
   const value =
     "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) to this conversation..."
-  const plainText =
-    "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
+  const plainText = "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
 
-  const displayTransform = id => `<--${id}-->`
+  const displayTransform = (id) => `<--${id}-->`
   const plainTextDisplayTransform =
     "Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation..."
 
   it('should correctly add a character at the end, beginning, and in the middle of text', () => {
-    let changed = 'S' + plainText
+    let changed = `S${plainText}`
     let result = applyChangeToValue(
       value,
       changed,
@@ -39,9 +38,9 @@ describe('#applyChangeToValue', () => {
       },
       config
     )
-    expect(result).toEqual('S' + value)
+    expect(result).toEqual(`S${value}`)
 
-    changed = plainText + 'E'
+    changed = `${plainText}E`
     result = applyChangeToValue(
       value,
       changed,
@@ -52,7 +51,7 @@ describe('#applyChangeToValue', () => {
       },
       config
     )
-    expect(result).toEqual(value + 'E')
+    expect(result).toEqual(`${value}E`)
 
     changed = "Hi John Doe, \n\nlet's Madd joe@smoe.com to this conversation..."
     result = applyChangeToValue(
@@ -72,8 +71,7 @@ describe('#applyChangeToValue', () => {
 
   it('should correctly delete single characters and ranges of selected text', () => {
     // delete "i"
-    let changed =
-      "H John Doe, \n\nlet's add joe@smoe.com to this conversation..."
+    let changed = "H John Doe, \n\nlet's add joe@smoe.com to this conversation..."
     let result = applyChangeToValue(
       value,
       changed,
@@ -137,8 +135,7 @@ describe('#applyChangeToValue', () => {
 
   it('should remove mentions markup contained in deleted text ranges', () => {
     // delete without a range selection
-    let changed =
-      "Hi John Do, \n\nlet's add joe@smoe.com to this conversation..."
+    let changed = "Hi John Do, \n\nlet's add joe@smoe.com to this conversation..."
     let result = applyChangeToValue(
       value,
       changed,
@@ -181,9 +178,7 @@ describe('#applyChangeToValue', () => {
       },
       config
     )
-    expect(result).toEqual(
-      "Hi @[John Doe](user:johndoe), \n\nlet's to this conversation..."
-    )
+    expect(result).toEqual("Hi @[John Doe](user:johndoe), \n\nlet's to this conversation...")
   })
 
   it('should correctly add a new character after a mention at the end of the string', () => {
@@ -249,7 +244,7 @@ describe('#applyChangeToValue', () => {
         selectionEndBefore: 26,
         selectionEndAfter: 26,
       },
-      config.map(c => ({ ...c, displayTransform }))
+      config.map((c) => ({ ...c, displayTransform }))
     )
     expect(result).toEqual(
       "Hi @[John Doe](user:johndoe), \n\nlet's dd @[joe@smoe.com](email:joe@smoe.com) to this conversation..."

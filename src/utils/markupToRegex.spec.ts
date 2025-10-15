@@ -14,9 +14,7 @@ describe('#markupToRegex', () => {
   it('it should match lazily', () => {
     const regex = markupToRegex('@[__display__](foo:__id__)')
 
-    const [mention, display, id] = regex.exec(
-      'Hi @[Foo](foo:1)](bar:2), how are you?'
-    )
+    const [mention, display, id] = regex.exec('Hi @[Foo](foo:1)](bar:2), how are you?')
 
     expect(mention).toEqual('@[Foo](foo:1)')
     expect(display).toEqual('Foo')
@@ -27,7 +25,7 @@ describe('#markupToRegex', () => {
     const regex = markupToRegex('@[__display__](foo:__id__)')
     expect(regex.exec('Hi @[Foo], how are you ](foo:1)')).toEqual(null)
   })
-  
+
   it('should parse regex that doesn\'t use "display"', () => {
     const regex = markupToRegex('[tag id=__id__ /]')
     expect(regex.exec('[tag id=italy /]')[1]).toEqual('italy')

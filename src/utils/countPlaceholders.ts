@@ -1,7 +1,11 @@
 const countPlaceholders = (markup: string): number => {
   let count = 0
-  if (markup.indexOf('__id__') >= 0) count++
-  if (markup.indexOf('__display__') >= 0) count++
+  if (markup.includes('__id__')) {
+    count++
+  }
+  if (markup.includes('__display__')) {
+    count++
+  }
   return count
 }
 

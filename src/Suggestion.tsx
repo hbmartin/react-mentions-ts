@@ -1,12 +1,6 @@
 import React from 'react'
-import { defaultStyle } from './utils'
-import { getSubstringIndex } from './utils'
-import type {
-  ClassNamesProp,
-  MentionRenderSuggestion,
-  Substyle,
-  SuggestionDataItem,
-} from './types'
+import { defaultStyle, getSubstringIndex } from './utils'
+import type { ClassNamesProp, MentionRenderSuggestion, Substyle, SuggestionDataItem } from './types'
 
 interface SuggestionProps {
   id: string
@@ -60,11 +54,11 @@ function Suggestion({
 
     return (
       <span {...style('display')}>
-        {display.substring(0, indexOfMatch)}
+        {display.slice(0, Math.max(0, indexOfMatch))}
         <b {...style('highlight')}>
           {display.substring(indexOfMatch, indexOfMatch + query.length)}
         </b>
-        {display.substring(indexOfMatch + query.length)}
+        {display.slice(Math.max(0, indexOfMatch + query.length))}
       </span>
     )
   }
@@ -74,13 +68,7 @@ function Suggestion({
     const highlightedDisplay = renderHighlightedDisplay(display)
 
     if (renderSuggestion) {
-      return renderSuggestion(
-        suggestion,
-        query,
-        highlightedDisplay,
-        index,
-        Boolean(focused)
-      )
+      return renderSuggestion(suggestion, query, highlightedDisplay, index, Boolean(focused))
     }
 
     return highlightedDisplay
