@@ -69,11 +69,7 @@ function SuggestionsOverlay({
 	const childRenderSuggestions: (MentionRenderSuggestion | null)[] = useMemo(
 		() =>
 			Children.toArray(children).map((child) =>
-				typeof child === "object" &&
-				"props" in child &&
-				typeof child.props === "object" &&
-				child.props !== null &&
-				"renderSuggestion" in child.props &&
+				React.isValidElement<MentionComponentProps>(child) &&
 				typeof child.props.renderSuggestion === "function"
 					? (child.props.renderSuggestion as MentionRenderSuggestion)
 					: null,

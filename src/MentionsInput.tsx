@@ -599,7 +599,10 @@ class MentionsInput extends React.Component<
 
 	// Handle input element's change event
 	handleChange = (ev: ChangeEvent<InputElement>) => {
-		this._isComposing = false;
+		const native = ev.nativeEvent as any;
+		if (typeof native?.isComposing === "boolean") {
+			this._isComposing = native.isComposing;
+		}
 		if (isIE()) {
 			// if we are inside iframe, we need to find activeElement within its contentDocument
 			const activeElement = document.activeElement as
