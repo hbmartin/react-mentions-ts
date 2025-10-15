@@ -1,10 +1,12 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import { Mention } from './index'
 import type { SuggestionsMap } from './types'
 
-const createSuggestionsMap = (suggestions: Array<{ id: string; display: string }>): SuggestionsMap => ({
+const createSuggestionsMap = (
+  suggestions: Array<{ id: string; display: string }>
+): SuggestionsMap => ({
   0: {
     queryInfo: {
       childIndex: 0,
@@ -30,7 +32,7 @@ describe('SuggestionsOverlay', () => {
         id="test-suggestions"
         suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
-        isOpened={true}
+        isOpened
       >
         <Mention trigger="@" data={[]} />
       </SuggestionsOverlay>
@@ -51,7 +53,7 @@ describe('SuggestionsOverlay', () => {
         id="test-suggestions"
         suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
-        isOpened={true}
+        isOpened
         className="custom-overlay-class"
       >
         <Mention trigger="@" data={[]} />
@@ -61,7 +63,8 @@ describe('SuggestionsOverlay', () => {
     // Check that the list is rendered with proper structure
     const list = container.querySelector('ul[role="listbox"]')
     expect(list).toBeTruthy()
-    expect(list).toBeInTheDocument()
+    const overlay = container.querySelector('.custom-overlay-class')
+    expect(overlay).toBeTruthy()
   })
 
   it('should be possible to apply styles to the items in the list.', () => {
@@ -75,7 +78,8 @@ describe('SuggestionsOverlay', () => {
         id="test-suggestions"
         suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
-        isOpened={true}
+        isOpened
+        style={{ item: { backgroundColor: 'red' } }}
       >
         <Mention trigger="@" data={[]} />
       </SuggestionsOverlay>
@@ -84,8 +88,8 @@ describe('SuggestionsOverlay', () => {
     // Check that list items are rendered and have proper attributes
     const listItems = container.querySelectorAll('li[role="option"]')
     expect(listItems).toHaveLength(2)
-    expect(listItems[0]).toHaveAttribute('role', 'option')
-    expect(listItems[1]).toHaveAttribute('role', 'option')
+    expect(listItems[0]).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' })
+    expect(listItems[1]).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' })
   })
 
   it('should notify when the user clicks on a suggestion.', () => {
@@ -101,7 +105,7 @@ describe('SuggestionsOverlay', () => {
         id="test-suggestions"
         suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
-        isOpened={true}
+        isOpened
         onSelect={onSelect}
       >
         <Mention trigger="@" data={[]} />
@@ -112,11 +116,17 @@ describe('SuggestionsOverlay', () => {
 
     fireEvent.click(listItems[0])
     expect(onSelect).toHaveBeenCalledTimes(1)
-    expect(onSelect).toHaveBeenCalledWith(suggestions[0], expect.objectContaining({ query: 'test' }))
+    expect(onSelect).toHaveBeenCalledWith(
+      suggestions[0],
+      expect.objectContaining({ query: 'test' })
+    )
 
     fireEvent.click(listItems[1])
     expect(onSelect).toHaveBeenCalledTimes(2)
-    expect(onSelect).toHaveBeenCalledWith(suggestions[1], expect.objectContaining({ query: 'test' }))
+    expect(onSelect).toHaveBeenCalledWith(
+      suggestions[1],
+      expect.objectContaining({ query: 'test' })
+    )
   })
 
   it('should be possible to show a loading indicator.', () => {
@@ -125,7 +135,7 @@ describe('SuggestionsOverlay', () => {
         id="test-suggestions"
         suggestions={{}}
         focusIndex={0}
-        isOpened={true}
+        isOpened
         isLoading={false}
       >
         <Mention trigger="@" data={[]} />
@@ -135,6 +145,9 @@ describe('SuggestionsOverlay', () => {
     // Count child divs when not loading
     const initialDivs = container.querySelectorAll('div')
     const initialCount = initialDivs.length
+    const listBox = container.querySelector('ul[role="listbox"]')
+    expect(listBox).not.toBeNull()
+    expect(container.querySelector('[data-testid="loading-indicator"]')).toBeNull()
 
     // Rerender with isLoading=true
     rerender(
@@ -142,7 +155,8 @@ describe('SuggestionsOverlay', () => {
         id="test-suggestions"
         suggestions={{}}
         focusIndex={0}
-        isOpened={true}
+        isOpened
+        // eslint-disable-next-line react/jsx-boolean-value
         isLoading={true}
       >
         <Mention trigger="@" data={[]} />
@@ -152,25 +166,7 @@ describe('SuggestionsOverlay', () => {
     // Should have more divs when loading indicator is shown
     const loadingDivs = container.querySelectorAll('div')
     expect(loadingDivs.length).toBeGreaterThan(initialCount)
-  })
-
-  it('should be possible to style the loading indicator.', () => {
-    const { container } = render(
-      <SuggestionsOverlay
-        id="test-suggestions"
-        suggestions={{}}
-        focusIndex={0}
-        isOpened={true}
-        isLoading={true}
-      >
-        <Mention trigger="@" data={[]} />
-      </SuggestionsOverlay>
-    )
-
-    // Check that the container has content (loading indicator renders multiple divs)
-    const allDivs = container.querySelectorAll('div')
-    // Should have at least the container div plus loading indicator divs
-    expect(allDivs.length).toBeGreaterThan(1)
+    expect(container.querySelector('[data-testid="loading-indicator"]')).toBeInTheDocument()
   })
 
   it('should notify when the user enters a suggestion with his mouse.', () => {
@@ -187,7 +183,7 @@ describe('SuggestionsOverlay', () => {
         id="test-suggestions"
         suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
-        isOpened={true}
+        isOpened
         onMouseEnter={onMouseEnter}
       >
         <Mention trigger="@" data={[]} />

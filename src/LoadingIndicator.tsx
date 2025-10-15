@@ -14,7 +14,7 @@ function LoadingIndicator({ style, className, classNames }: LoadingIndicatorProp
   const styles: Substyle = useStyles(defaultStyle, { style, className, classNames })
   const spinnerStyles = styles('spinner')
   return (
-    <div {...styles}>
+    <div {...styles} data-testid="loading-indicator">
       <div {...spinnerStyles}>
         <div {...spinnerStyles(['element', 'element1'])} />
         <div {...spinnerStyles(['element', 'element2'])} />

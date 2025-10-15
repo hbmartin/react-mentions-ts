@@ -54,11 +54,9 @@ function Suggestion({
 
     return (
       <span {...style('display')}>
-        {display.slice(0, Math.max(0, indexOfMatch))}
-        <b {...style('highlight')}>
-          {display.substring(indexOfMatch, indexOfMatch + query.length)}
-        </b>
-        {display.slice(Math.max(0, indexOfMatch + query.length))}
+        {display.slice(0, indexOfMatch)}
+        <b {...style('highlight')}>{display.slice(indexOfMatch, indexOfMatch + query.length)}</b>
+        {display.slice(indexOfMatch + query.length)}
       </span>
     )
   }

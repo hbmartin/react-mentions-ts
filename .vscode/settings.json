@@ -12,5 +12,6 @@
 	},
 	"eslint.options": {
 		"overrideConfigFile": "./eslint.config.ts"
-	}
+	},
+	"typescript.tsserver.implicitProjectConfig.types": ["node", "jest", "@testing-library/jest-dom"]
 }
