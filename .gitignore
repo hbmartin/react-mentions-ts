@@ -11,3 +11,6 @@ npm-debug.log*
 .DS_Store
 /.idea
 dist
+*.tgz
+attw*
+.npm-cache

@@ -16,3 +16,4 @@ jobs:
       - run: yarn run prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
       - run: yarn test
       - run: yarn lint
+      - run: npx publint --pack npm
