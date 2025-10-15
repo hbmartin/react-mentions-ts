@@ -1,0 +1,1 @@
+- never run publint with yarn, instead always use `npx publint --pack npm`

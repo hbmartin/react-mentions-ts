@@ -1,56 +1,83 @@
-# [React Mentions](https://react-mentions.vercel.app)
+# React Mentions TS
 
 [![npm version](https://badge.fury.io/js/react-mentions-ts.svg)](https://www.npmjs.com/package/react-mentions-ts)
-![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)
-[![NPM License](https://img.shields.io/npm/l/react-mentions-ts?color=blue)](https://github.com/hbmartin/react-mentions-ts/blob/main/LICENSE)
+[![CI](https://github.com/hbmartin/react-mentions-ts/workflows/CI/badge.svg)](https://github.com/hbmartin/react-mentions-ts/actions)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)](https://bundlephobia.com/package/react-mentions-ts)
+[![NPM License](https://img.shields.io/npm/l/react-mentions-ts?color=blue)](https://github.com/hbmartin/react-mentions-ts/blob/master/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hbmartin/react-mentions-ts/pulls)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hbmartin/react-mentions-ts)
 
-A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.
+**A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.**
 
-### [Try out the demos now!](https://hbmartin.github.io/react-mentions-ts/)
+### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/)
+
+---
+
+## 🎯 Features
+
+- ✅ **Flexible Triggers** - Use any character or pattern to trigger mentions (@, #, :, or custom)
+- 🎨 **Fully Customizable** - Style with CSS, CSS modules, or inline styles
+- 📝 **Multiple Mention Types** - Support users, tags, emojis, or any custom data source
+- ⚡ **Async Data Loading** - Load suggestions dynamically from APIs
+- 🔍 **Smart Suggestions** - Real-time filtering and matching
+- ♿ **Accessible** - Built with ARIA labels and keyboard navigation
+- 📦 **Lightweight** - Zero dependencies (except React)
+- 🎯 **TypeScript First** - Written in TypeScript with complete type definitions
+- 🧪 **Well Tested** - Comprehensive test suite with Testing Library
+- 🌐 **SSR Compatible** - Works with Next.js and other SSR frameworks
+- 📱 **Mobile Friendly** - Touch-optimized for mobile devices
 
 Used in production at [Signavio](https://signavio.com), [State](https://state.com), [Snips](https://snips.ai), [Swat.io](https://swat.io), [GotDone](https://www.gotdone.me), [Volinspire](https://volinspire.com), [Marvin](https://amazingmarvin.com), [Timely](https://timelyapp.com), [GuideFitter](https://www.guidefitter.com/), [Evite](https://www.evite.com/), [Publer](https://publer.me/), [Kontentino](https://www.kontentino.com/), [Wix.com](https://wix.com), [Highlight](https://highlight.run/) and [you?](https://github.com/hbmartin/react-mentions-ts/edit/master/README.md)
 
-## Getting started
-
-Install the _react-mentions-ts_ package via npm:
+## 📦 Installation
 
 ```bash
+# npm
 npm install react-mentions-ts --save
-```
 
-Or yarn:
-
-```bash
+# yarn
 yarn add react-mentions-ts
+
+# pnpm
+pnpm add react-mentions-ts
 ```
 
-## TypeScript Support
-
-_react-mentions-ts_ is written in TypeScript and includes full type definitions. The package exports two React components for rendering the mentions textarea:
-
-```typescript
-import { MentionsInput, Mention } from 'react-mentions-ts'
-```
-
-All component props are fully typed, providing excellent autocomplete and type safety in TypeScript projects.
-
-`MentionsInput` is the main component rendering the textarea control. It takes one or multiple `Mention` components as its children. Each `Mention` component represents a data source for a specific class of mentionable objects, such as users, template variables, issues, etc.
-
-Example:
+## 🚀 Quick Start
 
 ```tsx
-<MentionsInput value={this.state.value} onChange={this.handleChange}>
-  <Mention trigger="@" data={this.props.users} renderSuggestion={this.renderUserSuggestion} />
-  <Mention trigger="#" data={this.requestTag} renderSuggestion={this.renderTagSuggestion} />
-</MentionsInput>
+import { MentionsInput, Mention } from 'react-mentions-ts'
+
+function MyComponent() {
+  const [value, setValue] = useState('')
+
+  return (
+    <MentionsInput value={value} onChange={(e) => setValue(e.target.value)}>
+      <Mention trigger="@" data={users} renderSuggestion={(entry) => <div>{entry.display}</div>} />
+      <Mention trigger="#" data={tags} />
+    </MentionsInput>
+  )
+}
 ```
 
-You can find more examples here: [demo/src/examples](https://github.com/hbmartin/react-mentions-ts/tree/master/demo/src/examples)
+### 💡 How It Works
 
-## Configuration
+`MentionsInput` is the main component that renders the textarea control. It accepts one or multiple `Mention` components as children. Each `Mention` component represents a data source for a specific class of mentionable objects:
 
-The `MentionsInput` supports the following props for configuring the widget:
+- 👥 **Users** - `@username` mentions
+- 🏷️ **Tags** - `#hashtag` mentions
+- 📋 **Templates** - `{{variable}}` mentions
+- 🎭 **Emojis** - `:emoji:` mentions
+- ✨ **Custom** - Any pattern you need!
+
+**[View more examples](https://github.com/hbmartin/react-mentions-ts/tree/master/demo/src/examples)**
+
+## ⚙️ Configuration
+
+### MentionsInput Props
+
+The `MentionsInput` component supports the following props:
 
 | Prop name                   | Type                                                    | Default value  | Description                                                                            |
 | --------------------------- | ------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
@@ -68,6 +95,8 @@ The `MentionsInput` supports the following props for configuring the widget:
 | customSuggestionsContainer  | function(children)                                      | empty function | Allows customizing the container of the suggestions                                    |
 | inputComponent              | React component                                         | undefined      | Allows the use of a custom input component                                             |
 
+### Mention Props
+
 Each data source is configured using a `Mention` component, which has the following props:
 
 | Prop name        | Type                                                         | Default value                               | Description                                                                                                                                            |
@@ -81,24 +110,96 @@ Each data source is configured using a `Mention` component, which has the follow
 | onAdd            | function (id, display, startPos, endPos)                     | empty function                              | Callback invoked when a suggestion has been added (optional)                                                                                           |
 | appendSpaceOnAdd | boolean                                                      | `false`                                     | Append a space when a suggestion has been added (optional)                                                                                             |
 
+### 🔄 Async Data Loading
+
 If a function is passed as the `data` prop, that function will be called with the current search query as first, and a callback function as second argument. The callback can be used to provide results asynchronously, e.g., after fetch requests. (It can even be called multiple times to update the list of suggestions.)
 
-## Styling
+```tsx
+const fetchUsers = async (query: string, callback: (data: User[]) => void) => {
+  const response = await fetch(`/api/users?search=${query}`)
+  const users = await response.json()
+  callback(users)
+}
 
-_react-mentions-ts_ supports css, css modules, and inline styles. It is shipped with only some essential inline style definitions and without any css. Some example inline styles demonstrating how to customize the appearance of the `MentionsInput` can be found at [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts).
+;<Mention trigger="@" data={fetchUsers} />
+```
 
-If you want to use css, simply assign a `className` prop to `MentionsInput`. All DOM nodes rendered by the component will then receive class name attributes that are derived from the base class name you provided.
+## 🎨 Styling
 
-If you want to avoid global class names and use css modules instead, you can provide the automatically generated class names as `classNames` to the `MentionsInput`. See [demo/src/examples/CssModules.tsx](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/CssModules.tsx) for an example of using _react-mentions-ts_ with css modules.
+React Mentions supports **CSS**, **CSS Modules**, and **inline styles**. The package ships with only essential inline styles, giving you complete control over the appearance.
 
-You can also assign `className` and `style` props to the `Mention` elements to define how to highlight the mentioned words.
+### Inline Styles
 
-## Testing
+```tsx
+<MentionsInput style={customStyle}>
+  <Mention style={mentionStyle} />
+</MentionsInput>
+```
 
-Due to react-mentions-ts' internal cursor tracking it is not good enough to simulate the editing of the textarea value using `ReactTestUtils.Simulate.change`.
-We recommend using [@testing-library/user-event](https://github.com/testing-library/user-event) for a realistic simulation of events as they would happen in the browser as the user interacts the textarea.
+See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for examples.
 
----
+### CSS
 
-If you want to contribute, first of all: thank you ❤️.
-Please check [CONTRIBUTING.md](/CONTRIBUTING.md) and/or create an issue.
+Simply assign a `className` prop to `MentionsInput`. All DOM nodes will receive derived class names:
+
+```tsx
+<MentionsInput className="mentions">
+  <Mention className="mentions__mention" />
+</MentionsInput>
+```
+
+### CSS Modules
+
+Provide automatically generated class names as `classNames` to `MentionsInput`. See [demo/src/examples/CssModules.tsx](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/CssModules.tsx) for a complete example.
+
+## 🧪 Testing
+
+Due to React Mentions' internal cursor tracking, use [@testing-library/user-event](https://github.com/testing-library/user-event) for realistic event simulation:
+
+```tsx
+import { render } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+test('mentions work correctly', async () => {
+  const user = userEvent.setup()
+  const { getByRole } = render(<MyMentionsComponent />)
+
+  await user.type(getByRole('textbox'), '@john')
+  // assertions...
+})
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! If you want to contribute, first of all: **thank you!** ❤️
+
+Please check out our [Contributing Guide](/CONTRIBUTING.md) for guidelines about how to proceed.
+
+### Development
+
+```bash
+# Install dependencies
+yarn install
+
+# Start the demo app
+yarn dev
+
+# Run tests
+yarn test
+
+# Build the library
+yarn build
+
+# Run linter
+yarn lint
+```
+
+## 📄 License
+
+React Mentions is licensed under the [BSD-3-Clause License](LICENSE).
+
+## 🙏 Acknowledgments
+
+This project is a TypeScript rewrite and modernization of the original [react-mentions](https://github.com/signavio/react-mentions) library.
+
+Rebuilt with ❤️ by [Harold Martin](https://www.linkedin.com/in/harold-martin-98526971/) and [contributors](https://github.com/hbmartin/react-mentions-ts/graphs/contributors)
