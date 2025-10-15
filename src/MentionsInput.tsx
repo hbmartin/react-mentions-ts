@@ -10,7 +10,7 @@ import type {
 import React, { Children } from 'react'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
-import { DEFAULT_MENTION_PROPS } from './Mention'
+import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
   applyChangeToValue,

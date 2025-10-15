@@ -1,8 +1,7 @@
 import { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import invariant from 'invariant'
 import type { MentionChildConfig, MentionComponentProps } from '../types'
-import { DEFAULT_MENTION_PROPS } from '../Mention'
+import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
 import countPlaceholders from './countPlaceholders'
 import markupToRegex from './markupToRegex'
 
@@ -28,10 +27,11 @@ const coerceCapturingGroups = (regex: RegExp, markup: string): RegExp => {
   const numberOfGroups = (execResult?.length ?? 1) - 1
   const numberOfPlaceholders = countPlaceholders(markup)
 
-  invariant(
-    numberOfGroups === numberOfPlaceholders,
-    `Number of capturing groups in RegExp ${regex.toString()} (${numberOfGroups.toString()}) does not match the number of placeholders in the markup '${markup}' (${numberOfPlaceholders.toString()})`
-  )
+  if (numberOfGroups !== numberOfPlaceholders) {
+    throw new Error(
+      `Number of capturing groups in RegExp ${regex.toString()} (${numberOfGroups.toString()}) does not match the number of placeholders in the markup '${markup}' (${numberOfPlaceholders.toString()})`
+    )
+  }
 
   return regex
 }

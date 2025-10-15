@@ -118,7 +118,6 @@
 		"vite": "^7.1.10"
 	},
 	"dependencies": {
-		"invariant": "^2.2.4",
 		"substyle": "^9.1.0"
 	},
 	"peerDependencies": {

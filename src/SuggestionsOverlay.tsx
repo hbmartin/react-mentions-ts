@@ -1,7 +1,7 @@
 import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
 import { inline } from 'substyle'
 import LoadingIndicator from './LoadingIndicator'
-import { DEFAULT_MENTION_PROPS } from './Mention'
+import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
 import { defaultStyle, getSuggestionHtmlId } from './utils'
 import type {
