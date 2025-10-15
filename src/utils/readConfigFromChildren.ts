@@ -30,7 +30,7 @@ const coerceCapturingGroups = (regex: RegExp, markup: string): RegExp => {
 
   invariant(
     numberOfGroups === numberOfPlaceholders,
-    `Number of capturing groups in RegExp ${regex.toString()} (${numberOfGroups}) does not match the number of placeholders in the markup '${markup}' (${numberOfPlaceholders})`
+    `Number of capturing groups in RegExp ${regex.toString()} (${numberOfGroups.toString()}) does not match the number of placeholders in the markup '${markup}' (${numberOfPlaceholders.toString()})`
   )
 
   return regex

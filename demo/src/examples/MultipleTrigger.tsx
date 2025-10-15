@@ -10,8 +10,10 @@ import defaultMentionStyle from './defaultMentionStyle'
 const emailRegex = /(([^\s@]+@[^\s@]+\.[^\s@]+))$/
 
 export default function MultipleTriggers({ data, onAdd = () => {} }) {
-  const [value, setValue] = useState( "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... ");
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState(
+    "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... "
+  )
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div className="multiple-triggers">
@@ -23,22 +25,14 @@ export default function MultipleTriggers({ data, onAdd = () => {} }) {
         onChange={onChange}
         style={defaultStyle}
         placeholder={"Mention people using '@'"}
-        a11ySuggestionsListLabel={"Suggested mentions"}
+        a11ySuggestionsListLabel={'Suggested mentions'}
       >
         <Mention
           markup="@[__display__](user:__id__)"
           trigger="@"
           data={data}
-          renderSuggestion={(
-            suggestion,
-            search,
-            highlightedDisplay,
-            index,
-            focused
-          ) => (
-            <div className={`user ${focused ? 'focused' : ''}`}>
-              {highlightedDisplay}
-            </div>
+          renderSuggestion={(suggestion, search, highlightedDisplay, index, focused) => (
+            <div className={`user ${focused ? 'focused' : ''}`}>{highlightedDisplay}</div>
           )}
           onAdd={onAdd}
           style={defaultMentionStyle}

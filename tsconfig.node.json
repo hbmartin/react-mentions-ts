@@ -1,13 +1,10 @@
 {
-	"extends": "./tsconfig.base.json",
-	"compilerOptions": {
-		"module": "ESNext",
-		"noEmit": true,
-		"moduleResolution": "Bundler",
-		"types": ["node"]
-	},
-	"include": [
-		"demo/vite.config.ts",
-		"scripts/**/*.ts"
-	]
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "noEmit": true,
+    "moduleResolution": "Bundler",
+    "types": ["node"]
+  },
+  "include": ["eslint.config.ts", "demo/vite.config.ts", "scripts/**/*.ts"]
 }

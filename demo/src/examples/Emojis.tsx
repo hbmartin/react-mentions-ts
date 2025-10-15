@@ -9,8 +9,8 @@ const neverMatchingRegex = /($a)/
 
 export default function Emojis({ data }) {
   const [emojis, setEmojis] = useState([])
-  const [value, setValue] = useState('');
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState('')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   useEffect(() => {
     fetch(
@@ -54,12 +54,7 @@ export default function Emojis({ data }) {
           style={defaultMentionStyle}
           appendSpaceOnAdd
         />
-        <Mention
-          trigger=":"
-          markup="__id__"
-          regex={neverMatchingRegex}
-          data={queryEmojis}
-        />
+        <Mention trigger=":" markup="__id__" regex={neverMatchingRegex} data={queryEmojis} />
       </MentionsInput>
     </div>
   )

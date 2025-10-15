@@ -6,8 +6,10 @@ import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
 export default function Scrollable({ data, onAdd = () => {} }) {
-  const [value, setValue] = useState("Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... ");
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState(
+    "Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... "
+  )
+  const onChange = (ev, newValue) => setValue(newValue)
 
   let style = merge({}, defaultStyle, {
     input: {
@@ -24,10 +26,7 @@ export default function Scrollable({ data, onAdd = () => {} }) {
   return (
     <div className="scrollable">
       <h3>Scrollable container</h3>
-      <p>
-        The highlighter will mimic the scroll of the textarea thus making
-        everything aligned.
-      </p>
+      <p>The highlighter will mimic the scroll of the textarea thus making everything aligned.</p>
 
       <MentionsInput
         value={value}

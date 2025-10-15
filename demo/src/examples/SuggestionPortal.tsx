@@ -8,8 +8,8 @@ import defaultMentionStyle from './defaultMentionStyle'
 let container
 
 export default function SuggestionPortal({ data, onAdd = () => {} }) {
-  const [value, setValue] = useState('');
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState('')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   let scrollableStyle = merge({}, defaultStyle, {
     input: {
@@ -23,14 +23,14 @@ export default function SuggestionPortal({ data, onAdd = () => {} }) {
       style={{
         height: '250px',
       }}
-      ref={el => {
+      ref={(el) => {
         container = el
       }}
     >
       <h3>Suggestion portal example</h3>
       <p>
-        Note that the suggestions menu is outside of the its parent element (in
-        green) which is absolutely positioned and scrollable.
+        Note that the suggestions menu is outside of the its parent element (in green) which is
+        absolutely positioned and scrollable.
       </p>
       <div
         style={{
@@ -47,7 +47,7 @@ export default function SuggestionPortal({ data, onAdd = () => {} }) {
           onChange={onChange}
           style={defaultStyle}
           placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={"Suggested mentions"}
+          a11ySuggestionsListLabel={'Suggested mentions'}
           suggestionsPortalHost={container}
         >
           <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
@@ -59,7 +59,7 @@ export default function SuggestionPortal({ data, onAdd = () => {} }) {
           onChange={onChange}
           style={scrollableStyle}
           placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={"Suggested mentions"}
+          a11ySuggestionsListLabel={'Suggested mentions'}
           suggestionsPortalHost={container}
         >
           <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />

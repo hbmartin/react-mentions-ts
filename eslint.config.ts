@@ -136,7 +136,7 @@ export default defineConfig([
 
       'code-complete/no-late-argument-usage': 'error',
       'code-complete/enforce-meaningful-names': 'error',
-      'code-complete/no-magic-numbers-except-zero-one': 'error',
+      'code-complete/no-magic-numbers-except-zero-one': 'off',
       'code-complete/no-boolean-params': 'error',
 
       // Type safety

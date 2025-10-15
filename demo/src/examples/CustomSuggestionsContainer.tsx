@@ -6,8 +6,8 @@ import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
 export default function CustomSuggestionsContainer({ data, onAdd = () => {} }) {
-  const [value, setValue] = useState('');
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState('')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div className="custom-suggestions">
@@ -18,9 +18,16 @@ export default function CustomSuggestionsContainer({ data, onAdd = () => {} }) {
         onChange={onChange}
         style={defaultStyle}
         placeholder={"Mention people using '@'"}
-        a11ySuggestionsListLabel={"Suggested mentions"}
+        a11ySuggestionsListLabel={'Suggested mentions'}
         allowSuggestionsAboveCursor={true}
-        customSuggestionsContainer={(children)=><div><span style={{fontWeight: "bold"}}><h2>This container has customised suggestions</h2></span>{children}</div>}
+        customSuggestionsContainer={(children) => (
+          <div>
+            <span style={{ fontWeight: 'bold' }}>
+              <h2>This container has customised suggestions</h2>
+            </span>
+            {children}
+          </div>
+        )}
       >
         <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
       </MentionsInput>

@@ -7,9 +7,9 @@ import defaultMentionStyle from './defaultMentionStyle'
 // WTF
 let container
 
-export default function BottomGuard({ data, onAdd = () => {}}) {
-  const [value, setValue] = useState('');
-  const onChange = (ev, newValue) => setValue(newValue);
+export default function BottomGuard({ data, onAdd = () => {} }) {
+  const [value, setValue] = useState('')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div
@@ -17,16 +17,14 @@ export default function BottomGuard({ data, onAdd = () => {}}) {
       style={{
         height: '400px',
       }}
-      ref={el => {
+      ref={(el) => {
         container = el
       }}
     >
       <h3>Bottom guard example</h3>
       <p>
-        Note that the bottom input will open the suggestions list above the
-        cursor.
-        Also, the middle one will render its suggestions always on top,
-        even if it has enough space below.
+        Note that the bottom input will open the suggestions list above the cursor. Also, the middle
+        one will render its suggestions always on top, even if it has enough space below.
       </p>
       <div
         style={{
@@ -43,7 +41,7 @@ export default function BottomGuard({ data, onAdd = () => {}}) {
           onChange={onChange}
           style={defaultStyle}
           placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={"Suggested mentions"}
+          a11ySuggestionsListLabel={'Suggested mentions'}
           suggestionsPortalHost={container}
           allowSuggestionsAboveCursor={true}
         >
@@ -73,7 +71,7 @@ export default function BottomGuard({ data, onAdd = () => {}}) {
           onChange={onChange}
           style={defaultStyle}
           placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={"Suggested mentions"}
+          a11ySuggestionsListLabel={'Suggested mentions'}
           suggestionsPortalHost={container}
           allowSuggestionsAboveCursor={true}
         >

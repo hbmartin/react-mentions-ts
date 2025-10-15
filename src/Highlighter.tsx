@@ -1,4 +1,4 @@
-import React, { Children, useEffect, useState } from 'react'
+import React, { Children, useEffect, useEffectEvent, useState } from 'react'
 import {
   defaultStyle,
   iterateMentionsMarkup,
@@ -42,13 +42,7 @@ function Highlighter({
   const [position, setPosition] = useState<CaretCoordinates | null>(null)
   const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
 
-  useEffect(() => {
-    if (caretElement === null) {
-      return
-    }
-
-    const { offsetLeft, offsetTop } = caretElement
-
+  const updatePosition = useEffectEvent((offsetLeft: number, offsetTop: number) => {
     if (position?.left === offsetLeft && position.top === offsetTop) {
       return
     }
@@ -56,7 +50,17 @@ function Highlighter({
     const newPosition: CaretCoordinates = { left: offsetLeft, top: offsetTop }
     setPosition(newPosition)
     onCaretPositionChange(newPosition)
-  }, [caretElement, position, onCaretPositionChange])
+  })
+
+  useEffect(() => {
+    if (caretElement === null) {
+      return
+    }
+
+    const { offsetLeft, offsetTop } = caretElement
+
+    updatePosition(offsetLeft, offsetTop)
+  }, [caretElement])
 
   const config: MentionChildConfig[] = readConfigFromChildren(children)
   let caretPositionInMarkup: number | null | undefined
@@ -168,4 +172,5 @@ const styled = defaultStyle(
   })
 )
 
-export default styled(Highlighter)
+const StyledHighlighter: React.ComponentType<HighlighterProps> = styled(Highlighter)
+export default StyledHighlighter

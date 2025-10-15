@@ -6,8 +6,8 @@ import defaultStyle from './defaultStyle'
 import defaultMentionStyle from './defaultMentionStyle'
 
 export default function SingleLineIgnoringAccents({ data, onAdd = () => {} }) {
-  const [value, setValue] = useState('');
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState('')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div className="single-line">
@@ -20,7 +20,7 @@ export default function SingleLineIgnoringAccents({ data, onAdd = () => {} }) {
         style={defaultStyle}
         placeholder={"Mention people using '@'"}
         ignoreAccents
-        a11ySuggestionsListLabel={"Suggested mentions"}
+        a11ySuggestionsListLabel={'Suggested mentions'}
       >
         <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
       </MentionsInput>

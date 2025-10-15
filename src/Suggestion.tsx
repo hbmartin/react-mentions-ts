@@ -3,18 +3,18 @@ import { defaultStyle, getSubstringIndex } from './utils'
 import type { ClassNamesProp, MentionRenderSuggestion, Substyle, SuggestionDataItem } from './types'
 
 interface SuggestionProps {
-  id: string
-  focused?: boolean
-  ignoreAccents?: boolean
-  index: number
-  onClick: () => void
-  onMouseEnter: () => void
-  query: string
-  renderSuggestion?: MentionRenderSuggestion | null
-  suggestion: SuggestionDataItem | string
-  style: Substyle
-  className?: string
-  classNames?: ClassNamesProp
+  readonly id: string
+  readonly focused?: boolean
+  readonly ignoreAccents?: boolean
+  readonly index: number
+  readonly onClick: () => void
+  readonly onMouseEnter: () => void
+  readonly query: string
+  readonly renderSuggestion?: MentionRenderSuggestion | null
+  readonly suggestion: SuggestionDataItem | string
+  readonly style: Substyle
+  readonly className?: string
+  readonly classNames?: ClassNamesProp
 }
 
 function Suggestion({
@@ -88,4 +88,6 @@ const styled = defaultStyle(
   })
 )
 
-export default styled(Suggestion)
+const StyledSuggestion: React.ComponentType<SuggestionProps> = styled(Suggestion)
+
+export default StyledSuggestion
