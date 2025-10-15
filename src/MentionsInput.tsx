@@ -107,8 +107,6 @@ const KEY = {
 	DOWN: 40,
 } as const;
 
-let isComposing = false;
-
 const HANDLED_PROPS: Array<keyof MentionsInputComponentProps> = [
 	"singleLine",
 	"allowSpaceInQuery",
@@ -156,6 +154,7 @@ class MentionsInput extends React.Component<
 	private _suggestionsMouseDown = false;
 	private _selectionStartBeforeFocus: number | null = null;
 	private _selectionEndBeforeFocus: number | null = null;
+	private _isComposing = false;
 
 	constructor(props: MentionsInputComponentProps) {
 		super(props);
@@ -600,7 +599,7 @@ class MentionsInput extends React.Component<
 
 	// Handle input element's change event
 	handleChange = (ev: ChangeEvent<InputElement>) => {
-		isComposing = false;
+		this._isComposing = false;
 		if (isIE()) {
 			// if we are inside iframe, we need to find activeElement within its contentDocument
 			const activeElement = document.activeElement as
@@ -706,7 +705,7 @@ class MentionsInput extends React.Component<
 		});
 
 		// do nothing while a IME composition session is active
-		if (isComposing) return;
+		if (this._isComposing) return;
 
 		// refresh suggestions queries
 		const el = this.inputElement;
@@ -955,11 +954,11 @@ class MentionsInput extends React.Component<
 	};
 
 	handleCompositionStart = (): void => {
-		isComposing = true;
+		this._isComposing = true;
 	};
 
 	handleCompositionEnd = (): void => {
-		isComposing = false;
+		this._isComposing = false;
 	};
 
 	setSelection = (
