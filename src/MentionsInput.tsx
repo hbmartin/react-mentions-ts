@@ -16,7 +16,6 @@ import type {
 	CaretCoordinates,
 	DataProviderFn,
 	DataSource,
-	InputComponent,
 	InputComponentProps,
 	MentionComponentProps,
 	MentionDataItem,

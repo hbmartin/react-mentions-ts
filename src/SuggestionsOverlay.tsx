@@ -1,4 +1,4 @@
-import React, { Children, useEffect, useState } from "react";
+import React, { Children, useLayoutEffect, useState } from "react";
 import { inline } from "substyle";
 import { defaultStyle } from "./utils";
 import { getSuggestionHtmlId } from "./utils";
@@ -52,7 +52,7 @@ function SuggestionsOverlay({
 	left,
 	right,
 	top,
-	scrollFocusedIntoView,
+	scrollFocusedIntoView = true,
 	isLoading,
 	isOpened,
 	onSelect,
@@ -66,11 +66,11 @@ function SuggestionsOverlay({
 }: SuggestionsOverlayProps) {
 	const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (
 			!ulElement ||
 			ulElement.offsetHeight >= ulElement.scrollHeight ||
-			!scrollFocusedIntoView
+			scrollFocusedIntoView === false
 		) {
 			return;
 		}

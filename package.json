@@ -1,5 +1,6 @@
 {
 	"name": "react-mentions",
+	"private": false,
 	"version": "5.0.0",
 	"description": "React mentions input",
 	"type": "module",
@@ -48,7 +49,11 @@
 		"safari >= 10",
 		"ie >= 11"
 	],
-	"author": "SAP-Signavio",
+	"author": {
+		"name": "Harold Martin",
+		"email": "harold.martin@gmail.com",
+		"url": "https://www.linkedin.com/in/harold-martin-98526971/"
+	},
 	"license": "BSD-3-Clause",
 	"bugs": {
 		"url": "https://github.com/hbmartin/react-mentions-ts/issues"
@@ -69,13 +74,20 @@
 		"@typescript-eslint/parser": "^8.8.0",
 		"@vitejs/plugin-react": "^5.0.4",
 		"eslint": "^9.11.1",
+		"eslint-plugin-code-complete": "^1.1.2",
 		"eslint-plugin-import": "^2.31.0",
 		"eslint-plugin-jsx-a11y": "^6.9.0",
+		"eslint-plugin-prettier": "^5.5.4",
 		"eslint-plugin-react": "^7.37.1",
 		"eslint-plugin-react-hooks": "^7.0.0",
+		"eslint-plugin-react-refresh": "^0.4.24",
+		"eslint-plugin-sonarjs": "^3.0.5",
+		"eslint-plugin-unicorn": "^61.0.2",
+		"eslint-plugin-unused-imports": "^4.2.0",
 		"identity-obj-proxy": "^3.0.0",
 		"jest": "^30.2.0",
 		"jest-environment-jsdom": "^30.2.0",
+		"jiti": "^2.6.1",
 		"prettier": "^3.3.3",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
@@ -83,6 +95,7 @@
 		"ts-jest": "^29.2.5",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.5.4",
+		"typescript-eslint": "^8.46.1",
 		"vite": "^7.1.10"
 	},
 	"dependencies": {
@@ -90,7 +103,10 @@
 		"substyle": "^9.1.0"
 	},
 	"peerDependencies": {
-		"react": ">=18.0.0",
-		"react-dom": ">=18.0.0"
+		"react": ">=19.0.0",
+		"react-dom": ">=19.0.0"
+	},
+	"engines": {
+		"node": ">=22"
 	}
 }
