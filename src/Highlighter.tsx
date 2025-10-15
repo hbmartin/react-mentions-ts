@@ -9,12 +9,12 @@ import {
 import type { CaretCoordinates, MentionChildConfig, MentionComponentProps, Substyle } from './types'
 
 const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {
-  if (Object.prototype.hasOwnProperty.call(usedKeys, id)) {
+  if (Object.hasOwn(usedKeys, id)) {
     usedKeys[id] += 1
   } else {
     usedKeys[id] = 0
   }
-  return `${id}_${usedKeys[id]}`
+  return `${id}_${usedKeys[id].toString()}`
 }
 
 interface HighlighterProps {
@@ -48,7 +48,7 @@ function Highlighter({
 
     const { offsetLeft, offsetTop } = caretElement
 
-    if (position?.left === offsetLeft && position.top === offsetTop) {
+    if (position === null || (position.left === offsetLeft && position.top === offsetTop)) {
       return
     }
 

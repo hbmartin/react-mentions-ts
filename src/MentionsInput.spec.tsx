@@ -36,10 +36,123 @@ describe('MentionsInput', () => {
     expect(input.tagName).toBe('INPUT')
   })
 
-  it.todo('should show a list of suggestions once the trigger key has been entered.')
-  it.todo('should be possible to navigate through the suggestions with the up and down arrows.')
-  it.todo('should be possible to select a suggestion with enter.')
-  it.todo('should be possible to close the suggestions with esc.')
+  it('should show a list of suggestions once the trigger key has been entered.', async () => {
+    render(
+      <MentionsInput value="@">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('textbox')
+    fireEvent.focus(textarea)
+
+    // Set selection after the trigger character
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    // Wait for suggestions to appear
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('should be possible to navigate through the suggestions with the up and down arrows.', async () => {
+    render(
+      <MentionsInput value="@">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('textbox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    // Wait for suggestions to appear
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+
+    // Get initial focused suggestion
+    let suggestions = screen.getAllByRole('option', { hidden: true })
+    expect(suggestions[0]).toHaveAttribute('aria-selected', 'true')
+
+    // Press down arrow
+    fireEvent.keyDown(textarea, { key: 'ArrowDown', keyCode: 40 })
+
+    suggestions = screen.getAllByRole('option', { hidden: true })
+    expect(suggestions[0]).toHaveAttribute('aria-selected', 'false')
+    expect(suggestions[1]).toHaveAttribute('aria-selected', 'true')
+
+    // Press up arrow
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', keyCode: 38 })
+
+    suggestions = screen.getAllByRole('option', { hidden: true })
+    expect(suggestions[0]).toHaveAttribute('aria-selected', 'true')
+    expect(suggestions[1]).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('should be possible to select a suggestion with enter.', async () => {
+    const onChange = jest.fn()
+
+    render(
+      <MentionsInput value="@" onChange={onChange}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('textbox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    // Wait for suggestions to appear
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+
+    // Press enter to select the first suggestion
+    fireEvent.keyDown(textarea, { key: 'Enter', keyCode: 13 })
+
+    // Verify onChange was called with the selected mention
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled()
+      const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]
+      const [, newValue] = lastCall
+      expect(newValue).toContain(data[0].id)
+    })
+  })
+
+  it('should be possible to close the suggestions with esc.', async () => {
+    render(
+      <MentionsInput value="@">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('textbox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    // Wait for suggestions to appear
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+
+    // Press escape
+    fireEvent.keyDown(textarea, { key: 'Escape', keyCode: 27 })
+
+    // Verify suggestions are closed
+    await waitFor(() => {
+      const suggestions = screen.queryAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBe(0)
+    })
+  })
 
   it('should be able to handle sync responses from multiple mentions sources', async () => {
     const extraData = [
