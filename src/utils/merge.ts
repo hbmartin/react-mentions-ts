@@ -1,9 +1,11 @@
 import mergeDeep from './mergeDeep'
 
-const merge = (target, ...sources) => {
-  return sources.reduce((t, s) => {
-    return mergeDeep(t, s)
-  }, target)
+type PlainObject = Record<string, unknown>
+
+const merge = (target: PlainObject, ...sources: PlainObject[]): PlainObject => {
+  return sources.reduce<PlainObject>((acc, source) => {
+    return mergeDeep(acc as PlainObject, source)
+  }, { ...target })
 }
 
 export default merge

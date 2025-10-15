@@ -4,14 +4,19 @@ import invariant from 'invariant'
 import markupToRegex from './markupToRegex'
 import countPlaceholders from './countPlaceholders'
 import { DEFAULT_MENTION_PROPS } from '../Mention'
-import type { MentionComponentProps } from '../types'
+import type {
+  MentionChildConfig,
+  MentionComponentProps,
+} from '../types'
 
-const readConfigFromChildren = (children: ReactNode) =>
-  Children.toArray(children).map((child) => {
+const readConfigFromChildren = (
+  children: ReactNode
+): MentionChildConfig[] =>
+  Children.toArray(children).map(child => {
     const props = (child as ReactElement<MentionComponentProps>).props
-    const markup = props.markup || DEFAULT_MENTION_PROPS.markup
+    const markup = props.markup ?? DEFAULT_MENTION_PROPS.markup
     const displayTransform =
-      props.displayTransform || DEFAULT_MENTION_PROPS.displayTransform
+      props.displayTransform ?? DEFAULT_MENTION_PROPS.displayTransform
     const regex = props.regex
       ? coerceCapturingGroups(props.regex, markup)
       : markupToRegex(markup)
@@ -22,12 +27,13 @@ const readConfigFromChildren = (children: ReactNode) =>
       markup,
       displayTransform,
       regex,
-    }
+    } satisfies MentionChildConfig
   })
 
 // make sure that the custom regex defines the correct number of capturing groups
-const coerceCapturingGroups = (regex: RegExp, markup: string) => {
-  const numberOfGroups = new RegExp(regex.toString() + '|').exec('')!.length - 1
+const coerceCapturingGroups = (regex: RegExp, markup: string): RegExp => {
+  const execResult = new RegExp(`${regex.source}|`).exec('')
+  const numberOfGroups = (execResult?.length ?? 1) - 1
   const numberOfPlaceholders = countPlaceholders(markup)
 
   invariant(

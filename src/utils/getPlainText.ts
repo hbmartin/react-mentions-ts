@@ -1,12 +1,15 @@
-// @ts-nocheck
 import iterateMentionsMarkup from './iterateMentionsMarkup'
+import type { MentionChildConfig } from '../types'
 
-const getPlainText = (value, config) => {
+const getPlainText = (
+  value: string,
+  config: ReadonlyArray<MentionChildConfig>
+): string => {
   let result = ''
   iterateMentionsMarkup(
     value,
     config,
-    (match, index, plainTextIndex, id, display) => {
+    (_match, _index, _plainTextIndex, _id, display) => {
       result += display
     },
     plainText => {

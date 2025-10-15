@@ -1,8 +1,12 @@
-// @ts-nocheck
 import React from 'react'
 import { defaultStyle } from './utils'
 import { getSubstringIndex } from './utils'
-import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
+import type {
+  ClassNamesProp,
+  MentionRenderSuggestion,
+  Substyle,
+  SuggestionDataItem,
+} from './types'
 
 interface SuggestionProps {
   id: string
@@ -14,9 +18,9 @@ interface SuggestionProps {
   query: string
   renderSuggestion?: MentionRenderSuggestion | null
   suggestion: SuggestionDataItem | string
-  style: any
+  style: Substyle
   className?: string
-  classNames?: unknown
+  classNames?: ClassNamesProp
 }
 
 function Suggestion({
@@ -33,9 +37,41 @@ function Suggestion({
 }: SuggestionProps) {
   const rest = { onClick, onMouseEnter }
 
-  const renderContent = () => {
-    let display = getDisplay()
-    let highlightedDisplay = renderHighlightedDisplay(display, query)
+  const getDisplay = (): string => {
+    if (typeof suggestion === 'string') {
+      return suggestion
+    }
+
+    const { id: suggestionId, display } = suggestion
+
+    if (typeof display === 'string' && display.length > 0) {
+      return display
+    }
+
+    return String(suggestionId)
+  }
+
+  const renderHighlightedDisplay = (display: string): React.ReactNode => {
+    const indexOfMatch = getSubstringIndex(display, query, ignoreAccents)
+
+    if (indexOfMatch === -1) {
+      return <span {...style('display')}>{display}</span>
+    }
+
+    return (
+      <span {...style('display')}>
+        {display.substring(0, indexOfMatch)}
+        <b {...style('highlight')}>
+          {display.substring(indexOfMatch, indexOfMatch + query.length)}
+        </b>
+        {display.substring(indexOfMatch + query.length)}
+      </span>
+    )
+  }
+
+  const renderContent = (): React.ReactNode => {
+    const display = getDisplay()
+    const highlightedDisplay = renderHighlightedDisplay(display)
 
     if (renderSuggestion) {
       return renderSuggestion(
@@ -43,41 +79,11 @@ function Suggestion({
         query,
         highlightedDisplay,
         index,
-        focused
+        Boolean(focused)
       )
     }
 
     return highlightedDisplay
-  }
-
-  const getDisplay = () => {
-    if (typeof suggestion === 'string') {
-      return suggestion
-    }
-
-    let { id, display } = suggestion
-
-    if (id === undefined || !display) {
-      return id
-    }
-
-    return display
-  }
-
-  const renderHighlightedDisplay = (display) => {
-    let i = getSubstringIndex(display, query, ignoreAccents)
-
-    if (i === -1) {
-      return <span {...style('display')}>{display}</span>
-    }
-
-    return (
-      <span {...style('display')}>
-        {display.substring(0, i)}
-        <b {...style('highlight')}>{display.substring(i, i + query.length)}</b>
-        {display.substring(i + query.length)}
-      </span>
-    )
   }
 
   return (
@@ -91,7 +97,9 @@ const styled = defaultStyle(
   {
     cursor: 'pointer',
   },
-  (props) => ({ '&focused': props.focused })
+  (props: Pick<SuggestionProps, 'focused'>) => ({
+    '&focused': Boolean(props.focused),
+  })
 )
 
 export default styled(Suggestion)

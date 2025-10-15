@@ -1,5 +1,8 @@
-const keys = obj => {
-  return obj === Object(obj) ? Object.keys(obj) : []
+const keys = <T extends object>(obj: T | null | undefined): Array<keyof T> => {
+  if (obj == null) {
+    return []
+  }
+  return Object.keys(obj) as Array<keyof T>
 }
 
 export default keys

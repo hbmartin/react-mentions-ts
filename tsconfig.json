@@ -6,10 +6,7 @@
 	},
 	"include": [
 		"src",
-		"demo/src",
-		"demo/vite.config.ts",
 		"jest",
-		"tests",
 		"*.config.ts",
 		"scripts"
 	],
@@ -17,6 +14,11 @@
 		"dist",
 		"coverage",
 		"build",
-		"node_modules"
+		"node_modules",
+		"demo",
+		"tests",
+		"**/*.spec.ts",
+		"**/*.spec.tsx",
+		"eslint.config.ts"
 	]
 }

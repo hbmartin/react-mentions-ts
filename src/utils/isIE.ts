@@ -1,4 +1,4 @@
-// @ts-nocheck
-const isIE = () => !!document.documentMode
+const isIE = (): boolean =>
+  typeof document !== 'undefined' && 'documentMode' in document
 
 export default isIE

@@ -1,19 +1,31 @@
 import isPlainObject from './isPlainObject'
 import keys from './keys'
 
-const mergeDeep = (target, source) => {
-  let output = Object.assign({}, target)
+type PlainObject = Record<string, unknown>
+
+const mergeDeep = <T extends PlainObject, S extends PlainObject>(
+  target: T,
+  source: S
+): T & S => {
+  const output: PlainObject = { ...target }
   if (isPlainObject(target) && isPlainObject(source)) {
     keys(source).forEach(key => {
-      if (isPlainObject(source[key])) {
-        if (!(key in target)) Object.assign(output, { [key]: source[key] })
-        else output[key] = mergeDeep(target[key], source[key])
+      const sourceValue = source[key as keyof S]
+      if (isPlainObject(sourceValue)) {
+        const targetValue = target[key as keyof T]
+        const base = isPlainObject(targetValue)
+          ? (targetValue as PlainObject)
+          : {}
+        output[key as string] = mergeDeep(
+          base,
+          sourceValue as PlainObject
+        )
       } else {
-        Object.assign(output, { [key]: source[key] })
+        output[key as string] = sourceValue
       }
     })
   }
-  return output
+  return output as T & S
 }
 
 export default mergeDeep
