@@ -20,9 +20,9 @@
 	"sideEffects": false,
 	"scripts": {
 		"clean": "rimraf dist",
-		"build": "yarn clean && tsc --build tsconfig.build.json && node ./scripts/postbuild.cjs",
+		"build": "yarn clean && tsup --config tsup.config.ts",
 		"build:demo": "vite build --config demo/vite.config.ts",
-		"typecheck": "tsc --project tsconfig.build.esm.json --noEmit",
+		"typecheck": "tsc --project tsconfig.json --noEmit",
 		"format": "prettier --write \"{src,test,demo/src}/**/*.{ts,tsx}\"",
 		"lint": "eslint .",
 		"dev": "vite --config demo/vite.config.ts",
@@ -109,6 +109,7 @@
 		"rimraf": "^6.0.1",
 		"ts-jest": "^29.2.5",
 		"ts-node": "^10.9.2",
+		"tsup": "^8.3.0",
 		"typescript": "^5.5.4",
 		"typescript-eslint": "^8.46.1",
 		"vite": "^7.1.10"

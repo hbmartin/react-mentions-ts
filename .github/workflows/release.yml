@@ -40,7 +40,7 @@ jobs:
       - name: Build package
         run: yarn build
       - name: Verify publish artifacts
-        run: npm pack --dry-run
+        run: npm pack
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
