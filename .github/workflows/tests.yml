@@ -18,4 +18,4 @@ jobs:
       - run: yarn lint
       - run: yarn build
       - run: npx publint --pack npm
-      - run: npx attw --pack .
+      - run: npx attw --pack . --profile node16

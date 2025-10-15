@@ -23,7 +23,7 @@
 - ⚡ **Async Data Loading** - Load suggestions dynamically from APIs
 - 🔍 **Smart Suggestions** - Real-time filtering and matching
 - ♿ **Accessible** - Built with ARIA labels and keyboard navigation
-- 📦 **Lightweight** - Zero dependencies (except React)
+- 📦 **Lightweight** - Zero dependencies (`React` and `clsx` are peerDeps)
 - 🎯 **TypeScript First** - Written in TypeScript with complete type definitions
 - 🧪 **Well Tested** - Comprehensive test suite with Testing Library
 - 🌐 **SSR Compatible** - Works with Next.js and other SSR frameworks

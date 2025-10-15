@@ -1,1 +1,3 @@
 - never run publint with yarn, instead always use `npx publint --pack npm`
+- use `yarn` for all commands except `pack`
+- always run `yarn test` after completing the todo list to make sure there are no breaking changes
