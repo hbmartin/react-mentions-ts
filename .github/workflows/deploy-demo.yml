@@ -12,8 +12,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: 'pages'
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.x'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -35,13 +35,13 @@ jobs:
         run: yarn build
 
       - name: Build demo
-        run: yarn vite build --config demo/vite.config.ts --base=/react-mentions-ts/
+        run: yarn build:demo --base=/react-mentions-ts/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: './demo/dist'
 

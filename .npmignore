@@ -1,8 +1,0 @@
-.DS_Store
-gh-pages
-src
-test
-.gitignore
-Gruntfile.js
-react-mentions.sublime-project
-.grunt

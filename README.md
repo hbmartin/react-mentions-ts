@@ -1,7 +1,13 @@
 # [React Mentions](https://react-mentions.vercel.app)
-[![REUSE status](https://api.reuse.software/badge/github.com/signavio/react-mentions)](https://api.reuse.software/info/github.com/signavio/react-mentions)
+
+[![npm version](https://badge.fury.io/js/react-mentions-ts.svg)](https://www.npmjs.com/package/react-mentions-ts)
+![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)
+[![NPM License](https://img.shields.io/npm/l/react-mentions-ts?color=blue)](https://github.com/hbmartin/react-mentions-ts/blob/main/LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hbmartin/react-mentions-ts)
 
 A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.
+
+### [Try out the demos now!](https://hbmartin.github.io/react-mentions-ts/)
 
 Used in production at [Signavio](https://signavio.com), [State](https://state.com), [Snips](https://snips.ai), [Swat.io](https://swat.io), [GotDone](https://www.gotdone.me), [Volinspire](https://volinspire.com), [Marvin](https://amazingmarvin.com), [Timely](https://timelyapp.com), [GuideFitter](https://www.guidefitter.com/), [Evite](https://www.evite.com/), [Publer](https://publer.me/), [Kontentino](https://www.kontentino.com/), [Wix.com](https://wix.com), [Highlight](https://highlight.run/) and [you?](https://github.com/hbmartin/react-mentions-ts/edit/master/README.md)
 
@@ -35,16 +41,8 @@ Example:
 
 ```tsx
 <MentionsInput value={this.state.value} onChange={this.handleChange}>
-  <Mention
-    trigger="@"
-    data={this.props.users}
-    renderSuggestion={this.renderUserSuggestion}
-  />
-  <Mention
-    trigger="#"
-    data={this.requestTag}
-    renderSuggestion={this.renderTagSuggestion}
-  />
+  <Mention trigger="@" data={this.props.users} renderSuggestion={this.renderUserSuggestion} />
+  <Mention trigger="#" data={this.requestTag} renderSuggestion={this.renderTagSuggestion} />
 </MentionsInput>
 ```
 
@@ -68,18 +66,18 @@ The `MentionsInput` supports the following props for configuring the widget:
 | forceSuggestionsAboveCursor | boolean                                                 | false          | Forces the SuggestionList to be rendered above the cursor                              |
 | a11ySuggestionsListLabel    | string                                                  | `''`           | This label would be exposed to screen readers when suggestion popup appears            |
 | customSuggestionsContainer  | function(children)                                      | empty function | Allows customizing the container of the suggestions                                    |
-| inputComponent              | React component                                         | undefined      | Allows the use of a custom input component component                                                 |
+| inputComponent              | React component                                         | undefined      | Allows the use of a custom input component component                                   |
 
 Each data source is configured using a `Mention` component, which has the following props:
 
 | Prop name        | Type                                                         | Default value                               | Description                                                                                                                                            |
-| ---------------- | ------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --- |
 | trigger          | regexp or string                                             | `'@'`                                       | Defines the char sequence upon which to trigger querying the data source                                                                               |
 | data             | array or function (search, callback)                         | `null`                                      | An array of the mentionable data entries (objects with `id` & `display` keys, or a filtering function that returns an array based on a query parameter |
 | renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                                      | Allows customizing how mention suggestions are rendered (optional)                                                                                     |
 | markup           | string                                                       | `'@[__display__](__id__)'`                  | A template string for the markup to use for mentions                                                                                                   |
 | displayTransform | function (id, display)                                       | returns `display`                           | Accepts a function for customizing the string that is displayed for a mention                                                                          |
-| regex            | RegExp                                                       | automatically derived from `markup` pattern | Allows providing a custom regular expression for parsing your markup and extracting the placeholder interpolations (optional)                          |  |
+| regex            | RegExp                                                       | automatically derived from `markup` pattern | Allows providing a custom regular expression for parsing your markup and extracting the placeholder interpolations (optional)                          |     |
 | onAdd            | function (id, display, startPos, endPos)                     | empty function                              | Callback invoked when a suggestion has been added (optional)                                                                                           |
 | appendSpaceOnAdd | boolean                                                      | `false`                                     | Append a space when a suggestion has been added (optional)                                                                                             |
 

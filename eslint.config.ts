@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import codeComplete from 'eslint-plugin-code-complete'
 import importPlugin from 'eslint-plugin-import'
+import jestPlugin from 'eslint-plugin-jest'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import pluginPromise from 'eslint-plugin-promise'
 import reactPlugin from 'eslint-plugin-react'
@@ -12,7 +13,6 @@ import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
 import globals from 'globals'
 import { configs as tsConfigs } from 'typescript-eslint'
-import jestPlugin from 'eslint-plugin-jest'
 
 export default defineConfig([
   globalIgnores([
@@ -45,11 +45,11 @@ export default defineConfig([
       jestPlugin.configs['flat/recommended'],
     ],
     plugins: {
-      'unused-imports': unusedImports,
       'code-complete': codeComplete,
-      react: reactPlugin,
       'react-hooks': reactHooks,
+      'unused-imports': unusedImports,
       jest: jestPlugin,
+      react: reactPlugin,
     },
     languageOptions: {
       ecmaVersion: 2023,
