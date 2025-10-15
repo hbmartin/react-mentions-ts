@@ -1,46 +1,87 @@
 #!/usr/bin/env node
-const { writeFileSync, mkdirSync, rmSync, readdirSync, renameSync } = require('node:fs')
-const { join } = require('node:path')
+const {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} = require('node:fs')
+const { dirname, join, resolve } = require('node:path')
 
-const cjsDir = join(__dirname, '..', 'dist', 'cjs')
+const distDir = join(__dirname, '..', 'dist')
+const esmDir = join(distDir, 'esm')
 
-mkdirSync(cjsDir, { recursive: true })
+if (!existsSync(esmDir)) {
+  throw new Error('Expected ESM build output in dist/esm; did the TypeScript build run?')
+}
 
-writeFileSync(join(cjsDir, 'package.json'), JSON.stringify({ type: 'commonjs' }, null, 2), 'utf8')
+const JS_EXTENSION = '.js'
+const FROM_SPECIFIER_PATTERN = /(from\s+['"])(\.{1,2}\/[^'"]+)(['"])/g
+const BARE_IMPORT_PATTERN = /(import\s+['"])(\.{1,2}\/[^'"]+)(['"])/g
 
-// Rename .d.ts files to .d.cts in the CJS directory
-function renameDtsFiles(dir) {
-  const entries = readdirSync(dir, { withFileTypes: true })
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name)
+function normalizeSpecifier(spec, filePath) {
+  if (!spec.startsWith('.')) {
+    return spec
+  }
+
+  if (/\.(?:[cm]?js|json|node)$/i.test(spec)) {
+    return spec
+  }
+
+  const absoluteTarget = resolve(dirname(filePath), spec)
+  const candidateFile = `${absoluteTarget}${JS_EXTENSION}`
+  if (existsSync(candidateFile)) {
+    return `${spec}${JS_EXTENSION}`
+  }
+
+  if (existsSync(absoluteTarget) && statSync(absoluteTarget).isDirectory()) {
+    const indexCandidate = join(absoluteTarget, `index${JS_EXTENSION}`)
+    if (existsSync(indexCandidate)) {
+      return `${spec.replace(/\/$/, '')}/index${JS_EXTENSION}`
+    }
+  }
+
+  return spec
+}
+
+function rewriteSpecifiers(filePath) {
+  const original = readFileSync(filePath, 'utf8')
+  let updated = original
+
+  const replace = (pattern) =>
+    updated.replace(pattern, (match, prefix, specifier, suffix) => {
+      const normalized = normalizeSpecifier(specifier, filePath)
+      if (normalized !== specifier) {
+        return `${prefix}${normalized}${suffix}`
+      }
+      return match
+    })
+
+  updated = replace(FROM_SPECIFIER_PATTERN)
+  updated = replace(BARE_IMPORT_PATTERN)
+
+  if (updated !== original) {
+    writeFileSync(filePath, updated)
+  }
+}
+
+function walk(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = join(directory, entry.name)
     if (entry.isDirectory()) {
-      renameDtsFiles(fullPath)
-    } else if (entry.name.endsWith('.d.ts')) {
-      const newPath = fullPath.replace(/\.d\.ts$/, '.d.cts')
-      renameSync(fullPath, newPath)
-    } else if (entry.name.endsWith('.d.ts.map')) {
-      const newPath = fullPath.replace(/\.d\.ts\.map$/, '.d.cts.map')
-      renameSync(fullPath, newPath)
-      try {
-        // Keep the map’s "file" field in sync with the renamed declaration
-        const map = JSON.parse(require('node:fs').readFileSync(newPath, 'utf8'))
-        if (typeof map?.file === 'string' && map.file.endsWith('.d.ts')) {
-          map.file = map.file.replace(/\.d\.ts$/, '.d.cts')
-          require('node:fs').writeFileSync(newPath, JSON.stringify(map), 'utf8')
-        }
-      } catch {
-        // ignore
+      walk(fullPath)
+    } else if (entry.isFile()) {
+      if (entry.name.endsWith('.js') || entry.name.endsWith('.d.ts')) {
+        rewriteSpecifiers(fullPath)
       }
     }
   }
 }
 
-renameDtsFiles(cjsDir)
+walk(esmDir)
 
-for (const infoFile of [
-  ['esm', 'tsconfig.build.esm.tsbuildinfo'],
-  ['cjs', 'tsconfig.build.cjs.tsbuildinfo'],
-]) {
-  const target = join(__dirname, '..', 'dist', infoFile[0], infoFile[1])
-  rmSync(target, { force: true })
+const tsBuildInfo = join(esmDir, 'tsconfig.build.esm.tsbuildinfo')
+if (existsSync(tsBuildInfo)) {
+  rmSync(tsBuildInfo)
 }
