@@ -6,11 +6,7 @@ const cjsDir = join(__dirname, '..', 'dist', 'cjs')
 
 mkdirSync(cjsDir, { recursive: true })
 
-writeFileSync(
-  join(cjsDir, 'package.json'),
-  JSON.stringify({ type: 'commonjs' }, null, 2),
-  'utf8'
-)
+writeFileSync(join(cjsDir, 'package.json'), JSON.stringify({ type: 'commonjs' }, null, 2), 'utf8')
 
 // Rename .d.ts files to .d.cts in the CJS directory
 function renameDtsFiles(dir) {
@@ -25,6 +21,16 @@ function renameDtsFiles(dir) {
     } else if (entry.name.endsWith('.d.ts.map')) {
       const newPath = fullPath.replace(/\.d\.ts\.map$/, '.d.cts.map')
       renameSync(fullPath, newPath)
+      try {
+        // Keep the map’s "file" field in sync with the renamed declaration
+        const map = JSON.parse(require('node:fs').readFileSync(newPath, 'utf8'))
+        if (typeof map?.file === 'string' && map.file.endsWith('.d.ts')) {
+          map.file = map.file.replace(/\.d\.ts$/, '.d.cts')
+          require('node:fs').writeFileSync(newPath, JSON.stringify(map), 'utf8')
+        }
+      } catch {
+        // ignore
+      }
     }
   }
 }
