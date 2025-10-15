@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(yarn test)"
+      "Bash(yarn test)",
+      "Bash(yarn exec publint)",
+      "Bash(yarn pack --dry-run)"
     ],
     "deny": [],
     "ask": []
