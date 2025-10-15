@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,8 +31,10 @@ jobs:
           npm install -g npm@latest np
           hash -r
           npm -v
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install Dependencies
-        run: yarn
+        run: yarn install --frozen-lockfile
       - name: Lint
         run: yarn lint
       - name: Run tests

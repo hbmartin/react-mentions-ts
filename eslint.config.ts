@@ -62,7 +62,7 @@ export default defineConfig([
 		settings: {
 			"import/resolver": {
 				typescript: {
-					project: "./tsconfig.app.json",
+					project: ["./tsconfig*.json"],
 				},
 				node: {
 					extensions: [".js", ".jsx", ".ts", ".tsx"],
