@@ -21,7 +21,7 @@ describe('#getMentions', () => {
   const value =
     "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) to this conversation..."
 
-  const displayTransform = id => `<--${id}-->`
+  const displayTransform = (id) => `<--${id}-->`
 
   it('should return an array of all mentions in the provided value', () => {
     const mentions = getMentions(value, config)
@@ -46,7 +46,7 @@ describe('#getMentions', () => {
   it('should take into account the displayTransform if passed', () => {
     const mentions = getMentions(
       value,
-      config.map(c => ({ ...c, displayTransform }))
+      config.map((c) => ({ ...c, displayTransform }))
     )
     expect(mentions).toEqual([
       {

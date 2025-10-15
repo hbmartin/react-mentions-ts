@@ -6,9 +6,9 @@ describe('#keys', () => {
     { input: {}, expected: [] },
   ]
 
-  inputValues.forEach(value => {
+  for (const value of inputValues) {
     it(`should return the string keyed property names of 'object'`, () => {
       expect(keys(value.input)).toEqual(value.expected)
     })
-  })
+  }
 })

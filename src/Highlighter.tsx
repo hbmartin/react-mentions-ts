@@ -1,23 +1,18 @@
 import React, { Children, useEffect, useState } from 'react'
-import { defaultStyle } from './utils'
 import {
+  defaultStyle,
   iterateMentionsMarkup,
   mapPlainTextIndex,
   readConfigFromChildren,
   isNumber,
 } from './utils'
-import type {
-  CaretCoordinates,
-  MentionChildConfig,
-  MentionComponentProps,
-  Substyle,
-} from './types'
+import type { CaretCoordinates, MentionChildConfig, MentionComponentProps, Substyle } from './types'
 
 const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {
-  if (!Object.prototype.hasOwnProperty.call(usedKeys, id)) {
-    usedKeys[id] = 0
-  } else {
+  if (Object.prototype.hasOwnProperty.call(usedKeys, id)) {
     usedKeys[id] += 1
+  } else {
+    usedKeys[id] = 0
   }
   return `${id}_${usedKeys[id]}`
 }
@@ -53,7 +48,7 @@ function Highlighter({
 
     const { offsetLeft, offsetTop } = caretElement
 
-    if (position && position.left === offsetLeft && position.top === offsetTop) {
+    if (position?.left === offsetLeft && position.top === offsetTop) {
       return
     }
 
@@ -66,12 +61,9 @@ function Highlighter({
   let caretPositionInMarkup: number | null | undefined
 
   if (selectionEnd === selectionStart) {
-    caretPositionInMarkup = mapPlainTextIndex(
-      value,
-      config,
-      selectionStart,
-      'START'
-    ) as number | undefined
+    caretPositionInMarkup = mapPlainTextIndex(value, config, selectionStart, 'START') as
+      | number
+      | undefined
   }
 
   const resultComponents: React.ReactNode[] = []
@@ -105,21 +97,17 @@ function Highlighter({
     </span>
   )
 
-  const textIteratee = (
-    substr: string,
-    index: number,
-    _substrPlainTextIndex: number
-  ) => {
+  const textIteratee = (substr: string, index: number, _substrPlainTextIndex: number) => {
     if (
       isNumber(caretPositionInMarkup) &&
       caretPositionInMarkup >= index &&
       caretPositionInMarkup <= index + substr.length
     ) {
       const splitIndex = caretPositionInMarkup - index
-      components.push(renderSubstring(substr.substring(0, splitIndex), substringComponentKey))
-      components = [
-        renderSubstring(substr.substring(splitIndex), substringComponentKey),
-      ]
+      components.push(
+        renderSubstring(substr.slice(0, Math.max(0, splitIndex)), substringComponentKey)
+      )
+      components = [renderSubstring(substr.slice(Math.max(0, splitIndex)), substringComponentKey)]
     } else {
       components.push(renderSubstring(substr, substringComponentKey))
     }

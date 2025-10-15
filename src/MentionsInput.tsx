@@ -12,22 +12,6 @@ import { createPortal } from "react-dom";
 import Highlighter from "./Highlighter";
 import { DEFAULT_MENTION_PROPS } from "./Mention";
 import SuggestionsOverlay from "./SuggestionsOverlay";
-import type {
-	CaretCoordinates,
-	DataProviderFn,
-	DataSource,
-	InputComponentProps,
-	MentionComponentProps,
-	MentionDataItem,
-	MentionOccurrence,
-	MentionsInputProps,
-	MentionsInputState,
-	QueryInfo,
-	Substyle,
-	SuggestionDataItem,
-	SuggestionsMap,
-	SuggestionsPosition,
-} from "./types";
 import {
 	applyChangeToValue,
 	countSuggestions,
@@ -47,6 +31,21 @@ import {
 	readConfigFromChildren,
 	spliceString,
 } from "./utils";
+import type {
+	CaretCoordinates,
+	DataSource,
+	InputComponentProps,
+	MentionComponentProps,
+	MentionDataItem,
+	MentionOccurrence,
+	MentionsInputProps,
+	MentionsInputState,
+	QueryInfo,
+	Substyle,
+	SuggestionDataItem,
+	SuggestionsMap,
+	SuggestionsPosition,
+} from "./types";
 
 type InputElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -62,7 +61,7 @@ export const makeTriggerRegex = (
 	trigger: string | RegExp = "@",
 	options: TriggerOptions = {},
 ): RegExp => {
-	if (trigger == null) {
+	if (trigger == undefined) {
 		trigger = "@";
 	}
 	if (trigger instanceof RegExp) {
@@ -75,9 +74,7 @@ export const makeTriggerRegex = (
 	// first capture group is the part to be replaced on completion
 	// second capture group is for extracting the search query
 	return new RegExp(
-		`(?:^|\\s)(${escapedTriggerChar}([^${
-			allowSpaceInQuery ? "" : "\\s"
-		}${escapedTriggerChar}]*))$`,
+		`(?:^|\\s)(${escapedTriggerChar}([^${allowSpaceInQuery ? "" : String.raw`\s`}${escapedTriggerChar}]*))$`,
 	);
 };
 
@@ -145,20 +142,20 @@ class MentionsInput extends React.Component<
 	};
 
 	private suggestions: SuggestionsMap = {};
-	private uuidSuggestionsOverlay: string;
+	private readonly uuidSuggestionsOverlay: string;
 	private containerElement: HTMLDivElement | null = null;
 	private inputElement: HTMLInputElement | HTMLTextAreaElement | null = null;
 	private highlighterElement: HTMLDivElement | null = null;
 	private suggestionsElement: HTMLDivElement | null = null;
 	private _queryId = 0;
 	private _suggestionsMouseDown = false;
-	private _selectionStartBeforeFocus: number | null = null;
-	private _selectionEndBeforeFocus: number | null = null;
+	private readonly _selectionStartBeforeFocus: number | null = null;
+	private readonly _selectionEndBeforeFocus: number | null = null;
 	private _isComposing = false;
 
 	constructor(props: MentionsInputComponentProps) {
 		super(props);
-		this.uuidSuggestionsOverlay = Math.random().toString(16).substring(2);
+		this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2);
 
 		this.handleCopy = this.handleCopy.bind(this);
 		this.handleCut = this.handleCut.bind(this);
@@ -461,7 +458,7 @@ class MentionsInput extends React.Component<
 			markupStartIndex,
 			markupEndIndex,
 			pastedMentions || pastedData,
-		).replace(/\r/g, "");
+		).replaceAll("\r", "");
 
 		const newPlainTextValue = getPlainText(newValue, config);
 
@@ -476,7 +473,7 @@ class MentionsInput extends React.Component<
 
 		// Move the cursor position to the end of the pasted data
 		const startOfMention =
-			selectionStart == null
+			selectionStart == undefined
 				? undefined
 				: findStartOfMentionInPlainText(valueText, config, selectionStart);
 		const nextPos =
@@ -599,8 +596,8 @@ class MentionsInput extends React.Component<
 
 	// Handle input element's change event
 	handleChange = (ev: ChangeEvent<InputElement>) => {
-		const native = ev.nativeEvent as any;
-		if (typeof native?.isComposing === "boolean") {
+		const native = ev.nativeEvent;
+		if ("isComposing" in native && typeof native?.isComposing === "boolean") {
 			this._isComposing = native.isComposing;
 		}
 		if (isIE()) {
@@ -621,12 +618,12 @@ class MentionsInput extends React.Component<
 		let newPlainTextValue = ev.target.value;
 
 		let selectionStartBefore = this.state.selectionStart;
-		if (selectionStartBefore == null) {
+		if (selectionStartBefore == undefined) {
 			selectionStartBefore = ev.target.selectionStart ?? 0;
 		}
 
 		let selectionEndBefore = this.state.selectionEnd;
-		if (selectionEndBefore == null) {
+		if (selectionEndBefore == undefined) {
 			selectionEndBefore = ev.target.selectionEnd ?? selectionStartBefore;
 		}
 
@@ -708,7 +705,9 @@ class MentionsInput extends React.Component<
 		});
 
 		// do nothing while a IME composition session is active
-		if (this._isComposing) return;
+		if (this._isComposing) {
+			return;
+		}
 
 		// refresh suggestions queries
 		const el = this.inputElement;
@@ -765,11 +764,8 @@ class MentionsInput extends React.Component<
 				if (suggestionsCount === 1 && this.props.selectLastSuggestionOnSpace) {
 					this.selectFocused();
 				}
-				return;
 			}
-			default: {
-				return;
-			}
+			default:
 		}
 	};
 
@@ -815,7 +811,7 @@ class MentionsInput extends React.Component<
 			});
 		}
 
-		window.setTimeout(() => {
+		globalThis.setTimeout(() => {
 			this.updateHighlighterScroll();
 		}, 1);
 
@@ -878,27 +874,20 @@ class MentionsInput extends React.Component<
 				document.documentElement.clientWidth,
 				window.innerWidth || 0,
 			);
-			if (left + suggestions.offsetWidth > viewportWidth) {
-				position.left = Math.max(0, viewportWidth - suggestions.offsetWidth);
-			} else {
-				position.left = left;
-			}
+			position.left =
+				left + suggestions.offsetWidth > viewportWidth
+					? Math.max(0, viewportWidth - suggestions.offsetWidth)
+					: left;
 			// guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
 			// Move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
 			// is small enough to NOT cover up the caret
-			if (
+			position.top =
 				(allowSuggestionsAboveCursor &&
 					top + suggestions.offsetHeight > viewportHeight &&
 					suggestions.offsetHeight < top - caretHeight) ||
 				forceSuggestionsAboveCursor
-			) {
-				position.top = Math.max(
-					0,
-					top - suggestions.offsetHeight - caretHeight,
-				);
-			} else {
-				position.top = top;
-			}
+					? Math.max(0, top - suggestions.offsetHeight - caretHeight)
+					: top;
 		} else {
 			const left = caretPosition.left - highlighter.scrollLeft;
 			const top = caretPosition.top - highlighter.scrollTop;
@@ -911,7 +900,7 @@ class MentionsInput extends React.Component<
 			// guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
 			// move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
 			// is small enough to NOT cover up the caret
-			if (
+			position.top =
 				(allowSuggestionsAboveCursor &&
 					viewportRelative.top -
 						highlighter.scrollTop +
@@ -920,11 +909,8 @@ class MentionsInput extends React.Component<
 					suggestions.offsetHeight <
 						caretOffsetParentRect.top - caretHeight - highlighter.scrollTop) ||
 				forceSuggestionsAboveCursor
-			) {
-				position.top = top - suggestions.offsetHeight - caretHeight;
-			} else {
-				position.top = top;
-			}
+					? top - suggestions.offsetHeight - caretHeight
+					: top;
 		}
 
 		if (
@@ -968,7 +954,9 @@ class MentionsInput extends React.Component<
 		selectionStart: number | null,
 		selectionEnd: number | null,
 	): void => {
-		if (selectionStart === null || selectionEnd === null) return;
+		if (selectionStart === null || selectionEnd === null) {
+			return;
+		}
 
 		const el = this.inputElement;
 		if (!el) {
@@ -1023,7 +1011,7 @@ class MentionsInput extends React.Component<
 
 		// Extract substring in between the end of the previous mention and the caret
 		const substringStartIndex = getEndOfLastMention(
-			value.substring(0, positionInValue),
+			value.slice(0, Math.max(0, positionInValue)),
 			config,
 		);
 		const substring = plainTextValue.substring(
@@ -1084,10 +1072,7 @@ class MentionsInput extends React.Component<
 		if (!dataSource) {
 			return;
 		}
-		const provideData = getDataProvider(
-			dataSource,
-			ignoreAccents,
-		) as DataProviderFn;
+		const provideData = getDataProvider(dataSource, ignoreAccents);
 		const syncResult = provideData(query);
 		void this.updateSuggestions(
 			this._queryId,
@@ -1114,11 +1099,7 @@ class MentionsInput extends React.Component<
 			return;
 		}
 		let data: MentionDataItem[];
-		if (results instanceof Promise) {
-			data = await results;
-		} else {
-			data = results;
-		}
+		data = results instanceof Promise ? await results : results;
 		// save in property so that multiple sync state updates from different mentions sources
 		// won't overwrite each other
 		this.suggestions = {
@@ -1251,15 +1232,17 @@ const getComputedStyleLengthProp = (
 	forElement: Element,
 	propertyName: string,
 ): number => {
-	const length = parseFloat(
-		window.getComputedStyle(forElement, null).getPropertyValue(propertyName),
+	const length = Number.parseFloat(
+		globalThis
+			.getComputedStyle(forElement, null)
+			.getPropertyValue(propertyName),
 	);
 	return Number.isFinite(length) ? length : 0;
 };
 
 const isMobileSafari =
 	typeof navigator !== "undefined" &&
-	/iPhone|iPad|iPod/i.test(navigator.userAgent);
+	/iphone|ipad|ipod/i.test(navigator.userAgent);
 
 const styled = defaultStyle(
 	{

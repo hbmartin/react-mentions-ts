@@ -31,10 +31,8 @@ describe('#getPlainText', () => {
     expect(
       getPlainText(
         value,
-        config.map(c => ({ ...c, displayTransform: id => `<--${id}-->` }))
+        config.map((c) => ({ ...c, displayTransform: (id) => `<--${id}-->` }))
       )
-    ).toEqual(
-      "Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation..."
-    )
+    ).toEqual("Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation...")
   })
 })

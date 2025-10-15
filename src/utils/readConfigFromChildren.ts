@@ -1,25 +1,17 @@
 import { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import invariant from 'invariant'
-import markupToRegex from './markupToRegex'
-import countPlaceholders from './countPlaceholders'
+import type { MentionChildConfig, MentionComponentProps } from '../types'
 import { DEFAULT_MENTION_PROPS } from '../Mention'
-import type {
-  MentionChildConfig,
-  MentionComponentProps,
-} from '../types'
+import countPlaceholders from './countPlaceholders'
+import markupToRegex from './markupToRegex'
 
-const readConfigFromChildren = (
-  children: ReactNode
-): MentionChildConfig[] =>
-  Children.toArray(children).map(child => {
+const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
+  Children.toArray(children).map((child) => {
     const props = (child as ReactElement<MentionComponentProps>).props
     const markup = props.markup ?? DEFAULT_MENTION_PROPS.markup
-    const displayTransform =
-      props.displayTransform ?? DEFAULT_MENTION_PROPS.displayTransform
-    const regex = props.regex
-      ? coerceCapturingGroups(props.regex, markup)
-      : markupToRegex(markup)
+    const displayTransform = props.displayTransform ?? DEFAULT_MENTION_PROPS.displayTransform
+    const regex = props.regex ? coerceCapturingGroups(props.regex, markup) : markupToRegex(markup)
 
     return {
       ...DEFAULT_MENTION_PROPS,

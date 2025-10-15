@@ -1,5 +1,5 @@
-import iterateMentionsMarkup from './iterateMentionsMarkup'
 import type { MentionChildConfig } from '../types'
+import iterateMentionsMarkup from './iterateMentionsMarkup'
 
 type InMarkupCorrection = 'START' | 'END' | 'NULL'
 
@@ -22,12 +22,10 @@ const mapPlainTextIndex = (
 
   let result: number | null | undefined
 
-  const textIteratee = (
-    substr: string,
-    index: number,
-    substrPlainTextIndex: number
-  ): void => {
-    if (result !== undefined) return
+  const textIteratee = (substr: string, index: number, substrPlainTextIndex: number): void => {
+    if (result !== undefined) {
+      return
+    }
 
     if (substrPlainTextIndex + substr.length >= indexInPlainText) {
       // found the corresponding position in the current plain text range
@@ -42,17 +40,18 @@ const mapPlainTextIndex = (
     _id: string,
     display: string
   ): void => {
-    if (result !== undefined) return
+    if (result !== undefined) {
+      return
+    }
 
     if (mentionPlainTextIndex + display.length > indexInPlainText) {
       // found the corresponding position inside current match,
       // return the index of the first or after the last char of the matching markup
       // depending on whether the `inMarkupCorrection`
-      if (inMarkupCorrection === 'NULL') {
-        result = null
-      } else {
-        result = index + (inMarkupCorrection === 'END' ? markup.length : 0)
-      }
+      result =
+        inMarkupCorrection === 'NULL'
+          ? null
+          : index + (inMarkupCorrection === 'END' ? markup.length : 0)
     }
   }
 

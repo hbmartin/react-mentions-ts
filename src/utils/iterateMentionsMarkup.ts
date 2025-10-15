@@ -1,7 +1,7 @@
-import findPositionOfCapturingGroup from './findPositionOfCapturingGroup'
+import type { MentionChildConfig } from '../types'
 import combineRegExps from './combineRegExps'
 import countPlaceholders from './countPlaceholders'
-import type { MentionChildConfig } from '../types'
+import findPositionOfCapturingGroup from './findPositionOfCapturingGroup'
 
 type MarkupIteratee = (
   match: string,
@@ -13,11 +13,7 @@ type MarkupIteratee = (
   lastMentionEndIndex: number
 ) => void
 
-type TextIteratee = (
-  substring: string,
-  index: number,
-  substrPlainTextIndex: number
-) => void
+type TextIteratee = (substring: string, index: number, substrPlainTextIndex: number) => void
 
 const emptyFn: TextIteratee = () => {}
 
@@ -29,7 +25,7 @@ const iterateMentionsMarkup = (
   markupIteratee: MarkupIteratee,
   textIteratee: TextIteratee = emptyFn
 ): void => {
-  const regex = combineRegExps(config.map(c => c.regex))
+  const regex = combineRegExps(config.map((c) => c.regex))
 
   let accOffset = 2 // first is whole match, second is the for the capturing group of first regexp component
   const captureGroupOffsets = config.map(({ markup }) => {
@@ -44,9 +40,9 @@ const iterateMentionsMarkup = (
   let currentPlainTextIndex = 0
 
   // detect all mention markup occurrences in the value and iterate the matches
-  // eslint-disable-next-line no-cond-assign
+
   while ((match = regex.exec(value)) !== null) {
-    const offset = captureGroupOffsets.find(o => Boolean(match?.[o]))
+    const offset = captureGroupOffsets.find((o) => Boolean(match?.[o]))
     if (offset === undefined) {
       continue
     }
@@ -61,7 +57,7 @@ const iterateMentionsMarkup = (
     const displayPos = offset + findPositionOfCapturingGroup(markup, 'display')
 
     const idMatch = match[idPos]
-    if (idMatch == null) {
+    if (idMatch == undefined) {
       continue
     }
 
@@ -86,7 +82,7 @@ const iterateMentionsMarkup = (
   }
 
   if (start < value.length) {
-    textIteratee(value.substring(start), start, currentPlainTextIndex)
+    textIteratee(value.slice(Math.max(0, start)), start, currentPlainTextIndex)
   }
 }
 

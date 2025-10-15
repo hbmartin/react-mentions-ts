@@ -20,8 +20,7 @@ describe('#mapPlainTextIndex', () => {
 
   const value =
     "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) to this conversation..."
-  const plainText =
-    "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
+  const plainText = "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
   const plainTextDisplayTransform =
     "Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation..."
 
@@ -35,7 +34,7 @@ describe('#mapPlainTextIndex', () => {
     const plainTextIndex = plainTextDisplayTransform.indexOf("let's add")
     const result = mapPlainTextIndex(
       value,
-      config.map(c => ({ ...c, displayTransform: id => `<--${id}-->` })),
+      config.map((c) => ({ ...c, displayTransform: (id) => `<--${id}-->` })),
       plainTextIndex,
       'START'
     )
@@ -77,8 +76,7 @@ describe('#mapPlainTextIndex', () => {
     expect(result).toEqual(value.indexOf(joeMarkup))
 
     // index of markup's last char
-    plainTextIndex =
-      plainText.indexOf('joe@smoe.com') + 'joe@smoe.com'.length - 1
+    plainTextIndex = plainText.indexOf('joe@smoe.com') + 'joe@smoe.com'.length - 1
     result = mapPlainTextIndex(value, config, plainTextIndex)
     expect(result).toEqual(value.indexOf(joeMarkup))
   })
@@ -96,8 +94,7 @@ describe('#mapPlainTextIndex', () => {
     expect(result).toEqual(value.indexOf(joeMarkup) + joeMarkup.length)
 
     // index of markup's last char
-    plainTextIndex =
-      plainText.indexOf('joe@smoe.com') + 'joe@smoe.com'.length - 1
+    plainTextIndex = plainText.indexOf('joe@smoe.com') + 'joe@smoe.com'.length - 1
     result = mapPlainTextIndex(value, config, plainTextIndex, 'END')
     expect(result).toEqual(value.indexOf(joeMarkup) + joeMarkup.length)
   })

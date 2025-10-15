@@ -24,6 +24,7 @@ export default defineConfig([
 		".github/**",
 		"storybook-static",
 		".storybook",
+		"demo/vite.config.ts",
 	]),
 	{
 		files: ["**/*.{ts,tsx}"],

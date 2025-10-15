@@ -21,7 +21,7 @@ describe('#getEndOfLastMention', () => {
   const value =
     "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) to this conversation..."
 
-  const displayTransform = id => `<--${id}-->`
+  const displayTransform = (id) => `<--${id}-->`
 
   it('should return the end index of the last mention in the plain text', () => {
     const index = getEndOfLastMention(value, config)
@@ -31,7 +31,7 @@ describe('#getEndOfLastMention', () => {
   it('should take into account the displayTransform', () => {
     const index = getEndOfLastMention(
       value,
-      config.map(c => ({ ...c, displayTransform }))
+      config.map((c) => ({ ...c, displayTransform }))
     )
     expect(index).toEqual(48)
   })
