@@ -2,10 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(yarn test)",
-      "Bash(yarn exec publint)",
       "Bash(yarn pack --dry-run)",
       "Bash(yarn build)",
-      "Bash(yarn exec attw:*)"
+      "Bash(yarn exec attw:*)",
+      "Bash(npm pack:*)",
+      "Bash(npx publint)",
+      "Bash(npx publint:*)",
+      "Bash(npx attw --pack .)",
+      "Bash(cat:*)",
+      "Bash(npm info:*)"
     ],
     "deny": [],
     "ask": []

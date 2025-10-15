@@ -1,17 +1,18 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-	entry: ['src/index.ts'],
-	format: ['esm'],
-	dts: true,
-	sourcemap: true,
-	outDir: 'dist/esm',
-	target: 'es2022',
-	platform: 'neutral',
-	external: ['react', 'react-dom'],
-	clean: false,
-	treeshake: true,
-	minify: false,
-	splitting: false,
-	metafile: false
+  entry: ['src/index.ts'],
+  format: ['esm', 'cjs'],
+  // eslint-disable-next-line code-complete/enforce-meaningful-names
+  dts: true,
+  sourcemap: true,
+  outDir: 'dist',
+  target: 'es2023',
+  platform: 'neutral',
+  external: ['react', 'react-dom'],
+  clean: true,
+  treeshake: true,
+  minify: false,
+  splitting: false,
+  metafile: false,
 })

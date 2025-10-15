@@ -1,16 +1,22 @@
 {
-	"name": "react-mentions",
+	"name": "react-mentions-ts",
 	"private": false,
 	"version": "5.0.0",
 	"description": "A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.",
 	"type": "module",
-	"main": "./dist/esm/index.js",
-	"module": "./dist/esm/index.js",
-	"types": "./dist/esm/index.d.ts",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"types": "./dist/esm/index.d.ts",
-			"default": "./dist/esm/index.js"
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
 		},
 		"./package.json": "./package.json"
 	},
@@ -56,10 +62,10 @@
 		"contenteditable"
 	],
 	"browserslist": [
-		"chrome >= 50",
-		"firefox >= 52",
-		"safari >= 10",
-		"ie >= 11"
+		"chrome >= 110",
+		"edge >= 110",
+		"firefox >= 115",
+		"safari >= 16.4"
 	],
 	"author": {
 		"name": "Harold Martin",
