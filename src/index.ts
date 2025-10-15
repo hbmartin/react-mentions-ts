@@ -1,2 +1,3 @@
 export { default as MentionsInput } from './MentionsInput'
 export { default as Mention } from './Mention'
+export type { MentionsInputProps, MentionComponentProps, MentionDataItem } from './types'

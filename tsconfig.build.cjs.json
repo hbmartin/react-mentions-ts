@@ -1,0 +1,22 @@
+{
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"module": "CommonJS",
+		"outDir": "./dist/cjs",
+		"declaration": false,
+		"declarationMap": false,
+		"noEmit": false
+	},
+	"include": ["src/**/*"],
+	"exclude": [
+		"**/*.spec.ts",
+		"**/*.spec.tsx",
+		"**/*.test.ts",
+		"**/*.test.tsx",
+		"**/__tests__/**",
+		"**/__mocks__/**",
+		"demo",
+		"jest",
+		"tests"
+	]
+}

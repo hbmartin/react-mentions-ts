@@ -1,5 +1,5 @@
+// @ts-nocheck
 import React, { Children, useState, useEffect } from 'react'
-import PropTypes from 'prop-types'
 import { inline } from 'substyle'
 import { defaultStyle } from './utils'
 
@@ -7,6 +7,29 @@ import { getSuggestionHtmlId } from './utils'
 import Suggestion from './Suggestion'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './Mention'
+import type { QueryInfo, SuggestionsMap } from './types'
+
+interface SuggestionsOverlayProps {
+  id: string
+  suggestions?: SuggestionsMap
+  a11ySuggestionsListLabel?: string
+  focusIndex: number
+  position?: string
+  left?: number
+  right?: number
+  top?: number
+  scrollFocusedIntoView?: boolean
+  isLoading?: boolean
+  isOpened: boolean
+  onSelect?: (suggestion: any, queryInfo: QueryInfo) => void
+  ignoreAccents?: boolean
+  containerRef?: (node: HTMLDivElement | null) => void
+  children: React.ReactNode
+  style: any
+  customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
+  onMouseDown?: (event: React.MouseEvent<HTMLDivElement>) => void
+  onMouseEnter?: (index: number) => void
+}
 
 function SuggestionsOverlay({
   id,
@@ -28,8 +51,8 @@ function SuggestionsOverlay({
   customSuggestionsContainer,
   onMouseDown,
   onMouseEnter,
-}) {
-  const [ulElement, setUlElement] = useState(undefined)
+}: SuggestionsOverlayProps) {
+  const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null)
 
   useEffect(() => {
     if (
@@ -69,7 +92,7 @@ function SuggestionsOverlay({
               renderSuggestion(result, queryInfo, accResults.length + index)
             ),
           ],
-          []
+          [] as React.ReactNode[]
         )}
       </ul>
     )
@@ -79,7 +102,7 @@ function SuggestionsOverlay({
     return suggestionsToRender
   }
 
-  const renderSuggestion = (result, queryInfo, index) => {
+  const renderSuggestion = (result, queryInfo: QueryInfo, index: number) => {
     const isFocused = index === focusIndex
     const { childIndex, query } = queryInfo
     const { renderSuggestion = DEFAULT_MENTION_PROPS.renderSuggestion } = Children.toArray(children)[childIndex].props
@@ -109,17 +132,17 @@ function SuggestionsOverlay({
     return <LoadingIndicator style={style('loadingIndicator')} />
   }
 
-  const handleMouseEnter = (index, ev) => {
+  const handleMouseEnter = (index: number) => {
     if (onMouseEnter) {
       onMouseEnter(index)
     }
   }
 
-  const select = (suggestion, queryInfo) => {
+  const select = (suggestion, queryInfo: QueryInfo) => {
     onSelect(suggestion, queryInfo)
   }
 
-  const getID = (suggestion) => {
+  const getID = (suggestion: any) => {
     if (typeof suggestion === 'string') {
       return suggestion
     }
@@ -140,32 +163,6 @@ function SuggestionsOverlay({
       {renderLoadingIndicator()}
     </div>
   )
-}
-
-SuggestionsOverlay.propTypes = {
-  id: PropTypes.string.isRequired,
-  suggestions: PropTypes.object.isRequired,
-  a11ySuggestionsListLabel: PropTypes.string,
-  focusIndex: PropTypes.number,
-  position: PropTypes.string,
-  left: PropTypes.number,
-  right: PropTypes.number,
-  top: PropTypes.number,
-  scrollFocusedIntoView: PropTypes.bool,
-  isLoading: PropTypes.bool,
-  isOpened: PropTypes.bool.isRequired,
-  onSelect: PropTypes.func,
-  ignoreAccents: PropTypes.bool,
-  customSuggestionsContainer: PropTypes.func,
-  containerRef: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({
-      current:
-        typeof Element === 'undefined'
-          ? PropTypes.any
-          : PropTypes.instanceOf(Element),
-    }),
-  ]),
 }
 
 const styled = defaultStyle({

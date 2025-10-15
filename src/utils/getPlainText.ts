@@ -1,3 +1,4 @@
+// @ts-nocheck
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 
 const getPlainText = (value, config) => {

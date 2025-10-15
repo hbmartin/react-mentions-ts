@@ -1,6 +1,7 @@
+// @ts-nocheck
 import React, { Children, useState, useEffect } from 'react'
-import PropTypes from 'prop-types'
 import { defaultStyle } from './utils'
+import type { CaretCoordinates } from './types'
 
 import {
   iterateMentionsMarkup,
@@ -18,6 +19,17 @@ const _generateComponentKey = (usedKeys, id) => {
   return id + '_' + usedKeys[id]
 }
 
+interface HighlighterProps {
+  selectionStart: number | null
+  selectionEnd: number | null
+  value?: string
+  onCaretPositionChange: (position: CaretCoordinates) => void
+  containerRef?: (node: HTMLDivElement | null) => void
+  children: React.ReactNode
+  singleLine?: boolean
+  style: any
+}
+
 function Highlighter({
   selectionStart,
   selectionEnd,
@@ -27,12 +39,12 @@ function Highlighter({
   children,
   singleLine,
   style,
-}) {
-  const [position, setPosition] = useState({
+}: HighlighterProps) {
+  const [position, setPosition] = useState<{ left: number | undefined; top: number | undefined }>({
     left: undefined,
     top: undefined,
   })
-  const [caretElement, setCaretElement] = useState()
+  const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
 
   useEffect(() => {
     notifyCaretPosition()
@@ -49,7 +61,7 @@ function Highlighter({
       return
     }
 
-    const newPosition = { left: offsetLeft, top: offsetTop }
+    const newPosition: CaretCoordinates = { left: offsetLeft, top: offsetTop }
     setPosition(newPosition)
 
     onCaretPositionChange(newPosition)
@@ -67,12 +79,12 @@ function Highlighter({
     )
   }
 
-  const resultComponents = []
-  const componentKeys = {}
-  let components = resultComponents
+  const resultComponents: React.ReactNode[] = []
+  const componentKeys: Record<string, number> = {}
+  let components: React.ReactNode[] = resultComponents
   let substringComponentKey = 0
 
-  const textIteratee = (substr, index, indexInPlainText) => {
+  const textIteratee = (substr, index) => {
     // check whether the caret element has to be inserted inside the current plain substring
     if (
       isNumber(caretPositionInMarkup) &&
@@ -101,8 +113,7 @@ function Highlighter({
     indexInPlainText,
     id,
     display,
-    mentionChildIndex,
-    lastMentionEndIndex
+    mentionChildIndex
   ) => {
     const key = _generateComponentKey(componentKeys, id)
     components.push(
@@ -148,26 +159,6 @@ function Highlighter({
       {resultComponents}
     </div>
   )
-}
-
-Highlighter.propTypes = {
-  selectionStart: PropTypes.number,
-  selectionEnd: PropTypes.number,
-  value: PropTypes.string,
-  onCaretPositionChange: PropTypes.func.isRequired,
-  containerRef: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({
-      current:
-        typeof Element === 'undefined'
-          ? PropTypes.any
-          : PropTypes.instanceOf(Element),
-    }),
-  ]),
-  children: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.arrayOf(PropTypes.element),
-  ]).isRequired,
 }
 
 const styled = defaultStyle(

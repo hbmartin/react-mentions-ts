@@ -1,6 +1,14 @@
+// @ts-nocheck
 import React, { Children } from 'react'
-import ReactDOM from 'react-dom'
-import PropTypes from 'prop-types'
+import { createPortal } from 'react-dom'
+import type {
+	ChangeEvent,
+	ClipboardEvent,
+	CompositionEvent,
+	KeyboardEvent,
+	MouseEvent as ReactMouseEvent,
+	FocusEvent as ReactFocusEvent,
+} from 'react'
 
 import {
   applyChangeToValue,
@@ -17,7 +25,6 @@ import {
   spliceString,
   isIE,
   isNumber,
-  keys,
   omit,
   getSuggestionHtmlId,
 } from './utils'
@@ -25,6 +32,16 @@ import Highlighter from './Highlighter'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import { defaultStyle } from './utils'
 import { DEFAULT_MENTION_PROPS } from './Mention'
+import type {
+	CaretCoordinates,
+	DataSource,
+	MentionComponentProps,
+	MentionDataItem,
+	MentionsInputProps,
+	MentionsInputState,
+	QueryInfo,
+	SuggestionsMap,
+} from './types'
 
 export const makeTriggerRegex = function(trigger = '@', options = {}) {
   if (trigger == null) {
@@ -46,11 +63,10 @@ export const makeTriggerRegex = function(trigger = '@', options = {}) {
   }
 }
 
-const getDataProvider = function(data, ignoreAccents) {
-  if (data instanceof Array) {
-    // if data is an array, create a function to query that
-    return function(query, callback) {
-      const results = []
+const getDataProvider = function(data: DataSource, ignoreAccents?: boolean) {
+  if (Array.isArray(data)) {
+    return function(query: string, callback: (items: MentionDataItem[]) => void) {
+      const results: MentionDataItem[] = []
       for (let i = 0, l = data.length; i < l; ++i) {
         const display = data[i].display || data[i].id
         if (getSubstringIndex(display, query, ignoreAccents) >= 0) {
@@ -59,91 +75,78 @@ const getDataProvider = function(data, ignoreAccents) {
       }
       return results
     }
-  } else {
-    // expect data to be a query function
-    return data
   }
+
+  return data
 }
 
 const KEY = { TAB: 9, RETURN: 13, ESC: 27, SPACE: 32, UP: 38, DOWN: 40 }
 
 let isComposing = false
 
-/**
- * TODO: convert to interface/type when TS is available
- */
-const propTypes = {
-  singleLine: PropTypes.bool,
-  allowSpaceInQuery: PropTypes.bool,
-  allowSuggestionsAboveCursor: PropTypes.bool,
-  selectLastSuggestionOnSpace: PropTypes.bool,
-  forceSuggestionsAboveCursor: PropTypes.bool,
-  ignoreAccents: PropTypes.bool,
-  a11ySuggestionsListLabel: PropTypes.string,
+const HANDLED_PROPS: Array<keyof MentionsInputProps | 'style' | 'className' | 'classNames'> = [
+	'singleLine',
+	'allowSpaceInQuery',
+	'allowSuggestionsAboveCursor',
+	'selectLastSuggestionOnSpace',
+	'forceSuggestionsAboveCursor',
+	'ignoreAccents',
+	'a11ySuggestionsListLabel',
+	'value',
+	'valueLink',
+	'onKeyDown',
+	'customSuggestionsContainer',
+	'onSelect',
+	'onBlur',
+	'onChange',
+	'suggestionsPortalHost',
+	'inputRef',
+	'inputComponent',
+	'children',
+	'style',
+	'className',
+	'classNames',
+]
 
-  value: PropTypes.string,
-  onKeyDown: PropTypes.func,
-  customSuggestionsContainer: PropTypes.func,
-  onSelect: PropTypes.func,
-  onBlur: PropTypes.func,
-  onChange: PropTypes.func,
-  suggestionsPortalHost:
-    typeof Element === 'undefined'
-      ? PropTypes.any
-      : PropTypes.PropTypes.instanceOf(Element),
-  inputRef: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({
-      current:
-        typeof Element === 'undefined'
-          ? PropTypes.any
-          : PropTypes.instanceOf(Element),
-    }),
-  ]),
-  inputComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.elementType]),
+class MentionsInput extends React.Component<MentionsInputProps, MentionsInputState> {
+	static defaultProps: Partial<MentionsInputProps> = {
+		ignoreAccents: false,
+		singleLine: false,
+		allowSuggestionsAboveCursor: false,
+		onKeyDown: () => null,
+		onSelect: () => null,
+		onBlur: () => null,
+	}
 
-  children: PropTypes.oneOfType([
-    PropTypes.element,
-    PropTypes.arrayOf(PropTypes.element),
-  ]).isRequired,
-}
+	private suggestions: SuggestionsMap = {}
+	private uuidSuggestionsOverlay: string
+	private containerElement: HTMLDivElement | null = null
+	private inputElement: HTMLInputElement | HTMLTextAreaElement | null = null
+	private highlighterElement: HTMLDivElement | null = null
+	private suggestionsElement: HTMLDivElement | null = null
+	private _queryId = 0
+	private _suggestionsMouseDown = false
+	private _selectionStartBeforeFocus: number | null = null
+	private _selectionEndBeforeFocus: number | null = null
 
-class MentionsInput extends React.Component {
+	constructor(props: MentionsInputProps) {
+		super(props)
+		this.uuidSuggestionsOverlay = Math.random().toString(16).substring(2)
 
-  static defaultProps = {
-    ignoreAccents: false,
-    singleLine: false,
-    allowSuggestionsAboveCursor: false,
-    onKeyDown: () => null,
-    onSelect: () => null,
-    onBlur: () => null,
-  }
+		this.handleCopy = this.handleCopy.bind(this)
+		this.handleCut = this.handleCut.bind(this)
+		this.handlePaste = this.handlePaste.bind(this)
 
-  constructor(props) {
-    super(props)
-    this.suggestions = {}
-    this.uuidSuggestionsOverlay = Math.random()
-      .toString(16)
-      .substring(2)
-
-    this.handleCopy = this.handleCopy.bind(this)
-    this.handleCut = this.handleCut.bind(this)
-    this.handlePaste = this.handlePaste.bind(this)
-
-    this.state = {
-      focusIndex: 0,
-
-      selectionStart: null,
-      selectionEnd: null,
-
-      suggestions: {},
-
-      caretPosition: null,
-      suggestionsPosition: {},
-
-      setSelectionAfterHandlePaste: false,
-    }
-  }
+		this.state = {
+			focusIndex: 0,
+			selectionStart: null,
+			selectionEnd: null,
+			suggestions: {},
+			caretPosition: null,
+			suggestionsPosition: {},
+			setSelectionAfterHandlePaste: false,
+		}
+	}
 
   componentDidMount() {
     document.addEventListener('copy', this.handleCopy)
@@ -187,50 +190,50 @@ class MentionsInput extends React.Component {
     )
   }
 
-  setContainerElement = (el) => {
-    this.containerElement = el
-  }
+	setContainerElement = (el: HTMLDivElement | null) => {
+		this.containerElement = el
+	}
 
-  getInputProps = () => {
-    let { readOnly, disabled, style } = this.props
+	getInputProps = () => {
+		const { readOnly, disabled, style } = this.props
 
-    // pass all props that neither we, nor substyle, consume through to the input control
-    let props = omit(
-      this.props,
-      ['style', 'classNames', 'className'], // substyle props
-      keys(propTypes)
-    )
+		const passthroughProps = omit(
+			this.props,
+			'style',
+			'classNames',
+			'className',
+			HANDLED_PROPS,
+		)
 
-    return {
-      ...props,
-      ...style('input'),
+		const inputStyle = typeof style === 'function' ? style('input') : {}
 
-      value: this.getPlainText(),
-      onScroll: this.updateHighlighterScroll,
-
-      ...(!readOnly &&
-        !disabled && {
-          onChange: this.handleChange,
-          onSelect: this.handleSelect,
-          onKeyDown: this.handleKeyDown,
-          onBlur: this.handleBlur,
-          onCompositionStart: this.handleCompositionStart,
-          onCompositionEnd: this.handleCompositionEnd,
-        }),
-
-      ...(this.isOpened() && {
-        role: 'combobox',
-        'aria-controls': this.uuidSuggestionsOverlay,
-        'aria-expanded': true,
-        'aria-autocomplete': 'list',
-        'aria-haspopup': 'listbox',
-        'aria-activedescendant': getSuggestionHtmlId(
-          this.uuidSuggestionsOverlay,
-          this.state.focusIndex
-        ),
-      }),
-    }
-  }
+		return {
+			...passthroughProps,
+			...inputStyle,
+			value: this.getPlainText(),
+			onScroll: this.updateHighlighterScroll,
+			...(!readOnly &&
+				!disabled && {
+					onChange: this.handleChange,
+					onSelect: this.handleSelect,
+					onKeyDown: this.handleKeyDown,
+					onBlur: this.handleBlur,
+					onCompositionStart: this.handleCompositionStart,
+					onCompositionEnd: this.handleCompositionEnd,
+				}),
+			...(this.isOpened() && {
+				role: 'combobox',
+				'aria-controls': this.uuidSuggestionsOverlay,
+				'aria-expanded': true,
+				'aria-autocomplete': 'list',
+				'aria-haspopup': 'listbox',
+				'aria-activedescendant': getSuggestionHtmlId(
+					this.uuidSuggestionsOverlay,
+					this.state.focusIndex,
+				),
+			}),
+		}
+	}
 
   renderControl = () => {
     let { singleLine, style, inputComponent: CustomInput } = this.props
@@ -304,7 +307,7 @@ class MentionsInput extends React.Component {
       </SuggestionsOverlay>
     )
     if (this.props.suggestionsPortalHost) {
-      return ReactDOM.createPortal(
+      return createPortal(
         suggestionsNode,
         this.props.suggestionsPortalHost
       )
@@ -1079,8 +1082,6 @@ class MentionsInput extends React.Component {
   isOpened = () =>
     isNumber(this.state.selectionStart) &&
     (countSuggestions(this.state.suggestions) !== 0 || this.isLoading())
-
-  _queryId = 0
 }
 
 /**

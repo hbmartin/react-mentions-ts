@@ -1,7 +1,23 @@
+// @ts-nocheck
 import React from 'react'
-import PropTypes from 'prop-types'
 import { defaultStyle } from './utils'
 import { getSubstringIndex } from './utils'
+import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
+
+interface SuggestionProps {
+  id: string
+  focused?: boolean
+  ignoreAccents?: boolean
+  index: number
+  onClick: () => void
+  onMouseEnter: () => void
+  query: string
+  renderSuggestion?: MentionRenderSuggestion | null
+  suggestion: SuggestionDataItem | string
+  style: any
+  className?: string
+  classNames?: unknown
+}
 
 function Suggestion({
   id,
@@ -14,9 +30,7 @@ function Suggestion({
   renderSuggestion,
   suggestion,
   style,
-  className,
-  classNames,
-}) {
+}: SuggestionProps) {
   const rest = { onClick, onMouseEnter }
 
   const renderContent = () => {
@@ -71,24 +85,6 @@ function Suggestion({
       {renderContent()}
     </li>
   )
-}
-
-Suggestion.propTypes = {
-  id: PropTypes.string.isRequired,
-  query: PropTypes.string.isRequired,
-  index: PropTypes.number.isRequired,
-  ignoreAccents: PropTypes.bool,
-
-  suggestion: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      display: PropTypes.string,
-    }),
-  ]).isRequired,
-  renderSuggestion: PropTypes.func,
-
-  focused: PropTypes.bool,
 }
 
 const styled = defaultStyle(

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 
 // For the passed character index in the plain text string, returns the corresponding index

@@ -1,7 +1,14 @@
+// @ts-nocheck
 import React from 'react'
 import useStyles from 'substyle'
 
-function LoadingIndicator({ style, className, classNames }) {
+interface LoadingIndicatorProps {
+  style?: any
+  className?: string
+  classNames?: unknown
+}
+
+function LoadingIndicator({ style, className, classNames }: LoadingIndicatorProps) {
   const styles = useStyles(defaultstyle, { style, className, classNames })
   const spinnerStyles = styles('spinner')
   return (
