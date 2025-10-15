@@ -3,6 +3,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import codeComplete from 'eslint-plugin-code-complete'
 import importPlugin from 'eslint-plugin-import'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
+import pluginPromise from 'eslint-plugin-promise'
 import reactPlugin from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
@@ -11,6 +12,7 @@ import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
 import globals from 'globals'
 import { configs as tsConfigs } from 'typescript-eslint'
+import jestPlugin from 'eslint-plugin-jest'
 
 export default defineConfig([
   globalIgnores([
@@ -39,15 +41,17 @@ export default defineConfig([
       importPlugin.flatConfigs.recommended,
       importPlugin.flatConfigs.typescript,
       sonarjs.configs.recommended,
+      pluginPromise.configs['flat/recommended'],
+      jestPlugin.configs['flat/recommended'],
     ],
     plugins: {
       'unused-imports': unusedImports,
       'code-complete': codeComplete,
       react: reactPlugin,
       'react-hooks': reactHooks,
+      jest: jestPlugin,
     },
     languageOptions: {
-      // eslint-disable-next-line code-complete/no-magic-numbers-except-zero-one
       ecmaVersion: 2023,
       sourceType: 'module',
       globals: {

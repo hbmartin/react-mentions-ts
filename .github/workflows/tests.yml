@@ -5,9 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install modules
-        run: yarn --frozen-lockfile
-      - name: Lint
-        run: yarn lint
-      - name: Run tests
-        run: yarn test
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'yarn'
+          cache-dependency-path: yarn.lock
+      - run: yarn --frozen-lockfile
+      - run: yarn audit
+      - run: yarn run prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
+      - run: yarn test
+      - run: yarn lint
