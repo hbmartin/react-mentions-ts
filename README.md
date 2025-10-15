@@ -19,17 +19,21 @@ Or yarn:
 yarn add react-mentions
 ```
 
-The package exports two React components for rendering the mentions textarea:
+## TypeScript Support
 
-```javascript
+_react-mentions_ is written in TypeScript and includes full type definitions. The package exports two React components for rendering the mentions textarea:
+
+```typescript
 import { MentionsInput, Mention } from 'react-mentions'
 ```
+
+All component props are fully typed, providing excellent autocomplete and type safety in TypeScript projects.
 
 `MentionsInput` is the main component rendering the textarea control. It takes one or multiple `Mention` components as its children. Each `Mention` component represents a data source for a specific class of mentionable objects, such as users, template variables, issues, etc.
 
 Example:
 
-```jsx
+```tsx
 <MentionsInput value={this.state.value} onChange={this.handleChange}>
   <Mention
     trigger="@"

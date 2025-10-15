@@ -11,6 +11,6 @@
 		"source.fixAll.eslint": "explicit"
 	},
 	"eslint.options": {
-		"overrideConfigFile": "./eslint.config.mjs"
+		"overrideConfigFile": "./eslint.config.ts"
 	}
 }

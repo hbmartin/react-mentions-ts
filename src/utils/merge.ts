@@ -1,11 +1,12 @@
-import mergeDeep from './mergeDeep'
-
-type PlainObject = Record<string, unknown>
+import { mergeDeep, type PlainObject } from "./mergeDeep";
 
 const merge = (target: PlainObject, ...sources: PlainObject[]): PlainObject => {
-  return sources.reduce<PlainObject>((acc, source) => {
-    return mergeDeep(acc as PlainObject, source)
-  }, { ...target })
-}
+	return sources.reduce<PlainObject>(
+		(acc, source) => {
+			return mergeDeep(acc, source);
+		},
+		{ ...target },
+	);
+};
 
-export default merge
+export default merge;
