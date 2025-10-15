@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/react-mentions-ts.svg)](https://www.npmjs.com/package/react-mentions-ts)
 [![CI](https://github.com/hbmartin/react-mentions-ts/workflows/CI/badge.svg)](https://github.com/hbmartin/react-mentions-ts/actions)
-![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)](https://bundlephobia.com/package/react-mentions-ts)
 [![NPM License](https://img.shields.io/npm/l/react-mentions-ts?color=blue)](https://github.com/hbmartin/react-mentions-ts/blob/master/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
