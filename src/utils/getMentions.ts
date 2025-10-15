@@ -1,17 +1,24 @@
 import iterateMentionsMarkup from './iterateMentionsMarkup'
+import type {
+  MentionChildConfig,
+  MentionOccurrence,
+} from '../types'
 
-const getMentions = (value, config) => {
-  const mentions = []
+const getMentions = (
+  value: string,
+  config: ReadonlyArray<MentionChildConfig>
+): MentionOccurrence[] => {
+  const mentions: MentionOccurrence[] = []
   iterateMentionsMarkup(
     value,
     config,
-    (match, index, plainTextIndex, id, display, childIndex, start) => {
+    (_match, index, plainTextIndex, id, display, childIndex) => {
       mentions.push({
-        id: id,
-        display: display,
-        childIndex: childIndex,
-        index: index,
-        plainTextIndex: plainTextIndex,
+        id: String(id),
+        display,
+        childIndex,
+        index,
+        plainTextIndex,
       })
     }
   )

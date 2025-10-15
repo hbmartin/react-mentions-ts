@@ -1,5 +1,7 @@
-// @ts-nocheck
 import iterateMentionsMarkup from './iterateMentionsMarkup'
+import type { MentionChildConfig } from '../types'
+
+type InMarkupCorrection = 'START' | 'END' | 'NULL'
 
 // For the passed character index in the plain text string, returns the corresponding index
 // in the marked up value string.
@@ -9,17 +11,22 @@ import iterateMentionsMarkup from './iterateMentionsMarkup'
 //   - 'END' to return the index after its last char
 //   - 'NULL' to return null
 const mapPlainTextIndex = (
-  value,
-  config,
-  indexInPlainText,
-  inMarkupCorrection = 'START'
-) => {
+  value: string,
+  config: ReadonlyArray<MentionChildConfig>,
+  indexInPlainText: number | null | undefined,
+  inMarkupCorrection: InMarkupCorrection = 'START'
+): number | null | undefined => {
   if (typeof indexInPlainText !== 'number') {
     return indexInPlainText
   }
 
-  let result
-  let textIteratee = (substr, index, substrPlainTextIndex) => {
+  let result: number | null | undefined
+
+  const textIteratee = (
+    substr: string,
+    index: number,
+    substrPlainTextIndex: number
+  ): void => {
     if (result !== undefined) return
 
     if (substrPlainTextIndex + substr.length >= indexInPlainText) {
@@ -27,15 +34,14 @@ const mapPlainTextIndex = (
       result = index + indexInPlainText - substrPlainTextIndex
     }
   }
-  let markupIteratee = (
-    markup,
-    index,
-    mentionPlainTextIndex,
-    id,
-    display,
-    childIndex,
-    lastMentionEndIndex
-  ) => {
+
+  const markupIteratee = (
+    markup: string,
+    index: number,
+    mentionPlainTextIndex: number,
+    _id: string,
+    display: string
+  ): void => {
     if (result !== undefined) return
 
     if (mentionPlainTextIndex + display.length > indexInPlainText) {

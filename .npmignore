@@ -3,8 +3,6 @@ gh-pages
 src
 test
 .gitignore
-.babelrc
-.travis.yml
 Gruntfile.js
 react-mentions.sublime-project
 .grunt

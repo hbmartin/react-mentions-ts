@@ -1,13 +1,16 @@
-// @ts-nocheck
 import React from 'react'
 import useStyles from 'substyle'
-import type { MentionComponentProps } from './types'
+import type {
+  ClassNamesProp,
+  MentionComponentProps,
+  StyleOverride,
+} from './types'
 
 export interface MentionProps extends MentionComponentProps {
   display?: string
-  style?: any
+  style?: StyleOverride
   className?: string
-  classNames?: unknown
+  classNames?: ClassNamesProp
 }
 
 export const DEFAULT_MENTION_PROPS = {
@@ -15,7 +18,8 @@ export const DEFAULT_MENTION_PROPS = {
   markup: '@[__display__](__id__)',
   onAdd: () => null,
   onRemove: () => null,
-  displayTransform: (id: string, display?: string | null) => display || id,
+  displayTransform: (id: string | number, display?: string | null) =>
+    display ?? String(id),
   renderSuggestion: null,
   isLoading: false,
   appendSpaceOnAdd: false,

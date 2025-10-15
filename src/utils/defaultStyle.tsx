@@ -1,25 +1,50 @@
-// @ts-nocheck
 import React from 'react'
 import useStyles from 'substyle'
+import type { ClassNamesProp, StyleOverride, Substyle } from '../types'
+
+type Modifiers = Parameters<typeof useStyles>[2]
+
+type StylingProps = {
+  style?: StyleOverride
+  className?: string
+  classNames?: ClassNamesProp
+}
 
 function createDefaultStyle(
-  defaultStyle: any,
-  getModifiers?: (props: Record<string, unknown>) => unknown
+  defaultStyle: Parameters<typeof useStyles>[0],
+  getModifiers?: (props: Record<string, unknown>) => Modifiers
 ) {
-  return function enhance(ComponentToWrap: React.ComponentType<any>) {
+  return function enhance<P extends { style: Substyle }>(
+    ComponentToWrap: React.ComponentType<P>
+  ): React.ForwardRefExoticComponent<
+    React.PropsWithoutRef<Omit<P, 'style'> & StylingProps> &
+      React.RefAttributes<unknown>
+  > {
     const displayName =
       ComponentToWrap.displayName || ComponentToWrap.name || 'Component'
 
-    const Forwarded = React.forwardRef<any, any>((props, ref) => {
-      const { style, className, classNames, ...rest } = props
-      const modifiers = getModifiers ? getModifiers(rest) : undefined
+    const Forwarded = React.forwardRef<
+      unknown,
+      Omit<P, 'style'> & StylingProps
+    >((props, ref) => {
+      const { style, className, classNames, ...rest } = props as StylingProps &
+        Omit<P, 'style'>
+      const modifiers = getModifiers
+        ? getModifiers(rest as unknown as Record<string, unknown>)
+        : undefined
       const styles = useStyles(
         defaultStyle,
         { style, className, classNames },
         modifiers
       )
 
-      return <ComponentToWrap {...rest} style={styles} ref={ref} />
+      return (
+        <ComponentToWrap
+          {...(rest as unknown as P)}
+          style={styles as Substyle}
+          ref={ref as React.Ref<unknown>}
+        />
+      )
     })
 
     Forwarded.displayName = `defaultStyle(${displayName})`

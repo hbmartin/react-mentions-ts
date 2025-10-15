@@ -1,8 +1,12 @@
 import PLACEHOLDERS from './placeholders'
 
-const makeMentionsMarkup = (markup, id, display) => {
+const makeMentionsMarkup = (
+  markup: string,
+  id: string | number,
+  display: string
+): string => {
   return markup
-    .replace(PLACEHOLDERS.id, id)
+    .replace(PLACEHOLDERS.id, String(id))
     .replace(PLACEHOLDERS.display, display)
 }
 
