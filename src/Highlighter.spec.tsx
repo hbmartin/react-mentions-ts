@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, waitFor } from '@testing-library/react'
+import { getByText, render, waitFor } from '@testing-library/react'
 import Highlighter from './Highlighter'
 import { Mention } from './index'
 
@@ -30,7 +30,7 @@ describe('Highlighter', () => {
     expect(typeof call.top).toBe('number')
   })
 
-  it('should notify about the current care position whenever it changes.', async () => {
+  it('should notify about the current caret position whenever it changes.', async () => {
     const onCaretPositionChange = jest.fn()
 
     const { rerender } = render(
@@ -64,6 +64,9 @@ describe('Highlighter', () => {
     expect(onCaretPositionChange).toHaveBeenCalled()
     expect(onCaretPositionChange.mock.calls[0][0]).toHaveProperty('left')
     expect(onCaretPositionChange.mock.calls[0][0]).toHaveProperty('top')
+    const lastCall = onCaretPositionChange.mock.calls[onCaretPositionChange.mock.calls.length - 1]
+    expect(lastCall[0]).toHaveProperty('left')
+    expect(lastCall[0]).toHaveProperty('top')
   })
 
   it('should render the current matched mentions.', () => {
@@ -116,7 +119,12 @@ describe('Highlighter', () => {
         value="Hello @[John](user1)"
         onCaretPositionChange={jest.fn()}
       >
-        <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+        <Mention
+          trigger="@"
+          data={[]}
+          markup="@[__display__](__id__)"
+          style={{ backgroundColor: 'red' }}
+        />
       </Highlighter>
     )
 
@@ -125,5 +133,7 @@ describe('Highlighter', () => {
 
     // Check that markup is not visible
     expect(container.textContent).not.toContain('@[John](user1)')
+    const mentionElement = getByText(container, 'John')
+    expect(mentionElement).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' })
   })
 })

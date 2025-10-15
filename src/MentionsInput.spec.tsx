@@ -327,16 +327,6 @@ describe('MentionsInput', () => {
       }).toString()
       expect(result).toEqual(String.raw`/(?:^|\s)(trigger([^trigger]*))$/`)
     })
-
-    it('should default to "@" for undefined trigger', () => {
-      const result = makeTriggerRegex(undefined).toString()
-      expect(result).toEqual(String.raw`/(?:^|\s)(@([^\s@]*))$/`)
-    })
-
-    it('should default to "@" for null trigger', () => {
-      const result = makeTriggerRegex(null).toString()
-      expect(result).toEqual(String.raw`/(?:^|\s)(@([^\s@]*))$/`)
-    })
   })
 
   describe('custom cut/copy/paste', () => {

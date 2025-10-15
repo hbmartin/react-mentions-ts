@@ -57,7 +57,8 @@ const iterateMentionsMarkup = (
     const displayPos = offset + findPositionOfCapturingGroup(markup, 'display')
 
     const idMatch = match[idPos]
-    if (idMatch == undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (idMatch === undefined || idMatch === null) {
       continue
     }
 

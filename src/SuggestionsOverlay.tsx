@@ -16,28 +16,28 @@ import type {
 } from './types'
 
 interface SuggestionsOverlayProps {
-  id: string
-  suggestions?: SuggestionsMap
-  a11ySuggestionsListLabel?: string
-  focusIndex: number
-  position?: 'absolute' | 'fixed'
-  left?: number
-  right?: number
-  top?: number
-  scrollFocusedIntoView?: boolean
-  isLoading?: boolean
-  isOpened: boolean
-  onSelect?: (suggestion: SuggestionDataItem | string, queryInfo: QueryInfo) => void
-  ignoreAccents?: boolean
-  containerRef?: (node: HTMLDivElement | null) => void
-  children: React.ReactNode
-  style: Substyle
-  customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
-  onMouseDown?: (event: React.MouseEvent<HTMLDivElement>) => void
-  onMouseEnter?: (index: number) => void
-  className?: string
-  classNames?: ClassNamesProp
-  styleOverride?: StyleOverride
+  readonly id: string
+  readonly suggestions?: SuggestionsMap
+  readonly a11ySuggestionsListLabel?: string
+  readonly focusIndex: number
+  readonly position?: 'absolute' | 'fixed'
+  readonly left?: number
+  readonly right?: number
+  readonly top?: number
+  readonly scrollFocusedIntoView?: boolean
+  readonly isLoading?: boolean
+  readonly isOpened: boolean
+  readonly onSelect?: (suggestion: SuggestionDataItem | string, queryInfo: QueryInfo) => void
+  readonly ignoreAccents?: boolean
+  readonly containerRef?: (node: HTMLDivElement | null) => void
+  readonly children: React.ReactNode
+  readonly style: Substyle
+  readonly customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
+  readonly onMouseDown?: (event: React.MouseEvent<HTMLDivElement>) => void
+  readonly onMouseEnter?: (index: number) => void
+  readonly className?: string
+  readonly classNames?: ClassNamesProp
+  readonly styleOverride?: StyleOverride
 }
 
 function SuggestionsOverlay({
@@ -125,7 +125,7 @@ function SuggestionsOverlay({
     return (
       <Suggestion
         style={style('item')}
-        key={`${childIndex}-${getSuggestionId(suggestionItem)}`}
+        key={`${childIndex.toString()}-${getSuggestionId(suggestionItem).toString()}`}
         id={getSuggestionHtmlId(id, index)}
         query={query}
         index={index}
@@ -148,6 +148,9 @@ function SuggestionsOverlay({
         aria-label={a11ySuggestionsListLabel}
         {...style('list')}
       >
+        {/* TODO: Using Object.values on a number-keyed object can reorder by numeric key, not insertion.
+        If UX relies on insertion order, consider tracking order explicitly (e.g., use Map or an array
+        of keys) or sort deterministically. */}
         {Object.values(suggestions).reduce<React.ReactNode[]>((acc, { results, queryInfo }) => {
           const start = acc.length
           for (const [i, result] of results.entries()) {
@@ -166,7 +169,7 @@ function SuggestionsOverlay({
   }
 
   const renderLoadingIndicator = () => {
-    if (!isLoading) {
+    if (isLoading !== true) {
       return null
     }
 

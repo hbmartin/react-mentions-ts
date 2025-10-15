@@ -18,14 +18,14 @@ const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {
 }
 
 interface HighlighterProps {
-  selectionStart: number | null
-  selectionEnd: number | null
-  value?: string
-  onCaretPositionChange: (position: CaretCoordinates) => void
-  containerRef?: (node: HTMLDivElement | null) => void
-  children: React.ReactNode
-  singleLine?: boolean
-  style: Substyle
+  readonly selectionStart: number | null
+  readonly selectionEnd: number | null
+  readonly value?: string
+  readonly onCaretPositionChange: (position: CaretCoordinates) => void
+  readonly containerRef?: (node: HTMLDivElement | null) => void
+  readonly children: React.ReactNode
+  readonly singleLine?: boolean
+  readonly style: Substyle
 }
 
 function Highlighter({
@@ -35,6 +35,7 @@ function Highlighter({
   onCaretPositionChange,
   containerRef,
   children,
+  // eslint-disable-next-line unused-imports/no-unused-vars
   singleLine,
   style,
 }: HighlighterProps) {
@@ -42,20 +43,20 @@ function Highlighter({
   const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
 
   useEffect(() => {
-    if (!caretElement) {
+    if (caretElement === null) {
       return
     }
 
     const { offsetLeft, offsetTop } = caretElement
 
-    if (position === null || (position.left === offsetLeft && position.top === offsetTop)) {
+    if (position?.left === offsetLeft && position.top === offsetTop) {
       return
     }
 
     const newPosition: CaretCoordinates = { left: offsetLeft, top: offsetTop }
     setPosition(newPosition)
     onCaretPositionChange(newPosition)
-  })
+  }, [caretElement, position, onCaretPositionChange])
 
   const config: MentionChildConfig[] = readConfigFromChildren(children)
   let caretPositionInMarkup: number | null | undefined
@@ -104,10 +105,8 @@ function Highlighter({
       caretPositionInMarkup <= index + substr.length
     ) {
       const splitIndex = caretPositionInMarkup - index
-      components.push(
-        renderSubstring(substr.slice(0, Math.max(0, splitIndex)), substringComponentKey)
-      )
-      components = [renderSubstring(substr.slice(Math.max(0, splitIndex)), substringComponentKey)]
+      components.push(renderSubstring(substr.slice(0, splitIndex), substringComponentKey))
+      components = [renderSubstring(substr.slice(splitIndex), substringComponentKey)]
     } else {
       components.push(renderSubstring(substr, substringComponentKey))
     }
