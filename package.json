@@ -62,10 +62,10 @@
 		"contenteditable"
 	],
 	"browserslist": [
-		"chrome >= 50",
-		"firefox >= 52",
-		"safari >= 10",
-		"ie >= 11"
+		"chrome >= 110",
+		"edge >= 110",
+		"firefox >= 115",
+		"safari >= 16.4"
 	],
 	"author": {
 		"name": "Harold Martin",

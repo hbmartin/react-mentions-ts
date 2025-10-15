@@ -10,7 +10,7 @@ export default defineConfig({
   target: 'es2023',
   platform: 'neutral',
   external: ['react', 'react-dom'],
-  clean: false,
+  clean: true,
   treeshake: true,
   minify: false,
   splitting: false,
