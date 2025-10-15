@@ -3,7 +3,9 @@
     "allow": [
       "Bash(yarn test)",
       "Bash(yarn exec publint)",
-      "Bash(yarn pack --dry-run)"
+      "Bash(yarn pack --dry-run)",
+      "Bash(yarn build)",
+      "Bash(yarn exec attw:*)"
     ],
     "deny": [],
     "ask": []
