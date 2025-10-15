@@ -694,18 +694,16 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
         this.shiftFocus(-1)
         return
       }
-      case KEY.RETURN: {
-        this.selectFocused()
-        return
-      }
+      case KEY.RETURN:
       case KEY.TAB: {
         this.selectFocused()
         return
       }
       case KEY.SPACE: {
-        if (suggestionsCount === 1 && this.props.selectLastSuggestionOnSpace) {
+        if (suggestionsCount === 1 && this.props.selectLastSuggestionOnSpace === true) {
           this.selectFocused()
         }
+        break
       }
       default:
     }
@@ -916,14 +914,14 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       suggestions: {},
     })
 
-    const value = this.props.value || ''
-    const { children } = this.props
+    const value = this.props.value ?? ''
+    const { children, allowSpaceInQuery } = this.props
     const config = readConfigFromChildren(children)
 
     const positionInValue = mapPlainTextIndex(value, config, caretPosition, 'NULL')
 
     // If caret is inside of mention, do not query
-    if (positionInValue === null) {
+    if (positionInValue === null || positionInValue === undefined) {
       return
     }
 
@@ -932,19 +930,14 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       value.slice(0, Math.max(0, positionInValue)),
       config
     )
-    const substring = plainTextValue.substring(substringStartIndex, caretPosition)
+    const substring = plainTextValue.slice(substringStartIndex, caretPosition)
 
     // Check if suggestions have to be shown:
     // Match the trigger patterns of all Mention children on the extracted substring
     React.Children.forEach(children, (child, childIndex) => {
-      if (!child) {
-        return
-      }
-
-      const trigger = (child as React.ReactElement<MentionComponentProps>).props.trigger || '@'
-      const regex = makeTriggerRegex(trigger, {
-        allowSpaceInQuery: this.props.allowSpaceInQuery,
-      })
+      const trigger = (child as React.ReactElement<MentionComponentProps>).props.trigger ?? '@'
+      const regex = makeTriggerRegex(trigger, { allowSpaceInQuery })
+      // eslint-disable-next-line sonarjs/prefer-regexp-exec
       const match = substring.match(regex)
       if (match) {
         const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
@@ -1179,4 +1172,5 @@ const styled = defaultStyle(
   })
 )
 
-export default styled(MentionsInput)
+const StyledMentionsInput: React.ComponentType<MentionsInputProps> = styled(MentionsInput)
+export default StyledMentionsInput

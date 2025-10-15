@@ -1,11 +1,10 @@
-import React from 'react'
 import useStyles from 'substyle'
 import type { ClassNamesProp, StyleOverride, Substyle } from './types'
 
 interface LoadingIndicatorProps {
-  style?: StyleOverride
-  className?: string
-  classNames?: ClassNamesProp
+  readonly style?: StyleOverride
+  readonly className?: string
+  readonly classNames?: ClassNamesProp
 }
 
 const defaultStyle: Parameters<typeof useStyles>[0] = {}

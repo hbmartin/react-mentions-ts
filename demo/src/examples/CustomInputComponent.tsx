@@ -8,13 +8,13 @@ import defaultMentionStyle from './defaultMentionStyle'
 // eslint-disable-next-line no-unused-vars
 import classNames from './example.module.css' // uses global css selector
 
-const  CustomInput = React.forwardRef((props, ref) => {
+const CustomInput = React.forwardRef((props, ref) => {
   return <textarea ref={ref} {...props} className="custom-textarea" />
 })
 
-export default function CustomInputComponent({ data, onAdd = () => {}}) {
-  const [value, setValue] = useState('');
-  const onChange = (ev, newValue) => setValue(newValue);
+export default function CustomInputComponent({ data, onAdd = () => {} }) {
+  const [value, setValue] = useState('')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div className="custom-input">
@@ -25,7 +25,7 @@ export default function CustomInputComponent({ data, onAdd = () => {}}) {
         onChange={onChange}
         style={defaultStyle}
         placeholder={"Mention people using '@'"}
-        a11ySuggestionsListLabel={"Suggested mentions"}
+        a11ySuggestionsListLabel={'Suggested mentions'}
         inputComponent={CustomInput}
       >
         <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />

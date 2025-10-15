@@ -209,4 +209,6 @@ const styled = defaultStyle({
   },
 })
 
-export default styled(SuggestionsOverlay)
+const StyledSuggestionsOverlay: React.ComponentType<SuggestionsOverlayProps> =
+  styled(SuggestionsOverlay)
+export default StyledSuggestionsOverlay

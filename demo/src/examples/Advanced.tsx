@@ -20,8 +20,8 @@ const style = merge({}, defaultStyle, {
 
 export default function Advanced({ data, onBlur = () => {}, onAdd = () => {} }) {
   let inputEl = React.createRef()
-  const [value, setValue] = useState('Hi {{johndoe}}!');
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState('Hi {{johndoe}}!')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div className="advanced">
@@ -33,11 +33,11 @@ export default function Advanced({ data, onBlur = () => {}, onAdd = () => {} }) 
         onBlur={onBlur}
         style={style}
         inputRef={inputEl}
-        a11ySuggestionsListLabel={"Suggested mentions"}
+        a11ySuggestionsListLabel={'Suggested mentions'}
       >
         <Mention
           markup="{{__id__}}"
-          displayTransform={id => `<-- ${id} -->`}
+          displayTransform={(id) => `<-- ${id} -->`}
           data={data}
           onAdd={onAdd}
           style={defaultMentionStyle}

@@ -5,8 +5,8 @@ import { MentionsInput, Mention } from '../../../src'
 import classNames from './example.module.css'
 
 export default function CssModules({ data }) {
-  const [value, setValue] = useState('Hi @[John Doe](johndoe)');
-  const onChange = (ev, newValue) => setValue(newValue);
+  const [value, setValue] = useState('Hi @[John Doe](johndoe)')
+  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
     <div className="advanced">
@@ -17,7 +17,7 @@ export default function CssModules({ data }) {
         onChange={onChange}
         className="mentions"
         classNames={classNames}
-        a11ySuggestionsListLabel={"Suggested mentions"}
+        a11ySuggestionsListLabel={'Suggested mentions'}
       >
         <Mention data={data} className={classNames.mentions__mention} />
       </MentionsInput>

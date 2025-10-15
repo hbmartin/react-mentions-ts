@@ -29,7 +29,7 @@ function createDefaultStyle(
         : undefined
       const styles = useStyles(defaultStyle, { style, className, classNames }, modifiers)
 
-      return <ComponentToWrap {...({ ...rest, style: styles, ref } as unknown as P)} />
+      return <ComponentToWrap {...({ ...rest, style: styles } as P)} ref={ref} />
     })
 
     Forwarded.displayName = `defaultStyle(${displayName})`

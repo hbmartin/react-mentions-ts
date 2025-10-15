@@ -23,7 +23,7 @@
 		"clean": "rimraf dist",
 		"build": "yarn clean && tsc --build tsconfig.build.json && node ./scripts/postbuild.cjs",
 		"typecheck": "tsc --project tsconfig.build.esm.json --noEmit",
-		"format": "prettier \"{src,test,demo/src}/**/*.{ts,tsx}\"",
+		"format": "prettier --write \"{src,test,demo/src}/**/*.{ts,tsx}\"",
 		"lint": "eslint .",
 		"dev": "vite --config demo/vite.config.ts",
 		"demo": "vite --config demo/vite.config.ts",
