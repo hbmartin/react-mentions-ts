@@ -1,13 +1,11 @@
-import invariant from 'invariant'
 import PLACEHOLDERS from './placeholders'
 
 type PlaceholderName = 'id' | 'display'
 
 const findPositionOfCapturingGroup = (markup: string, parameterName: PlaceholderName): number => {
-  invariant(
-    parameterName === 'id' || parameterName === 'display',
-    `Second arg must be either "id" or "display", got: "${parameterName}"`
-  )
+  if (parameterName !== 'id' && parameterName !== 'display') {
+    throw new Error(`Second arg must be either "id" or "display", got: "${parameterName}"`)
+  }
 
   // find positions of placeholders in the markup
   let indexDisplay: number | null = markup.indexOf(PLACEHOLDERS.display)
@@ -22,10 +20,11 @@ const findPositionOfCapturingGroup = (markup: string, parameterName: Placeholder
   }
 
   // markup must contain one of the mandatory placeholders
-  invariant(
-    indexDisplay !== null || indexId !== null,
-    `The markup '${markup}' does not contain either of the placeholders '__id__' or '__display__'`
-  )
+  if (indexDisplay === null && indexId === null) {
+    throw new Error(
+      `The markup '${markup}' does not contain either of the placeholders '__id__' or '__display__'`
+    )
+  }
 
   if (indexDisplay !== null && indexId !== null) {
     // both placeholders are used, return 0 or 1 depending on the position of the requested parameter

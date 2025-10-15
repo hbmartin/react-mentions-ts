@@ -47,6 +47,7 @@ pnpm add react-mentions-ts
 ## 🚀 Quick Start
 
 ```tsx
+import { useState } from 'react'
 import { MentionsInput, Mention } from 'react-mentions-ts'
 
 function MyComponent() {
@@ -121,7 +122,7 @@ const fetchUsers = async (query: string, callback: (data: User[]) => void) => {
   callback(users)
 }
 
-;<Mention trigger="@" data={fetchUsers} />
+<Mention trigger="@" data={fetchUsers} />
 ```
 
 ## 🎨 Styling

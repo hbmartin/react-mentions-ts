@@ -10,7 +10,8 @@
       "Bash(npx publint:*)",
       "Bash(npx attw --pack .)",
       "Bash(cat:*)",
-      "Bash(npm info:*)"
+      "Bash(npm info:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
