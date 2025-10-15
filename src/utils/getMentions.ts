@@ -1,28 +1,25 @@
-import iterateMentionsMarkup from './iterateMentionsMarkup'
-import type {
-  MentionChildConfig,
-  MentionOccurrence,
-} from '../types'
+import iterateMentionsMarkup from "./iterateMentionsMarkup";
+import type { MentionChildConfig, MentionOccurrence } from "../types";
 
 const getMentions = (
-  value: string,
-  config: ReadonlyArray<MentionChildConfig>
+	value: string,
+	config: ReadonlyArray<MentionChildConfig>,
 ): MentionOccurrence[] => {
-  const mentions: MentionOccurrence[] = []
-  iterateMentionsMarkup(
-    value,
-    config,
-    (_match, index, plainTextIndex, id, display, childIndex) => {
-      mentions.push({
-        id: String(id),
-        display,
-        childIndex,
-        index,
-        plainTextIndex,
-      })
-    }
-  )
-  return mentions
-}
+	const mentions: MentionOccurrence[] = [];
+	iterateMentionsMarkup(
+		value,
+		config,
+		(_match, index, plainTextIndex, id, display, childIndex) => {
+			mentions.push({
+				id: id,
+				display,
+				childIndex,
+				index,
+				plainTextIndex,
+			});
+		},
+	);
+	return mentions;
+};
 
-export default getMentions
+export default getMentions;

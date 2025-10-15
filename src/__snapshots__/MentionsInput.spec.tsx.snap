@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`MentionsInput custom cut/copy/paste should default to the standard pasted text. 1`] = `
 "Not forget about @[Third](third)!Hi @[First](first), 

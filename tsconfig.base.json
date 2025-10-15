@@ -1,10 +1,10 @@
 {
 	"compilerOptions": {
-		"target": "ES2020",
+		"target": "ES2023",
 		"module": "ESNext",
 		"moduleResolution": "Node",
 		"jsx": "react-jsx",
-		"lib": ["DOM", "DOM.Iterable", "ES2020"],
+		"lib": ["DOM", "DOM.Iterable", "ES2023"],
 		"allowJs": false,
 		"strict": true,
 		"skipLibCheck": true,
