@@ -135,6 +135,8 @@ export interface MentionsInputProps
   className?: string
   classNames?: Parameters<typeof useStyles>[1]['classNames']
   suggestionsPortalHost?: Element | Document | null
+  suggestionsDisplay?: 'overlay' | 'inline'
+  inlineSuggestionDisplay?: 'full' | 'remaining'
   value?: string
   valueLink?: {
     value: string

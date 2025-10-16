@@ -11,6 +11,7 @@ import SuggestionPortal from './SuggestionPortal'
 import BottomGuard from './BottomGuard'
 import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import CustomInputComponent from './CustomInputComponent'
+import InlineAutocomplete from './InlineAutocomplete'
 
 const users = [
   {
@@ -87,6 +88,7 @@ export default function Examples() {
       <CutCopyPaste data={users} disabledSource={false} />
       <CutCopyPaste data={users} disabledSource />
       <CssModules data={users} />
+      <InlineAutocomplete data={users} />
       <AsyncGithubUserMentions />
       <Emojis data={users} />
       <SuggestionPortal data={users} />
