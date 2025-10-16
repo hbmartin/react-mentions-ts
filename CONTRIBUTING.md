@@ -18,5 +18,4 @@ Pull requests are encouraged. If you want to add a feature or fix a bug:
 4. Write tests that validate your change and/or fix.
 5. Run `yarn build` and then run tests with `yarn test`
 6. If coding a new feature, please add the examples to the example app (`/demo/src/examples`) and add the docs to the `README.md` file.
-7. Create a changeset by running `yarn changeset`. [More info](https://github.com/atlassian/changesets).
-8. Push your branch and open a PR 🚀
+7. Push your branch and open a PR 🚀
