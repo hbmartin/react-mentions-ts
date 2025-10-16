@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { makeTriggerRegex } from './MentionsInput'
 import { Mention, MentionsInput } from './index'
 
@@ -641,16 +642,30 @@ describe('MentionsInput', () => {
     const inlineValue = '@ali'
 
     const renderInlineMentionsInput = (
-      props: Partial<React.ComponentProps<typeof MentionsInput>> = {}
+      props: Partial<React.ComponentProps<typeof MentionsInput>> = {},
+      valueOverride?: string
     ) => {
-      render(
-        <MentionsInput value={inlineValue} suggestionsDisplay="inline" {...props}>
-          <Mention trigger="@" data={inlineData} />
-        </MentionsInput>
-      )
+      const initialValue = valueOverride ?? inlineValue
+
+      function Wrapper() {
+        const [value, setValue] = React.useState(initialValue)
+
+        return (
+          <MentionsInput
+            value={value}
+            onChange={(_event, newValue) => setValue(newValue)}
+            suggestionsDisplay="inline"
+            {...props}
+          >
+            <Mention trigger="@" data={inlineData} />
+          </MentionsInput>
+        )
+      }
+
+      render(<Wrapper />)
       const textbox = screen.getByRole('textbox')
       fireEvent.focus(textbox)
-      textbox.setSelectionRange(inlineValue.length, inlineValue.length)
+      textbox.setSelectionRange(initialValue.length, initialValue.length)
       fireEvent.select(textbox)
       return textbox
     }
@@ -708,7 +723,25 @@ describe('MentionsInput', () => {
       renderInlineMentionsInput({ inlineSuggestionDisplay: 'full' })
 
       await waitFor(() => {
-        expect(screen.getByText('Alice')).toBeInTheDocument()
+        expect(screen.getByText('ce')).toBeVisible()
+      })
+
+      const hiddenPrefix = screen.getByText('Ali', {
+        selector: 'span',
+        exact: true,
+        hidden: true,
+      })
+      expect(hiddenPrefix).not.toBeVisible()
+    })
+
+    it('keeps inline hints visible after typing preceding text', async () => {
+      const user = userEvent.setup()
+      const textbox = renderInlineMentionsInput({ inlineSuggestionDisplay: 'full' }, '')
+
+      await user.type(textbox, 'Hello @ali')
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeVisible()
       })
     })
   })

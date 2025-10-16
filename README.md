@@ -94,6 +94,8 @@ The `MentionsInput` component supports the following props:
 | a11ySuggestionsListLabel    | string                                                  | `''`           | This label would be exposed to screen readers when suggestion popup appears            |
 | customSuggestionsContainer  | function(children)                                      | empty function | Allows customizing the container of the suggestions                                    |
 | inputComponent              | React component                                         | undefined      | Allows the use of a custom input component
+| suggestionsDisplay          | `'overlay' \| 'inline'`                                | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints       |
+| inlineSuggestionDisplay     | `'remaining' \| 'full'`                                | `'remaining'`  | In inline mode, show only the remaining characters after the query or the full match   |
 | ignoreAccents               | boolean                                                 | `false`          | Ignores any accents on letters during search if set to `true`                         |
 | onSelect                    | function (event)                                        | empty function  | A callback that is invoked when the user selects a portion of the text in the input       |
 
@@ -137,6 +139,8 @@ React Mentions supports **CSS**, **CSS Modules**, and **inline styles**. The pac
   <Mention style={mentionStyle} />
 </MentionsInput>
 ```
+
+When `suggestionsDisplay="inline"`, override the `inlineSuggestion` style slot to customize the inline hint (the default demo style lives in `demo/src/examples/defaultStyle.ts`).
 
 See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for examples.
 

@@ -8,8 +8,8 @@ import type {
   SyntheticEvent,
 } from 'react'
 import React, { Children } from 'react'
-import { inline } from 'substyle'
 import { createPortal } from 'react-dom'
+import { inline } from 'substyle'
 import Highlighter from './Highlighter'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import SuggestionsOverlay from './SuggestionsOverlay'
@@ -17,7 +17,6 @@ import {
   applyChangeToValue,
   countSuggestions,
   defaultStyle,
-  escapeRegex,
   findStartOfMentionInPlainText,
   getEndOfLastMention,
   getMentions,
@@ -32,6 +31,8 @@ import {
   readConfigFromChildren,
   spliceString,
 } from './utils'
+import { makeTriggerRegex } from './utils/makeTriggerRegex'
+export { makeTriggerRegex } from './utils/makeTriggerRegex'
 import type {
   CaretCoordinates,
   DataSource,
@@ -52,29 +53,6 @@ type InputElement = HTMLInputElement | HTMLTextAreaElement
 
 type MentionsInputComponentProps = Omit<MentionsInputProps, 'style'> & {
   style: Substyle
-}
-
-interface TriggerOptions {
-  allowSpaceInQuery?: boolean
-}
-
-export const makeTriggerRegex = (
-  trigger: string | RegExp = '@',
-  options: TriggerOptions = {}
-): RegExp => {
-  if (trigger instanceof RegExp) {
-    return trigger
-  }
-
-  const { allowSpaceInQuery } = options
-  const escapedTriggerChar = escapeRegex(trigger)
-
-  // first capture group is the part to be replaced on completion
-  // second capture group is for extracting the search query
-  return new RegExp(
-    // eslint-disable-next-line unicorn/prefer-string-raw
-    `(?:^|\\s)(${escapedTriggerChar}([^${allowSpaceInQuery === true ? '' : '\\s'}${escapedTriggerChar}]*))$`
-  )
 }
 
 const getDataProvider = (data: DataSource, ignoreAccents?: boolean) => {
@@ -198,6 +176,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       this.setState({ setSelectionAfterHandlePaste: false })
       this.setSelection(this.state.selectionStart, this.state.selectionEnd)
     }
+
   }
 
   componentWillUnmount(): void {
@@ -386,16 +365,37 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       return null
     }
 
-    const left = caretPosition.left - highlighter.scrollLeft
-    const top = caretPosition.top - highlighter.scrollTop
+    const container = this.containerElement
+    const caretElement = highlighter.querySelector<HTMLSpanElement>('[data-mentions-caret]')
+    const containerRect = container?.getBoundingClientRect()
+    const caretRect = caretElement?.getBoundingClientRect()
+
+    if (!caretRect || !containerRect) {
+      return null
+    }
+
+    const left = caretRect.left - containerRect.left
+    const top = caretRect.top - containerRect.top
+
     const positioning = inline(this.props.style('inlineSuggestion'), {
       left,
       top,
     })
 
+    const textWrapperProps = this.props.style('inlineSuggestionText')
+    const prefixProps = this.props.style('inlineSuggestionPrefix')
+    const suffixProps = this.props.style('inlineSuggestionSuffix')
+
     return (
       <div {...positioning} aria-hidden="true">
-        {inlineSuggestion.text}
+        <span {...textWrapperProps}>
+          {inlineSuggestion.hiddenPrefix ? (
+            <span {...prefixProps} aria-hidden="true">
+              {inlineSuggestion.hiddenPrefix}
+            </span>
+          ) : null}
+          <span {...suffixProps}>{inlineSuggestion.visibleText}</span>
+        </span>
       </div>
     )
   }
@@ -429,14 +429,18 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
 
   isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
 
-  getFlattenedSuggestions = (): Array<{ result: SuggestionDataItem | string; queryInfo: QueryInfo }> =>
+  getFlattenedSuggestions = (): Array<{
+    result: SuggestionDataItem | string
+    queryInfo: QueryInfo
+  }> =>
     Object.values(this.state.suggestions).flatMap(({ results, queryInfo }) =>
       results.map((result) => ({ result, queryInfo }))
     )
 
-  getFocusedSuggestionEntry = ():
-    | { result: SuggestionDataItem | string; queryInfo: QueryInfo }
-    | null => {
+  getFocusedSuggestionEntry = (): {
+    result: SuggestionDataItem | string
+    queryInfo: QueryInfo
+  } | null => {
     const flattened = this.getFlattenedSuggestions()
     if (flattened.length === 0) {
       return null
@@ -444,7 +448,9 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     return flattened[this.state.focusIndex] ?? flattened[0]
   }
 
-  getSuggestionData = (suggestion: SuggestionDataItem | string): {
+  getSuggestionData = (
+    suggestion: SuggestionDataItem | string
+  ): {
     id: MentionDataItem['id']
     display: string
   } => {
@@ -457,13 +463,12 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     }
   }
 
-  getInlineSuggestionDetails = ():
-    | {
-        text: string
-        queryInfo: QueryInfo
-        suggestion: SuggestionDataItem | string
-      }
-    | null => {
+  getInlineSuggestionDetails = (): {
+    hiddenPrefix: string
+    visibleText: string
+    queryInfo: QueryInfo
+    suggestion: SuggestionDataItem | string
+  } | null => {
     if (!this.isInlineAutocomplete()) {
       return null
     }
@@ -474,9 +479,9 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     }
 
     const { queryInfo, result } = entry
-    const mentionChild = Children.toArray(this.props.children)[
-      queryInfo.childIndex
-    ] as React.ReactElement<MentionComponentProps> | undefined
+    const mentionChild = Children.toArray(this.props.children)[queryInfo.childIndex] as
+      | React.ReactElement<MentionComponentProps>
+      | undefined
 
     if (!mentionChild) {
       return null
@@ -493,21 +498,27 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       displayValue += ' '
     }
 
-    let inlineText = displayValue
+    let hiddenPrefix = ''
+    let visibleText = displayValue
 
     if (this.props.inlineSuggestionDisplay === 'remaining') {
-      inlineText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
-      if (!inlineText) {
+      visibleText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
+      if (!visibleText) {
+        return null
+      }
+    } else {
+      hiddenPrefix = this.getInlineSuggestionPrefix(displayValue, queryInfo)
+      if (hiddenPrefix.length > 0) {
+        visibleText = displayValue.slice(hiddenPrefix.length)
+      }
+      if (!visibleText) {
         return null
       }
     }
 
-    if (!inlineText) {
-      return null
-    }
-
     return {
-      text: inlineText,
+      hiddenPrefix,
+      visibleText,
       queryInfo,
       suggestion: result,
     }
@@ -527,6 +538,22 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     }
 
     return displayValue
+  }
+
+  getInlineSuggestionPrefix = (displayValue: string, queryInfo: QueryInfo): string => {
+    const query = queryInfo.query ?? ''
+    if (query.length === 0) {
+      return ''
+    }
+
+    const normalizedDisplay = displayValue.toLocaleLowerCase()
+    const normalizedQuery = query.toLocaleLowerCase()
+
+    if (normalizedDisplay.startsWith(normalizedQuery)) {
+      return displayValue.slice(0, query.length)
+    }
+
+    return ''
   }
 
   canApplyInlineSuggestion = (): boolean => {
@@ -863,10 +890,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
         case KEY.RETURN:
         case KEY.TAB:
         case KEY.RIGHT: {
-          if (
-            (ev.keyCode === KEY.TAB && ev.shiftKey) ||
-            !this.canApplyInlineSuggestion()
-          ) {
+          if ((ev.keyCode === KEY.TAB && ev.shiftKey) || !this.canApplyInlineSuggestion()) {
             break
           }
           ev.preventDefault()
@@ -1363,6 +1387,7 @@ const styled = defaultStyle(
 
     inlineSuggestion: {
       position: 'absolute',
+      display: 'inline-block',
       pointerEvents: 'none',
       color: 'inherit',
       opacity: 0.4,
@@ -1371,6 +1396,24 @@ const styled = defaultStyle(
       fontSize: 'inherit',
       letterSpacing: 'inherit',
       zIndex: 2,
+    },
+
+    inlineSuggestionText: {
+      position: 'relative',
+      display: 'inline-block',
+    },
+
+    inlineSuggestionPrefix: {
+      position: 'absolute',
+      right: '100%',
+      top: 0,
+      whiteSpace: 'pre',
+      visibility: 'hidden',
+      pointerEvents: 'none',
+    },
+
+    inlineSuggestionSuffix: {
+      whiteSpace: 'pre',
     },
 
     '&multiLine': {
