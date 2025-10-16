@@ -30,7 +30,7 @@
 		"build:demo": "vite build --config demo/vite.config.ts",
 		"typecheck": "tsc --project tsconfig.json --noEmit",
 		"format": "prettier --write \"{src,test,demo/src}/**/*.{ts,tsx}\"",
-		"lint": "eslint .",
+		"lint": "eslint src",
 		"dev": "vite --config demo/vite.config.ts",
 		"demo": "vite --config demo/vite.config.ts",
 		"preview": "vite preview --config demo/vite.config.ts",

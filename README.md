@@ -180,7 +180,7 @@ test('mentions work correctly', async () => {
 This project is a TypeScript rewrite and modernization of the original [react-mentions](https://github.com/signavio/react-mentions) library.
 
 <a href="https://github.com/hbmartin/react-mentions-ts/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=hbmartin/react-mentions-ts" />
+  <img src="https://contrib.rocks/image?repo=hbmartin/react-mentions-ts" alt="Contributors to react-mentions-ts" />
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
