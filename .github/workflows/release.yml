@@ -22,6 +22,7 @@ jobs:
           node-version: 22.x
           cache: 'yarn'
           cache-dependency-path: yarn.lock
+          registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm to latest
         run: |
           npm -v
@@ -45,5 +46,15 @@ jobs:
         run: npx publint --pack npm
       - name: Check types compatibility
         run: npx attw --pack . --profile node16
-      - name: Publish to npm
-        run: npm publish
+      - name: Publish to NPM
+        run: |
+          npm -v
+          ls .npmrc || echo "no .npmrc"
+          # Determine tag from release (beta, alpha, etc.)
+          TAG="latest"
+          if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+            TAG="next"
+          fi
+
+          echo "Publishing with tag: $TAG"
+          npm publish --tag $TAG --access public --provenance
