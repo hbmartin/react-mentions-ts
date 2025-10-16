@@ -118,7 +118,7 @@
 		"vite": "^7.1.10"
 	},
 	"dependencies": {
-		"substyle": "^9.1.0"
+		"clsx": "^2.1.1"
 	},
 	"peerDependencies": {
 		"react": ">=19.0.0",

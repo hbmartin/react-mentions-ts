@@ -1,4 +1,4 @@
-import useStyles from 'substyle'
+import useStyles from './utils/useStyles'
 import type { ClassNamesProp, StyleOverride, Substyle } from './types'
 
 interface LoadingIndicatorProps {

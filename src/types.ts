@@ -7,7 +7,7 @@ import type {
   ReactNode,
   RefObject,
 } from 'react'
-import type useStyles from 'substyle'
+import type useStyles from './utils/useStyles'
 
 export type MentionTrigger = string | RegExp
 
@@ -155,9 +155,7 @@ export interface MentionsInputState {
   setSelectionAfterHandlePaste: boolean
 }
 
-export type Substyle = ReturnType<typeof useStyles>
-export type StyleOverride = Parameters<typeof useStyles>[1]['style']
-export type ClassNamesProp = Parameters<typeof useStyles>[1]['classNames']
+export type { SubstyleFunction as Substyle, StyleOverride, ClassNamesProp } from './utils/useStyles'
 
 export type MentionChildConfig = MentionComponentProps & {
   markup: string

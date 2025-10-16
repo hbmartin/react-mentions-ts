@@ -1,5 +1,5 @@
 import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
-import { inline } from 'substyle'
+import { inline } from './utils/useStyles'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'

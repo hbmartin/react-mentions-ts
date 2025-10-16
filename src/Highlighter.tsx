@@ -89,11 +89,10 @@ function Highlighter({
     mentionChildIndex: number,
     key: string
   ) => {
-    const props = { id, display, key }
     const child = Children.toArray(children)[
       mentionChildIndex
     ] as React.ReactElement<MentionComponentProps>
-    return React.cloneElement(child, props)
+    return React.cloneElement(child, { ...child.props, id, display, key })
   }
 
   const renderHighlighterCaret = (caretChildren: React.ReactNode[]) => (

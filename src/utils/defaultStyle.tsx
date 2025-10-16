@@ -1,8 +1,6 @@
 import React from 'react'
-import useStyles from 'substyle'
+import useStyles, { type Modifiers } from './useStyles'
 import type { ClassNamesProp, StyleOverride, Substyle } from '../types'
-
-type Modifiers = Parameters<typeof useStyles>[2]
 
 interface StylingProps {
   style?: StyleOverride

@@ -1,4 +1,4 @@
-import useStyles from 'substyle'
+import useStyles from './utils/useStyles'
 import type { ClassNamesProp, MentionComponentProps, StyleOverride } from './types'
 
 export interface MentionProps extends MentionComponentProps {
