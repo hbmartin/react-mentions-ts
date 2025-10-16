@@ -75,7 +75,12 @@ export default function Examples() {
   return (
     <div>
       <MultipleTrigger data={users} />
-      <SingleLine data={users} onAdd={console.log} />
+      <SingleLine
+        data={users}
+        onAdd={(id, display, startPos, endPos) =>
+          console.log(`onAdd: id=${id}, display=${display}, startPos=${startPos}, endPos=${endPos}`)
+        }
+      />
       <SingleLineIgnoringAccents data={users} />
       <Scrollable data={users} />
       <Advanced data={users} />

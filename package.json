@@ -1,9 +1,12 @@
 {
 	"name": "react-mentions-ts",
 	"private": false,
-	"version": "5.0.0",
+	"version": "5.0.1",
 	"description": "A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.",
 	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
 			"import": {
@@ -32,9 +35,7 @@
 		"demo": "vite --config demo/vite.config.ts",
 		"preview": "vite preview --config demo/vite.config.ts",
 		"test": "BROWSERSLIST_IGNORE_OLD_DATA=true jest",
-		"test:watch": "BROWSERSLIST_IGNORE_OLD_DATA=true jest --watch",
-		"prerelease": "yarn build",
-		"release": "yarn publish --non-interactive"
+		"test:watch": "BROWSERSLIST_IGNORE_OLD_DATA=true jest --watch"
 	},
 	"repository": {
 		"type": "git",
