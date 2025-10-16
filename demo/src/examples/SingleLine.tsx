@@ -8,7 +8,7 @@ export default function SingleLine({ data, onAdd }) {
   const [value, setValue] = useState('')
   const onChange = (ev, newValue) => {
     setValue(newValue)
-    console.log(newValue)
+    console.log('onChange', newValue)
   }
   return (
     <div className="single-line">
