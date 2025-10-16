@@ -45,6 +45,12 @@ jobs:
         run: npx publint --pack npm
       - name: Check types compatibility
         run: npx attw --pack . --profile node16
+      - name: Configure NPM for publishing
+        run: |
+          echo "//registry.npmjs.org/:_authToken=\${NODE_AUTH_TOKEN}" > ~/.npmrc
+          npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1

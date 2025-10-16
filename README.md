@@ -3,10 +3,9 @@
 [![npm version](https://badge.fury.io/js/react-mentions-ts.svg)](https://www.npmjs.com/package/react-mentions-ts)
 [![CI](https://github.com/hbmartin/react-mentions-ts/workflows/CI/badge.svg)](https://github.com/hbmartin/react-mentions-ts/actions)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)](https://bundlephobia.com/package/react-mentions-ts)
-[![NPM License](https://img.shields.io/npm/l/react-mentions-ts?color=blue)](https://github.com/hbmartin/react-mentions-ts/blob/master/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hbmartin/react-mentions-ts/pulls)
+[![Context7](https://img.shields.io/badge/[]-Context7-059669)](https://context7.com/hbmartin/react-mentions-ts)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hbmartin/react-mentions-ts)
 
 **A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.**

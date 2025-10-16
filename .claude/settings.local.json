@@ -11,7 +11,8 @@
       "Bash(npx attw --pack .)",
       "Bash(cat:*)",
       "Bash(npm info:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(yarn test:*)"
     ],
     "deny": [],
     "ask": []
