@@ -632,4 +632,84 @@ describe('MentionsInput', () => {
       expect(preventDefault).not.toHaveBeenCalled()
     })
   })
+
+  describe('inline autocomplete', () => {
+    const inlineData = [
+      { id: 'alice', display: 'Alice' },
+      { id: 'alistair', display: 'Alistair' },
+    ]
+    const inlineValue = '@ali'
+
+    const renderInlineMentionsInput = (
+      props: Partial<React.ComponentProps<typeof MentionsInput>> = {}
+    ) => {
+      render(
+        <MentionsInput value={inlineValue} suggestionsDisplay="inline" {...props}>
+          <Mention trigger="@" data={inlineData} />
+        </MentionsInput>
+      )
+      const textbox = screen.getByRole('textbox')
+      fireEvent.focus(textbox)
+      textbox.setSelectionRange(inlineValue.length, inlineValue.length)
+      fireEvent.select(textbox)
+      return textbox
+    }
+
+    it('shows a hint with remaining characters and no overlay', async () => {
+      const textbox = renderInlineMentionsInput()
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeInTheDocument()
+      })
+
+      expect(textbox).toHaveAttribute('aria-autocomplete', 'inline')
+      expect(textbox).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('listbox')).toBeNull()
+    })
+
+    it('cycles to the next suggestion when pressing escape', async () => {
+      const textbox = renderInlineMentionsInput()
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeInTheDocument()
+      })
+
+      fireEvent.keyDown(textbox, { key: 'Escape', keyCode: 27 })
+
+      await waitFor(() => {
+        expect(screen.getByText('stair')).toBeInTheDocument()
+      })
+    })
+
+    it('can accept the inline suggestion with Tab', async () => {
+      const onChange = jest.fn()
+      const textbox = renderInlineMentionsInput({ onChange })
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeInTheDocument()
+      })
+
+      fireEvent.keyDown(textbox, { key: 'Tab', keyCode: 9 })
+
+      await waitFor(() => {
+        expect(onChange).toHaveBeenCalled()
+      })
+
+      const [, newValue, newPlainTextValue, mentions] =
+        onChange.mock.calls[onChange.mock.calls.length - 1]
+
+      expect(newValue).toBe('@[Alice](alice)')
+      expect(newPlainTextValue).toBe('Alice')
+      expect(mentions).toHaveLength(1)
+      expect(mentions[0]).toMatchObject({ id: 'alice' })
+    })
+
+    it('renders the full suggestion text when configured', async () => {
+      renderInlineMentionsInput({ inlineSuggestionDisplay: 'full' })
+
+      await waitFor(() => {
+        expect(screen.getByText('Alice')).toBeInTheDocument()
+      })
+    })
+  })
 })

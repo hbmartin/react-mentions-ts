@@ -34,6 +34,10 @@ export default {
     },
   },
 
+  inlineSuggestion: {
+    color: '#94a3b8',
+  },
+
   suggestions: {
     list: {
       backgroundColor: 'white',

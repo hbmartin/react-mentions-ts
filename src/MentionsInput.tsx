@@ -8,6 +8,7 @@ import type {
   SyntheticEvent,
 } from 'react'
 import React, { Children } from 'react'
+import { inline } from 'substyle'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
@@ -98,6 +99,7 @@ const KEY = {
   RETURN: 13,
   ESC: 27,
   SPACE: 32,
+  RIGHT: 39,
   UP: 38,
   DOWN: 40,
 } as const
@@ -124,6 +126,8 @@ const HANDLED_PROPS: Array<keyof MentionsInputComponentProps> = [
   'style',
   'className',
   'classNames',
+  'suggestionsDisplay',
+  'inlineSuggestionDisplay',
 ]
 
 class MentionsInput extends React.Component<MentionsInputComponentProps, MentionsInputState> {
@@ -134,6 +138,8 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     onKeyDown: () => null,
     onSelect: () => null,
     onBlur: () => null,
+    suggestionsDisplay: 'overlay',
+    inlineSuggestionDisplay: 'remaining',
   }
 
   private suggestions: SuggestionsMap = {}
@@ -241,7 +247,16 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       })
     }
 
-    if (this.isOpened()) {
+    if (this.isInlineAutocomplete()) {
+      const inlineSuggestion = this.getInlineSuggestionDetails()
+      if (inlineSuggestion) {
+        Object.assign(props, {
+          role: 'combobox',
+          'aria-autocomplete': 'inline',
+          'aria-expanded': false,
+        })
+      }
+    } else if (this.isOpened()) {
       Object.assign(props, {
         role: 'combobox',
         'aria-controls': this.uuidSuggestionsOverlay,
@@ -278,6 +293,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       <div {...style('control')}>
         {this.renderHighlighter()}
         {control}
+        {this.renderInlineSuggestion()}
       </div>
     )
   }
@@ -305,6 +321,10 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   }
 
   renderSuggestionsOverlay = (): React.ReactNode => {
+    if (this.isInlineAutocomplete()) {
+      return null
+    }
+
     if (!isNumber(this.state.selectionStart)) {
       // do not show suggestions when the input does not have the focus
       return null
@@ -346,6 +366,40 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     return suggestionsNode
   }
 
+  renderInlineSuggestion = (): React.ReactNode => {
+    if (!this.isInlineAutocomplete()) {
+      return null
+    }
+
+    if (!isNumber(this.state.selectionStart)) {
+      return null
+    }
+
+    const inlineSuggestion = this.getInlineSuggestionDetails()
+    if (!inlineSuggestion) {
+      return null
+    }
+
+    const { caretPosition } = this.state
+    const highlighter = this.highlighterElement
+    if (!caretPosition || !highlighter) {
+      return null
+    }
+
+    const left = caretPosition.left - highlighter.scrollLeft
+    const top = caretPosition.top - highlighter.scrollTop
+    const positioning = inline(this.props.style('inlineSuggestion'), {
+      left,
+      top,
+    })
+
+    return (
+      <div {...positioning} aria-hidden="true">
+        {inlineSuggestion.text}
+      </div>
+    )
+  }
+
   renderHighlighter = (): React.ReactElement => {
     const { selectionStart, selectionEnd } = this.state
     const { singleLine, children, value, style } = this.props
@@ -371,6 +425,126 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
 
   handleCaretPositionChange = (position: CaretCoordinates | null) => {
     this.setState({ caretPosition: position })
+  }
+
+  isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
+
+  getFlattenedSuggestions = (): Array<{ result: SuggestionDataItem | string; queryInfo: QueryInfo }> =>
+    Object.values(this.state.suggestions).flatMap(({ results, queryInfo }) =>
+      results.map((result) => ({ result, queryInfo }))
+    )
+
+  getFocusedSuggestionEntry = ():
+    | { result: SuggestionDataItem | string; queryInfo: QueryInfo }
+    | null => {
+    const flattened = this.getFlattenedSuggestions()
+    if (flattened.length === 0) {
+      return null
+    }
+    return flattened[this.state.focusIndex] ?? flattened[0]
+  }
+
+  getSuggestionData = (suggestion: SuggestionDataItem | string): {
+    id: MentionDataItem['id']
+    display: string
+  } => {
+    if (typeof suggestion === 'string') {
+      return { id: suggestion, display: suggestion }
+    }
+    return {
+      id: suggestion.id,
+      display: suggestion.display ?? String(suggestion.id),
+    }
+  }
+
+  getInlineSuggestionDetails = ():
+    | {
+        text: string
+        queryInfo: QueryInfo
+        suggestion: SuggestionDataItem | string
+      }
+    | null => {
+    if (!this.isInlineAutocomplete()) {
+      return null
+    }
+
+    const entry = this.getFocusedSuggestionEntry()
+    if (!entry) {
+      return null
+    }
+
+    const { queryInfo, result } = entry
+    const mentionChild = Children.toArray(this.props.children)[
+      queryInfo.childIndex
+    ] as React.ReactElement<MentionComponentProps> | undefined
+
+    if (!mentionChild) {
+      return null
+    }
+
+    const {
+      displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
+      appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
+    } = mentionChild.props
+
+    const { id, display } = this.getSuggestionData(result)
+    let displayValue = displayTransform(id, display)
+    if (appendSpaceOnAdd) {
+      displayValue += ' '
+    }
+
+    let inlineText = displayValue
+
+    if (this.props.inlineSuggestionDisplay === 'remaining') {
+      inlineText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
+      if (!inlineText) {
+        return null
+      }
+    }
+
+    if (!inlineText) {
+      return null
+    }
+
+    return {
+      text: inlineText,
+      queryInfo,
+      suggestion: result,
+    }
+  }
+
+  getInlineSuggestionRemainder = (displayValue: string, queryInfo: QueryInfo): string => {
+    const query = queryInfo.query ?? ''
+    if (query.length === 0) {
+      return displayValue
+    }
+
+    const normalizedDisplay = displayValue.toLocaleLowerCase()
+    const normalizedQuery = query.toLocaleLowerCase()
+
+    if (normalizedDisplay.startsWith(normalizedQuery)) {
+      return displayValue.slice(query.length)
+    }
+
+    return displayValue
+  }
+
+  canApplyInlineSuggestion = (): boolean => {
+    if (!this.isInlineAutocomplete()) {
+      return false
+    }
+
+    const inlineSuggestion = this.getInlineSuggestionDetails()
+    if (!inlineSuggestion) {
+      return false
+    }
+
+    const { selectionStart, selectionEnd } = this.state
+    if (selectionStart == null || selectionEnd == null || selectionStart !== selectionEnd) {
+      return false
+    }
+
+    return selectionEnd === inlineSuggestion.queryInfo.querySequenceEnd
   }
 
   // Returns the text to set as the value of the textarea with all markups removed
@@ -666,6 +840,47 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   }
 
   handleKeyDown = (ev: KeyboardEvent<InputElement>) => {
+    const inlineAutocomplete = this.isInlineAutocomplete()
+
+    if (inlineAutocomplete) {
+      const inlineSuggestion = this.getInlineSuggestionDetails()
+      if (!inlineSuggestion) {
+        this.props.onKeyDown?.(ev)
+        return
+      }
+
+      switch (ev.keyCode) {
+        case KEY.ESC: {
+          const suggestionsCount = countSuggestions(this.state.suggestions)
+          if (suggestionsCount > 0) {
+            ev.preventDefault()
+            ev.stopPropagation()
+            this.shiftFocus(+1)
+            return
+          }
+          break
+        }
+        case KEY.RETURN:
+        case KEY.TAB:
+        case KEY.RIGHT: {
+          if (
+            (ev.keyCode === KEY.TAB && ev.shiftKey) ||
+            !this.canApplyInlineSuggestion()
+          ) {
+            break
+          }
+          ev.preventDefault()
+          ev.stopPropagation()
+          this.selectFocused()
+          return
+        }
+        default:
+      }
+
+      this.props.onKeyDown?.(ev)
+      return
+    }
+
     // do not intercept key events if the suggestions overlay is not shown
     const suggestionsCount = countSuggestions(this.state.suggestions)
 
@@ -675,8 +890,8 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       return
     }
 
-    const keyCodes = Object.values(KEY) as number[]
-    if (keyCodes.includes(ev.keyCode) && ev.keyCode !== KEY.SPACE) {
+    const keyCodes = [KEY.ESC, KEY.DOWN, KEY.UP, KEY.RETURN, KEY.TAB] as const
+    if (keyCodes.includes(ev.keyCode)) {
       ev.preventDefault()
       ev.stopPropagation()
     }
@@ -712,6 +927,10 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   shiftFocus = (delta: number) => {
     const suggestionsCount = countSuggestions(this.state.suggestions)
 
+    if (suggestionsCount === 0) {
+      return
+    }
+
     this.setState({
       focusIndex: (suggestionsCount + this.state.focusIndex + delta) % suggestionsCount,
       scrollFocusedIntoView: true,
@@ -719,12 +938,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   }
 
   selectFocused = () => {
-    const { suggestions, focusIndex } = this.state
-
-    const flattened = Object.values(suggestions).flatMap(({ results, queryInfo }) =>
-      results.map((result) => ({ result, queryInfo }))
-    )
-    const entry = flattened[focusIndex]
+    const entry = this.getFocusedSuggestionEntry()
     if (!entry) {
       return
     }
@@ -1022,9 +1236,14 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
 
     const { focusIndex } = this.state
     const suggestionsCount = countSuggestions(this.suggestions)
+    const nextFocusIndex = this.isInlineAutocomplete()
+      ? 0
+      : focusIndex >= suggestionsCount
+        ? Math.max(suggestionsCount - 1, 0)
+        : focusIndex
     this.setState({
       suggestions: this.suggestions,
-      focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex,
+      focusIndex: nextFocusIndex,
     })
   }
 
@@ -1032,14 +1251,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     suggestion: SuggestionDataItem | string,
     { childIndex, querySequenceStart, querySequenceEnd, plainTextValue }: QueryInfo
   ): void => {
-    const suggestionData =
-      typeof suggestion === 'string'
-        ? { id: suggestion as MentionDataItem['id'], display: suggestion }
-        : {
-            id: suggestion.id,
-            display: suggestion.display ?? String(suggestion.id),
-          }
-    const { id, display } = suggestionData
+    const { id, display } = this.getSuggestionData(suggestion)
     // Insert mention in the marked up value at the correct position
     const value = this.props.value || ''
     const config = readConfigFromChildren(this.props.children)
@@ -1147,6 +1359,18 @@ const styled = defaultStyle(
       fontFamily: 'inherit',
       fontSize: 'inherit',
       letterSpacing: 'inherit',
+    },
+
+    inlineSuggestion: {
+      position: 'absolute',
+      pointerEvents: 'none',
+      color: 'inherit',
+      opacity: 0.4,
+      whiteSpace: 'pre',
+      fontFamily: 'inherit',
+      fontSize: 'inherit',
+      letterSpacing: 'inherit',
+      zIndex: 2,
     },
 
     '&multiLine': {
