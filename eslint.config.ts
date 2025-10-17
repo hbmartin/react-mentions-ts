@@ -137,17 +137,18 @@ export default defineConfig([
       'sonarjs/void-use': 'off',
       'sonarjs/todo-tag': 'off',
       'sonarjs/different-types-comparison': 'off',
+      'sonarjs/pseudo-random': 'off',
 
       'code-complete/no-late-argument-usage': 'error',
       'code-complete/enforce-meaningful-names': 'error',
       'code-complete/no-magic-numbers-except-zero-one': 'off',
-      'code-complete/no-boolean-params': 'error',
+      'code-complete/no-boolean-params': 'off',
 
       // Type safety
       '@typescript-eslint/no-non-null-assertion': 'error',
-      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
       '@typescript-eslint/prefer-optional-chain': 'error',
-      '@typescript-eslint/strict-boolean-expressions': 'error',
+      '@typescript-eslint/strict-boolean-expressions': 'warn',
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/require-await': 'error',

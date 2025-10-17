@@ -2,7 +2,6 @@ import type {
   ChangeEvent,
   CompositionEvent,
   KeyboardEvent,
-  MutableRefObject,
   FocusEvent as ReactFocusEvent,
   MouseEvent as ReactMouseEvent,
   SyntheticEvent,
@@ -32,7 +31,6 @@ import {
   spliceString,
 } from './utils'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
-export { makeTriggerRegex } from './utils/makeTriggerRegex'
 import type {
   CaretCoordinates,
   DataSource,
@@ -59,10 +57,10 @@ const getDataProvider = (data: DataSource, ignoreAccents?: boolean) => {
   if (Array.isArray(data)) {
     return (query: string) => {
       const results: MentionDataItem[] = []
-      for (let i = 0, l = data.length; i < l; ++i) {
-        const display = data[i].display || String(data[i].id)
+      for (const item of data) {
+        const display = item.display || String(item.id)
         if (getSubstringIndex(display, query, ignoreAccents) >= 0) {
-          results.push(data[i])
+          results.push(item)
         }
       }
       return results
@@ -73,14 +71,16 @@ const getDataProvider = (data: DataSource, ignoreAccents?: boolean) => {
 }
 
 const KEY = {
-  TAB: 9,
-  RETURN: 13,
-  ESC: 27,
-  SPACE: 32,
-  RIGHT: 39,
-  UP: 38,
-  DOWN: 40,
+  TAB: 'Tab',
+  RETURN: 'Enter',
+  ESC: 'Escape',
+  SPACE: ' ',
+  RIGHT: 'ArrowRight',
+  UP: 'ArrowUp',
+  DOWN: 'ArrowDown',
 } as const
+
+const suggestionHandledKeys = new Set<string>([KEY.ESC, KEY.DOWN, KEY.UP, KEY.RETURN, KEY.TAB])
 
 const HANDLED_PROPS: Array<keyof MentionsInputComponentProps> = [
   'singleLine',
@@ -109,7 +109,7 @@ const HANDLED_PROPS: Array<keyof MentionsInputComponentProps> = [
 ]
 
 class MentionsInput extends React.Component<MentionsInputComponentProps, MentionsInputState> {
-  static defaultProps: Partial<MentionsInputComponentProps> = {
+  static readonly defaultProps: Partial<MentionsInputComponentProps> = {
     ignoreAccents: false,
     singleLine: false,
     allowSuggestionsAboveCursor: false,
@@ -290,7 +290,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     if (typeof inputRef === 'function') {
       inputRef(el)
     } else if (inputRef) {
-      ;(inputRef as MutableRefObject<InputElement | null>).current = el
+      ;(inputRef as React.RefObject<InputElement | null>).current = el
     }
   }
 
@@ -298,7 +298,8 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     this.suggestionsElement = el
   }
 
-  renderSuggestionsOverlay = (): React.ReactNode => {
+  // eslint-disable-next-line sonarjs/function-return-type
+  renderSuggestionsOverlay = (): React.ReactNode | null => {
     if (this.isInlineAutocomplete()) {
       return null
     }
@@ -873,7 +874,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
         return
       }
 
-      switch (ev.keyCode) {
+      switch (ev.key) {
         case KEY.ESC: {
           const suggestionsCount = countSuggestions(this.state.suggestions)
           if (suggestionsCount > 0) {
@@ -887,7 +888,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
         case KEY.RETURN:
         case KEY.TAB:
         case KEY.RIGHT: {
-          if ((ev.keyCode === KEY.TAB && ev.shiftKey) || !this.canApplyInlineSuggestion()) {
+          if ((ev.key === KEY.TAB && ev.shiftKey) || !this.canApplyInlineSuggestion()) {
             break
           }
           ev.preventDefault()
@@ -911,13 +912,12 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       return
     }
 
-    const keyCodes = [KEY.ESC, KEY.DOWN, KEY.UP, KEY.RETURN, KEY.TAB] as const
-    if (keyCodes.includes(ev.keyCode)) {
+    if (suggestionHandledKeys.has(ev.key)) {
       ev.preventDefault()
       ev.stopPropagation()
     }
 
-    switch (ev.keyCode) {
+    switch (ev.key) {
       case KEY.ESC: {
         this.clearSuggestions()
         return
