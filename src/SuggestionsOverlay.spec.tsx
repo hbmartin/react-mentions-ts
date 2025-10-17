@@ -67,7 +67,7 @@ describe('SuggestionsOverlay', () => {
     expect(overlay).toBeTruthy()
   })
 
-  it('should be possible to apply styles to the items in the list.', () => {
+  it('should be possible to apply classes to the items in the list.', () => {
     const suggestions = [
       { id: '1', display: 'First' },
       { id: '2', display: 'Second' },
@@ -79,7 +79,7 @@ describe('SuggestionsOverlay', () => {
         suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
         isOpened
-        style={{ item: { backgroundColor: 'red' } }}
+        itemClassName="custom-item"
       >
         <Mention trigger="@" data={[]} />
       </SuggestionsOverlay>
@@ -88,8 +88,8 @@ describe('SuggestionsOverlay', () => {
     // Check that list items are rendered and have proper attributes
     const listItems = container.querySelectorAll('li[role="option"]')
     expect(listItems).toHaveLength(2)
-    expect(listItems[0]).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' })
-    expect(listItems[1]).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' })
+    expect(listItems[0]).toHaveClass('custom-item')
+    expect(listItems[1]).toHaveClass('custom-item')
   })
 
   it('should notify when the user clicks on a suggestion.', () => {

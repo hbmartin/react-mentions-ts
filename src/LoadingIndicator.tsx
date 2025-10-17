@@ -1,25 +1,32 @@
-import useStyles from 'substyle'
-import type { ClassNamesProp, StyleOverride, Substyle } from './types'
+import { cn } from './utils/cn'
 
 interface LoadingIndicatorProps {
-  readonly style?: StyleOverride
   readonly className?: string
-  readonly classNames?: ClassNamesProp
+  readonly spinnerClassName?: string
+  readonly spinnerElementClassName?: string
 }
 
-const defaultStyle: Parameters<typeof useStyles>[0] = {}
+const containerStyles = 'flex justify-center py-2'
+const spinnerStyles = 'flex items-center gap-1 text-muted-foreground'
+const spinnerDotStyles = 'inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current'
 
-function LoadingIndicator({ style, className, classNames }: LoadingIndicatorProps) {
-  const styles: Substyle = useStyles(defaultStyle, { style, className, classNames })
-  const spinnerStyles = styles('spinner')
+const dotDelays = [0, 0.1, 0.2, 0.3, 0.4]
+
+function LoadingIndicator({
+  className,
+  spinnerClassName,
+  spinnerElementClassName,
+}: LoadingIndicatorProps) {
   return (
-    <div {...styles} data-testid="loading-indicator">
-      <div {...spinnerStyles}>
-        <div {...spinnerStyles(['element', 'element1'])} />
-        <div {...spinnerStyles(['element', 'element2'])} />
-        <div {...spinnerStyles(['element', 'element3'])} />
-        <div {...spinnerStyles(['element', 'element4'])} />
-        <div {...spinnerStyles(['element', 'element5'])} />
+    <div className={cn(containerStyles, className)} data-testid="loading-indicator">
+      <div className={cn(spinnerStyles, spinnerClassName)}>
+        {dotDelays.map((delay) => (
+          <span
+            key={delay}
+            className={cn(spinnerDotStyles, spinnerElementClassName)}
+            style={{ animationDelay: `${delay}s` }}
+          />
+        ))}
       </div>
     </div>
   )
