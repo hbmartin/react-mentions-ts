@@ -97,12 +97,7 @@ function Highlighter({
   }
 
   const renderHighlighterCaret = (caretChildren: React.ReactNode[]) => (
-    <span
-      {...style('caret')}
-      data-mentions-caret
-      ref={setCaretElement}
-      key="caret"
-    >
+    <span {...style('caret')} data-mentions-caret ref={setCaretElement} key="caret">
       {caretChildren}
     </span>
   )
