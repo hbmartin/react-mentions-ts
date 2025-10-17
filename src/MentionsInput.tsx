@@ -176,7 +176,6 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       this.setState({ setSelectionAfterHandlePaste: false })
       this.setSelection(this.state.selectionStart, this.state.selectionEnd)
     }
-
   }
 
   componentWillUnmount(): void {
@@ -365,17 +364,17 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
       return null
     }
 
-    const container = this.containerElement
     const caretElement = highlighter.querySelector<HTMLSpanElement>('[data-mentions-caret]')
-    const containerRect = container?.getBoundingClientRect()
+    const controlElement = highlighter.parentElement
+    const controlRect = controlElement?.getBoundingClientRect()
     const caretRect = caretElement?.getBoundingClientRect()
 
-    if (!caretRect || !containerRect) {
+    if (!caretRect || !controlRect) {
       return null
     }
 
-    const left = caretRect.left - containerRect.left
-    const top = caretRect.top - containerRect.top
+    const left = caretRect.left - controlRect.left
+    const top = caretRect.top - controlRect.top
 
     const positioning = inline(this.props.style('inlineSuggestion'), {
       left,
@@ -503,17 +502,15 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
 
     if (this.props.inlineSuggestionDisplay === 'remaining') {
       visibleText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
-      if (!visibleText) {
-        return null
-      }
     } else {
       hiddenPrefix = this.getInlineSuggestionPrefix(displayValue, queryInfo)
       if (hiddenPrefix.length > 0) {
         visibleText = displayValue.slice(hiddenPrefix.length)
       }
-      if (!visibleText) {
-        return null
-      }
+    }
+
+    if (!visibleText) {
+      return null
     }
 
     return {
