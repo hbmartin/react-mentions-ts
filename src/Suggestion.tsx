@@ -1,6 +1,8 @@
 import React from 'react'
-import { defaultStyle, getSubstringIndex } from './utils'
-import type { ClassNamesProp, MentionRenderSuggestion, Substyle, SuggestionDataItem } from './types'
+import { cva } from 'class-variance-authority'
+import { getSubstringIndex } from './utils'
+import { cn } from './utils/cn'
+import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
 
 interface SuggestionProps {
   readonly id: string
@@ -12,10 +14,23 @@ interface SuggestionProps {
   readonly query: string
   readonly renderSuggestion?: MentionRenderSuggestion | null
   readonly suggestion: SuggestionDataItem | string
-  readonly style: Substyle
   readonly className?: string
-  readonly classNames?: ClassNamesProp
+  readonly focusedClassName?: string
+  readonly displayClassName?: string
+  readonly highlightClassName?: string
 }
+
+const suggestionItemStyles = cva('cursor-pointer', {
+  variants: {
+    focused: {
+      true: '',
+      false: '',
+    },
+  },
+})
+
+const suggestionDisplayStyles = 'inline-block'
+const suggestionHighlightStyles = ''
 
 function Suggestion({
   id,
@@ -27,9 +42,19 @@ function Suggestion({
   query,
   renderSuggestion,
   suggestion,
-  style,
+  className,
+  focusedClassName,
+  displayClassName,
+  highlightClassName,
 }: SuggestionProps) {
   const rest = { onClick, onMouseEnter }
+  const itemClassName = cn(
+    suggestionItemStyles({ focused: Boolean(focused) }),
+    className,
+    focused ? focusedClassName : undefined
+  )
+  const displayClassNameResolved = cn(suggestionDisplayStyles, displayClassName)
+  const highlightClassNameResolved = cn(suggestionHighlightStyles, highlightClassName)
 
   const getDisplay = (): string => {
     if (typeof suggestion === 'string') {
@@ -49,13 +74,15 @@ function Suggestion({
     const indexOfMatch = getSubstringIndex(display, query, ignoreAccents)
 
     if (indexOfMatch === -1) {
-      return <span {...style('display')}>{display}</span>
+      return <span className={displayClassNameResolved}>{display}</span>
     }
 
     return (
-      <span {...style('display')}>
+      <span className={displayClassNameResolved}>
         {display.slice(0, indexOfMatch)}
-        <b {...style('highlight')}>{display.slice(indexOfMatch, indexOfMatch + query.length)}</b>
+        <b className={highlightClassNameResolved}>
+          {display.slice(indexOfMatch, indexOfMatch + query.length)}
+        </b>
         {display.slice(indexOfMatch + query.length)}
       </span>
     )
@@ -73,21 +100,18 @@ function Suggestion({
   }
 
   return (
-    <li id={id} role="option" aria-selected={focused} {...rest} {...style}>
+    <li
+      id={id}
+      role="option"
+      aria-selected={focused}
+      className={itemClassName}
+      data-slot="suggestion-item"
+      data-focused={focused ? 'true' : undefined}
+      {...rest}
+    >
       {renderContent()}
     </li>
   )
 }
 
-const styled = defaultStyle(
-  {
-    cursor: 'pointer',
-  },
-  (props: Pick<SuggestionProps, 'focused'>) => ({
-    '&focused': Boolean(props.focused),
-  })
-)
-
-const StyledSuggestion: React.ComponentType<SuggestionProps> = styled(Suggestion)
-
-export default StyledSuggestion
+export default Suggestion

@@ -1,19 +1,19 @@
-import useStyles from 'substyle'
-import type { ClassNamesProp, MentionComponentProps, StyleOverride } from './types'
+import type { CSSProperties } from 'react'
+import { cn } from './utils/cn'
+import type { MentionComponentProps } from './types'
 
 export interface MentionProps extends MentionComponentProps {
   readonly display?: string
-  readonly style?: StyleOverride
   readonly className?: string
-  readonly classNames?: ClassNamesProp
+  readonly style?: CSSProperties
 }
 
-const defaultStyle = {
-  fontWeight: 'inherit',
-}
+const mentionBaseClass = 'font-[inherit]'
 
-export default function Mention({ display, style, className, classNames }: MentionProps) {
-  const styles = useStyles(defaultStyle, { style, className, classNames })
-
-  return <strong {...styles}>{display}</strong>
+export default function Mention({ display, className, style }: MentionProps) {
+  return (
+    <strong className={cn(mentionBaseClass, className)} style={style}>
+      {display}
+    </strong>
+  )
 }

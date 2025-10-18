@@ -7,8 +7,6 @@ import type {
   ReactNode,
   RefObject,
 } from 'react'
-import type useStyles from 'substyle'
-
 export type MentionTrigger = string | RegExp
 
 export interface MentionDataItem {
@@ -131,9 +129,9 @@ export interface MentionsInputProps
   readOnly?: boolean
   selectLastSuggestionOnSpace?: boolean
   singleLine?: boolean
-  style?: StyleOverride
+  style?: React.CSSProperties
   className?: string
-  classNames?: Parameters<typeof useStyles>[1]['classNames']
+  classNames?: MentionsInputClassNames
   suggestionsPortalHost?: Element | Document | null
   suggestionsDisplay?: 'overlay' | 'inline'
   inlineSuggestionDisplay?: 'full' | 'remaining'
@@ -157,9 +155,26 @@ export interface MentionsInputState {
   setSelectionAfterHandlePaste: boolean
 }
 
-export type Substyle = ReturnType<typeof useStyles>
-export type StyleOverride = Parameters<typeof useStyles>[1]['style']
-export type ClassNamesProp = Parameters<typeof useStyles>[1]['classNames']
+export type MentionsInputClassNames = Partial<{
+  control: string
+  highlighter: string
+  highlighterSubstring: string
+  highlighterCaret: string
+  input: string
+  inlineSuggestion: string
+  inlineSuggestionText: string
+  inlineSuggestionPrefix: string
+  inlineSuggestionSuffix: string
+  suggestions: string
+  suggestionsList: string
+  suggestionItem: string
+  suggestionItemFocused: string
+  suggestionDisplay: string
+  suggestionHighlight: string
+  loadingIndicator: string
+  loadingSpinner: string
+  loadingSpinnerElement: string
+}>
 
 export type MentionChildConfig = MentionComponentProps & {
   markup: string

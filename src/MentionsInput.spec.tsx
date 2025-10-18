@@ -185,13 +185,6 @@ describe('MentionsInput', () => {
   it('should scroll the highlighter in sync with the textarea', () => {
     const { container } = render(
       <MentionsInput
-        style={{
-          input: {
-            overflow: 'auto',
-            height: 40,
-          },
-        }}
-        className="mi"
         value={'multiple lines causing \n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n the textarea to scroll'}
       >
         <Mention trigger="@" data={data} />
@@ -199,13 +192,14 @@ describe('MentionsInput', () => {
     )
 
     const textarea = screen.getByRole('textbox')
-    const highlighter = container.querySelector('.mi__highlighter')
+    const highlighter = container.querySelector('[data-slot="highlighter"]') as HTMLDivElement | null
+    expect(highlighter).not.toBeNull()
 
     // Set scroll position and trigger scroll event
     textarea.scrollTop = 23
     fireEvent.scroll(textarea, { target: { scrollTop: 23 } })
 
-    expect(highlighter.scrollTop).toBe(23)
+    expect(highlighter!.scrollTop).toBe(23)
   })
 
   it('should place suggestions in suggestionsPortalHost', async () => {
@@ -229,7 +223,7 @@ describe('MentionsInput', () => {
 
     // Check that suggestions are rendered in the portal
     await waitFor(() => {
-      const suggestionsNode = portalContainer.querySelector('.testClass__suggestions')
+      const suggestionsNode = portalContainer.querySelector('[data-slot="suggestions"]')
       expect(suggestionsNode).toBeTruthy()
     })
 
@@ -731,7 +725,7 @@ describe('MentionsInput', () => {
         exact: true,
         hidden: true,
       })
-      expect(hiddenPrefix).not.toBeVisible()
+      expect(hiddenPrefix).toHaveAttribute('aria-hidden', 'true')
     })
 
     it('keeps inline hints visible after typing preceding text', async () => {

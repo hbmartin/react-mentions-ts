@@ -1,6 +1,7 @@
 import type {
   ChangeEvent,
   CompositionEvent,
+  CSSProperties,
   KeyboardEvent,
   FocusEvent as ReactFocusEvent,
   MouseEvent as ReactMouseEvent,
@@ -8,14 +9,13 @@ import type {
 } from 'react'
 import React, { Children } from 'react'
 import { createPortal } from 'react-dom'
-import { inline } from 'substyle'
+import { cva } from 'class-variance-authority'
 import Highlighter from './Highlighter'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
   applyChangeToValue,
   countSuggestions,
-  defaultStyle,
   findStartOfMentionInPlainText,
   getEndOfLastMention,
   getMentions,
@@ -40,18 +40,15 @@ import type {
   MentionOccurrence,
   MentionsInputProps,
   MentionsInputState,
+  MentionsInputClassNames,
   QueryInfo,
-  Substyle,
   SuggestionDataItem,
   SuggestionsMap,
   SuggestionsPosition,
 } from './types'
+import { cn } from './utils/cn'
 
 type InputElement = HTMLInputElement | HTMLTextAreaElement
-
-type MentionsInputComponentProps = Omit<MentionsInputProps, 'style'> & {
-  style: Substyle
-}
 
 const getDataProvider = (data: DataSource, ignoreAccents?: boolean) => {
   if (Array.isArray(data)) {
@@ -82,7 +79,28 @@ const KEY = {
 
 const suggestionHandledKeys = new Set<string>([KEY.ESC, KEY.DOWN, KEY.UP, KEY.RETURN, KEY.TAB])
 
-const HANDLED_PROPS: Array<keyof MentionsInputComponentProps> = [
+const rootStyles = cva('relative overflow-y-visible')
+const controlStyles = cva('relative')
+const inputStyles = cva(
+  'absolute left-0 top-0 block w-full m-0 box-border bg-transparent [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]',
+  {
+    variants: {
+      singleLine: {
+        true: '',
+        false: 'bottom-0 h-full overflow-hidden resize-none',
+      },
+    },
+  }
+)
+const inlineSuggestionStyles = cva(
+  'absolute inline-block pointer-events-none [color:inherit] opacity-40 whitespace-pre [font-family:inherit] [font-size:inherit] [letter-spacing:inherit] z-[2]'
+)
+const inlineSuggestionTextStyles = 'relative inline-block'
+const inlineSuggestionPrefixStyles =
+  'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
+const inlineSuggestionSuffixStyles = 'whitespace-pre'
+
+const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'singleLine',
   'allowSpaceInQuery',
   'allowSuggestionsAboveCursor',
@@ -108,8 +126,8 @@ const HANDLED_PROPS: Array<keyof MentionsInputComponentProps> = [
   'inlineSuggestionDisplay',
 ]
 
-class MentionsInput extends React.Component<MentionsInputComponentProps, MentionsInputState> {
-  static readonly defaultProps: Partial<MentionsInputComponentProps> = {
+class MentionsInput extends React.Component<MentionsInputProps, MentionsInputState> {
+  static readonly defaultProps: Partial<MentionsInputProps> = {
     ignoreAccents: false,
     singleLine: false,
     allowSuggestionsAboveCursor: false,
@@ -132,7 +150,13 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   private readonly _selectionEndBeforeFocus: number | null = null
   private _isComposing = false
 
-  constructor(props: MentionsInputComponentProps) {
+  private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
+    const { classNames } = this.props
+    const extra = classNames?.[slot]
+    return cn(baseClass, extra)
+  }
+
+  constructor(props: MentionsInputProps) {
     super(props)
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
 
@@ -159,7 +183,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     this.updateSuggestionsPosition()
   }
 
-  componentDidUpdate(prevProps: MentionsInputComponentProps, prevState: MentionsInputState): void {
+  componentDidUpdate(prevProps: MentionsInputProps, prevState: MentionsInputState): void {
     // Update position of suggestions unless this componentDidUpdate was
     // triggered by an update to suggestionsPosition.
     if (prevState.suggestionsPosition === this.state.suggestionsPosition) {
@@ -185,8 +209,16 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   }
 
   render(): React.ReactNode {
+    const { className, style, singleLine } = this.props
+    const rootClassName = cn(rootStyles(), className)
     return (
-      <div ref={this.setContainerElement} {...this.props.style}>
+      <div
+        ref={this.setContainerElement}
+        className={rootClassName}
+        style={style}
+        data-single-line={singleLine ? 'true' : undefined}
+        data-multi-line={!singleLine ? 'true' : undefined}
+      >
         {this.renderControl()}
         {this.renderSuggestionsOverlay()}
       </div>
@@ -198,20 +230,41 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   }
 
   getInputProps = (): InputComponentProps => {
-    const { readOnly, disabled, style } = this.props
+    const { readOnly, disabled, singleLine } = this.props
 
     const passthroughProps = omit(
       this.props,
-      HANDLED_PROPS as ReadonlyArray<keyof MentionsInputComponentProps>
-    ) as unknown as Partial<InputComponentProps>
+      HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps>
+    ) as Partial<InputComponentProps>
 
-    const inputStyle = style('input') as unknown as Record<string, unknown>
+    const { style: inputStyleProp, ...restPassthrough } = passthroughProps
+
+    const baseClassName = this.getSlotClassName(
+      'input',
+      inputStyles({ singleLine: Boolean(singleLine) })
+    )
 
     const props: Record<string, unknown> = {
-      ...passthroughProps,
-      ...inputStyle,
+      ...restPassthrough,
+      className: baseClassName,
       value: this.getPlainText(),
       onScroll: this.updateHighlighterScroll,
+      'data-slot': 'input',
+      'data-single-line': singleLine ? 'true' : undefined,
+      'data-multi-line': !singleLine ? 'true' : undefined,
+    }
+
+    const inlineStyle: CSSProperties = {
+      ...(inputStyleProp ?? {}),
+    }
+
+    if (!singleLine && isMobileSafari) {
+      inlineStyle.marginTop = 1
+      inlineStyle.marginLeft = -3
+    }
+
+    if (Object.keys(inlineStyle).length > 0) {
+      props.style = inlineStyle
     }
 
     if (!readOnly && !disabled) {
@@ -252,8 +305,9 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
   }
 
   renderControl = (): React.ReactElement => {
-    const { singleLine, style, inputComponent: CustomInput } = this.props
+    const { singleLine, inputComponent: CustomInput } = this.props
     const inputProps = this.getInputProps()
+    const controlClassName = this.getSlotClassName('control', controlStyles())
 
     const control = CustomInput
       ? React.createElement(
@@ -268,7 +322,7 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
         : this.renderTextarea(inputProps)
 
     return (
-      <div {...style('control')}>
+      <div className={controlClassName} data-slot="control">
         {this.renderHighlighter()}
         {control}
         {this.renderInlineSuggestion()}
@@ -314,7 +368,15 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     const suggestionsNode = (
       <SuggestionsOverlay
         id={this.uuidSuggestionsOverlay}
-        style={this.props.style('suggestions')}
+        className={this.props.classNames?.suggestions}
+        listClassName={this.props.classNames?.suggestionsList}
+        itemClassName={this.props.classNames?.suggestionItem}
+        focusedItemClassName={this.props.classNames?.suggestionItemFocused}
+        displayClassName={this.props.classNames?.suggestionDisplay}
+        highlightClassName={this.props.classNames?.suggestionHighlight}
+        loadingClassName={this.props.classNames?.loadingIndicator}
+        spinnerClassName={this.props.classNames?.loadingSpinner}
+        spinnerElementClassName={this.props.classNames?.loadingSpinnerElement}
         position={position}
         left={left}
         top={top}
@@ -377,24 +439,35 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     const left = caretRect.left - controlRect.left
     const top = caretRect.top - controlRect.top
 
-    const positioning = inline(this.props.style('inlineSuggestion'), {
-      left,
-      top,
-    })
-
-    const textWrapperProps = this.props.style('inlineSuggestionText')
-    const prefixProps = this.props.style('inlineSuggestionPrefix')
-    const suffixProps = this.props.style('inlineSuggestionSuffix')
+    const wrapperClassName = this.getSlotClassName('inlineSuggestion', inlineSuggestionStyles())
+    const wrapperStyle: CSSProperties = { left, top }
+    const textWrapperClassName = this.getSlotClassName(
+      'inlineSuggestionText',
+      inlineSuggestionTextStyles
+    )
+    const prefixClassName = this.getSlotClassName(
+      'inlineSuggestionPrefix',
+      inlineSuggestionPrefixStyles
+    )
+    const suffixClassName = this.getSlotClassName(
+      'inlineSuggestionSuffix',
+      inlineSuggestionSuffixStyles
+    )
 
     return (
-      <div {...positioning} aria-hidden="true">
-        <span {...textWrapperProps}>
+      <div
+        aria-hidden="true"
+        className={wrapperClassName}
+        data-slot="inline-suggestion"
+        style={wrapperStyle}
+      >
+        <span className={textWrapperClassName}>
           {inlineSuggestion.hiddenPrefix ? (
-            <span {...prefixProps} aria-hidden="true">
+            <span className={prefixClassName} aria-hidden="true">
               {inlineSuggestion.hiddenPrefix}
             </span>
           ) : null}
-          <span {...suffixProps}>{inlineSuggestion.visibleText}</span>
+          <span className={suffixClassName}>{inlineSuggestion.visibleText}</span>
         </span>
       </div>
     )
@@ -402,12 +475,14 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
 
   renderHighlighter = (): React.ReactElement => {
     const { selectionStart, selectionEnd } = this.state
-    const { singleLine, children, value, style } = this.props
+    const { singleLine, children, value, classNames } = this.props
 
     return (
       <Highlighter
         containerRef={this.setHighlighterElement}
-        style={style('highlighter')}
+        className={classNames?.highlighter}
+        substringClassName={classNames?.highlighterSubstring}
+        caretClassName={classNames?.highlighterCaret}
         value={value}
         singleLine={singleLine}
         selectionStart={selectionStart}
@@ -741,7 +816,6 @@ class MentionsInput extends React.Component<MentionsInputComponentProps, Mention
     }
 
     // TODO: check if this should be getMentions(newValue, config)
-    console.log('compare values:', valueText, newValue)
     this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(valueText, config))
   }
 
@@ -1363,78 +1437,4 @@ const getComputedStyleLengthProp = (forElement: Element, propertyName: string): 
 const isMobileSafari =
   typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent)
 
-const styled = defaultStyle(
-  {
-    position: 'relative',
-    overflowY: 'visible',
-
-    input: {
-      display: 'block',
-      width: '100%',
-      position: 'absolute',
-      margin: 0,
-      top: 0,
-      left: 0,
-      boxSizing: 'border-box',
-      backgroundColor: 'transparent',
-      fontFamily: 'inherit',
-      fontSize: 'inherit',
-      letterSpacing: 'inherit',
-    },
-
-    inlineSuggestion: {
-      position: 'absolute',
-      display: 'inline-block',
-      pointerEvents: 'none',
-      color: 'inherit',
-      opacity: 0.4,
-      whiteSpace: 'pre',
-      fontFamily: 'inherit',
-      fontSize: 'inherit',
-      letterSpacing: 'inherit',
-      zIndex: 2,
-    },
-
-    inlineSuggestionText: {
-      position: 'relative',
-      display: 'inline-block',
-    },
-
-    inlineSuggestionPrefix: {
-      position: 'absolute',
-      right: '100%',
-      top: 0,
-      whiteSpace: 'pre',
-      visibility: 'hidden',
-      pointerEvents: 'none',
-    },
-
-    inlineSuggestionSuffix: {
-      whiteSpace: 'pre',
-    },
-
-    '&multiLine': {
-      input: {
-        height: '100%',
-        bottom: 0,
-        overflow: 'hidden',
-        resize: 'none',
-
-        // fix weird textarea padding in mobile Safari (see: http://stackoverflow.com/questions/6890149/remove-3-pixels-in-ios-webkit-textarea)
-        ...(isMobileSafari
-          ? {
-              marginTop: 1,
-              marginLeft: -3,
-            }
-          : null),
-      },
-    },
-  },
-  (props: Pick<MentionsInputProps, 'singleLine'>) => ({
-    '&singleLine': Boolean(props.singleLine),
-    '&multiLine': !props.singleLine,
-  })
-)
-
-const StyledMentionsInput: React.ComponentType<MentionsInputProps> = styled(MentionsInput)
-export default StyledMentionsInput
+export default MentionsInput

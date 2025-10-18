@@ -1,16 +1,15 @@
 import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
-import { inline } from 'substyle'
+import type { CSSProperties } from 'react'
+import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
-import { defaultStyle, getSuggestionHtmlId } from './utils'
+import { getSuggestionHtmlId } from './utils'
+import { cn } from './utils/cn'
 import type {
-  ClassNamesProp,
   MentionComponentProps,
   MentionRenderSuggestion,
   QueryInfo,
-  StyleOverride,
-  Substyle,
   SuggestionDataItem,
   SuggestionsMap,
 } from './types'
@@ -31,14 +30,23 @@ interface SuggestionsOverlayProps {
   readonly ignoreAccents?: boolean
   readonly containerRef?: (node: HTMLDivElement | null) => void
   readonly children: React.ReactNode
-  readonly style: Substyle
+  readonly className?: string
+  readonly listClassName?: string
+  readonly itemClassName?: string
+  readonly focusedItemClassName?: string
+  readonly displayClassName?: string
+  readonly highlightClassName?: string
+  readonly loadingClassName?: string
+  readonly spinnerClassName?: string
+  readonly spinnerElementClassName?: string
+  readonly style?: CSSProperties
   readonly customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
   readonly onMouseDown?: (event: React.MouseEvent<HTMLDivElement>) => void
   readonly onMouseEnter?: (index: number) => void
-  readonly className?: string
-  readonly classNames?: ClassNamesProp
-  readonly styleOverride?: StyleOverride
 }
+
+const overlayStyles = cva('z-[1] mt-[14px] min-w-[100px] bg-white')
+const listStyles = 'm-0 list-none p-0'
 
 function SuggestionsOverlay({
   id,
@@ -56,7 +64,16 @@ function SuggestionsOverlay({
   ignoreAccents,
   containerRef,
   children,
-  style,
+  className,
+  listClassName,
+  itemClassName,
+  focusedItemClassName,
+  displayClassName,
+  highlightClassName,
+  loadingClassName,
+  spinnerClassName,
+  spinnerElementClassName,
+  style: styleProp,
   customSuggestionsContainer,
   onMouseDown,
   onMouseEnter,
@@ -96,6 +113,9 @@ function SuggestionsOverlay({
     }
   }, [focusIndex, scrollFocusedIntoView, ulElement])
 
+  const overlayClassName = cn(overlayStyles(), className)
+  const listClassNameResolved = cn(listStyles, listClassName)
+
   const selectSuggestion = (suggestionItem: SuggestionDataItem | string, queryInfo: QueryInfo) => {
     onSelect?.(suggestionItem, queryInfo)
   }
@@ -124,7 +144,10 @@ function SuggestionsOverlay({
 
     return (
       <Suggestion
-        style={style('item')}
+        className={itemClassName}
+        focusedClassName={focusedItemClassName}
+        displayClassName={displayClassName}
+        highlightClassName={highlightClassName}
         key={`${childIndex.toString()}-${getSuggestionId(suggestionItem).toString()}`}
         id={getSuggestionHtmlId(id, index)}
         query={query}
@@ -146,7 +169,8 @@ function SuggestionsOverlay({
         id={id}
         role="listbox"
         aria-label={a11ySuggestionsListLabel}
-        {...style('list')}
+        className={listClassNameResolved}
+        data-slot="suggestions-list"
       >
         {/* TODO: Using Object.values on a number-keyed object can reorder by numeric key, not insertion.
         If UX relies on insertion order, consider tracking order explicitly (e.g., use Map or an array
@@ -173,42 +197,39 @@ function SuggestionsOverlay({
       return null
     }
 
-    return <LoadingIndicator style={style('loadingIndicator')} />
+    return (
+      <LoadingIndicator
+        className={loadingClassName}
+        spinnerClassName={spinnerClassName}
+        spinnerElementClassName={spinnerElementClassName}
+      />
+    )
   }
 
   if (!isOpened) {
     return null
   }
 
-  const inlineStyle = {
+  const overlayStyle: CSSProperties = {
     position: position ?? 'absolute',
     ...(left === undefined ? {} : { left }),
     ...(right === undefined ? {} : { right }),
     ...(top === undefined ? {} : { top }),
   }
-  const positioning = inline(style, inlineStyle)
+  const mergedStyle = styleProp ? { ...overlayStyle, ...styleProp } : overlayStyle
 
   return (
-    <div {...positioning} onMouseDown={onMouseDown} ref={containerRef}>
+    <div
+      className={overlayClassName}
+      data-open={isOpened ? 'true' : 'false'}
+      data-slot="suggestions"
+      onMouseDown={onMouseDown}
+      ref={containerRef}
+      style={mergedStyle}
+    >
       {renderSuggestions()}
       {renderLoadingIndicator()}
     </div>
   )
 }
-
-const styled = defaultStyle({
-  zIndex: 1,
-  backgroundColor: 'white',
-  marginTop: 14,
-  minWidth: 100,
-
-  list: {
-    margin: 0,
-    padding: 0,
-    listStyleType: 'none',
-  },
-})
-
-const StyledSuggestionsOverlay: React.ComponentType<SuggestionsOverlayProps> =
-  styled(SuggestionsOverlay)
-export default StyledSuggestionsOverlay
+export default SuggestionsOverlay

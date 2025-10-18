@@ -1,12 +1,8 @@
 import React, { Children, useEffect, useEffectEvent, useState } from 'react'
-import {
-  defaultStyle,
-  iterateMentionsMarkup,
-  mapPlainTextIndex,
-  readConfigFromChildren,
-  isNumber,
-} from './utils'
-import type { CaretCoordinates, MentionChildConfig, MentionComponentProps, Substyle } from './types'
+import { cva } from 'class-variance-authority'
+import { iterateMentionsMarkup, mapPlainTextIndex, readConfigFromChildren, isNumber } from './utils'
+import { cn } from './utils/cn'
+import type { CaretCoordinates, MentionChildConfig, MentionComponentProps } from './types'
 
 const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {
   if (Object.hasOwn(usedKeys, id)) {
@@ -25,8 +21,25 @@ interface HighlighterProps {
   readonly containerRef?: (node: HTMLDivElement | null) => void
   readonly children: React.ReactNode
   readonly singleLine?: boolean
-  readonly style: Substyle
+  readonly className?: string
+  readonly substringClassName?: string
+  readonly caretClassName?: string
 }
+
+const highlighterStyles = cva(
+  'relative box-border w-full text-transparent overflow-hidden whitespace-pre-wrap break-words border border-transparent text-start',
+  {
+    variants: {
+      singleLine: {
+        true: 'whitespace-pre break-normal',
+        false: '',
+      },
+    },
+  }
+)
+
+const substringStyles = 'invisible'
+const caretStyles = 'relative inline-block align-top'
 
 function Highlighter({
   selectionStart,
@@ -35,9 +48,10 @@ function Highlighter({
   onCaretPositionChange,
   containerRef,
   children,
-  // eslint-disable-next-line unused-imports/no-unused-vars
   singleLine,
-  style,
+  className,
+  substringClassName,
+  caretClassName,
 }: HighlighterProps) {
   const [position, setPosition] = useState<CaretCoordinates | null>(null)
   const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
@@ -65,6 +79,13 @@ function Highlighter({
   const config: MentionChildConfig[] = readConfigFromChildren(children)
   let caretPositionInMarkup: number | null | undefined
 
+  const rootClassName = cn(
+    highlighterStyles({ singleLine: Boolean(singleLine) }),
+    className
+  )
+  const substringClass = cn(substringStyles, substringClassName)
+  const caretClass = cn(caretStyles, caretClassName)
+
   if (selectionEnd === selectionStart) {
     caretPositionInMarkup = mapPlainTextIndex(value, config, selectionStart, 'START') as
       | number
@@ -78,7 +99,7 @@ function Highlighter({
 
   const renderSubstring = (substringValue: string, key: number) => (
     // set substring span to hidden, so that Emojis are not shown double in Mobile Safari
-    <span {...style('substring')} key={key}>
+    <span className={substringClass} key={key}>
       {substringValue}
     </span>
   )
@@ -97,7 +118,7 @@ function Highlighter({
   }
 
   const renderHighlighterCaret = (caretChildren: React.ReactNode[]) => (
-    <span {...style('caret')} data-mentions-caret ref={setCaretElement} key="caret">
+    <span className={caretClass} data-mentions-caret ref={setCaretElement} key="caret">
       {caretChildren}
     </span>
   )
@@ -140,37 +161,16 @@ function Highlighter({
   }
 
   return (
-    <div {...style} ref={containerRef}>
+    <div
+      className={rootClassName}
+      data-slot="highlighter"
+      data-single-line={singleLine ? 'true' : undefined}
+      data-multi-line={!singleLine ? 'true' : undefined}
+      ref={containerRef}
+    >
       {resultComponents}
     </div>
   )
 }
 
-const styled = defaultStyle(
-  {
-    position: 'relative',
-    boxSizing: 'border-box',
-    width: '100%',
-    color: 'transparent',
-    overflow: 'hidden',
-    whiteSpace: 'pre-wrap',
-    wordWrap: 'break-word',
-    border: '1px solid transparent',
-    textAlign: 'start',
-
-    '&singleLine': {
-      whiteSpace: 'pre',
-      wordWrap: 'normal',
-    },
-
-    substring: {
-      visibility: 'hidden',
-    },
-  },
-  (props: Pick<HighlighterProps, 'singleLine'>) => ({
-    '&singleLine': Boolean(props.singleLine),
-  })
-)
-
-const StyledHighlighter: React.ComponentType<HighlighterProps> = styled(Highlighter)
-export default StyledHighlighter
+export default Highlighter
