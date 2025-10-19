@@ -94,6 +94,7 @@ export interface SuggestionsPosition {
   left?: number
   right?: number
   top?: number
+  width?: number
 }
 
 export type InputComponentProps = React.ComponentPropsWithoutRef<'input'> &

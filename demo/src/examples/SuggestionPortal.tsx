@@ -1,70 +1,66 @@
 import React, { useState } from 'react'
-import { merge } from '../../../src/utils'
+
 import { Mention, MentionsInput } from '../../../src'
+import type { MentionDataItem } from '../../../src'
+import ExampleCard from './ExampleCard'
+import { mergeClassNames, mentionPillClass, multilineMentionsClassNames } from './mentionsClassNames'
 
-import defaultStyle from './defaultStyle'
-import defaultMentionStyle from './defaultMentionStyle'
+const portalClassNames = mergeClassNames(multilineMentionsClassNames, {
+  suggestions: 'mt-3 w-full rounded-2xl border border-indigo-300/40 bg-white text-slate-700 shadow-2xl',
+})
 
-let container
-
-export default function SuggestionPortal({ data, onAdd = () => {} }) {
+export default function SuggestionPortal({
+  data,
+  onAdd = () => {},
+}: {
+  data: MentionDataItem[]
+  onAdd?: (...args: any[]) => void
+}) {
   const [value, setValue] = useState('')
-  const onChange = (ev, newValue) => setValue(newValue)
+  const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null)
 
-  let scrollableStyle = merge({}, defaultStyle, {
-    input: {
-      overflow: 'auto',
-      height: 70,
-    },
-  })
   return (
-    <div
-      id="suggestionPortal"
-      style={{
-        height: '250px',
-      }}
-      ref={(el) => {
-        container = el
-      }}
+    <ExampleCard
+      title="Suggestions via portal"
+      description="Pop suggestion menus anywhere in the DOM. Perfect for modals, drawers, or fixed toolbars."
     >
-      <h3>Suggestion portal example</h3>
-      <p>
-        Note that the suggestions menu is outside of the its parent element (in green) which is
-        absolutely positioned and scrollable.
-      </p>
-      <div
-        style={{
-          position: 'absolute',
-          height: '150px',
-          width: '400px',
-          overflow: 'auto',
-          border: '1px solid green',
-          padding: '8px',
-        }}
-      >
-        <MentionsInput
-          value={value}
-          onChange={onChange}
-          style={defaultStyle}
-          placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={'Suggested mentions'}
-          suggestionsPortalHost={container}
+      <div className="relative h-72">
+        <div
+          ref={setPortalHost}
+          className="absolute inset-0 overflow-auto rounded-2xl border border-emerald-400/50 bg-emerald-950/20 p-4 text-sm text-emerald-100 shadow-inner shadow-emerald-500/20"
         >
-          <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
-        </MentionsInput>
+          <p className="mb-3 font-semibold text-emerald-200">Scrollable surface</p>
+          <MentionsInput
+            value={value}
+            onChange={(_event, newValue) => setValue(newValue)}
+            className="mentions"
+            classNames={portalClassNames}
+            placeholder={"Mention people using '@'"}
+            a11ySuggestionsListLabel={'Suggested mentions'}
+            suggestionsPortalHost={portalHost}
+          >
+            <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
+          </MentionsInput>
 
-        <p>The input below is also scrollable.</p>
-        <MentionsInput
-          value={value}
-          onChange={onChange}
-          style={scrollableStyle}
-          placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={'Suggested mentions'}
-          suggestionsPortalHost={container}
-        >
-          <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
-        </MentionsInput>
+          <p className="mt-5 text-xs text-emerald-200/80">
+            Scroll this container — the portal keeps suggestions fixed relative to the viewport.
+          </p>
+          <MentionsInput
+            value={value}
+            onChange={(_event, newValue) => setValue(newValue)}
+            className="mentions mt-4"
+            classNames={mergeClassNames(portalClassNames, {
+              input: 'h-32 overflow-auto',
+              highlighter: 'h-32 overflow-hidden',
+            })}
+            placeholder={"Mention people using '@'"}
+            a11ySuggestionsListLabel={'Suggested mentions'}
+            suggestionsPortalHost={portalHost}
+          >
+            <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
+          </MentionsInput>
+        </div>
       </div>
-    </div>
+    </ExampleCard>
   )
 }

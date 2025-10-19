@@ -1,38 +1,43 @@
 import React, { useState } from 'react'
-import { merge } from '../../../src/utils'
+import { clsx } from 'clsx'
+
 import { Mention, MentionsInput } from '../../../src'
+import type { MentionDataItem } from '../../../src'
+import ExampleCard from './ExampleCard'
+import {
+  mentionPillClass,
+  mergeClassNames,
+  multilineMentionsClassNames,
+} from './mentionsClassNames'
 
-import defaultStyle from './defaultStyle'
-import defaultMentionStyle from './defaultMentionStyle'
+const scrollableClasses = mergeClassNames(multilineMentionsClassNames, {
+  input: 'h-40 overflow-y-auto',
+  highlighter: 'h-40 overflow-hidden',
+})
 
-export default function Scrollable({ data, onAdd = () => {} }) {
+export default function Scrollable({
+  data,
+  onAdd = () => {},
+}: {
+  data: MentionDataItem[]
+  onAdd?: (...args: any[]) => void
+}) {
   const [value, setValue] = useState(
     "Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... "
   )
-  const onChange = (ev, newValue) => setValue(newValue)
-
-  let style = merge({}, defaultStyle, {
-    input: {
-      overflow: 'auto',
-      height: 70,
-    },
-    highlighter: {
-      boxSizing: 'border-box',
-      overflow: 'hidden',
-      height: 70,
-    },
-  })
+  const onChange = (_ev: unknown, newValue: string) => setValue(newValue)
 
   return (
-    <div className="scrollable">
-      <h3>Scrollable container</h3>
-      <p>The highlighter will mimic the scroll of the textarea thus making everything aligned.</p>
-
+    <ExampleCard
+      title="Scrollable composer"
+      description="Textarea and highlighter stay perfectly in sync, even while scrolling long drafts."
+    >
       <MentionsInput
         value={value}
         onChange={onChange}
-        style={style}
-        placeholder={"Mention people using '@'"}
+        className="mentions"
+        classNames={scrollableClasses}
+        placeholder="Mention people using '@'"
         a11ySuggestionsListLabel={'Suggested mentions'}
       >
         <Mention
@@ -40,13 +45,20 @@ export default function Scrollable({ data, onAdd = () => {} }) {
           displayTransform={(url) => `@${url}`}
           trigger="@"
           data={data}
-          renderSuggestion={(suggestion, search, highlightedDisplay) => (
-            <div className="user">{highlightedDisplay}</div>
+          renderSuggestion={(_suggestion, _search, highlightedDisplay, _index, focused) => (
+            <div
+              className={clsx(
+                'flex items-center rounded-xl px-4 py-2.5 text-sm transition',
+                focused ? 'bg-indigo-50/80 text-indigo-600' : 'text-slate-600'
+              )}
+            >
+              {highlightedDisplay}
+            </div>
           )}
           onAdd={onAdd}
-          style={defaultMentionStyle}
+          className={mentionPillClass}
         />
       </MentionsInput>
-    </div>
+    </ExampleCard>
   )
 }

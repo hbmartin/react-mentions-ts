@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>react-mentions-ts demo</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['"Inter var"', 'Inter', 'system-ui', 'sans-serif'],
+            },
+            boxShadow: {
+              glow: '0 25px 50px -12px rgba(79, 70, 229, 0.35)',
+            },
+          },
+        },
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

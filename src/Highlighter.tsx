@@ -1,4 +1,5 @@
 import React, { Children, useEffect, useEffectEvent, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import { iterateMentionsMarkup, mapPlainTextIndex, readConfigFromChildren, isNumber } from './utils'
 import { cn } from './utils/cn'
@@ -26,8 +27,9 @@ interface HighlighterProps {
   readonly caretClassName?: string
 }
 
+// Note: singleLine intentionally overrides whitespace/break behavior
 const highlighterStyles = cva(
-  'relative box-border w-full text-transparent overflow-hidden whitespace-pre-wrap break-words border border-transparent text-start',
+  'box-border w-full text-transparent overflow-hidden whitespace-pre-wrap break-words border border-transparent text-start pointer-events-none',
   {
     variants: {
       singleLine: {
@@ -79,10 +81,7 @@ function Highlighter({
   const config: MentionChildConfig[] = readConfigFromChildren(children)
   let caretPositionInMarkup: number | null | undefined
 
-  const rootClassName = cn(
-    highlighterStyles({ singleLine: Boolean(singleLine) }),
-    className
-  )
+  const rootClassName = cn(highlighterStyles({ singleLine: Boolean(singleLine) }), className)
   const substringClass = cn(substringStyles, substringClassName)
   const caretClass = cn(caretStyles, caretClassName)
 
@@ -165,12 +164,23 @@ function Highlighter({
       className={rootClassName}
       data-slot="highlighter"
       data-single-line={singleLine ? 'true' : undefined}
-      data-multi-line={!singleLine ? 'true' : undefined}
+      data-multi-line={singleLine ? undefined : 'true'}
+      style={HIGHLIGHTER_OVERLAY_STYLE}
       ref={containerRef}
     >
       {resultComponents}
     </div>
   )
+}
+
+const HIGHLIGHTER_OVERLAY_STYLE: CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  pointerEvents: 'none',
+  zIndex: 0,
 }
 
 export default Highlighter

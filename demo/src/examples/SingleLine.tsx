@@ -1,29 +1,39 @@
 import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
-import defaultMentionStyle from './defaultMentionStyle'
-import defaultStyle from './defaultStyle'
+import type { MentionDataItem } from '../../../src'
+import ExampleCard from './ExampleCard'
+import { mentionPillClass, singleLineMentionsClassNames } from './mentionsClassNames'
 
-export default function SingleLine({ data, onAdd }) {
+export default function SingleLine({
+  data,
+  onAdd,
+}: {
+  data: MentionDataItem[]
+  onAdd: (...args: any[]) => void
+}) {
   const [value, setValue] = useState('')
-  const onChange = (ev, newValue) => {
-    setValue(newValue)
-    console.log('onChange', newValue)
-  }
-  return (
-    <div className="single-line">
-      <h3>Single line input</h3>
 
+  const onChange = (_ev: unknown, newValue: string) => {
+    setValue(newValue)
+  }
+
+  return (
+    <ExampleCard
+      title="Single line input"
+      description="Perfect for compact composer bars — arrow keys and Enter behave exactly like chat apps."
+    >
       <MentionsInput
         singleLine
         value={value}
         onChange={onChange}
-        style={defaultStyle}
-        placeholder={"Mention people using '@'"}
+        className="mentions"
+        classNames={singleLineMentionsClassNames}
+        placeholder="Mention people using '@'"
         a11ySuggestionsListLabel={'Suggested mentions'}
       >
-        <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
+        <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
       </MentionsInput>
-    </div>
+    </ExampleCard>
   )
 }

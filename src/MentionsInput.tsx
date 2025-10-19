@@ -82,12 +82,12 @@ const suggestionHandledKeys = new Set<string>([KEY.ESC, KEY.DOWN, KEY.UP, KEY.RE
 const rootStyles = cva('relative overflow-y-visible')
 const controlStyles = cva('relative')
 const inputStyles = cva(
-  'absolute left-0 top-0 block w-full m-0 box-border bg-transparent [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]',
+  'relative block w-full m-0 box-border bg-transparent [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]',
   {
     variants: {
       singleLine: {
         true: '',
-        false: 'bottom-0 h-full overflow-hidden resize-none',
+        false: 'h-full overflow-hidden resize-none',
       },
     },
   }
@@ -149,6 +149,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   private readonly _selectionStartBeforeFocus: number | null = null
   private readonly _selectionEndBeforeFocus: number | null = null
   private _isComposing = false
+  private readonly defaultSuggestionsPortalHost: HTMLElement | null
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
@@ -156,9 +157,31 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     return cn(baseClass, extra)
   }
 
+  private resolvePortalHost(): Element | null {
+    const { suggestionsPortalHost } = this.props
+
+    if (suggestionsPortalHost === null) {
+      return null
+    }
+
+    if (suggestionsPortalHost instanceof Document) {
+      return suggestionsPortalHost.body
+    }
+
+    if (suggestionsPortalHost) {
+      return suggestionsPortalHost
+    }
+
+    return this.defaultSuggestionsPortalHost
+  }
+
   constructor(props: MentionsInputProps) {
     super(props)
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
+    this.defaultSuggestionsPortalHost =
+      typeof document !== 'undefined' && typeof document.body !== 'undefined'
+        ? document.body
+        : null
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -255,6 +278,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     }
 
     const inlineStyle: CSSProperties = {
+      background: 'transparent',
       ...(inputStyleProp ?? {}),
     }
 
@@ -363,7 +387,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       return null
     }
 
-    const { position, left, top, right } = this.state.suggestionsPosition
+    const { position, left, top, right, width } = this.state.suggestionsPosition
+    const portalTarget = this.resolvePortalHost()
 
     const suggestionsNode = (
       <SuggestionsOverlay
@@ -381,6 +406,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
         left={left}
         top={top}
         right={right}
+        width={width}
         focusIndex={this.state.focusIndex}
         scrollFocusedIntoView={this.state.scrollFocusedIntoView}
         containerRef={this.setSuggestionsElement}
@@ -397,11 +423,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
         {this.props.children}
       </SuggestionsOverlay>
     )
-    if (this.props.suggestionsPortalHost) {
-      const portalTarget =
-        this.props.suggestionsPortalHost instanceof Document
-          ? this.props.suggestionsPortalHost.body
-          : this.props.suggestionsPortalHost
+    if (portalTarget) {
       return createPortal(suggestionsNode, portalTarget)
     }
     return suggestionsNode
@@ -1078,8 +1100,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
   updateSuggestionsPosition = (): void => {
     const { caretPosition } = this.state
-    const { suggestionsPortalHost, allowSuggestionsAboveCursor, forceSuggestionsAboveCursor } =
-      this.props
+    const { allowSuggestionsAboveCursor, forceSuggestionsAboveCursor } = this.props
+    const resolvedPortalHost = this.resolvePortalHost()
 
     const suggestions = this.suggestionsElement
     const highlighter = this.highlighterElement
@@ -1097,11 +1119,15 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       top: caretOffsetParentRect.top + caretPosition.top + caretHeight,
     }
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+    const desiredWidth = highlighter.offsetWidth
 
     const position: SuggestionsPosition = {}
 
     // if suggestions menu is in a portal, update position to be releative to its portal node
-    if (suggestionsPortalHost) {
+    if (resolvedPortalHost) {
+      const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
+      const width = Math.min(desiredWidth, viewportWidth)
+      position.width = width
       position.position = 'fixed'
       let { left, top } = viewportRelative
       // absolute/fixed positioned elements are positioned according to their entire box including margins; so we remove margins here:
@@ -1111,10 +1137,9 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       left -= highlighter.scrollLeft
       top -= highlighter.scrollTop
       // guard for mentions suggestions list clipped by right edge of window
-      const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
       position.left =
-        left + suggestions.offsetWidth > viewportWidth
-          ? Math.max(0, viewportWidth - suggestions.offsetWidth)
+        left + width > viewportWidth
+          ? Math.max(0, viewportWidth - width)
           : left
       // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
       // Move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
@@ -1127,10 +1152,13 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
           ? Math.max(0, top - suggestions.offsetHeight - caretHeight)
           : top
     } else {
+      const containerWidth = container.offsetWidth
+      const width = Math.min(desiredWidth, containerWidth)
+      position.width = width
       const left = caretPosition.left - highlighter.scrollLeft
       const top = caretPosition.top - highlighter.scrollTop
       // guard for mentions suggestions list clipped by right edge of window
-      if (left + suggestions.offsetWidth > container.offsetWidth) {
+      if (left + width > containerWidth) {
         position.right = 0
       } else {
         position.left = left
@@ -1152,7 +1180,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     if (
       position.left === this.state.suggestionsPosition.left &&
       position.top === this.state.suggestionsPosition.top &&
-      position.position === this.state.suggestionsPosition.position
+      position.position === this.state.suggestionsPosition.position &&
+      position.width === this.state.suggestionsPosition.width
     ) {
       return
     }

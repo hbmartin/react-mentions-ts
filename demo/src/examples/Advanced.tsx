@@ -1,38 +1,57 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
+import { clsx } from 'clsx'
 
 import { MentionsInput, Mention } from '../../../src'
+import type { MentionDataItem } from '../../../src'
+import ExampleCard from './ExampleCard'
+import {
+  mentionPillAccentClass,
+  mergeClassNames,
+  multilineMentionsClassNames,
+} from './mentionsClassNames'
 
-import defaultStyle from './defaultStyle'
-import defaultMentionStyle from './defaultMentionStyle'
-
-import { merge } from '../../../src/utils'
-
-const style = merge({}, defaultStyle, {
-  suggestions: {
-    list: {
-      maxHeight: 100,
-      overflow: 'auto',
-      position: 'absolute',
-      bottom: 14,
-    },
-  },
+const floatingSuggestions = mergeClassNames(multilineMentionsClassNames, {
+  suggestions: clsx(
+    multilineMentionsClassNames.suggestions,
+    'absolute bottom-[calc(100%+0.75rem)] left-0 right-0 mt-0 w-full shadow-2xl'
+  ),
+  suggestionsList: clsx(multilineMentionsClassNames.suggestionsList, 'max-h-32'),
 })
 
-export default function Advanced({ data, onBlur = () => {}, onAdd = () => {} }) {
-  let inputEl = React.createRef()
+export default function Advanced({
+  data,
+  onBlur = () => {},
+  onAdd = () => {},
+}: {
+  data: MentionDataItem[]
+  onBlur?: () => void
+  onAdd?: (...args: any[]) => void
+}) {
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
   const [value, setValue] = useState('Hi {{johndoe}}!')
-  const onChange = (ev, newValue) => setValue(newValue)
+  const onChange = (_ev: unknown, newValue: string) => setValue(newValue)
 
   return (
-    <div className="advanced">
-      <h3>Advanced options</h3>
-
+    <ExampleCard
+      title="Advanced formatting"
+      description="Custom markup, programmatic focus, and flipped suggestion lists for power users."
+      actions={
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-full bg-indigo-500/80 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white shadow-glow transition hover:bg-indigo-500"
+          onClick={() => inputRef.current?.focus()}
+        >
+          Focus input
+        </button>
+      }
+    >
       <MentionsInput
         value={value}
         onChange={onChange}
         onBlur={onBlur}
-        style={style}
-        inputRef={inputEl}
+        className="mentions"
+        classNames={floatingSuggestions}
+        inputRef={inputRef}
         a11ySuggestionsListLabel={'Suggested mentions'}
       >
         <Mention
@@ -40,17 +59,9 @@ export default function Advanced({ data, onBlur = () => {}, onAdd = () => {} }) 
           displayTransform={(id) => `<-- ${id} -->`}
           data={data}
           onAdd={onAdd}
-          style={defaultMentionStyle}
+          className={mentionPillAccentClass}
         />
       </MentionsInput>
-
-      <button
-        onClick={() => {
-          inputEl.current.focus()
-        }}
-      >
-        focus programmatically
-      </button>
-    </div>
+    </ExampleCard>
   )
 }
