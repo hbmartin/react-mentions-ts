@@ -1,83 +1,82 @@
 import React, { useState } from 'react'
+
 import { Mention, MentionsInput } from '../../../src'
+import type { MentionDataItem } from '../../../src'
+import ExampleCard from './ExampleCard'
+import {
+  mergeClassNames,
+  mentionPillClass,
+  multilineMentionsClassNames,
+} from './mentionsClassNames'
 
-import defaultStyle from './defaultStyle'
-import defaultMentionStyle from './defaultMentionStyle'
+const guardClassNames = mergeClassNames(multilineMentionsClassNames, {
+  suggestions: 'mt-3 w-full rounded-xl border border-emerald-300/40 bg-emerald-50 text-emerald-900 shadow-xl',
+})
 
-// WTF
-let container
-
-export default function BottomGuard({ data, onAdd = () => {} }) {
+export default function BottomGuard({
+  data,
+  onAdd = () => {},
+}: {
+  data: MentionDataItem[]
+  onAdd?: (...args: any[]) => void
+}) {
   const [value, setValue] = useState('')
-  const onChange = (ev, newValue) => setValue(newValue)
+  const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null)
 
   return (
-    <div
-      id="suggestionPortal"
-      style={{
-        height: '400px',
-      }}
-      ref={(el) => {
-        container = el
-      }}
+    <ExampleCard
+      title="Cursor guards"
+      description="Show how overlays adapt above or below the caret, even inside scrollable regions."
     >
-      <h3>Bottom guard example</h3>
-      <p>
-        Note that the bottom input will open the suggestions list above the cursor. Also, the middle
-        one will render its suggestions always on top, even if it has enough space below.
-      </p>
-      <div
-        style={{
-          position: 'absolute',
-          height: '300px',
-          width: '400px',
-          overflow: 'auto',
-          border: '1px solid green',
-          padding: '8px',
-        }}
-      >
-        <MentionsInput
-          value={value}
-          onChange={onChange}
-          style={defaultStyle}
-          placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={'Suggested mentions'}
-          suggestionsPortalHost={container}
-          allowSuggestionsAboveCursor={true}
+      <div className="relative h-[22rem]">
+        <div
+          ref={setPortalHost}
+          className="absolute inset-0 overflow-auto rounded-2xl border border-emerald-400/60 bg-emerald-950/10 p-5 text-sm text-emerald-200 shadow-inner shadow-emerald-500/30"
         >
-          <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
-        </MentionsInput>
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <MentionsInput
-          value={value}
-          onChange={onChange}
-          style={defaultStyle}
-          placeholder={"Mention people using '@'"}
-          suggestionsPortalHost={container}
-          forceSuggestionsAboveCursor={true}
-        >
-          <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
-        </MentionsInput>
-        <br />
-        <br />
-        <br />
-        <br />
-        <MentionsInput
-          value={value}
-          onChange={onChange}
-          style={defaultStyle}
-          placeholder={"Mention people using '@'"}
-          a11ySuggestionsListLabel={'Suggested mentions'}
-          suggestionsPortalHost={container}
-          allowSuggestionsAboveCursor={true}
-        >
-          <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
-        </MentionsInput>
+          <p className="mb-4 font-semibold text-emerald-200">Scroll container</p>
+          <MentionsInput
+            value={value}
+            onChange={(_event, newValue) => setValue(newValue)}
+            className="mentions"
+            classNames={guardClassNames}
+            placeholder={"Mention people using '@'"}
+            a11ySuggestionsListLabel={'Suggested mentions'}
+            suggestionsPortalHost={portalHost}
+            allowSuggestionsAboveCursor
+          >
+            <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
+          </MentionsInput>
+
+          <div className="my-6 h-16 rounded-xl border border-dashed border-emerald-400/40" />
+
+          <MentionsInput
+            value={value}
+            onChange={(_event, newValue) => setValue(newValue)}
+            className="mentions"
+            classNames={guardClassNames}
+            placeholder={"Mention people using '@'"}
+            suggestionsPortalHost={portalHost}
+            forceSuggestionsAboveCursor
+          >
+            <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
+          </MentionsInput>
+
+          <div className="my-6 h-20" />
+
+          <MentionsInput
+            value={value}
+            onChange={(_event, newValue) => setValue(newValue)}
+            className="mentions"
+            classNames={guardClassNames}
+            placeholder={"Mention people using '@'"}
+            a11ySuggestionsListLabel={'Suggested mentions'}
+            suggestionsPortalHost={portalHost}
+            allowSuggestionsAboveCursor
+          >
+            <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
+          </MentionsInput>
+        </div>
       </div>
-    </div>
+    </ExampleCard>
   )
 }

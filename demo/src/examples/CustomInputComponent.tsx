@@ -1,35 +1,59 @@
 import React, { useState } from 'react'
+import { clsx } from 'clsx'
 
 import { Mention, MentionsInput } from '../../../src'
+import type { MentionDataItem } from '../../../src'
+import ExampleCard from './ExampleCard'
+import {
+  mentionPillClass,
+  mergeClassNames,
+  multilineMentionsClassNames,
+} from './mentionsClassNames'
 
-import defaultStyle from './defaultStyle'
-import defaultMentionStyle from './defaultMentionStyle'
-
-// eslint-disable-next-line no-unused-vars
-import classNames from './example.module.css' // uses global css selector
-
-const CustomInput = React.forwardRef((props, ref) => {
-  return <textarea ref={ref} {...props} className="custom-textarea" />
+const nerdFontClasses = mergeClassNames(multilineMentionsClassNames, {
+  control: 'font-mono text-sm',
+  highlighter: 'font-mono',
+  input: 'font-mono text-sm',
 })
 
-export default function CustomInputComponent({ data, onAdd = () => {} }) {
+const CustomInput = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  ({ className, ...props }, ref) => (
+    <textarea
+      ref={ref}
+      {...props}
+      className={clsx(
+        className,
+        'min-h-[9rem] resize-none bg-slate-950/60 font-mono text-sm leading-6 text-emerald-100 placeholder:text-emerald-300/40 shadow-inner shadow-emerald-500/20'
+      )}
+    />
+  )
+)
+
+export default function CustomInputComponent({
+  data,
+  onAdd = () => {},
+}: {
+  data: MentionDataItem[]
+  onAdd?: (...args: any[]) => void
+}) {
   const [value, setValue] = useState('')
-  const onChange = (ev, newValue) => setValue(newValue)
 
   return (
-    <div className="custom-input">
-      <h3>Custom input component</h3>
-
+    <ExampleCard
+      title="Custom input component"
+      description="Bring your own textarea — style it like an editor while keeping mentions intact."
+    >
       <MentionsInput
         value={value}
-        onChange={onChange}
-        style={defaultStyle}
+        onChange={(_ev, newValue) => setValue(newValue)}
+        className="mentions"
+        classNames={nerdFontClasses}
         placeholder={"Mention people using '@'"}
         a11ySuggestionsListLabel={'Suggested mentions'}
         inputComponent={CustomInput}
       >
-        <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
+        <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
       </MentionsInput>
-    </div>
+    </ExampleCard>
   )
 }

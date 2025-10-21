@@ -23,6 +23,7 @@ interface SuggestionsOverlayProps {
   readonly left?: number
   readonly right?: number
   readonly top?: number
+  readonly width?: number
   readonly scrollFocusedIntoView?: boolean
   readonly isLoading?: boolean
   readonly isOpened: boolean
@@ -45,7 +46,7 @@ interface SuggestionsOverlayProps {
   readonly onMouseEnter?: (index: number) => void
 }
 
-const overlayStyles = cva('z-[1] mt-[14px] min-w-[100px] bg-white')
+const overlayStyles = cva('z-[100] mt-[14px] min-w-[100px] bg-white')
 const listStyles = 'm-0 list-none p-0'
 
 function SuggestionsOverlay({
@@ -57,6 +58,7 @@ function SuggestionsOverlay({
   left,
   right,
   top,
+  width,
   scrollFocusedIntoView = true,
   isLoading,
   isOpened,
@@ -215,6 +217,7 @@ function SuggestionsOverlay({
     ...(left === undefined ? {} : { left }),
     ...(right === undefined ? {} : { right }),
     ...(top === undefined ? {} : { top }),
+    ...(width === undefined ? {} : { width }),
   }
   const mergedStyle = styleProp ? { ...overlayStyle, ...styleProp } : overlayStyle
 

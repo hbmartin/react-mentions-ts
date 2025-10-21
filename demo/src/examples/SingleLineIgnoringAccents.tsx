@@ -1,29 +1,37 @@
 import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
+import type { MentionDataItem } from '../../../src'
+import ExampleCard from './ExampleCard'
+import { mentionPillClass, singleLineMentionsClassNames } from './mentionsClassNames'
 
-import defaultStyle from './defaultStyle'
-import defaultMentionStyle from './defaultMentionStyle'
-
-export default function SingleLineIgnoringAccents({ data, onAdd = () => {} }) {
+export default function SingleLineIgnoringAccents({
+  data,
+  onAdd = () => {},
+}: {
+  data: MentionDataItem[]
+  onAdd?: (...args: any[]) => void
+}) {
   const [value, setValue] = useState('')
-  const onChange = (ev, newValue) => setValue(newValue)
+  const onChange = (_ev: unknown, newValue: string) => setValue(newValue)
 
   return (
-    <div className="single-line">
-      <h3>Single line input ignoring character accents</h3>
-
+    <ExampleCard
+      title="Single line input ignoring accents"
+      description="Type without worrying about diacritics — we normalise characters before matching."
+    >
       <MentionsInput
         singleLine
         value={value}
         onChange={onChange}
-        style={defaultStyle}
-        placeholder={"Mention people using '@'"}
+        className="mentions"
+        classNames={singleLineMentionsClassNames}
+        placeholder="Mention people using '@'"
         ignoreAccents
         a11ySuggestionsListLabel={'Suggested mentions'}
       >
-        <Mention data={data} onAdd={onAdd} style={defaultMentionStyle} />
+        <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
       </MentionsInput>
-    </div>
+    </ExampleCard>
   )
 }

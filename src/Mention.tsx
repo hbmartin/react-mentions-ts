@@ -8,11 +8,12 @@ export interface MentionProps extends MentionComponentProps {
   readonly style?: CSSProperties
 }
 
-const mentionBaseClass = 'font-[inherit]'
+const mentionBaseClass =
+  'inline items-center gap-1 rounded-md bg-indigo-500/20 p-0 [font-family:inherit] [font-size:inherit] [letter-spacing:inherit] [font-weight:inherit] text-transparent'
 
 export default function Mention({ display, className, style }: MentionProps) {
   return (
-    <strong className={cn(mentionBaseClass, className)} style={style}>
+    <strong className={cn(className, mentionBaseClass)} style={style}>
       {display}
     </strong>
   )

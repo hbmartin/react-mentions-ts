@@ -74,7 +74,7 @@ const users = [
 
 export default function Examples() {
   return (
-    <div>
+    <div className="grid gap-8 lg:grid-cols-2">
       <MultipleTrigger data={users} />
       <SingleLine
         data={users}
