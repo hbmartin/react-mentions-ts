@@ -1,5 +1,4 @@
 import React from 'react'
-import { cva } from 'class-variance-authority'
 import { getSubstringIndex } from './utils'
 import { cn } from './utils/cn'
 import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
@@ -20,15 +19,7 @@ interface SuggestionProps {
   readonly highlightClassName?: string
 }
 
-const suggestionItemStyles = cva('cursor-pointer', {
-  variants: {
-    focused: {
-      true: '',
-      false: '',
-    },
-  },
-})
-
+const suggestionItemBase = 'cursor-pointer'
 const suggestionDisplayStyles = 'inline-block'
 const suggestionHighlightStyles = ''
 
@@ -48,11 +39,7 @@ function Suggestion({
   highlightClassName,
 }: SuggestionProps) {
   const rest = { onClick, onMouseEnter }
-  const itemClassName = cn(
-    suggestionItemStyles({ focused: Boolean(focused) }),
-    className,
-    focused ? focusedClassName : undefined
-  )
+  const itemClassName = cn(suggestionItemBase, className, focused ? focusedClassName : undefined)
   const displayClassNameResolved = cn(suggestionDisplayStyles, displayClassName)
   const highlightClassNameResolved = cn(suggestionHighlightStyles, highlightClassName)
 

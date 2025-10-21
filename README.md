@@ -86,18 +86,18 @@ The `MentionsInput` component supports the following props:
 | onKeyDown                   | function (event)                                        | empty function | A callback that is invoked when the user presses a key in the mentions input           |
 | singleLine                  | boolean                                                 | `false`        | Renders a single line text input instead of a textarea, if set to `true`               |
 | onBlur                      | function (event, clickedSuggestion)                     | empty function | Passes `true` as second argument if the blur was caused by a mousedown on a suggestion |
-| allowSpaceInQuery           | boolean                                                 | `false`          | Keep suggestions open even if the user separates keywords with spaces.                 |
+| allowSpaceInQuery           | boolean                                                 | `false`        | Keep suggestions open even if the user separates keywords with spaces.                 |
 | suggestionsPortalHost       | DOM Element                                             | undefined      | Render suggestions into the DOM in the supplied host element.                          |
 | inputRef                    | React ref                                               | undefined      | Accepts a React ref to forward to the underlying input element                         |
-| allowSuggestionsAboveCursor | boolean                                                 | `false`          | Renders the SuggestionList above the cursor if there is not enough space below         |
-| forceSuggestionsAboveCursor | boolean                                                 | `false`          | Forces the SuggestionList to be rendered above the cursor                              |
+| allowSuggestionsAboveCursor | boolean                                                 | `false`        | Renders the SuggestionList above the cursor if there is not enough space below         |
+| forceSuggestionsAboveCursor | boolean                                                 | `false`        | Forces the SuggestionList to be rendered above the cursor                              |
 | a11ySuggestionsListLabel    | string                                                  | `''`           | This label would be exposed to screen readers when suggestion popup appears            |
 | customSuggestionsContainer  | function(children)                                      | empty function | Allows customizing the container of the suggestions                                    |
-| inputComponent              | React component                                         | undefined      | Allows the use of a custom input component
-| suggestionsDisplay          | `'overlay' \| 'inline'`                                | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints       |
-| inlineSuggestionDisplay     | `'remaining' \| 'full'`                                | `'remaining'`  | In inline mode, show only the remaining characters after the query or the full match   |
-| ignoreAccents               | boolean                                                 | `false`          | Ignores any accents on letters during search if set to `true`                         |
-| onSelect                    | function (event)                                        | empty function  | A callback that is invoked when the user selects a portion of the text in the input       |
+| inputComponent              | React component                                         | undefined      | Allows the use of a custom input component                                             |
+| suggestionsDisplay          | `'overlay' \| 'inline'`                                 | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints       |
+| inlineSuggestionDisplay     | `'remaining' \| 'full'`                                 | `'remaining'`  | In inline mode, show only the remaining characters after the query or the full match   |
+| ignoreAccents               | boolean                                                 | `false`        | Ignores any accents on letters during search if set to `true`                          |
+| onSelect                    | function (event)                                        | empty function | A callback that is invoked when the user selects a portion of the text in the input    |
 
 ### Mention Props
 
@@ -125,12 +125,35 @@ const fetchUsers = async (query: string, callback: (data: User[]) => void) => {
   callback(users)
 }
 
-<Mention trigger="@" data={fetchUsers} />
+;<Mention trigger="@" data={fetchUsers} />
 ```
 
 ## 🎨 Styling
 
-React Mentions supports **CSS**, **CSS Modules**, and **inline styles**. The package ships with only essential inline styles, giving you complete control over the appearance.
+React Mentions ships its markup with **Tailwind utility classes**. Consumers should have Tailwind configured in their application build so these classes compile to real CSS. If you do not use Tailwind you can still provide your own styles via `className`, CSS modules, or inline styles.
+
+### Tailwind CSS
+
+The components assume Tailwind is available in the consuming app. A minimal setup looks like:
+
+```js
+// tailwind.config.js
+module.exports = {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+}
+```
+
+```css
+/* src/index.css (or your global stylesheet) */
+@import "tailwindcss";
+@import "react-mentions-ts/styles/tailwind.css";
+```
+
+The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source "../dist";` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
+
+If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*.{js,jsx,ts,tsx}` to the `content` array instead of importing the helper file.
 
 ### Inline Styles
 
@@ -153,10 +176,6 @@ Simply assign a `className` prop to `MentionsInput`. All DOM nodes will receive 
   <Mention className="mentions__mention" />
 </MentionsInput>
 ```
-
-### CSS Modules
-
-Provide automatically generated class names as `classNames` to `MentionsInput`. See [demo/src/examples/CssModules.tsx](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/CssModules.tsx) for a complete example.
 
 ## 🧪 Testing
 

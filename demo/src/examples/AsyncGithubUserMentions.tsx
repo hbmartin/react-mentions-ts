@@ -9,12 +9,13 @@ import {
   multilineMentionsClassNames,
 } from './mentionsClassNames'
 
-function fetchUsers(query: string, callback: (users: Array<{ display: string; id: string }>) => void) {
-  if (!query) return
-  fetch(`https://api.github.com/search/users?q=${query}`, { json: true })
+function fetchUsers(query: string) {
+  if (!query) return Promise.resolve([])
+  return fetch(`https://api.github.com/search/users?q=${query}`)
     .then((res) => res.json())
-    .then((res) => res.items.map((user: { login: string }) => ({ display: user.login, id: user.login })))
-    .then(callback)
+    .then((res) =>
+      res.items.map((user: { login: string }) => ({ display: user.login, id: user.login }))
+    )
 }
 
 const githubSuggestions = mergeClassNames(multilineMentionsClassNames, {

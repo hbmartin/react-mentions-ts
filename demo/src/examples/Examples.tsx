@@ -1,6 +1,5 @@
 import Advanced from './Advanced'
 import AsyncGithubUserMentions from './AsyncGithubUserMentions'
-import CssModules from './CssModules'
 import Emojis from './Emojis'
 import CutCopyPaste from './CutCopyPaste'
 import MultipleTrigger from './MultipleTrigger'
@@ -87,7 +86,6 @@ export default function Examples() {
       <Advanced data={users} />
       <CutCopyPaste data={users} disabledSource={false} />
       <CutCopyPaste data={users} disabledSource />
-      <CssModules data={users} />
       <InlineAutocomplete data={users} />
       <AsyncGithubUserMentions />
       <Emojis data={users} />

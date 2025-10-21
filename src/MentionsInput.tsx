@@ -8,8 +8,8 @@ import type {
   SyntheticEvent,
 } from 'react'
 import React, { Children } from 'react'
-import { createPortal } from 'react-dom'
 import { cva } from 'class-variance-authority'
+import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import SuggestionsOverlay from './SuggestionsOverlay'
@@ -30,6 +30,7 @@ import {
   readConfigFromChildren,
   spliceString,
 } from './utils'
+import { cn } from './utils/cn'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import type {
   CaretCoordinates,
@@ -45,14 +46,16 @@ import type {
   SuggestionDataItem,
   SuggestionsMap,
   SuggestionsPosition,
+  InputElement,
 } from './types'
-import { cn } from './utils/cn'
 
-type InputElement = HTMLInputElement | HTMLTextAreaElement
-
-const getDataProvider = (data: DataSource, ignoreAccents?: boolean) => {
+const getDataProvider = (
+  data: DataSource,
+  ignoreAccents?: boolean
+): ((query: string) => Promise<MentionDataItem[]>) => {
   if (Array.isArray(data)) {
-    return (query: string) => {
+    // eslint-disable-next-line @typescript-eslint/require-await
+    return async (query: string) => {
       const results: MentionDataItem[] = []
       for (const item of data) {
         const display = item.display || String(item.id)
@@ -179,9 +182,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     super(props)
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
     this.defaultSuggestionsPortalHost =
-      typeof document !== 'undefined' && typeof document.body !== 'undefined'
-        ? document.body
-        : null
+      typeof document !== 'undefined' && document.body !== undefined ? document.body : null
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -240,7 +241,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
         className={rootClassName}
         style={style}
         data-single-line={singleLine ? 'true' : undefined}
-        data-multi-line={!singleLine ? 'true' : undefined}
+        data-multi-line={singleLine ? undefined : 'true'}
       >
         {this.renderControl()}
         {this.renderSuggestionsOverlay()}
@@ -260,7 +261,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps>
     ) as Partial<InputComponentProps>
 
-    const { style: inputStyleProp, ...restPassthrough } = passthroughProps
+    const { ...restPassthrough } = passthroughProps
 
     const baseClassName = this.getSlotClassName(
       'input',
@@ -274,12 +275,11 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       onScroll: this.updateHighlighterScroll,
       'data-slot': 'input',
       'data-single-line': singleLine ? 'true' : undefined,
-      'data-multi-line': !singleLine ? 'true' : undefined,
+      'data-multi-line': singleLine ? undefined : 'true',
     }
 
     const inlineStyle: CSSProperties = {
       background: 'transparent',
-      ...(inputStyleProp ?? {}),
     }
 
     if (!singleLine && isMobileSafari) {
@@ -1137,10 +1137,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       left -= highlighter.scrollLeft
       top -= highlighter.scrollTop
       // guard for mentions suggestions list clipped by right edge of window
-      position.left =
-        left + width > viewportWidth
-          ? Math.max(0, viewportWidth - width)
-          : left
+      position.left = left + width > viewportWidth ? Math.max(0, viewportWidth - width) : left
       // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
       // Move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
       // is small enough to NOT cover up the caret

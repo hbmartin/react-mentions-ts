@@ -20,9 +20,10 @@
 		},
 		"./package.json": "./package.json"
 	},
-	"files": [
-		"dist"
-	],
+ "files": [
+    "dist",
+    "styles"
+  ],
 	"sideEffects": false,
 	"scripts": {
 		"clean": "rimraf dist",
