@@ -19,9 +19,9 @@ type EmojiEntry = {
 
 const emojiClassNames = mergeClassNames(multilineMentionsClassNames, {
   suggestionItem: 'flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100',
-  suggestionItemFocused: 'bg-emerald-500/20 text-emerald-100',
+  suggestionItemFocused: 'bg-emerald-500/20 text-emerald-800',
   suggestionDisplay: 'flex items-center gap-3',
-  suggestionHighlight: 'font-semibold text-emerald-200',
+  suggestionHighlight: 'font-semibold text-emerald-800',
 })
 
 export default function Emojis({ data }: { data: MentionDataItem[] }) {
@@ -38,15 +38,16 @@ export default function Emojis({ data }: { data: MentionDataItem[] }) {
       })
   }, [])
 
-  const queryEmojis = (query: string, callback: (results: MentionDataItem[]) => void) => {
-    if (!query) return
+  const queryEmojis = (query: string) => {
+    if (!query) return Promise.resolve([])
 
     const lower = query.toLowerCase()
-    const matches = emojis
-      .filter((emoji) => emoji.name.includes(lower))
-      .slice(0, 10)
-      .map(({ emoji, name }) => ({ id: emoji, display: `${emoji} ${name}` }))
-    callback(matches)
+    return Promise.resolve(
+      emojis
+        .filter((emoji) => emoji.name.includes(lower))
+        .slice(0, 10)
+        .map(({ emoji, name }) => ({ id: emoji, display: `${emoji} ${name}` }))
+    )
   }
 
   return (
@@ -76,7 +77,6 @@ export default function Emojis({ data }: { data: MentionDataItem[] }) {
           regex={neverMatchingRegex}
           data={queryEmojis}
           renderSuggestion={(suggestion, _search, highlightedDisplay, _index, focused) => {
-            const [emojiChar] = typeof suggestion === 'object' ? suggestion.id : suggestion
             return (
               <div
                 className={clsx(

@@ -6,6 +6,8 @@ import type {
   ReactElement,
   ReactNode,
   RefObject,
+  FocusEvent as ReactFocusEvent,
+  MouseEvent as ReactMouseEvent,
 } from 'react'
 export type MentionTrigger = string | RegExp
 
@@ -16,10 +18,7 @@ export interface MentionDataItem {
 }
 
 export type SuggestionDataItem = MentionDataItem
-
-export type DataProviderFn = (query: string) => MentionDataItem[] | Promise<MentionDataItem[]>
-
-export type DataSource = MentionDataItem[] | DataProviderFn
+export type DataSource = MentionDataItem[] | ((query: string) => Promise<MentionDataItem[]>)
 
 export interface QueryInfo {
   childIndex: number
@@ -123,10 +122,14 @@ export interface MentionsInputProps
   inputRef?:
     | RefObject<HTMLInputElement | HTMLTextAreaElement>
     | ((el: HTMLInputElement | HTMLTextAreaElement | null) => void)
-  onBlur?: (...args: any[]) => void
+  onBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
   onChange?: MentionsInputChangeHandler
   onKeyDown?: MentionsInputKeyDownHandler
-  onSelect?: (...args: any[]) => void
+  onSelect?: (
+    event: ReactMouseEvent<HTMLInputElement | HTMLTextAreaElement>,
+    suggestion: SuggestionDataItem | string,
+    queryInfo: QueryInfo
+  ) => void
   readOnly?: boolean
   selectLastSuggestionOnSpace?: boolean
   singleLine?: boolean
@@ -190,3 +193,5 @@ export interface MentionOccurrence {
   index: number
   plainTextIndex: number
 }
+
+export type InputElement = HTMLInputElement | HTMLTextAreaElement

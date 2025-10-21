@@ -148,10 +148,10 @@ module.exports = {
 ```css
 /* src/index.css (or your global stylesheet) */
 @import "tailwindcss";
-@import "react-mentions-ts/dist/tailwind.css";
+@import "react-mentions-ts/styles/tailwind.css";
 ```
 
-The optional helper `react-mentions-ts/dist/tailwind.css` only declares an `@source ".";` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
+The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source "../dist";` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
 
 If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*.{js,jsx,ts,tsx}` to the `content` array instead of importing the helper file.
 

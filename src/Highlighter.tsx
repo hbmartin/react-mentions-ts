@@ -1,4 +1,4 @@
-import React, { Children, useEffect, useEffectEvent, useState } from 'react'
+import React, { Children, useEffect, useEffectEvent, useLayoutEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import { iterateMentionsMarkup, mapPlainTextIndex, readConfigFromChildren, isNumber } from './utils'
@@ -29,12 +29,12 @@ interface HighlighterProps {
 
 // Note: singleLine intentionally overrides whitespace/break behavior
 const highlighterStyles = cva(
-  'box-border w-full text-transparent overflow-hidden whitespace-pre-wrap break-words border border-transparent text-start pointer-events-none',
+  'box-border w-full text-transparent overflow-hidden border border-transparent text-start pointer-events-none',
   {
     variants: {
       singleLine: {
         true: 'whitespace-pre break-normal',
-        false: '',
+        false: 'whitespace-pre-wrap break-words',
       },
     },
   }
@@ -77,6 +77,14 @@ function Highlighter({
 
     updatePosition(offsetLeft, offsetTop)
   }, [caretElement])
+
+  // Ensure caret position updates whenever content/selection affects layout.
+  useLayoutEffect(() => {
+    if (caretElement) {
+      updatePosition(caretElement.offsetLeft, caretElement.offsetTop)
+    }
+    // value/selection/singleLine impact layout/position
+  }, [caretElement, value, selectionStart, selectionEnd, singleLine])
 
   const config: MentionChildConfig[] = readConfigFromChildren(children)
   let caretPositionInMarkup: number | null | undefined
@@ -178,7 +186,7 @@ const HIGHLIGHTER_OVERLAY_STYLE: CSSProperties = {
   top: 0,
   left: 0,
   right: 0,
-  bottom: 0,
+  width: '100%',
   pointerEvents: 'none',
   zIndex: 0,
 }

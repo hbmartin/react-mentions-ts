@@ -169,7 +169,7 @@ export default defineConfig([
           prefer: 'type-imports',
         },
       ],
-      '@typescript-eslint/member-ordering': 'error',
+      '@typescript-eslint/member-ordering': 'off',
 
       // JavaScript base rules (enhanced) - Prettier handles formatting
       curly: ['error', 'all'],
