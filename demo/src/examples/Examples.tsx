@@ -7,9 +7,7 @@ import Scrollable from './Scrollable'
 import SingleLine from './SingleLine'
 import SingleLineIgnoringAccents from './SingleLineIgnoringAccents'
 import SuggestionPortal from './SuggestionPortal'
-import BottomGuard from './BottomGuard'
 import CustomSuggestionsContainer from './CustomSuggestionsContainer'
-import CustomInputComponent from './CustomInputComponent'
 import InlineAutocomplete from './InlineAutocomplete'
 
 const users = [
@@ -73,7 +71,7 @@ const users = [
 
 export default function Examples() {
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
+    <div className="grid gap-8">
       <MultipleTrigger data={users} />
       <SingleLine
         data={users}
@@ -85,14 +83,11 @@ export default function Examples() {
       <Scrollable data={users} />
       <Advanced data={users} />
       <CutCopyPaste data={users} disabledSource={false} />
-      <CutCopyPaste data={users} disabledSource />
       <InlineAutocomplete data={users} />
       <AsyncGithubUserMentions />
       <Emojis data={users} />
       <SuggestionPortal data={users} />
-      <BottomGuard data={users} />
       <CustomSuggestionsContainer data={users} />
-      <CustomInputComponent data={users} />
     </div>
   )
 }

@@ -18,11 +18,11 @@
 
 - ✅ **Flexible Triggers** - Use any character or pattern to trigger mentions (@, #, :, or custom)
 - 🎨 **Fully Customizable** - Style with CSS, CSS modules, or inline styles
+- 🌬️ **Tailwind v4 Ready** - First-class support for Tailwind CSS v4 utility styling
 - 📝 **Multiple Mention Types** - Support users, tags, emojis, or any custom data source
 - ⚡ **Async Data Loading** - Load suggestions dynamically from APIs
 - 🔍 **Smart Suggestions** - Real-time filtering and matching
 - ♿ **Accessible** - Built with ARIA labels and keyboard navigation
-- 📦 **Lightweight** - Zero dependencies (`React` and `clsx` are peerDeps)
 - 🎯 **TypeScript First** - Written in TypeScript with complete type definitions
 - 🧪 **Well Tested** - Comprehensive test suite with Testing Library
 - 🌐 **SSR Compatible** - Works with Next.js and other SSR frameworks
@@ -125,7 +125,7 @@ const fetchUsers = async (query: string, callback: (data: User[]) => void) => {
   callback(users)
 }
 
-;<Mention trigger="@" data={fetchUsers} />
+<Mention trigger="@" data={fetchUsers} />
 ```
 
 ## 🎨 Styling

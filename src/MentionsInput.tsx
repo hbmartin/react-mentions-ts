@@ -54,17 +54,12 @@ const getDataProvider = (
   ignoreAccents?: boolean
 ): ((query: string) => Promise<MentionDataItem[]>) => {
   if (Array.isArray(data)) {
-    // eslint-disable-next-line @typescript-eslint/require-await
-    return async (query: string) => {
-      const results: MentionDataItem[] = []
-      for (const item of data) {
-        const display = item.display || String(item.id)
-        if (getSubstringIndex(display, query, ignoreAccents) >= 0) {
-          results.push(item)
-        }
-      }
-      return results
-    }
+    return (query: string) =>
+      Promise.resolve(
+        data.filter(
+          (item) => getSubstringIndex(item.display || String(item.id), query, ignoreAccents) >= 0
+        )
+      )
   }
 
   return data
@@ -167,12 +162,12 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       return null
     }
 
-    if (suggestionsPortalHost instanceof Document) {
+    if (typeof Document !== 'undefined' && suggestionsPortalHost instanceof Document) {
       return suggestionsPortalHost.body
     }
 
     if (suggestionsPortalHost) {
-      return suggestionsPortalHost
+      return suggestionsPortalHost as Element
     }
 
     return this.defaultSuggestionsPortalHost
@@ -181,8 +176,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   constructor(props: MentionsInputProps) {
     super(props)
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
-    this.defaultSuggestionsPortalHost =
-      typeof document !== 'undefined' && document.body !== undefined ? document.body : null
+    this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -203,6 +197,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     document.addEventListener('copy', this.handleCopy)
     document.addEventListener('cut', this.handleCut)
     document.addEventListener('paste', this.handlePaste)
+    document.addEventListener('scroll', this.handleDocumentScroll, true)
 
     this.updateSuggestionsPosition()
   }
@@ -230,6 +225,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     document.removeEventListener('copy', this.handleCopy)
     document.removeEventListener('cut', this.handleCut)
     document.removeEventListener('paste', this.handlePaste)
+    document.removeEventListener('scroll', this.handleDocumentScroll, true)
   }
 
   render(): React.ReactNode {
@@ -1136,8 +1132,9 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       // take into account highlighter/textinput scrolling:
       left -= highlighter.scrollLeft
       top -= highlighter.scrollTop
-      // guard for mentions suggestions list clipped by right edge of window
-      position.left = left + width > viewportWidth ? Math.max(0, viewportWidth - width) : left
+      // guard for mentions suggestions list clipped by window edges
+      const maxLeft = Math.max(0, viewportWidth - width)
+      position.left = Math.min(maxLeft, Math.max(0, left))
       // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
       // Move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
       // is small enough to NOT cover up the caret
@@ -1202,6 +1199,14 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     if (inputHeight) {
       highlighter.style.height = `${inputHeight}px`
     }
+  }
+
+  handleDocumentScroll = (): void => {
+    if (!this.suggestionsElement) {
+      return
+    }
+
+    this.updateSuggestionsPosition()
   }
 
   handleCompositionStart = (): void => {
