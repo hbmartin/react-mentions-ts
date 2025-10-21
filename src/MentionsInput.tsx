@@ -182,6 +182,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
     this.handlePaste = this.handlePaste.bind(this)
+    this.handleDocumentScroll = this.handleDocumentScroll.bind(this)
 
     this.state = {
       focusIndex: 0,
@@ -195,10 +196,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   }
 
   componentDidMount(): void {
-    document.addEventListener('copy', this.handleCopy.bind(this))
-    document.addEventListener('cut', this.handleCut.bind(this))
-    document.addEventListener('paste', this.handlePaste.bind(this))
-    document.addEventListener('scroll', this.handleDocumentScroll.bind(this), true)
+    document.addEventListener('copy', this.handleCopy)
+    document.addEventListener('cut', this.handleCut)
+    document.addEventListener('paste', this.handlePaste)
+    document.addEventListener('scroll', this.handleDocumentScroll, true)
 
     this.updateSuggestionsPosition()
   }
@@ -700,7 +701,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     }
   }
 
-  handlePaste(event: ClipboardEvent): void {
+  handlePaste = (event: ClipboardEvent): void => {
     if (event.target !== this.inputElement) {
       return
     }
@@ -784,7 +785,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     return !!event.clipboardData
   }
 
-  handleCopy(event: ClipboardEvent): void {
+  handleCopy = (event: ClipboardEvent): void => {
     if (event.target !== this.inputElement) {
       return
     }
@@ -797,7 +798,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     this.saveSelectionToClipboard(event)
   }
 
-  handleCut(event: ClipboardEvent): void {
+  handleCut = (event: ClipboardEvent): void => {
     if (event.target !== this.inputElement) {
       return
     }
