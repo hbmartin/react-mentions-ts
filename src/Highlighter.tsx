@@ -1,4 +1,4 @@
-import React, { Children, useEffect, useEffectEvent, useLayoutEffect, useState } from 'react'
+import React, { Children, useEffectEvent, useLayoutEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import { iterateMentionsMarkup, mapPlainTextIndex, readConfigFromChildren, isNumber } from './utils'
@@ -68,19 +68,9 @@ function Highlighter({
     onCaretPositionChange(newPosition)
   })
 
-  useEffect(() => {
-    if (caretElement === null) {
-      return
-    }
-
-    const { offsetLeft, offsetTop } = caretElement
-
-    updatePosition(offsetLeft, offsetTop)
-  }, [caretElement])
-
   // Ensure caret position updates whenever content/selection affects layout.
   useLayoutEffect(() => {
-    if (caretElement) {
+    if (caretElement !== null) {
       updatePosition(caretElement.offsetLeft, caretElement.offsetTop)
     }
     // value/selection/singleLine impact layout/position
