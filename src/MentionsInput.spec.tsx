@@ -192,7 +192,9 @@ describe('MentionsInput', () => {
     )
 
     const textarea = screen.getByRole('textbox')
-    const highlighter = container.querySelector('[data-slot="highlighter"]') as HTMLDivElement | null
+    const highlighter = container.querySelector(
+      '[data-slot="highlighter"]'
+    ) as HTMLDivElement | null
     expect(highlighter).not.toBeNull()
 
     // Set scroll position and trigger scroll event

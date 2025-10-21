@@ -148,6 +148,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   private readonly _selectionEndBeforeFocus: number | null = null
   private _isComposing = false
   private readonly defaultSuggestionsPortalHost: HTMLElement | null
+  private _isScrolling = false
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
@@ -194,10 +195,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   }
 
   componentDidMount(): void {
-    document.addEventListener('copy', this.handleCopy)
-    document.addEventListener('cut', this.handleCut)
-    document.addEventListener('paste', this.handlePaste)
-    document.addEventListener('scroll', this.handleDocumentScroll, true)
+    document.addEventListener('copy', this.handleCopy.bind(this))
+    document.addEventListener('cut', this.handleCut.bind(this))
+    document.addEventListener('paste', this.handlePaste.bind(this))
+    document.addEventListener('scroll', this.handleDocumentScroll.bind(this), true)
 
     this.updateSuggestionsPosition()
   }
@@ -1202,11 +1203,15 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   }
 
   handleDocumentScroll = (): void => {
-    if (!this.suggestionsElement) {
+    if (this._isScrolling || !this.suggestionsElement) {
       return
     }
 
-    this.updateSuggestionsPosition()
+    this._isScrolling = true
+    globalThis.requestAnimationFrame(() => {
+      this.updateSuggestionsPosition()
+      this._isScrolling = false
+    })
   }
 
   handleCompositionStart = (): void => {
