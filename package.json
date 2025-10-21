@@ -1,7 +1,7 @@
 {
 	"name": "react-mentions-ts",
 	"private": false,
-	"version": "5.0.1",
+	"version": "5.1.0",
 	"description": "A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.",
 	"type": "module",
 	"main": "./dist/index.cjs",
@@ -20,10 +20,10 @@
 		},
 		"./package.json": "./package.json"
 	},
- "files": [
-    "dist",
-    "styles"
-  ],
+	"files": [
+		"dist",
+		"styles"
+	],
 	"sideEffects": false,
 	"scripts": {
 		"clean": "rimraf dist",

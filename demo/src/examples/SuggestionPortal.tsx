@@ -3,10 +3,15 @@ import React, { useState } from 'react'
 import { Mention, MentionsInput } from '../../../src'
 import type { MentionDataItem } from '../../../src'
 import ExampleCard from './ExampleCard'
-import { mergeClassNames, mentionPillClass, multilineMentionsClassNames } from './mentionsClassNames'
+import {
+  mergeClassNames,
+  mentionPillClass,
+  multilineMentionsClassNames,
+} from './mentionsClassNames'
 
 const portalClassNames = mergeClassNames(multilineMentionsClassNames, {
-  suggestions: 'mt-3 w-full rounded-2xl border border-indigo-300/40 bg-white text-slate-700 shadow-2xl',
+  suggestions:
+    'mt-3 w-full rounded-2xl border border-indigo-300/40 bg-white text-slate-700 shadow-2xl',
 })
 
 export default function SuggestionPortal({

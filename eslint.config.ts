@@ -214,6 +214,10 @@ export default defineConfig([
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-unnecessary-type-parameters': 'off',
       '@typescript-eslint/no-confusing-void-expression': 'off',
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        { allowNumber: true, allowBoolean: true },
+      ],
       'sonarjs/no-nested-conditional': 'off',
     },
   },
