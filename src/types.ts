@@ -111,7 +111,6 @@ export interface MentionsInputProps
     'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'valueLink' | 'onBlur'
   > {
   a11ySuggestionsListLabel?: string
-  allowSpaceInQuery?: boolean
   suggestionsPlacement?: 'auto' | 'above' | 'below'
   appendSpaceOnAdd?: boolean
   customSuggestionsContainer?: (children: ReactElement) => ReactElement

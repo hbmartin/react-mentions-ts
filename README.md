@@ -105,7 +105,6 @@ The `MentionsInput` component supports the following props:
 | onKeyDown                   | function (event)                                        | empty function | A callback that is invoked when the user presses a key in the mentions input           |
 | singleLine                  | boolean                                                 | `false`        | Renders a single line text input instead of a textarea, if set to `true`               |
 | onBlur                      | function (event, clickedSuggestion)                     | empty function | Passes `true` as second argument if the blur was caused by a mousedown on a suggestion |
-| allowSpaceInQuery           | boolean                                                 | `false`        | Keep suggestions open even if the user separates keywords with spaces.                 |
 | suggestionsPortalHost       | DOM Element                                             | undefined      | Render suggestions into the DOM in the supplied host element.                          |
 | inputRef                    | React ref                                               | undefined      | Accepts a React ref to forward to the underlying input element                         |
 | suggestionsPlacement        | `'auto' \| 'above' \| 'below'`                          | `'below'`      | Controls where the suggestion list renders relative to the caret (`'auto'` flips when space is limited) |

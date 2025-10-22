@@ -100,7 +100,6 @@ const inlineSuggestionSuffixStyles = 'whitespace-pre'
 
 const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'singleLine',
-  'allowSpaceInQuery',
   'suggestionsPlacement',
   'selectLastSuggestionOnSpace',
   'ignoreAccents',
@@ -1260,7 +1259,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     })
 
     const value = this.props.value ?? ''
-    const { children, allowSpaceInQuery } = this.props
+    const { children } = this.props
     const config = readConfigFromChildren(children)
 
     const positionInValue = mapPlainTextIndex(value, config, caretPosition, 'NULL')
@@ -1280,7 +1279,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     // Check if suggestions have to be shown:
     // Match the trigger patterns of all Mention children on the extracted substring
     React.Children.forEach(children, (child, childIndex) => {
-      const trigger = (child as React.ReactElement<MentionComponentProps>).props.trigger ?? '@'
+      const mentionElement = child as React.ReactElement<MentionComponentProps>
+      const { trigger = '@', allowSpaceInQuery } = mentionElement.props
       const regex = makeTriggerRegex(trigger, { allowSpaceInQuery })
       // eslint-disable-next-line sonarjs/prefer-regexp-exec
       const match = substring.match(regex)
