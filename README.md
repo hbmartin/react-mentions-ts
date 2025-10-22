@@ -120,13 +120,14 @@ Each data source is configured using a `Mention` component, which has the follow
 
 ### 🔄 Async Data Loading
 
-If a function is passed as the `data` prop, that function will be called with the current search query as first, and a callback function as second argument. The callback can be used to provide results asynchronously, e.g., after fetch requests. (It can even be called multiple times to update the list of suggestions.)
+If a function is passed as the `data` prop, it receives the current search query and should return a promise that resolves with the list of suggestions.
 
 ```tsx
-const fetchUsers = async (query: string, callback: (data: User[]) => void) => {
+type User = { id: string; display: string }
+
+const fetchUsers = async (query: string): Promise<User[]> => {
   const response = await fetch(`/api/users?search=${query}`)
-  const users = await response.json()
-  callback(users)
+  return response.json()
 }
 
 <Mention trigger="@" data={fetchUsers} />
