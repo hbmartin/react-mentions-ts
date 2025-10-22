@@ -1166,9 +1166,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
             caretOffsetParentRect.top - caretHeight - highlighter.scrollTop)
 
       // guard for mentions suggestions list clipped by the bottom edge of the container when using automatic placement.
-      position.top = shouldShowAboveCaret
-        ? top - suggestions.offsetHeight - caretHeight
-        : top
+      position.top = shouldShowAboveCaret ? top - suggestions.offsetHeight - caretHeight : top
     }
 
     if (
@@ -1282,7 +1280,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       if (!React.isValidElement<MentionComponentProps>(child)) {
         return
       }
-      const { trigger = '@', allowSpaceInQuery } = child.props
+      const { trigger = '@', allowSpaceInQuery = false } = child.props
       const regex = makeTriggerRegex(trigger, { allowSpaceInQuery })
       // eslint-disable-next-line sonarjs/prefer-regexp-exec
       const match = substring.match(regex)
