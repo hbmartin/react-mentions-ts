@@ -112,11 +112,10 @@ export interface MentionsInputProps
   > {
   a11ySuggestionsListLabel?: string
   allowSpaceInQuery?: boolean
-  allowSuggestionsAboveCursor?: boolean
+  suggestionsPlacement?: 'auto' | 'above' | 'below'
   appendSpaceOnAdd?: boolean
   customSuggestionsContainer?: (children: ReactElement) => ReactElement
   disabled?: boolean
-  forceSuggestionsAboveCursor?: boolean
   ignoreAccents?: boolean
   inputComponent?: InputComponent
   inputRef?:
