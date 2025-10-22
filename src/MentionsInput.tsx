@@ -102,11 +102,9 @@ const inlineSuggestionSuffixStyles = 'whitespace-pre'
 const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'singleLine',
   'suggestionsPlacement',
-  'selectLastSuggestionOnSpace',
   'ignoreAccents',
   'a11ySuggestionsListLabel',
   'value',
-  'valueLink',
   'onKeyDown',
   'customSuggestionsContainer',
   'onSelect',
@@ -655,19 +653,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
         mentions,
         previousValue,
       })
-      return
-    }
-
-    if (this.props.valueLink) {
-      const { requestChange } = this.props.valueLink as {
-        requestChange: (
-          value: string,
-          newValue: string,
-          newPlainTextValue: string,
-          mentions: MentionOccurrence[]
-        ) => void
-      }
-      requestChange(newValue, newValue, newPlainTextValue, mentions)
     }
   }
 
@@ -1015,13 +1000,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       case KEY.RETURN:
       case KEY.TAB: {
         this.selectFocused()
-        return
-      }
-      case KEY.SPACE: {
-        if (suggestionsCount === 1 && this.props.selectLastSuggestionOnSpace === true) {
-          this.selectFocused()
-        }
-        break
       }
       default:
     }
