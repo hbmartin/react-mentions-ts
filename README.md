@@ -15,9 +15,7 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
 ## 🎯 Features
 
 - ✅ **Flexible Triggers** - Use any character or pattern to trigger mentions (@, #, :, or custom)
-- 🎨 **Fully Customizable** - Style with CSS, CSS modules, or inline styles
-- 🌬️ **Tailwind v4 Ready** - First-class support for Tailwind CSS v4 utility styling
-- 📝 **Multiple Mention Types** - Support users, tags, emojis, or any custom data source
+- 🎨 **Tailwind v4 Ready** - First-class support for Tailwind CSS v4 utility styling
 - ⚡ **Async Data Loading** - Load suggestions dynamically from APIs
 - 🔍 **Smart Suggestions** - Real-time filtering and matching
 - ♿ **Accessible** - Built with ARIA labels and keyboard navigation
@@ -55,6 +53,8 @@ pnpm add class-variance-authority clsx react react-dom tailwind-merge
 Check `package.json` for the latest peer dependency version ranges.
 
 ## 🚀 Quick Start
+
+### Add a MentionsInput with Mention children
 
 ```tsx
 import { useState } from 'react'
@@ -108,8 +108,7 @@ The `MentionsInput` component supports the following props:
 | allowSpaceInQuery           | boolean                                                 | `false`        | Keep suggestions open even if the user separates keywords with spaces.                 |
 | suggestionsPortalHost       | DOM Element                                             | undefined      | Render suggestions into the DOM in the supplied host element.                          |
 | inputRef                    | React ref                                               | undefined      | Accepts a React ref to forward to the underlying input element                         |
-| allowSuggestionsAboveCursor | boolean                                                 | `false`        | Renders the SuggestionList above the cursor if there is not enough space below         |
-| forceSuggestionsAboveCursor | boolean                                                 | `false`        | Forces the SuggestionList to be rendered above the cursor                              |
+| suggestionsPlacement        | `'auto' \| 'above' \| 'below'`                          | `'below'`      | Controls where the suggestion list renders relative to the caret (`'auto'` flips when space is limited) |
 | a11ySuggestionsListLabel    | string                                                  | `''`           | This label would be exposed to screen readers when suggestion popup appears            |
 | customSuggestionsContainer  | function(children)                                      | empty function | Allows customizing the container of the suggestions                                    |
 | inputComponent              | React component                                         | undefined      | Allows the use of a custom input component                                             |

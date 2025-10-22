@@ -101,9 +101,8 @@ const inlineSuggestionSuffixStyles = 'whitespace-pre'
 const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'singleLine',
   'allowSpaceInQuery',
-  'allowSuggestionsAboveCursor',
+  'suggestionsPlacement',
   'selectLastSuggestionOnSpace',
-  'forceSuggestionsAboveCursor',
   'ignoreAccents',
   'a11ySuggestionsListLabel',
   'value',
@@ -128,7 +127,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   static readonly defaultProps: Partial<MentionsInputProps> = {
     ignoreAccents: false,
     singleLine: false,
-    allowSuggestionsAboveCursor: false,
+    suggestionsPlacement: 'below',
     onKeyDown: () => null,
     onSelect: () => null,
     onBlur: () => null,
@@ -1098,7 +1097,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
   updateSuggestionsPosition = (): void => {
     const { caretPosition } = this.state
-    const { allowSuggestionsAboveCursor, forceSuggestionsAboveCursor } = this.props
+    const { suggestionsPlacement = 'below' } = this.props
     const resolvedPortalHost = this.resolvePortalHost()
 
     const suggestions = this.suggestionsElement
@@ -1137,16 +1136,16 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       // guard for mentions suggestions list clipped by window edges
       const maxLeft = Math.max(0, viewportWidth - width)
       position.left = Math.min(maxLeft, Math.max(0, left))
-      // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
-      // Move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
-      // is small enough to NOT cover up the caret
-      position.top =
-        (allowSuggestionsAboveCursor &&
+      const shouldShowAboveCaret =
+        suggestionsPlacement === 'above' ||
+        (suggestionsPlacement === 'auto' &&
           top + suggestions.offsetHeight > viewportHeight &&
-          suggestions.offsetHeight < top - caretHeight) ||
-        forceSuggestionsAboveCursor
-          ? Math.max(0, top - suggestions.offsetHeight - caretHeight)
-          : top
+          suggestions.offsetHeight < top - caretHeight)
+
+      // guard for mentions suggestions list clipped by the bottom edge of the window when using automatic placement.
+      position.top = shouldShowAboveCaret
+        ? Math.max(0, top - suggestions.offsetHeight - caretHeight)
+        : top
     } else {
       const containerWidth = container.offsetWidth
       const width = Math.min(desiredWidth, containerWidth)
@@ -1159,18 +1158,18 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       } else {
         position.left = left
       }
-      // guard for mentions suggestions list clipped by bottom edge of window if allowSuggestionsAboveCursor set to true.
-      // move the list up above the caret if it's getting cut off by the bottom of the window, provided that the list height
-      // is small enough to NOT cover up the caret
-      position.top =
-        (allowSuggestionsAboveCursor &&
+      const shouldShowAboveCaret =
+        suggestionsPlacement === 'above' ||
+        (suggestionsPlacement === 'auto' &&
           viewportRelative.top - highlighter.scrollTop + suggestions.offsetHeight >
             viewportHeight &&
           suggestions.offsetHeight <
-            caretOffsetParentRect.top - caretHeight - highlighter.scrollTop) ||
-        forceSuggestionsAboveCursor
-          ? top - suggestions.offsetHeight - caretHeight
-          : top
+            caretOffsetParentRect.top - caretHeight - highlighter.scrollTop)
+
+      // guard for mentions suggestions list clipped by the bottom edge of the container when using automatic placement.
+      position.top = shouldShowAboveCaret
+        ? top - suggestions.offsetHeight - caretHeight
+        : top
     }
 
     if (
