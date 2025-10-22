@@ -677,12 +677,12 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     mentions: MentionOccurrence[]
   ): void => {
     if (this.props.onChange) {
-      this.props.onChange(
-        event as unknown as ChangeEvent<InputElement>,
-        newValue,
-        newPlainTextValue,
-        mentions
-      )
+      this.props.onChange({
+        event: event as unknown as ChangeEvent<InputElement>,
+        value: newValue,
+        plainTextValue: newPlainTextValue,
+        mentions,
+      })
       return
     }
 

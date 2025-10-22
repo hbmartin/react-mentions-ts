@@ -23,7 +23,7 @@ export default function InlineAutocomplete({ data }: { data: MentionDataItem[] }
       <div className="space-y-5">
         <MentionsInput
           value={remainingHintValue}
-          onChange={(_event, newValue) => setRemainingHintValue(newValue)}
+        onChange={({ value }) => setRemainingHintValue(value)}
           className="mentions"
           classNames={inlineItalicClasses}
           suggestionsDisplay="inline"
@@ -35,7 +35,7 @@ export default function InlineAutocomplete({ data }: { data: MentionDataItem[] }
 
         <MentionsInput
           value={fullHintValue}
-          onChange={(_event, newValue) => setFullHintValue(newValue)}
+        onChange={({ value }) => setFullHintValue(value)}
           className="mentions"
           classNames={inlineItalicClasses}
           suggestionsDisplay="inline"

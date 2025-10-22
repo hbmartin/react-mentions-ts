@@ -57,7 +57,7 @@ export default function Emojis({ data }: { data: MentionDataItem[] }) {
     >
       <MentionsInput
         value={value}
-        onChange={(_event, newValue) => setValue(newValue)}
+        onChange={({ value }) => setValue(value)}
         className="mentions"
         classNames={emojiClassNames}
         placeholder={"Press ':' for emojis, mention people using '@'"}

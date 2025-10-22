@@ -49,7 +49,7 @@ function MyComponent() {
   const [value, setValue] = useState('')
 
   return (
-    <MentionsInput value={value} onChange={(e) => setValue(e.target.value)}>
+    <MentionsInput value={value} onChange={({ value: nextValue }) => setValue(nextValue)}>
       <Mention trigger="@" data={users} renderSuggestion={(entry) => <div>{entry.display}</div>} />
       <Mention trigger="#" data={tags} />
     </MentionsInput>
@@ -88,7 +88,7 @@ The `MentionsInput` component supports the following props:
 | Prop name                   | Type                                                    | Default value  | Description                                                                            |
 | --------------------------- | ------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
 | value                       | string                                                  | `''`           | The value containing markup for mentions                                               |
-| onChange                    | function (event, newValue, newPlainTextValue, mentions) | empty function | A callback that is invoked when the user changes the value in the mentions input       |
+| onChange                    | function ({ event, value, plainTextValue, mentions })   | empty function | Called when the input changes with the updated markup value, plain text, and mentions  |
 | onKeyDown                   | function (event)                                        | empty function | A callback that is invoked when the user presses a key in the mentions input           |
 | singleLine                  | boolean                                                 | `false`        | Renders a single line text input instead of a textarea, if set to `true`               |
 | onBlur                      | function (event, clickedSuggestion)                     | empty function | Passes `true` as second argument if the blur was caused by a mousedown on a suggestion |

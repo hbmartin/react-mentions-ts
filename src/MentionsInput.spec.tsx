@@ -122,8 +122,8 @@ describe('MentionsInput', () => {
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled()
       const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]
-      const [, newValue] = lastCall
-      expect(newValue).toContain(data[0].id)
+      const [payload] = lastCall
+      expect(payload.value).toContain(data[0].id)
     })
   })
 
@@ -469,7 +469,7 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[, newValue, newPlainTextValue]] = onChange.mock.calls
+      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
 
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
@@ -503,7 +503,7 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[, newValue, newPlainTextValue]] = onChange.mock.calls
+      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
 
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
@@ -533,7 +533,7 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[, newValue, newPlainTextValue]] = onChange.mock.calls
+      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
 
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
@@ -563,7 +563,7 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[, newValue, newPlainTextValue]] = onChange.mock.calls
+      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
 
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
@@ -592,7 +592,7 @@ describe('MentionsInput', () => {
 
       fireEvent(textarea, event)
 
-      const [[, newValue, newPlainTextValue]] = onChange.mock.calls
+      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
 
       expect(newValue).toEqual("Hi First, \n\nlet's add Second to the conversation.")
 
@@ -647,7 +647,7 @@ describe('MentionsInput', () => {
         return (
           <MentionsInput
             value={value}
-            onChange={(_event, newValue) => setValue(newValue)}
+            onChange={({ value: nextValue }) => setValue(nextValue)}
             suggestionsDisplay="inline"
             {...props}
           >
@@ -704,13 +704,12 @@ describe('MentionsInput', () => {
         expect(onChange).toHaveBeenCalled()
       })
 
-      const [, newValue, newPlainTextValue, mentions] =
-        onChange.mock.calls[onChange.mock.calls.length - 1]
+      const [payload] = onChange.mock.calls[onChange.mock.calls.length - 1]
 
-      expect(newValue).toBe('@[Alice](alice)')
-      expect(newPlainTextValue).toBe('Alice')
-      expect(mentions).toHaveLength(1)
-      expect(mentions[0]).toMatchObject({ id: 'alice' })
+      expect(payload.value).toBe('@[Alice](alice)')
+      expect(payload.plainTextValue).toBe('Alice')
+      expect(payload.mentions).toHaveLength(1)
+      expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
     })
 
     it('renders the full suggestion text when configured', async () => {
