@@ -7,7 +7,7 @@ import type {
   ReactNode,
   RefObject,
   FocusEvent as ReactFocusEvent,
-  MouseEvent as ReactMouseEvent,
+  SyntheticEvent,
 } from 'react'
 export type MentionTrigger = string | RegExp
 
@@ -108,7 +108,7 @@ export type InputComponent =
 export interface MentionsInputProps
   extends Omit<
     React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'valueLink'
+    'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'valueLink' | 'onBlur'
   > {
   a11ySuggestionsListLabel?: string
   allowSpaceInQuery?: boolean
@@ -125,11 +125,7 @@ export interface MentionsInputProps
   onBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
   onChange?: MentionsInputChangeHandler
   onKeyDown?: MentionsInputKeyDownHandler
-  onSelect?: (
-    event: ReactMouseEvent<HTMLInputElement | HTMLTextAreaElement>,
-    suggestion: SuggestionDataItem | string,
-    queryInfo: QueryInfo
-  ) => void
+  onSelect?: (event: SyntheticEvent<InputElement>) => void
   readOnly?: boolean
   selectLastSuggestionOnSpace?: boolean
   singleLine?: boolean
