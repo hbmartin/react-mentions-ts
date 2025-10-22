@@ -101,12 +101,10 @@ const inlineSuggestionSuffixStyles = 'whitespace-pre'
 const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'singleLine',
   'suggestionsPlacement',
-  'selectLastSuggestionOnSpace',
   'ignoreAccents',
   'a11ySuggestionsListLabel',
   'value',
   'structuredValue',
-  'valueLink',
   'onKeyDown',
   'customSuggestionsContainer',
   'onSelect',
@@ -678,17 +676,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       return
     }
 
-    if (this.props.valueLink) {
-      const { requestChange } = this.props.valueLink as {
-        requestChange: (
-          value: string,
-          newValue: string,
-          newPlainTextValue: string,
-          mentions: MentionOccurrence[]
-        ) => void
-      }
-      requestChange(event.target.value, newValue, newPlainTextValue, mentions)
-    }
   }
 
   handlePaste = (event: ClipboardEvent): void => {
@@ -1018,12 +1005,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       case KEY.TAB: {
         this.selectFocused()
         return
-      }
-      case KEY.SPACE: {
-        if (suggestionsCount === 1 && this.props.selectLastSuggestionOnSpace === true) {
-          this.selectFocused()
-        }
-        break
       }
       default:
     }

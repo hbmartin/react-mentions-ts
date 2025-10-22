@@ -106,7 +106,7 @@ export type InputComponent =
 export interface MentionsInputProps
   extends Omit<
     React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'valueLink' | 'onBlur'
+    'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
   > {
   a11ySuggestionsListLabel?: string
   suggestionsPlacement?: 'auto' | 'above' | 'below'
@@ -123,7 +123,6 @@ export interface MentionsInputProps
   onKeyDown?: MentionsInputKeyDownHandler
   onSelect?: (event: SyntheticEvent<InputElement>) => void
   readOnly?: boolean
-  selectLastSuggestionOnSpace?: boolean
   singleLine?: boolean
   style?: React.CSSProperties
   className?: string
@@ -132,10 +131,6 @@ export interface MentionsInputProps
   suggestionsDisplay?: 'overlay' | 'inline'
   value?: string
   structuredValue?: MentionsValue
-  valueLink?: {
-    value: string
-    requestChange: (value: string, ...args: [string, string, MentionOccurrence[]?]) => void
-  }
   children: ReactElement | ReactElement[]
 }
 
