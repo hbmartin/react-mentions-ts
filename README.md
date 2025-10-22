@@ -8,7 +8,7 @@
 [![Context7](https://img.shields.io/badge/[]-Context7-059669)](https://context7.com/hbmartin/react-mentions-ts)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hbmartin/react-mentions-ts)
 
-**A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.**
+A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.
 
 ### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/)
 
@@ -37,6 +37,21 @@ yarn add react-mentions-ts
 pnpm add react-mentions-ts
 ```
 
+React Mentions TS uses peer dependencies for its styling helpers and React runtime. Ensure these are installed in your application (skip any you already have):
+
+```bash
+# npm
+npm install class-variance-authority clsx react react-dom tailwind-merge
+
+# yarn
+yarn add class-variance-authority clsx react react-dom tailwind-merge
+
+# pnpm
+pnpm add class-variance-authority clsx react react-dom tailwind-merge
+```
+
+Check `package.json` for the latest peer dependency version ranges.
+
 ## 🚀 Quick Start
 
 ### Add a MentionsInput with Mention children
@@ -57,7 +72,7 @@ function MyComponent() {
 }
 ```
 
-### Configure boilerplate tailwind styling in you styles/tailwind.css
+### Configure boilerplate tailwind styling in your styles/tailwind.css
 
 ```css
 @import "tailwindcss";
@@ -65,9 +80,7 @@ function MyComponent() {
 @import "react-mentions-ts/styles/tailwind.css";
 ```
 
-
-
-### 💡 How It Works
+## 💡 How It Works
 
 `MentionsInput` is the main component that renders the textarea control. It accepts one or multiple `Mention` components as children. Each `Mention` component represents a data source for a specific class of mentionable objects:
 
