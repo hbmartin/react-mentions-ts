@@ -8,11 +8,9 @@
 [![Context7](https://img.shields.io/badge/[]-Context7-059669)](https://context7.com/hbmartin/react-mentions-ts)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hbmartin/react-mentions-ts)
 
-**A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.**
+A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.
 
 ### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/)
-
----
 
 ## 🎯 Features
 
@@ -27,8 +25,6 @@
 - 🧪 **Well Tested** - Comprehensive test suite with Testing Library
 - 🌐 **SSR Compatible** - Works with Next.js and other SSR frameworks
 - 📱 **Mobile Friendly** - Touch-optimized for mobile devices
-
-Used in production at [Signavio](https://signavio.com), [State](https://state.com), [Snips](https://snips.ai), [Swat.io](https://swat.io), [GotDone](https://www.gotdone.me), [Volinspire](https://volinspire.com), [Marvin](https://amazingmarvin.com), [Timely](https://timelyapp.com), [GuideFitter](https://www.guidefitter.com/), [Evite](https://www.evite.com/), [Publer](https://publer.me/), [Kontentino](https://www.kontentino.com/), [Wix.com](https://wix.com), [Highlight](https://highlight.run/) and [you?](https://github.com/hbmartin/react-mentions-ts/edit/master/README.md)
 
 ## 📦 Installation
 

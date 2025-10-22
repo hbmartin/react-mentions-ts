@@ -37,6 +37,14 @@ jobs:
       - name: Build demo
         run: yarn build:demo --base=/react-mentions-ts/
 
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-build
+          path: |
+            dist
+            demo/dist
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
