@@ -34,7 +34,7 @@ export default function CustomSuggestionsContainer({
         classNames={customContainerClasses}
         placeholder={"Mention people using '@'"}
         a11ySuggestionsListLabel={'Suggested mentions'}
-        allowSuggestionsAboveCursor
+        suggestionsPlacement="auto"
         customSuggestionsContainer={(children) => (
           <div className="mt-4 space-y-3 rounded-2xl border border-indigo-500/40 bg-indigo-500/10 p-4 text-sm text-indigo-100 shadow-xl shadow-indigo-500/15">
             <div className="flex items-center justify-between">
