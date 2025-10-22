@@ -12,39 +12,23 @@ const inlineItalicClasses = mergeClassNames(inlineMentionsClassNames, {
 })
 
 export default function InlineAutocomplete({ data }: { data: MentionDataItem[] }) {
-  const [remainingHintValue, setRemainingHintValue] = useState('')
-  const [fullHintValue, setFullHintValue] = useState('')
+  const [value, setValue] = useState('')
 
   return (
     <ExampleCard
       title="Inline autocomplete"
       description="Guide users with subtle, inline completions that respond to Tab, Enter, or →."
     >
-      <div className="space-y-5">
-        <MentionsInput
-          value={remainingHintValue}
-        onChange={({ value }) => setRemainingHintValue(value)}
-          className="mentions"
-          classNames={inlineItalicClasses}
-          suggestionsDisplay="inline"
-          inlineSuggestionDisplay="remaining"
-          placeholder={'Inline hint (remaining characters)'}
-        >
-          <Mention data={data} className={mentionPillClass} />
-        </MentionsInput>
-
-        <MentionsInput
-          value={fullHintValue}
-        onChange={({ value }) => setFullHintValue(value)}
-          className="mentions"
-          classNames={inlineItalicClasses}
-          suggestionsDisplay="inline"
-          inlineSuggestionDisplay="full"
-          placeholder={'Inline hint (full suggestion)'}
-        >
-          <Mention data={data} className={mentionPillClass} />
-        </MentionsInput>
-      </div>
+      <MentionsInput
+        value={value}
+        onChange={({ value: nextValue }) => setValue(nextValue)}
+        className="mentions"
+        classNames={inlineItalicClasses}
+        suggestionsDisplay="inline"
+        placeholder={'Inline hint'}
+      >
+        <Mention data={data} className={mentionPillClass} />
+      </MentionsInput>
     </ExampleCard>
   )
 }

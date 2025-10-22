@@ -100,7 +100,6 @@ The `MentionsInput` component supports the following props:
 | customSuggestionsContainer  | function(children)                                      | empty function | Allows customizing the container of the suggestions                                    |
 | inputComponent              | React component                                         | undefined      | Allows the use of a custom input component                                             |
 | suggestionsDisplay          | `'overlay' \| 'inline'`                                 | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints       |
-| inlineSuggestionDisplay     | `'remaining' \| 'full'`                                 | `'remaining'`  | In inline mode, show only the remaining characters after the query or the full match   |
 | ignoreAccents               | boolean                                                 | `false`        | Ignores any accents on letters during search if set to `true`                          |
 | onSelect                    | function (event)                                        | empty function | A callback that is invoked when the user selects a portion of the text in the input    |
 

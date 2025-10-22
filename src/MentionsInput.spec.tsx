@@ -1,6 +1,5 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import getMentions from './utils/getMentions'
 import readConfigFromChildren from './utils/readConfigFromChildren'
@@ -738,30 +737,5 @@ describe('MentionsInput', () => {
       expect(payload.structuredValue.mentions).toEqual(payload.mentions)
     })
 
-    it('renders the full suggestion text when configured', async () => {
-      renderInlineMentionsInput({ inlineSuggestionDisplay: 'full' })
-
-      await waitFor(() => {
-        expect(screen.getByText('ce')).toBeVisible()
-      })
-
-      const hiddenPrefix = screen.getByText('Ali', {
-        selector: 'span',
-        exact: true,
-        hidden: true,
-      })
-      expect(hiddenPrefix).toHaveAttribute('aria-hidden', 'true')
-    })
-
-    it('keeps inline hints visible after typing preceding text', async () => {
-      const user = userEvent.setup()
-      const textbox = renderInlineMentionsInput({ inlineSuggestionDisplay: 'full' }, '')
-
-      await user.type(textbox, 'Hello @ali')
-
-      await waitFor(() => {
-        expect(screen.getByText('ce')).toBeVisible()
-      })
-    })
   })
 })
