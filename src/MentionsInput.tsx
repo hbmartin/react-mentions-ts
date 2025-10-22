@@ -1279,8 +1279,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     // Check if suggestions have to be shown:
     // Match the trigger patterns of all Mention children on the extracted substring
     React.Children.forEach(children, (child, childIndex) => {
-      const mentionElement = child as React.ReactElement<MentionComponentProps>
-      const { trigger = '@', allowSpaceInQuery } = mentionElement.props
+      if (!React.isValidElement<MentionComponentProps>(child)) {
+        return
+      }
+      const { trigger = '@', allowSpaceInQuery } = child.props
       const regex = makeTriggerRegex(trigger, { allowSpaceInQuery })
       // eslint-disable-next-line sonarjs/prefer-regexp-exec
       const match = substring.match(regex)
@@ -1315,9 +1317,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     plainTextValue: string
   ): void => {
     const { children, ignoreAccents } = this.props
-    const mentionChild = Children.toArray(children)[
-      childIndex
-    ] as React.ReactElement<MentionComponentProps>
+    const mentionChild = Children.toArray(children)[childIndex]
+    if (!React.isValidElement<MentionComponentProps>(mentionChild)) {
+      return
+    }
     const dataSource = mentionChild.props.data
     if (!dataSource) {
       return
@@ -1386,9 +1389,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     // Insert mention in the marked up value at the correct position
     const value = this.props.value || ''
     const config = readConfigFromChildren(this.props.children)
-    const mentionsChild = Children.toArray(this.props.children)[
-      childIndex
-    ] as React.ReactElement<MentionComponentProps>
+    const mentionsChild = Children.toArray(this.props.children)[childIndex]
+    if (!React.isValidElement<MentionComponentProps>(mentionsChild)) {
+      return
+    }
     const {
       markup = DEFAULT_MENTION_PROPS.markup,
       displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
@@ -1444,11 +1448,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   isLoading = (): boolean => {
     let loading = false
     React.Children.forEach(this.props.children, (child) => {
-      if (!child) {
+      if (!child || !React.isValidElement<MentionComponentProps>(child)) {
         return
       }
-      const element = child as React.ReactElement<MentionComponentProps>
-      loading = loading || Boolean(element.props.isLoading)
+      loading = loading || Boolean(child.props.isLoading)
     })
     return loading
   }
