@@ -141,7 +141,6 @@ export interface MentionsInputProps
   classNames?: MentionsInputClassNames
   suggestionsPortalHost?: Element | Document | null
   suggestionsDisplay?: 'overlay' | 'inline'
-  inlineSuggestionDisplay?: 'full' | 'remaining'
   value?: string
   valueLink?: {
     value: string

@@ -120,7 +120,6 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'className',
   'classNames',
   'suggestionsDisplay',
-  'inlineSuggestionDisplay',
 ]
 
 class MentionsInput extends React.Component<MentionsInputProps, MentionsInputState> {
@@ -132,7 +131,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     onSelect: () => null,
     onBlur: () => null,
     suggestionsDisplay: 'overlay',
-    inlineSuggestionDisplay: 'remaining',
   }
 
   private suggestions: SuggestionsMap = {}
@@ -588,17 +586,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       displayValue += ' '
     }
 
-    let hiddenPrefix = ''
-    let visibleText = displayValue
-
-    if (this.props.inlineSuggestionDisplay === 'remaining') {
-      visibleText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
-    } else {
-      hiddenPrefix = this.getInlineSuggestionPrefix(displayValue, queryInfo)
-      if (hiddenPrefix.length > 0) {
-        visibleText = displayValue.slice(hiddenPrefix.length)
-      }
-    }
+    const hiddenPrefix = ''
+    const visibleText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
 
     if (!visibleText) {
       return null
@@ -626,22 +615,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     }
 
     return displayValue
-  }
-
-  getInlineSuggestionPrefix = (displayValue: string, queryInfo: QueryInfo): string => {
-    const query = queryInfo.query ?? ''
-    if (query.length === 0) {
-      return ''
-    }
-
-    const normalizedDisplay = displayValue.toLocaleLowerCase()
-    const normalizedQuery = query.toLocaleLowerCase()
-
-    if (normalizedDisplay.startsWith(normalizedQuery)) {
-      return displayValue.slice(0, query.length)
-    }
-
-    return ''
   }
 
   canApplyInlineSuggestion = (): boolean => {
