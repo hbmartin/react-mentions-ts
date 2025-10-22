@@ -2,6 +2,8 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
+import getMentions from './utils/getMentions'
+import readConfigFromChildren from './utils/readConfigFromChildren'
 import { Mention, MentionsInput } from './index'
 
 const data = [
@@ -35,6 +37,27 @@ describe('MentionsInput', () => {
     const input = screen.getByDisplayValue('')
     expect(input).toBeInTheDocument()
     expect(input.tagName).toBe('INPUT')
+  })
+
+  it('should accept a structuredValue for controlled usage.', () => {
+    const markup = '@[First](first)'
+    const mentionChild = <Mention trigger="@" data={data} />
+    const config = readConfigFromChildren(mentionChild)
+    const mentions = getMentions(markup, config)
+
+    render(
+      <MentionsInput
+        structuredValue={{
+          markup,
+          plainText: 'First',
+          mentions,
+        }}
+      >
+        {mentionChild}
+      </MentionsInput>
+    )
+
+    expect(screen.getByRole('textbox')).toHaveValue('First')
   })
 
   it('should show a list of suggestions once the trigger key has been entered.', async () => {
@@ -710,6 +733,9 @@ describe('MentionsInput', () => {
       expect(payload.plainTextValue).toBe('Alice')
       expect(payload.mentions).toHaveLength(1)
       expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
+      expect(payload.structuredValue.markup).toBe(payload.value)
+      expect(payload.structuredValue.plainText).toBe(payload.plainTextValue)
+      expect(payload.structuredValue.mentions).toEqual(payload.mentions)
     })
 
     it('renders the full suggestion text when configured', async () => {

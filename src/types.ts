@@ -66,6 +66,7 @@ export interface MentionsInputChangeEvent {
   value: string
   plainTextValue: string
   mentions: MentionOccurrence[]
+  structuredValue: MentionsValue
 }
 
 export type MentionsInputEventData = MentionsInputChangeEvent
@@ -131,6 +132,7 @@ export interface MentionsInputProps
   suggestionsDisplay?: 'overlay' | 'inline'
   inlineSuggestionDisplay?: 'full' | 'remaining'
   value?: string
+  structuredValue?: MentionsValue
   valueLink?: {
     value: string
     requestChange: (value: string, ...args: [string, string, MentionOccurrence[]?]) => void
@@ -183,6 +185,12 @@ export interface MentionOccurrence {
   childIndex: number
   index: number
   plainTextIndex: number
+}
+
+export interface MentionsValue {
+  markup: string
+  plainText: string
+  mentions: MentionOccurrence[]
 }
 
 export type InputElement = HTMLInputElement | HTMLTextAreaElement

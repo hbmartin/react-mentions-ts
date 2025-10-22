@@ -105,6 +105,7 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'ignoreAccents',
   'a11ySuggestionsListLabel',
   'value',
+  'structuredValue',
   'valueLink',
   'onKeyDown',
   'customSuggestionsContainer',
@@ -147,6 +148,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   private _isComposing = false
   private readonly defaultSuggestionsPortalHost: HTMLElement | null
   private _isScrolling = false
+
+  private getMarkupValue = (): string => {
+    return this.props.structuredValue?.markup ?? this.props.value ?? ''
+  }
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
@@ -493,7 +498,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
   renderHighlighter = (): React.ReactElement => {
     const { selectionStart, selectionEnd } = this.state
-    const { singleLine, children, value, classNames } = this.props
+    const { singleLine, children, classNames } = this.props
+    const markupValue = this.getMarkupValue()
 
     return (
       <Highlighter
@@ -501,7 +507,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
         className={classNames?.highlighter}
         substringClassName={classNames?.highlighterSubstring}
         caretClassName={classNames?.highlighterCaret}
-        value={value}
+        value={markupValue}
         singleLine={singleLine}
         selectionStart={selectionStart}
         selectionEnd={selectionEnd}
@@ -667,7 +673,12 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
   // Returns the text to set as the value of the textarea with all markups removed
   getPlainText = (): string => {
-    return getPlainText(this.props.value || '', readConfigFromChildren(this.props.children))
+    const { structuredValue } = this.props
+    if (structuredValue) {
+      return structuredValue.plainText
+    }
+
+    return getPlainText(this.getMarkupValue(), readConfigFromChildren(this.props.children))
   }
 
   executeOnChange = (
@@ -677,11 +688,19 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     mentions: MentionOccurrence[]
   ): void => {
     if (this.props.onChange) {
+      const changeEvent = event as unknown as ChangeEvent<InputElement>
+      const structuredValue = {
+        markup: newValue,
+        plainText: newPlainTextValue,
+        mentions,
+      } as const
+
       this.props.onChange({
-        event: event as unknown as ChangeEvent<InputElement>,
+        event: changeEvent,
         value: newValue,
         plainTextValue: newPlainTextValue,
         mentions,
+        structuredValue,
       })
       return
     }
@@ -710,8 +729,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     event.preventDefault()
 
     const { selectionStart, selectionEnd } = this.state
-    const { value, children } = this.props
-    const valueText = value ?? ''
+    const { children } = this.props
+    const valueText = this.getMarkupValue()
 
     const config = readConfigFromChildren(children)
     const safeSelectionStart = selectionStart ?? 0
@@ -855,7 +874,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       }
     }
 
-    const value = this.props.value || ''
+    const value = this.getMarkupValue()
     const config = readConfigFromChildren(this.props.children)
 
     let newPlainTextValue = ev.target.value
@@ -1258,7 +1277,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       suggestions: {},
     })
 
-    const value = this.props.value ?? ''
+    const value = this.getMarkupValue()
     const { children } = this.props
     const config = readConfigFromChildren(children)
 
@@ -1384,7 +1403,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   ): void => {
     const { id, display } = this.getSuggestionData(suggestion)
     // Insert mention in the marked up value at the correct position
-    const value = this.props.value || ''
+    const value = this.getMarkupValue()
     const config = readConfigFromChildren(this.props.children)
     const mentionsChild = Children.toArray(this.props.children)[
       childIndex

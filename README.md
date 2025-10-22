@@ -88,7 +88,8 @@ The `MentionsInput` component supports the following props:
 | Prop name                   | Type                                                    | Default value  | Description                                                                            |
 | --------------------------- | ------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
 | value                       | string                                                  | `''`           | The value containing markup for mentions                                               |
-| onChange                    | function ({ event, value, plainTextValue, mentions })   | empty function | Called when the input changes with the updated markup value, plain text, and mentions  |
+| structuredValue             | `{ markup, plainText, mentions }`                       | `undefined`    | Provide a full value object (markup + derived plain text/mentions) instead of a string |
+| onChange                    | function ({ event, value, plainTextValue, mentions, structuredValue }) | empty function | Called when the input changes with the updated markup value, plain text, and mentions  |
 | onKeyDown                   | function (event)                                        | empty function | A callback that is invoked when the user presses a key in the mentions input           |
 | singleLine                  | boolean                                                 | `false`        | Renders a single line text input instead of a textarea, if set to `true`               |
 | onBlur                      | function (event, clickedSuggestion)                     | empty function | Passes `true` as second argument if the blur was caused by a mousedown on a suggestion |
