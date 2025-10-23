@@ -13,7 +13,7 @@ import {
 const floatingSuggestions = mergeClassNames(multilineMentionsClassNames, {
   suggestions: clsx(
     multilineMentionsClassNames.suggestions,
-    'absolute bottom-[calc(100%+0.75rem)] left-0 right-0 mt-0 w-full shadow-2xl'
+    'absolute bottom-0 left-0 right-0 mt-0 w-full shadow-2xl'
   ),
   suggestionsList: clsx(multilineMentionsClassNames.suggestionsList, 'max-h-32'),
 })

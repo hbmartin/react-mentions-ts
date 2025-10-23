@@ -1407,11 +1407,12 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       displayValue += ' '
     }
     const newCaretPosition = querySequenceStart + displayValue.length
-    this.setState({
+    this.setState((prevState) => ({
+      ...prevState,
       selectionStart: newCaretPosition,
       selectionEnd: newCaretPosition,
       pendingSelectionUpdate: true,
-    })
+    }))
 
     // Propagate change
     const mentions = getMentions(newValue, config)
