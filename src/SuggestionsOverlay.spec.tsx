@@ -102,6 +102,93 @@ describe('SuggestionsOverlay', () => {
     expect(listItems[2]).toContain('Alpha 1')
   })
 
+  it('scrolls the focused suggestion into view when requested', () => {
+    const longSuggestions = Array.from({ length: 6 }, (_, index) => ({
+      id: `item-${index}`,
+      display: `Item ${index}`,
+    }))
+
+    const suggestionsMap = createSuggestionsMap(longSuggestions)
+
+    const getBoundingClientRectMock = jest
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingRect(this: HTMLElement) {
+        if (this.dataset.slot === 'suggestions-list') {
+          return {
+            top: 0,
+            bottom: 100,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 100,
+            x: 0,
+            y: 0,
+          }
+        }
+
+        if (this.dataset.focused === 'true') {
+          return {
+            top: 150,
+            bottom: 170,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 20,
+            x: 0,
+            y: 150,
+          }
+        }
+
+        return {
+          top: 0,
+          bottom: 20,
+          left: 0,
+          right: 0,
+          width: 0,
+          height: 20,
+          x: 0,
+          y: 0,
+        }
+      })
+
+    try {
+      const { container, rerender } = render(
+        <SuggestionsOverlay
+          id="test-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={0}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+      expect(list).not.toBeNull()
+
+      Object.defineProperty(list, 'offsetHeight', { configurable: true, value: 100 })
+      Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 400 })
+      list.scrollTop = 0
+
+      rerender(
+        <SuggestionsOverlay
+          id="test-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={4}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      expect(list.scrollTop).toBe(70)
+    } finally {
+      getBoundingClientRectMock.mockRestore()
+    }
+  })
+
   it('should be possible to style the list.', () => {
     const suggestions = [{ id: '1', display: 'Test' }]
 

@@ -103,6 +103,39 @@ describe('MentionsInput', () => {
     expect(suggestions[1]).toHaveAttribute('aria-selected', 'false')
   })
 
+  it('should update the focused suggestion when hovering over items.', async () => {
+    render(
+      <MentionsInput value="@">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const combobox = screen.getByRole('combobox')
+    fireEvent.focus(combobox)
+    combobox.setSelectionRange(1, 1)
+    fireEvent.select(combobox)
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(1)
+    })
+
+    const initialSuggestions = screen.getAllByRole('option', { hidden: true })
+    expect(initialSuggestions[0]).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.mouseEnter(initialSuggestions[1])
+
+    await waitFor(() => {
+      const updatedSuggestions = screen.getAllByRole('option', { hidden: true })
+      expect(updatedSuggestions[1]).toHaveAttribute('aria-selected', 'true')
+      expect(updatedSuggestions[0]).toHaveAttribute('aria-selected', 'false')
+    })
+
+    const activeDescendant = combobox.getAttribute('aria-activedescendant')
+    const refreshedSuggestions = screen.getAllByRole('option', { hidden: true })
+    expect(activeDescendant).toBe(refreshedSuggestions[1].id)
+  })
+
   it('should be possible to select a suggestion with enter.', async () => {
     const onChange = jest.fn()
 
