@@ -1,8 +1,9 @@
-import React, { Children, useEffectEvent, useLayoutEffect, useState } from 'react'
+import React, { Children, useLayoutEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import { iterateMentionsMarkup, mapPlainTextIndex, readConfigFromChildren, isNumber } from './utils'
 import { cn } from './utils/cn'
+import { useEffectEvent } from './utils/useEffectEvent'
 import type { CaretCoordinates, MentionChildConfig, MentionComponentProps } from './types'
 
 const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {

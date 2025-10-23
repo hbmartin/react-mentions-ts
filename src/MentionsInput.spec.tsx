@@ -845,4 +845,97 @@ describe('MentionsInput', () => {
     })
 
   })
+
+  describe('concurrent rendering', () => {
+    const concurrentData = [
+      { id: 'alpha', display: 'Alpha' },
+      { id: 'beta', display: 'Beta' },
+    ]
+
+    function OverlayTransitionWrapper() {
+      const [value, setValue] = React.useState('@')
+      const [, startTransition] = React.useTransition()
+
+      return (
+        <MentionsInput
+          value={value}
+          onChange={({ value: nextValue }) => {
+            startTransition(() => {
+              setValue(nextValue)
+            })
+          }}
+        >
+          <Mention trigger="@" data={concurrentData} />
+        </MentionsInput>
+      )
+    }
+
+    it('keeps suggestions available while value updates inside startTransition', async () => {
+      render(<OverlayTransitionWrapper />)
+
+      const combobox = screen.getByRole('combobox')
+      fireEvent.focus(combobox)
+      combobox.setSelectionRange(1, 1)
+      fireEvent.select(combobox)
+
+      await waitFor(() => {
+        const options = screen.getAllByRole('option', { hidden: true })
+        expect(options).toHaveLength(concurrentData.length)
+      })
+
+      fireEvent.keyDown(combobox, { key: 'Enter', keyCode: 13 })
+
+      await waitFor(() => {
+        expect(combobox).toHaveValue('Alpha')
+      })
+      expect(screen.queryByRole('listbox')).toBeNull()
+    })
+
+    const inlineConcurrentData = [
+      { id: 'alice', display: 'Alice' },
+      { id: 'alistair', display: 'Alistair' },
+    ]
+
+    function InlineTransitionWrapper() {
+      const [value, setValue] = React.useState('@ali')
+      const [, startTransition] = React.useTransition()
+
+      return (
+        <MentionsInput
+          value={value}
+          suggestionsDisplay="inline"
+          onChange={({ value: nextValue }) => {
+            startTransition(() => {
+              setValue(nextValue)
+            })
+          }}
+        >
+          <Mention trigger="@" data={inlineConcurrentData} />
+        </MentionsInput>
+      )
+    }
+
+    it('updates inline completion through transitions', async () => {
+      render(<InlineTransitionWrapper />)
+
+      const combobox = screen.getByRole('combobox')
+      fireEvent.focus(combobox)
+      combobox.setSelectionRange(4, 4)
+      fireEvent.select(combobox)
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeInTheDocument()
+      })
+
+      fireEvent.keyDown(combobox, { key: 'Tab', keyCode: 9 })
+
+      await waitFor(() => {
+        expect(combobox).toHaveValue('Alice')
+      })
+
+      await waitFor(() => {
+        expect(screen.getByRole('status')).toHaveTextContent('No inline suggestions available')
+      })
+    })
+  })
 })

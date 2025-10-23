@@ -7,7 +7,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   SyntheticEvent,
 } from 'react'
-import React, { Children, useEffectEvent, useLayoutEffect } from 'react'
+import React, { Children, useLayoutEffect } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
@@ -32,6 +32,7 @@ import {
 } from './utils'
 import { cn } from './utils/cn'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
+import { useEffectEvent } from './utils/useEffectEvent'
 import type {
   CaretCoordinates,
   DataSource,
