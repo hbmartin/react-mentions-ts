@@ -1,6 +1,5 @@
 import type React from 'react'
 import type {
-  ChangeEvent,
   KeyboardEvent,
   MouseEvent,
   ReactElement,
@@ -61,11 +60,24 @@ export interface MentionComponentProps {
   ignoreAccents?: boolean
 }
 
+export type MentionsInputChangeTriggerType =
+  | 'input'
+  | 'paste'
+  | 'cut'
+  | 'mention-add'
+  | 'mention-remove'
+
+export interface MentionsInputChangeTrigger {
+  type: MentionsInputChangeTriggerType
+  nativeEvent?: Event
+}
+
 export interface MentionsInputChangeEvent {
-  event: ChangeEvent<InputElement>
+  trigger: MentionsInputChangeTrigger
   value: string
   plainTextValue: string
   mentions: MentionOccurrence[]
+  previousValue: string
 }
 
 export type MentionsInputEventData = MentionsInputChangeEvent

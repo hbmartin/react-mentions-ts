@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { Mention, MentionsInput } from '../../../src'
-import type { MentionDataItem } from '../../../src'
+import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import {
   mentionPillClass,
@@ -25,7 +25,7 @@ export default function Scrollable({
   const [value, setValue] = useState(
     "Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... "
   )
-  const onChange = (_ev: unknown, newValue: string) => setValue(newValue)
+  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard

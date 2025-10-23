@@ -101,7 +101,7 @@ The `MentionsInput` component supports the following props:
 | Prop name                   | Type                                                    | Default value  | Description                                                                            |
 | --------------------------- | ------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
 | value                       | string                                                  | `''`           | The value containing markup for mentions                                               |
-| onChange                    | function ({ event, value, plainTextValue, mentions })   | empty function | Called when the input changes with the updated markup value, plain text, and mentions  |
+| onChange                    | function ({ trigger, value, plainTextValue, mentions, previousValue }) | empty function | Called when the input changes; receives the updated markup value, plain text, active mentions, and the previous markup value |
 | onKeyDown                   | function (event)                                        | empty function | A callback that is invoked when the user presses a key in the mentions input           |
 | singleLine                  | boolean                                                 | `false`        | Renders a single line text input instead of a textarea, if set to `true`               |
 | onBlur                      | function (event, clickedSuggestion)                     | empty function | Passes `true` as second argument if the blur was caused by a mousedown on a suggestion |
@@ -115,6 +115,16 @@ The `MentionsInput` component supports the following props:
 | inlineSuggestionDisplay     | `'remaining' \| 'full'`                                 | `'remaining'`  | In inline mode, show only the remaining characters after the query or the full match   |
 | ignoreAccents               | boolean                                                 | `false`        | Ignores any accents on letters during search if set to `true`                          |
 | onSelect                    | function (event)                                        | empty function | A callback that is invoked when the user selects a portion of the text in the input    |
+
+#### onChange payload
+
+`onChange` receives an object with the following fields:
+
+- `value`: the latest markup string containing mentions
+- `plainTextValue`: the same content without mention markup
+- `mentions`: the mention occurrences extracted from the new value
+- `previousValue`: the markup string before the change
+- `trigger`: metadata about what caused the change. `trigger.type` is one of `'input'`, `'paste'`, `'cut'`, `'mention-add'`, or `'mention-remove'`, and when available `trigger.nativeEvent` references the originating DOM event.
 
 ### Mention Props
 

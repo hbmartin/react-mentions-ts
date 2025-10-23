@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { Mention, MentionsInput } from '../../../src'
-import type { MentionDataItem } from '../../../src'
+import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import {
   mentionPillAccentClass,
@@ -27,7 +27,7 @@ export default function MultipleTriggers({
   const [value, setValue] = useState(
     "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... "
   )
-  const onChange = (_ev, newValue: string) => setValue(newValue)
+  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard

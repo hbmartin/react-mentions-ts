@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { Mention, MentionsInput } from '../../../src'
-import type { MentionDataItem } from '../../../src'
+import type { MentionDataItem, MentionsInputChangeHandler } from '../../../src'
 import ExampleCard from './ExampleCard'
 import { useExampleValue } from './hooks'
 import {
@@ -88,7 +88,7 @@ const MultiMention = ({
 }: {
   value: string
   data: MentionDataItem[]
-  onChange: (ev: unknown, value: string) => void
+  onChange: MentionsInputChangeHandler
   onAdd: (...args: any[]) => void
   disabled?: boolean
 }) => (

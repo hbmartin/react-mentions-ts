@@ -42,6 +42,7 @@ import type {
   MentionsInputProps,
   MentionsInputState,
   MentionsInputClassNames,
+  MentionsInputChangeTrigger,
   QueryInfo,
   SuggestionDataItem,
   SuggestionsMap,
@@ -671,17 +672,19 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   }
 
   executeOnChange = (
-    event: { target: { value: string } },
+    trigger: MentionsInputChangeTrigger,
     newValue: string,
     newPlainTextValue: string,
-    mentions: MentionOccurrence[]
+    mentions: MentionOccurrence[],
+    previousValue: string
   ): void => {
     if (this.props.onChange) {
       this.props.onChange({
-        event: event as unknown as ChangeEvent<InputElement>,
+        trigger,
         value: newValue,
         plainTextValue: newPlainTextValue,
         mentions,
+        previousValue,
       })
       return
     }
@@ -695,7 +698,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
           mentions: MentionOccurrence[]
         ) => void
       }
-      requestChange(event.target.value, newValue, newPlainTextValue, mentions)
+      requestChange(newValue, newValue, newPlainTextValue, mentions)
     }
   }
 
@@ -738,9 +741,15 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
     const newPlainTextValue = getPlainText(newValue, config)
 
-    const eventMock = { target: { value: newValue } }
+    const mentions = getMentions(newValue, config)
 
-    this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(newValue, config))
+    this.executeOnChange(
+      { type: 'paste', nativeEvent: event },
+      newValue,
+      newPlainTextValue,
+      mentions,
+      valueText
+    )
 
     // Move the cursor position to the end of the pasted data
     const startOfMention =
@@ -829,12 +838,15 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     )
     const newPlainTextValue = getPlainText(newValue, config)
 
-    const eventMock = {
-      target: { value: newPlainTextValue },
-    }
+    const mentions = getMentions(newValue, config)
 
-    // TODO: check if this should be getMentions(newValue, config)
-    this.executeOnChange(eventMock, newValue, newPlainTextValue, getMentions(valueText, config))
+    this.executeOnChange(
+      { type: 'cut', nativeEvent: event },
+      newValue,
+      newPlainTextValue,
+      mentions,
+      valueText
+    )
   }
 
   // Handle input element's change event
@@ -922,10 +934,13 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     }
 
     // Propagate change
-    // let handleChange = this.getOnChange(this.props) || emptyFunction;
-    const eventMock = { target: { value: newValue } }
-    // this.props.onChange.call(this, eventMock, newValue, newPlainTextValue, mentions);
-    this.executeOnChange(eventMock, newValue, newPlainTextValue, mentions)
+    this.executeOnChange(
+      { type: 'input', nativeEvent: ev.nativeEvent },
+      newValue,
+      newPlainTextValue,
+      mentions,
+      value
+    )
   }
 
   // Handle input element's select event
@@ -1424,7 +1439,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     })
 
     // Propagate change
-    const eventMock = { target: { value: newValue } }
     const mentions = getMentions(newValue, config)
     const newPlainTextValue = spliceString(
       plainTextValue,
@@ -1433,7 +1447,13 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       displayValue
     )
 
-    this.executeOnChange(eventMock, newValue, newPlainTextValue, mentions)
+    this.executeOnChange(
+      { type: 'mention-add' },
+      newValue,
+      newPlainTextValue,
+      mentions,
+      value
+    )
 
     if (onAdd) {
       onAdd(id, mentionDisplay, start, end)
