@@ -187,6 +187,13 @@ describe('MentionsInput', () => {
     await waitFor(() => {
       const suggestions = screen.getAllByRole('option', { hidden: true })
       expect(suggestions).toHaveLength(data.length + extraData.length)
+      const texts = suggestions.map((item) => item.textContent?.trim() ?? '')
+      data.forEach(({ id }, index) => {
+        expect(texts[index]).toContain(id)
+      })
+      extraData.forEach(({ id }, index) => {
+        expect(texts[data.length + index]).toContain(id)
+      })
     })
   })
 

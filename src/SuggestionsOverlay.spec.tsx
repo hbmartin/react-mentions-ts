@@ -51,6 +51,57 @@ describe('SuggestionsOverlay', () => {
     expect(overlay).toHaveAttribute('aria-busy', 'false')
   })
 
+  it('keeps suggestion ordering aligned with mention child order', () => {
+    const firstChildSuggestions = [
+      { id: 'child-0-a', display: 'Alpha 0' },
+      { id: 'child-0-b', display: 'Bravo 0' },
+    ]
+    const secondChildSuggestions = [{ id: 'child-1-a', display: 'Alpha 1' }]
+
+    const suggestionsMap: SuggestionsMap = {
+      1: {
+        queryInfo: {
+          childIndex: 1,
+          query: 'a',
+          querySequenceStart: 0,
+          querySequenceEnd: 2,
+          plainTextValue: '@a',
+        },
+        results: secondChildSuggestions,
+      },
+      0: {
+        queryInfo: {
+          childIndex: 0,
+          query: 'a',
+          querySequenceStart: 0,
+          querySequenceEnd: 2,
+          plainTextValue: '@a',
+        },
+        results: firstChildSuggestions,
+      },
+    }
+
+    const { container } = render(
+      <SuggestionsOverlay
+        id="test-suggestions"
+        suggestions={suggestionsMap}
+        focusIndex={0}
+        isOpened
+      >
+        <Mention trigger="@" data={[]} />
+        <Mention trigger="#" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const listItems = Array.from(container.querySelectorAll('li[role="option"]')).map((item) =>
+      item.textContent?.trim()
+    )
+    expect(listItems).toHaveLength(3)
+    expect(listItems[0]).toContain('Alpha 0')
+    expect(listItems[1]).toContain('Bravo 0')
+    expect(listItems[2]).toContain('Alpha 1')
+  })
+
   it('should be possible to style the list.', () => {
     const suggestions = [{ id: '1', display: 'Test' }]
 
