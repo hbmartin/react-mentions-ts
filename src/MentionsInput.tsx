@@ -38,6 +38,7 @@ import type {
   InputComponentProps,
   MentionComponentProps,
   MentionDataItem,
+  MentionIdentifier,
   MentionOccurrence,
   MentionsInputProps,
   MentionsInputState,
@@ -50,20 +51,24 @@ import type {
   InputElement,
 } from './types'
 
-const getDataProvider = (
-  data: DataSource,
+const getDataProvider = <Extra extends Record<string, unknown>>(
+  data: DataSource<Extra>,
   ignoreAccents?: boolean
-): ((query: string) => Promise<MentionDataItem[]>) => {
+): ((query: string) => Promise<MentionDataItem<Extra>[]>) => {
   if (Array.isArray(data)) {
-    return (query: string) =>
-      Promise.resolve(
-        data.filter(
-          (item) => getSubstringIndex(item.display || String(item.id), query, ignoreAccents) >= 0
-        )
+    return async (query: string) =>
+      data.filter(
+        (item) => getSubstringIndex(item.display || String(item.id), query, ignoreAccents) >= 0
       )
   }
 
-  return data
+  return async (query: string) => {
+    const provider = data as (
+      query: string
+    ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>
+    const result = await Promise.resolve(provider(query))
+    return Array.from(result)
+  }
 }
 
 const KEY = {
@@ -99,11 +104,13 @@ const inlineSuggestionPrefixStyles =
   'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
 const inlineSuggestionSuffixStyles = 'whitespace-pre'
 
-type InlineSuggestionDetails = {
+type InlineSuggestionDetails<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> = {
   hiddenPrefix: string
   visibleText: string
   queryInfo: QueryInfo
-  suggestion: SuggestionDataItem | string
+  suggestion: SuggestionDataItem<Extra>
   announcement: string
 }
 
@@ -122,7 +129,7 @@ const visuallyHiddenStyles: CSSProperties = {
   whiteSpace: 'nowrap',
 }
 
-const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
+const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
   'singleLine',
   'suggestionsPlacement',
   'ignoreAccents',
@@ -143,8 +150,10 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'suggestionsDisplay',
 ]
 
-class MentionsInput extends React.Component<MentionsInputProps, MentionsInputState> {
-  static readonly defaultProps: Partial<MentionsInputProps> = {
+class MentionsInput<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> extends React.Component<MentionsInputProps<Extra>, MentionsInputState<Extra>> {
+  static readonly defaultProps: Partial<MentionsInputProps<any>> = {
     ignoreAccents: false,
     singleLine: false,
     suggestionsPlacement: 'below',
@@ -154,7 +163,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     suggestionsDisplay: 'overlay',
   }
 
-  private suggestions: SuggestionsMap = {}
+  private suggestions: SuggestionsMap<Extra> = {}
   private readonly uuidSuggestionsOverlay: string
   private readonly inlineAutocompleteLiveRegionId: string
   private containerElement: HTMLDivElement | null = null
@@ -193,7 +202,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     return this.defaultSuggestionsPortalHost
   }
 
-  constructor(props: MentionsInputProps) {
+  constructor(props: MentionsInputProps<Extra>) {
     super(props)
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
     this.inlineAutocompleteLiveRegionId = `${this.uuidSuggestionsOverlay}-inline-live`
@@ -212,7 +221,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       caretPosition: null,
       suggestionsPosition: {},
       pendingSelectionUpdate: false,
-    }
+    } satisfies MentionsInputState<Extra>
   }
 
   componentDidMount(): void {
@@ -224,7 +233,10 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     this.updateSuggestionsPosition()
   }
 
-  componentDidUpdate(prevProps: MentionsInputProps, prevState: MentionsInputState): void {
+  componentDidUpdate(
+    prevProps: MentionsInputProps<Extra>,
+    prevState: MentionsInputState<Extra>
+  ): void {
     // Update position of suggestions unless this componentDidUpdate was
     // triggered by an update to suggestionsPosition.
     if (prevState.suggestionsPosition === this.state.suggestionsPosition) {
@@ -273,7 +285,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
     const passthroughProps = omit(
       this.props,
-      HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps>
+      HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps<any>>
     ) as Partial<InputComponentProps>
 
     const { ...restPassthrough } = passthroughProps
@@ -412,7 +424,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     const portalTarget = this.resolvePortalHost()
 
     const suggestionsNode = (
-      <SuggestionsOverlay
+      <SuggestionsOverlay<Extra>
         id={this.uuidSuggestionsOverlay}
         className={this.props.classNames?.suggestions}
         listClassName={this.props.classNames?.suggestionsList}
@@ -539,7 +551,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   }
 
   private getInlineSuggestionAnnouncement = (
-    inlineSuggestion: InlineSuggestionDetails | null
+    inlineSuggestion: InlineSuggestionDetails<Extra> | null
   ): string => {
     if (!inlineSuggestion) {
       return INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT
@@ -593,14 +605,14 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
 
   getFlattenedSuggestions = (): Array<{
-    result: SuggestionDataItem | string
+    result: SuggestionDataItem<Extra>
     queryInfo: QueryInfo
   }> => {
-    return flattenSuggestions(this.props.children, this.state.suggestions)
+    return flattenSuggestions<Extra>(this.props.children, this.state.suggestions)
   }
 
   getFocusedSuggestionEntry = (): {
-    result: SuggestionDataItem | string
+    result: SuggestionDataItem<Extra>
     queryInfo: QueryInfo
   } | null => {
     const flattened = this.getFlattenedSuggestions()
@@ -611,9 +623,9 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   }
 
   getSuggestionData = (
-    suggestion: SuggestionDataItem | string
+    suggestion: SuggestionDataItem<Extra>
   ): {
-    id: MentionDataItem['id']
+    id: MentionIdentifier
     display: string
   } => {
     if (typeof suggestion === 'string') {
@@ -625,7 +637,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     }
   }
 
-  getInlineSuggestionDetails = (): InlineSuggestionDetails | null => {
+  getInlineSuggestionDetails = (): InlineSuggestionDetails<Extra> | null => {
     if (!this.isInlineAutocomplete()) {
       return null
     }
@@ -637,7 +649,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
     const { queryInfo, result } = entry
     const mentionChild = Children.toArray(this.props.children)[queryInfo.childIndex] as
-      | React.ReactElement<MentionComponentProps>
+      | React.ReactElement<MentionComponentProps<Extra>>
       | undefined
 
     if (!mentionChild) {
@@ -726,7 +738,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
         trigger,
         value: newValue,
         plainTextValue: newPlainTextValue,
-        mentions,
+        mentions: mentions as MentionOccurrence<Extra>[],
         previousValue,
       })
     }
@@ -1308,7 +1320,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     // Check if suggestions have to be shown:
     // Match the trigger patterns of all Mention children on the extracted substring
     React.Children.forEach(children, (child, childIndex) => {
-      if (!React.isValidElement<MentionComponentProps>(child)) {
+      if (!React.isValidElement<MentionComponentProps<Extra>>(child)) {
         return
       }
       const { trigger = '@', allowSpaceInQuery = false } = child.props
@@ -1347,15 +1359,15 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   ): void => {
     const { children, ignoreAccents } = this.props
     const mentionChild = Children.toArray(children)[childIndex]
-    if (!React.isValidElement<MentionComponentProps>(mentionChild)) {
+    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionChild)) {
       return
     }
     const dataSource = mentionChild.props.data
     if (!dataSource) {
       return
     }
-    const provideData = getDataProvider(dataSource, ignoreAccents)
-    const syncResult = provideData(query)
+    const provideData = getDataProvider<Extra>(dataSource, ignoreAccents)
+    const resultPromise = provideData(query)
     void this.updateSuggestions(
       this._queryId,
       childIndex,
@@ -1363,7 +1375,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       querySequenceStart,
       querySequenceEnd,
       plainTextValue,
-      syncResult
+      resultPromise
     )
   }
 
@@ -1374,13 +1386,13 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     querySequenceStart: number,
     querySequenceEnd: number,
     plainTextValue: string,
-    results: MentionDataItem[] | Promise<MentionDataItem[]>
+    results: MentionDataItem<Extra>[] | Promise<MentionDataItem<Extra>[]>
   ): Promise<void> => {
     if (queryId !== this._queryId) {
       // neglect async results from previous queries
       return
     }
-    const data: MentionDataItem[] = await Promise.resolve(results)
+    const data: MentionDataItem<Extra>[] = await Promise.resolve(results)
     // save in property so that multiple sync state updates from different mentions sources
     // won't overwrite each other
     this.suggestions = {
@@ -1411,7 +1423,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   }
 
   addMention = (
-    suggestion: SuggestionDataItem | string,
+    suggestion: SuggestionDataItem<Extra>,
     { childIndex, querySequenceStart, querySequenceEnd, plainTextValue }: QueryInfo
   ): void => {
     const { id, display } = this.getSuggestionData(suggestion)
@@ -1419,7 +1431,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     const value = this.props.value || ''
     const config = readConfigFromChildren(this.props.children)
     const mentionsChild = Children.toArray(this.props.children)[childIndex]
-    if (!React.isValidElement<MentionComponentProps>(mentionsChild)) {
+    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionsChild)) {
       return
     }
     const {
@@ -1476,7 +1488,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   isLoading = (): boolean => {
     let loading = false
     React.Children.forEach(this.props.children, (child) => {
-      if (!child || !React.isValidElement<MentionComponentProps>(child)) {
+      if (!child || !React.isValidElement<MentionComponentProps<Extra>>(child)) {
         return
       }
       loading = loading || Boolean(child.props.isLoading)

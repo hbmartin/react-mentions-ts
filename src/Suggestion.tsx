@@ -3,7 +3,9 @@ import { getSubstringIndex } from './utils'
 import { cn } from './utils/cn'
 import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
 
-interface SuggestionProps {
+interface SuggestionProps<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> {
   readonly id: string
   readonly focused?: boolean
   readonly ignoreAccents?: boolean
@@ -11,8 +13,8 @@ interface SuggestionProps {
   readonly onClick: () => void
   readonly onMouseEnter: () => void
   readonly query: string
-  readonly renderSuggestion?: MentionRenderSuggestion | null
-  readonly suggestion: SuggestionDataItem | string
+  readonly renderSuggestion?: MentionRenderSuggestion<Extra> | null
+  readonly suggestion: SuggestionDataItem<Extra>
   readonly className?: string
   readonly focusedClassName?: string
   readonly displayClassName?: string
@@ -23,7 +25,7 @@ const suggestionItemBase = 'cursor-pointer'
 const suggestionDisplayStyles = 'inline-block'
 const suggestionHighlightStyles = ''
 
-function Suggestion({
+function Suggestion<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
   focused,
   ignoreAccents,
@@ -37,7 +39,7 @@ function Suggestion({
   focusedClassName,
   displayClassName,
   highlightClassName,
-}: SuggestionProps) {
+}: SuggestionProps<Extra>) {
   const rest = { onClick, onMouseEnter }
   const itemClassName = cn(suggestionItemBase, className, focused ? focusedClassName : undefined)
   const displayClassNameResolved = cn(suggestionDisplayStyles, displayClassName)
