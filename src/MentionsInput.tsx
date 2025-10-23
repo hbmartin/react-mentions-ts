@@ -68,7 +68,7 @@ const getDataProvider = <Extra extends Record<string, unknown>>(
       query: string
     ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>
     const result = await Promise.resolve(provider(query))
-    return Array.from(result)
+    return [...result]
   }
 }
 
@@ -105,7 +105,7 @@ const inlineSuggestionPrefixStyles =
   'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
 const inlineSuggestionSuffixStyles = 'whitespace-pre'
 
-type InlineSuggestionDetails<Extra extends Record<string, unknown> = Record<string, unknown>> = {
+interface InlineSuggestionDetails<Extra extends Record<string, unknown> = Record<string, unknown>> {
   hiddenPrefix: string
   visibleText: string
   queryInfo: QueryInfo
@@ -176,6 +176,9 @@ class MentionsInput<
   private _isComposing = false
   private readonly defaultSuggestionsPortalHost: HTMLElement | null
   private _isScrolling = false
+  private _pendingHighlighterRecompute = false
+  private _didUnmount = false
+  private _scrollSyncFrame: number | null = null
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
@@ -220,6 +223,7 @@ class MentionsInput<
       caretPosition: null,
       suggestionsPosition: {},
       pendingSelectionUpdate: false,
+      highlighterRecomputeVersion: 0,
     } satisfies MentionsInputState<Extra>
   }
 
@@ -228,6 +232,7 @@ class MentionsInput<
     document.addEventListener('cut', this.handleCut)
     document.addEventListener('paste', this.handlePaste)
     document.addEventListener('scroll', this.handleDocumentScroll, true)
+    document.addEventListener('selectionchange', this.handleDocumentSelectionChange)
 
     this.updateSuggestionsPosition()
   }
@@ -255,6 +260,13 @@ class MentionsInput<
     document.removeEventListener('cut', this.handleCut)
     document.removeEventListener('paste', this.handlePaste)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
+    document.removeEventListener('selectionchange', this.handleDocumentSelectionChange)
+    if (this._scrollSyncFrame !== null && typeof window !== 'undefined') {
+      window.cancelAnimationFrame(this._scrollSyncFrame)
+      this._scrollSyncFrame = null
+    }
+    this._pendingHighlighterRecompute = false
+    this._didUnmount = true
   }
 
   render(): React.ReactNode {
@@ -545,7 +557,7 @@ class MentionsInput<
     )
   }
 
-  private getInlineSuggestionAnnouncement = (
+  private readonly getInlineSuggestionAnnouncement = (
     inlineSuggestion: InlineSuggestionDetails<Extra> | null
   ): string => {
     if (!inlineSuggestion) {
@@ -569,9 +581,8 @@ class MentionsInput<
   }
 
   renderHighlighter = (): React.ReactElement => {
-    const { selectionStart, selectionEnd } = this.state
+    const { selectionStart, selectionEnd, highlighterRecomputeVersion } = this.state
     const { singleLine, children, value, classNames } = this.props
-
     return (
       <Highlighter
         containerRef={this.setHighlighterElement}
@@ -582,6 +593,7 @@ class MentionsInput<
         singleLine={singleLine}
         selectionStart={selectionStart}
         selectionEnd={selectionEnd}
+        recomputeVersion={highlighterRecomputeVersion}
         onCaretPositionChange={this.handleCaretPositionChange}
       >
         {children}
@@ -595,6 +607,23 @@ class MentionsInput<
 
   handleCaretPositionChange = (position: CaretCoordinates | null) => {
     this.setState({ caretPosition: position })
+    this.scheduleHighlighterRecompute()
+  }
+
+  scheduleHighlighterRecompute = (): void => {
+    if (this._pendingHighlighterRecompute || this._didUnmount) {
+      return
+    }
+
+    this._pendingHighlighterRecompute = true
+    this.setState(
+      (prevState) => ({
+        highlighterRecomputeVersion: prevState.highlighterRecomputeVersion + 1,
+      }),
+      () => {
+        this._pendingHighlighterRecompute = false
+      }
+    )
   }
 
   isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
@@ -975,30 +1004,48 @@ class MentionsInput<
 
   // Handle input element's select event
   handleSelect = (ev: SyntheticEvent<InputElement>) => {
-    // keep track of selection range / caret position
-    const target = ev.target as InputElement
+    this.syncSelectionFromInput('select')
+    this.props.onSelect?.(ev)
+  }
+
+  private readonly syncSelectionFromInput = (
+    reason: 'select' | 'selectionchange' = 'selectionchange'
+  ): void => {
+    const input = this.inputElement
+    if (!input) {
+      return
+    }
+
+    if (reason === 'selectionchange') {
+      const ownerDocument = input.ownerDocument ?? document
+      if (ownerDocument.activeElement !== input) {
+        return
+      }
+    }
+
+    const selectionStart = input.selectionStart ?? null
+    const selectionEnd = input.selectionEnd ?? null
+
+    if (selectionStart === this.state.selectionStart && selectionEnd === this.state.selectionEnd) {
+      return
+    }
+
     this.setState({
-      selectionStart: target.selectionStart ?? null,
-      selectionEnd: target.selectionEnd ?? null,
+      selectionStart,
+      selectionEnd,
     })
 
-    // do nothing while a IME composition session is active
     if (this._isComposing) {
       return
     }
 
-    // refresh suggestions queries
-    const el = this.inputElement
-    if (el && target.selectionStart === target.selectionEnd) {
-      this.updateMentionsQueries(el.value, target.selectionStart ?? 0)
+    if (selectionStart != null && selectionStart === selectionEnd) {
+      this.updateMentionsQueries(input.value, selectionStart)
     } else {
       this.clearSuggestions()
     }
 
-    // sync highlighters scroll position
-    this.updateHighlighterScroll()
-
-    this.props.onSelect?.(ev)
+    this.requestHighlighterScrollSync()
   }
 
   handleKeyDown = (ev: KeyboardEvent<InputElement>) => {
@@ -1115,7 +1162,7 @@ class MentionsInput<
       })
     }
 
-    this.updateHighlighterScroll()
+    this.requestHighlighterScrollSync()
 
     this.props.onBlur?.(ev, clickedSuggestion)
   }
@@ -1214,7 +1261,6 @@ class MentionsInput<
     ) {
       return
     }
-
     this.setState({
       suggestionsPosition: position,
     })
@@ -1228,12 +1274,48 @@ class MentionsInput<
       // the whole component may have been unmounted in the meanwhile
       return
     }
-    highlighter.scrollLeft = input.scrollLeft
-    highlighter.scrollTop = input.scrollTop
-    const inputHeight = input.clientHeight
-    if (inputHeight) {
-      highlighter.style.height = `${inputHeight}px`
+
+    const nextScrollLeft = input.scrollLeft
+    const nextScrollTop = input.scrollTop
+    const prevScrollLeft = highlighter.scrollLeft
+    const prevScrollTop = highlighter.scrollTop
+
+    if (prevScrollLeft !== nextScrollLeft) {
+      highlighter.scrollLeft = nextScrollLeft
     }
+    if (prevScrollTop !== nextScrollTop) {
+      highlighter.scrollTop = nextScrollTop
+    }
+    const inputHeight = input.clientHeight
+    let heightChanged = false
+    if (inputHeight) {
+      const nextHeight = `${inputHeight}px`
+      if (highlighter.style.height !== nextHeight) {
+        highlighter.style.height = nextHeight
+        heightChanged = true
+      }
+    }
+
+    if (prevScrollLeft !== nextScrollLeft || prevScrollTop !== nextScrollTop || heightChanged) {
+      this.scheduleHighlighterRecompute()
+    }
+
+  }
+
+  private requestHighlighterScrollSync = (): void => {
+    if (typeof window === 'undefined') {
+      this.updateHighlighterScroll()
+      return
+    }
+
+    if (this._scrollSyncFrame !== null) {
+      return
+    }
+
+    this._scrollSyncFrame = window.requestAnimationFrame(() => {
+      this._scrollSyncFrame = null
+      this.updateHighlighterScroll()
+    })
   }
 
   handleDocumentScroll = (): void => {
@@ -1246,6 +1328,10 @@ class MentionsInput<
       this.updateSuggestionsPosition()
       this._isScrolling = false
     })
+  }
+
+  handleDocumentSelectionChange = (): void => {
+    this.syncSelectionFromInput('selectionchange')
   }
 
   handleCompositionStart = (): void => {
@@ -1265,8 +1351,10 @@ class MentionsInput<
     if (!el) {
       return
     }
+    let selectionApplied = false
     if (el.setSelectionRange) {
       el.setSelectionRange(selectionStart, selectionEnd)
+      selectionApplied = true
     } else if ('createTextRange' in el) {
       const range = (
         el as unknown as {
@@ -1282,6 +1370,10 @@ class MentionsInput<
       range.moveEnd('character', selectionEnd)
       range.moveStart('character', selectionStart)
       range.select()
+      selectionApplied = true
+    }
+    if (selectionApplied) {
+      this.updateHighlighterScroll()
     }
   }
 

@@ -26,6 +26,7 @@ interface HighlighterProps {
   readonly className?: string
   readonly substringClassName?: string
   readonly caretClassName?: string
+  readonly recomputeVersion?: number
 }
 
 // Note: singleLine intentionally overrides whitespace/break behavior
@@ -41,8 +42,8 @@ const highlighterStyles = cva(
   }
 )
 
-const substringStyles = 'invisible'
-const caretStyles = 'relative inline-block align-top'
+const substringStyles = 'text-transparent'
+const caretStyles = 'relative inline-block h-0 w-0 align-baseline'
 
 function Highlighter({
   selectionStart,
@@ -55,6 +56,7 @@ function Highlighter({
   className,
   substringClassName,
   caretClassName,
+  recomputeVersion,
 }: HighlighterProps) {
   const [position, setPosition] = useState<CaretCoordinates | null>(null)
   const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
@@ -71,11 +73,33 @@ function Highlighter({
 
   // Ensure caret position updates whenever content/selection affects layout.
   useLayoutEffect(() => {
-    if (caretElement !== null) {
-      updatePosition(caretElement.offsetLeft, caretElement.offsetTop)
+    if (caretElement === null) {
+      return undefined
+    }
+
+    const measure = () => {
+      const offsetLeft = caretElement.offsetLeft
+      const offsetTop = caretElement.offsetTop
+
+      updatePosition(offsetLeft, offsetTop)
+    }
+
+    const rafId =
+      typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame(measure)
+        : undefined
+
+    if (rafId === undefined) {
+      measure()
+    }
+
+    return () => {
+      if (rafId !== undefined && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(rafId)
+      }
     }
     // value/selection/singleLine impact layout/position
-  }, [caretElement, value, selectionStart, selectionEnd, singleLine])
+  }, [caretElement, value, selectionStart, selectionEnd, singleLine, recomputeVersion, updatePosition])
 
   const config: MentionChildConfig[] = readConfigFromChildren(children)
   let caretPositionInMarkup: number | null | undefined
@@ -115,9 +139,9 @@ function Highlighter({
     return React.cloneElement(child, props)
   }
 
-  const renderHighlighterCaret = (caretChildren: React.ReactNode[]) => (
-    <span className={caretClass} data-mentions-caret ref={setCaretElement} key="caret">
-      {caretChildren}
+  const renderCaretMarker = () => (
+    <span className={caretClass} data-mentions-caret ref={setCaretElement} key="caret" aria-hidden="true">
+      {'\u200b'}
     </span>
   )
 
@@ -129,11 +153,11 @@ function Highlighter({
     ) {
       const splitIndex = caretPositionInMarkup - index
       components.push(renderSubstring(substr.slice(0, splitIndex), substringComponentKey))
+      substringComponentKey += 1
       components = [renderSubstring(substr.slice(splitIndex), substringComponentKey)]
     } else {
       components.push(renderSubstring(substr, substringComponentKey))
     }
-
     substringComponentKey += 1
   }
 
@@ -155,9 +179,9 @@ function Highlighter({
   components.push(' ')
 
   if (components !== resultComponents) {
-    resultComponents.push(renderHighlighterCaret(components))
+    resultComponents.push(renderCaretMarker())
+    resultComponents.push(...components)
   }
-
   return (
     <div
       className={rootClassName}
@@ -177,7 +201,7 @@ const HIGHLIGHTER_OVERLAY_STYLE: CSSProperties = {
   top: 0,
   left: 0,
   right: 0,
-  width: '100%',
+  bottom: 0,
   pointerEvents: 'none',
   zIndex: 0,
 }

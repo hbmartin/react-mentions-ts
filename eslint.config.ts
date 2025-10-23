@@ -51,7 +51,6 @@ export default defineConfig([
       'unused-imports': unusedImports,
       jest: jestPlugin,
       react: reactPlugin,
-      'jsx-a11y': jsxA11y,
     },
     languageOptions: {
       ecmaVersion: 2023,
