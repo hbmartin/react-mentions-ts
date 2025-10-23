@@ -85,8 +85,8 @@ function Highlighter({
     }
 
     const rafId =
-      typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
-        ? window.requestAnimationFrame(measure)
+      globalThis.window !== undefined && typeof globalThis.requestAnimationFrame === 'function'
+        ? globalThis.requestAnimationFrame(measure)
         : undefined
 
     if (rafId === undefined) {
@@ -94,12 +94,20 @@ function Highlighter({
     }
 
     return () => {
-      if (rafId !== undefined && typeof window !== 'undefined') {
-        window.cancelAnimationFrame(rafId)
+      if (rafId !== undefined && globalThis.window !== undefined) {
+        globalThis.cancelAnimationFrame(rafId)
       }
     }
     // value/selection/singleLine impact layout/position
-  }, [caretElement, value, selectionStart, selectionEnd, singleLine, recomputeVersion, updatePosition])
+  }, [
+    caretElement,
+    value,
+    selectionStart,
+    selectionEnd,
+    singleLine,
+    recomputeVersion,
+    updatePosition,
+  ])
 
   const config: MentionChildConfig[] = readConfigFromChildren(children)
   let caretPositionInMarkup: number | null | undefined
@@ -140,8 +148,14 @@ function Highlighter({
   }
 
   const renderCaretMarker = () => (
-    <span className={caretClass} data-mentions-caret ref={setCaretElement} key="caret" aria-hidden="true">
-      {'\u200b'}
+    <span
+      className={caretClass}
+      data-mentions-caret
+      ref={setCaretElement}
+      key="caret"
+      aria-hidden="true"
+    >
+      {'\u200B'}
     </span>
   )
 
@@ -152,8 +166,13 @@ function Highlighter({
       caretPositionInMarkup <= index + substr.length
     ) {
       const splitIndex = caretPositionInMarkup - index
+      // Before the reassignment, components still points at resultComponents, so the push stores
+      // the substring that comes before the caret in the final output.
       components.push(renderSubstring(substr.slice(0, splitIndex), substringComponentKey))
       substringComponentKey += 1
+      // Reassigning componentjust switches the working array to a fresh list
+      // for the text after the caret; later we splice that array back in
+      //  Without the initial push, the prefix would not land in resultComponents.
       components = [renderSubstring(substr.slice(splitIndex), substringComponentKey)]
     } else {
       components.push(renderSubstring(substr, substringComponentKey))
@@ -179,8 +198,7 @@ function Highlighter({
   components.push(' ')
 
   if (components !== resultComponents) {
-    resultComponents.push(renderCaretMarker())
-    resultComponents.push(...components)
+    resultComponents.push(renderCaretMarker(), ...components)
   }
   return (
     <div
