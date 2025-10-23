@@ -522,6 +522,43 @@ describe('MentionsInput', () => {
       expect(newPlainTextValue).toMatchSnapshot()
     })
 
+    it('should restore the caret to the start of the cut selection.', async () => {
+      const onChange = jest.fn()
+
+      render(
+        <MentionsInput value={value} onChange={onChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('textbox')
+
+      const selectionStart = plainTextValue.indexOf('First') + 2
+      const selectionEnd = plainTextValue.indexOf('First') + 'First'.length + 5
+
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+      expect(textarea.selectionStart).toBe(selectionStart)
+      expect(textarea.selectionEnd).toBe(selectionEnd)
+
+      fireEvent.select(textarea, {
+        target: { selectionStart, selectionEnd },
+      })
+
+      const event = new Event('cut', { bubbles: true })
+      event.clipboardData = { setData: jest.fn() }
+
+      fireEvent(textarea, event)
+
+      await waitFor(() => {
+        expect(onChange).toHaveBeenCalledTimes(1)
+      })
+
+      await waitFor(() => {
+        expect(textarea.selectionStart).toBe(selectionStart)
+        expect(textarea.selectionEnd).toBe(selectionStart)
+      })
+    })
+
     it('should read mentions markup from a paste event.', () => {
       const onChange = jest.fn()
 

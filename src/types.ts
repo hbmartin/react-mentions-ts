@@ -159,6 +159,7 @@ export interface MentionsInputState {
   suggestionsPosition: SuggestionsPosition
   scrollFocusedIntoView?: boolean
   setSelectionAfterMentionChange?: boolean
+  setSelectionAfterHandleCut?: boolean
   setSelectionAfterHandlePaste: boolean
 }
 
