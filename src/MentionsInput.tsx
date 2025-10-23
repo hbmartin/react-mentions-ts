@@ -191,6 +191,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       caretPosition: null,
       suggestionsPosition: {},
       setSelectionAfterHandlePaste: false,
+      setSelectionAfterHandleCut: false,
     }
   }
 
@@ -212,12 +213,16 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
     // maintain selection in case a mention is added/removed causing
     // the cursor to jump to the end
-    if (this.state.setSelectionAfterMentionChange) {
+    if (this.state.setSelectionAfterMentionChange === true) {
       this.setState({ setSelectionAfterMentionChange: false })
       this.setSelection(this.state.selectionStart, this.state.selectionEnd)
     }
     if (this.state.setSelectionAfterHandlePaste) {
       this.setState({ setSelectionAfterHandlePaste: false })
+      this.setSelection(this.state.selectionStart, this.state.selectionEnd)
+    }
+    if (this.state.setSelectionAfterHandleCut === true) {
+      this.setState({ setSelectionAfterHandleCut: false })
       this.setSelection(this.state.selectionStart, this.state.selectionEnd)
     }
   }
@@ -840,6 +845,12 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
     const mentions = getMentions(newValue, config)
 
+    this.setState({
+      selectionStart: safeSelectionStart,
+      selectionEnd: safeSelectionStart,
+      setSelectionAfterHandleCut: true,
+    })
+
     this.executeOnChange(
       { type: 'cut', nativeEvent: event },
       newValue,
@@ -1447,13 +1458,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       displayValue
     )
 
-    this.executeOnChange(
-      { type: 'mention-add' },
-      newValue,
-      newPlainTextValue,
-      mentions,
-      value
-    )
+    this.executeOnChange({ type: 'mention-add' }, newValue, newPlainTextValue, mentions, value)
 
     if (onAdd) {
       onAdd(id, mentionDisplay, start, end)

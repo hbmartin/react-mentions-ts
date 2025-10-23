@@ -124,7 +124,7 @@ The `MentionsInput` component supports the following props:
 - `plainTextValue`: the same content without mention markup
 - `mentions`: the mention occurrences extracted from the new value
 - `previousValue`: the markup string before the change
-- `trigger`: metadata about what caused the change. `trigger.type` is one of `'input'`, `'paste'`, `'cut'`, `'mention-add'`, or `'mention-remove'`, and when available `trigger.nativeEvent` references the originating DOM event.
+- `trigger`: metadata about what caused the change. `trigger.type` is one of `'input'`, `'paste'`, `'cut'`, `'mention-add'`, or `'mention-remove'`, and, when available, `trigger.nativeEvent` references the originating DOM event (optional; do not rely on its exact shape). Regular text edits (typing, Backspace/Delete) use `trigger.type: 'input'`.
 
 ### Mention Props
 
