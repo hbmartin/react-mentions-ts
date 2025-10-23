@@ -141,7 +141,6 @@ export interface MentionsInputProps
   classNames?: MentionsInputClassNames
   suggestionsPortalHost?: Element | Document | null
   suggestionsDisplay?: 'overlay' | 'inline'
-  inlineSuggestionDisplay?: 'full' | 'remaining'
   value?: string
   valueLink?: {
     value: string
@@ -158,9 +157,7 @@ export interface MentionsInputState {
   caretPosition: CaretCoordinates | null
   suggestionsPosition: SuggestionsPosition
   scrollFocusedIntoView?: boolean
-  setSelectionAfterMentionChange?: boolean
-  setSelectionAfterHandleCut?: boolean
-  setSelectionAfterHandlePaste: boolean
+  pendingSelectionUpdate: boolean
 }
 
 export type MentionsInputClassNames = Partial<{
