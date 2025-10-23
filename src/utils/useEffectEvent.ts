@@ -7,11 +7,20 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
  * Ensures a stable callback reference that always points to the latest handler.
  */
 export function useEffectEvent<T extends (...args: any[]) => any>(handler: T): T {
-  const handlerRef = useRef(handler)
+  const handlerRef = useRef<T | null>(null)
 
   useIsomorphicLayoutEffect(() => {
     handlerRef.current = handler
   })
 
-  return useCallback(((...args: Parameters<T>) => handlerRef.current(...args)) as T, [])
+  return useCallback(
+    ((...args: Parameters<T>) => {
+      const current = handlerRef.current
+      if (current === null) {
+        throw new Error('useEffectEvent callback executed before the handler was assigned.')
+      }
+      return current(...args)
+    }) as T,
+    []
+  )
 }
