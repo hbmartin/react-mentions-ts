@@ -7,7 +7,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   SyntheticEvent,
 } from 'react'
-import React, { Children } from 'react'
+import React, { Children, useEffectEvent, useLayoutEffect } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
@@ -259,6 +259,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       >
         {this.renderControl()}
         {this.renderSuggestionsOverlay()}
+        {this.renderMeasurementBridge()}
       </div>
     )
   }
@@ -545,6 +546,19 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     }
 
     return inlineSuggestion.announcement
+  }
+
+  renderMeasurementBridge = (): React.ReactNode => {
+    return (
+      <MeasurementBridge
+        container={this.containerElement}
+        highlighter={this.highlighterElement}
+        input={this.inputElement}
+        suggestions={this.suggestionsElement}
+        onSyncScroll={this.updateHighlighterScroll}
+        onUpdateSuggestionsPosition={this.updateSuggestionsPosition}
+      />
+    )
   }
 
   renderHighlighter = (): React.ReactElement => {
@@ -1489,5 +1503,81 @@ const getComputedStyleLengthProp = (forElement: Element, propertyName: string): 
 
 const isMobileSafari =
   typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent)
+
+interface MeasurementBridgeProps {
+  readonly container: HTMLDivElement | null
+  readonly highlighter: HTMLDivElement | null
+  readonly input: InputElement | null
+  readonly suggestions: HTMLDivElement | null
+  readonly onSyncScroll: () => void
+  readonly onUpdateSuggestionsPosition: () => void
+}
+
+const MeasurementBridge = ({
+  container,
+  highlighter,
+  input,
+  suggestions,
+  onSyncScroll,
+  onUpdateSuggestionsPosition,
+}: MeasurementBridgeProps) => {
+  const updateSuggestions = useEffectEvent(() => {
+    onUpdateSuggestionsPosition()
+  })
+
+  const syncScroll = useEffectEvent(() => {
+    onSyncScroll()
+  })
+
+  const updateAll = useEffectEvent(() => {
+    updateSuggestions()
+    syncScroll()
+  })
+
+  const observe = useEffectEvent((element: Element | null, callback: () => void) => {
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return undefined
+    }
+
+    const observer = new ResizeObserver(() => {
+      callback()
+    })
+    observer.observe(element)
+    return () => {
+      observer.disconnect()
+    }
+  })
+
+  useLayoutEffect(() => {
+    updateAll()
+  }, [updateAll])
+
+  useLayoutEffect(() => observe(container, updateAll), [container, observe, updateAll])
+  useLayoutEffect(() => observe(highlighter, updateAll), [highlighter, observe, updateAll])
+  useLayoutEffect(() => observe(input, updateAll), [input, observe, updateAll])
+  useLayoutEffect(() => observe(suggestions, updateSuggestions), [
+    observe,
+    suggestions,
+    updateSuggestions,
+  ])
+
+  useLayoutEffect(() => {
+    if (!input) {
+      return undefined
+    }
+
+    const handleScroll = () => {
+      syncScroll()
+      updateSuggestions()
+    }
+
+    input.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      input.removeEventListener('scroll', handleScroll)
+    }
+  }, [input, syncScroll, updateSuggestions])
+
+  return null
+}
 
 export default MentionsInput
