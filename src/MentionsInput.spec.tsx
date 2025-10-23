@@ -52,7 +52,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     fireEvent.focus(textarea)
 
     // Set selection after the trigger character
@@ -73,7 +73,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     fireEvent.focus(textarea)
     textarea.setSelectionRange(1, 1)
     fireEvent.select(textarea)
@@ -112,7 +112,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     fireEvent.focus(textarea)
     textarea.setSelectionRange(1, 1)
     fireEvent.select(textarea)
@@ -142,7 +142,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     fireEvent.focus(textarea)
     textarea.setSelectionRange(1, 1)
     fireEvent.select(textarea)
@@ -176,7 +176,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     fireEvent.focus(textarea)
 
     // Set selection to position 1 (after @)
@@ -199,7 +199,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     const highlighter = container.querySelector('[data-slot="highlighter"]')
     expect(highlighter).not.toBeNull()
 
@@ -222,7 +222,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     fireEvent.focus(textarea)
 
     // Set selection to position 1 (after @)
@@ -260,7 +260,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     fireEvent.focus(textarea)
 
     expect(textarea.value).toEqual('@A and @B and :invalidId')
@@ -275,7 +275,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     expect(inputRef.current).toBeTruthy()
     expect(inputRef.current).toEqual(textarea)
   })
@@ -289,7 +289,7 @@ describe('MentionsInput', () => {
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('textbox')
+    const textarea = screen.getByRole('combobox')
     expect(inputRef).toHaveBeenCalledWith(textarea)
   })
 
@@ -345,7 +345,7 @@ describe('MentionsInput', () => {
           </MentionsInput>
         )
 
-        const textarea = screen.getByRole('textbox')
+        const textarea = screen.getByRole('combobox')
 
         const selectionStart = plainTextValue.indexOf('First') + 2
         const selectionEnd = plainTextValue.length
@@ -386,7 +386,7 @@ describe('MentionsInput', () => {
           </MentionsInput>
         )
 
-        const textarea = screen.getByRole('textbox')
+        const textarea = screen.getByRole('combobox')
 
         const selectionStart = 0
         const selectionEnd = plainTextValue.indexOf('Second') + 2
@@ -429,7 +429,7 @@ describe('MentionsInput', () => {
           </MentionsInput>
         )
 
-        const textarea = screen.getByRole('textbox')
+        const textarea = screen.getByRole('combobox')
 
         const selectionStart = plainTextValue.indexOf('First') + 2
         const selectionEnd = plainTextValue.length
@@ -458,7 +458,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('textbox')
+      const textarea = screen.getByRole('combobox')
 
       const selectionStart = plainTextValue.indexOf('First') + 2
       const selectionEnd = plainTextValue.indexOf('First') + 'First'.length + 5
@@ -494,7 +494,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('textbox')
+      const textarea = screen.getByRole('combobox')
 
       const selectionStart = plainTextValue.indexOf('First') + 'First'.length
       const selectionEnd = plainTextValue.indexOf('Second') + 2
@@ -530,7 +530,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('textbox')
+      const textarea = screen.getByRole('combobox')
 
       const selectionStart = plainTextValue.indexOf('First') + 2
       const selectionEnd = plainTextValue.indexOf('First') + 'First'.length + 5
@@ -567,7 +567,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('textbox')
+      const textarea = screen.getByRole('combobox')
 
       const pastedText = 'Not forget about @[Third](third)!'
 
@@ -604,7 +604,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('textbox')
+      const textarea = screen.getByRole('combobox')
 
       const pastedText = 'Not forget about @[Third](third)!'
 
@@ -651,7 +651,7 @@ describe('MentionsInput', () => {
 
       expect(onChange).not.toHaveBeenCalled()
 
-      const textarea = screen.getByRole('textbox')
+      const textarea = screen.getByRole('combobox')
 
       fireEvent(textarea, event)
 
@@ -678,7 +678,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('textbox')
+      const textarea = screen.getByRole('combobox')
 
       const selectionStart = plainTextValue.indexOf('First') + 2
       const selectionEnd = plainTextValue.length
@@ -727,7 +727,7 @@ describe('MentionsInput', () => {
       }
 
       render(<Wrapper />)
-      const textbox = screen.getByRole('textbox')
+      const textbox = screen.getByRole('combobox')
       fireEvent.focus(textbox)
       textbox.setSelectionRange(initialValue.length, initialValue.length)
       fireEvent.select(textbox)
@@ -735,14 +735,25 @@ describe('MentionsInput', () => {
     }
 
     it('shows a hint with remaining characters and no overlay', async () => {
-      const textbox = renderInlineMentionsInput()
+      const combobox = renderInlineMentionsInput()
 
       await waitFor(() => {
         expect(screen.getByText('ce')).toBeInTheDocument()
       })
 
-      expect(textbox).toHaveAttribute('aria-autocomplete', 'inline')
-      expect(textbox).toHaveAttribute('aria-expanded', 'false')
+      expect(combobox).toHaveAttribute('role', 'combobox')
+      expect(combobox).toHaveAttribute('aria-autocomplete', 'inline')
+      expect(combobox).toHaveAttribute('aria-expanded', 'false')
+      expect(combobox).not.toHaveAttribute('aria-controls')
+
+      const liveRegion = screen.getByRole('status')
+      expect(liveRegion).toHaveAttribute('aria-live', 'polite')
+      expect(liveRegion).toHaveTextContent('Alice')
+
+      const describedBy = combobox.getAttribute('aria-describedby')
+      expect(describedBy).toBeTruthy()
+      expect(describedBy).toContain(liveRegion.id)
+
       expect(screen.queryByRole('listbox')).toBeNull()
     })
 
@@ -758,6 +769,17 @@ describe('MentionsInput', () => {
       await waitFor(() => {
         expect(screen.getByText('stair')).toBeInTheDocument()
       })
+    })
+
+    it('announces when no inline suggestions are available', async () => {
+      const combobox = renderInlineMentionsInput({}, '@zz')
+
+      await waitFor(() => {
+        const liveRegion = screen.getByRole('status')
+        expect(liveRegion).toHaveTextContent('No inline suggestions available')
+      })
+
+      expect(combobox).not.toHaveAttribute('aria-describedby')
     })
 
     it('can accept the inline suggestion with Tab', async () => {

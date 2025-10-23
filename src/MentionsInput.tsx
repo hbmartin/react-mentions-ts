@@ -99,6 +99,29 @@ const inlineSuggestionPrefixStyles =
   'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
 const inlineSuggestionSuffixStyles = 'whitespace-pre'
 
+type InlineSuggestionDetails = {
+  hiddenPrefix: string
+  visibleText: string
+  queryInfo: QueryInfo
+  suggestion: SuggestionDataItem | string
+  announcement: string
+}
+
+const INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT = 'No inline suggestions available'
+
+const visuallyHiddenStyles: CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  border: 0,
+  margin: -1,
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+}
+
 const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'singleLine',
   'suggestionsPlacement',
@@ -133,6 +156,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
   private suggestions: SuggestionsMap = {}
   private readonly uuidSuggestionsOverlay: string
+  private readonly inlineAutocompleteLiveRegionId: string
   private containerElement: HTMLDivElement | null = null
   private inputElement: HTMLInputElement | HTMLTextAreaElement | null = null
   private highlighterElement: HTMLDivElement | null = null
@@ -172,6 +196,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   constructor(props: MentionsInputProps) {
     super(props)
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
+    this.inlineAutocompleteLiveRegionId = `${this.uuidSuggestionsOverlay}-inline-live`
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
 
     this.handleCopy = this.handleCopy.bind(this)
@@ -291,27 +316,32 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       })
     }
 
-    if (this.isInlineAutocomplete()) {
-      const inlineSuggestion = this.getInlineSuggestionDetails()
-      if (inlineSuggestion) {
-        Object.assign(props, {
-          role: 'combobox',
-          'aria-autocomplete': 'inline',
-          'aria-expanded': false,
-        })
-      }
-    } else if (this.isOpened()) {
-      Object.assign(props, {
-        role: 'combobox',
-        'aria-controls': this.uuidSuggestionsOverlay,
-        'aria-expanded': true,
-        'aria-autocomplete': 'list',
-        'aria-haspopup': 'listbox',
-        'aria-activedescendant': getSuggestionHtmlId(
-          this.uuidSuggestionsOverlay,
-          this.state.focusIndex
-        ),
-      })
+    const isInlineAutocomplete = this.isInlineAutocomplete()
+    const inlineSuggestion = isInlineAutocomplete ? this.getInlineSuggestionDetails() : null
+    const isOverlayOpen = !isInlineAutocomplete && this.isOpened()
+
+    Object.assign(props, {
+      role: 'combobox',
+      'aria-autocomplete': isInlineAutocomplete ? 'inline' : 'list',
+      'aria-expanded': isInlineAutocomplete
+        ? 'false'
+        : this.isOpened()
+          ? 'true'
+          : 'false',
+      'aria-controls': isInlineAutocomplete ? undefined : this.uuidSuggestionsOverlay,
+      'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
+      'aria-activedescendant': isOverlayOpen
+        ? getSuggestionHtmlId(this.uuidSuggestionsOverlay, this.state.focusIndex)
+        : undefined,
+    })
+
+    if (isInlineAutocomplete && inlineSuggestion) {
+      const existingDescribedBy =
+        typeof props['aria-describedby'] === 'string' ? props['aria-describedby'] : undefined
+      const describedBy = [existingDescribedBy, this.inlineAutocompleteLiveRegionId]
+        .filter((value): value is string => Boolean(value && value.trim().length > 0))
+        .join(' ')
+      props['aria-describedby'] = describedBy || undefined
     }
 
     return props as InputComponentProps
@@ -339,6 +369,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
         {this.renderHighlighter()}
         {control}
         {this.renderInlineSuggestion()}
+        {this.renderInlineSuggestionLiveRegion()}
       </div>
     )
   }
@@ -484,6 +515,38 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     )
   }
 
+  renderInlineSuggestionLiveRegion = (): React.ReactNode => {
+    if (!this.isInlineAutocomplete()) {
+      return null
+    }
+
+    const inlineSuggestion = this.getInlineSuggestionDetails()
+    const announcement = this.getInlineSuggestionAnnouncement(inlineSuggestion)
+
+    return (
+      <div
+        id={this.inlineAutocompleteLiveRegionId}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={visuallyHiddenStyles}
+        data-slot="inline-suggestion-live-region"
+      >
+        {announcement}
+      </div>
+    )
+  }
+
+  private getInlineSuggestionAnnouncement = (
+    inlineSuggestion: InlineSuggestionDetails | null
+  ): string => {
+    if (!inlineSuggestion) {
+      return INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT
+    }
+
+    return inlineSuggestion.announcement
+  }
+
   renderHighlighter = (): React.ReactElement => {
     const { selectionStart, selectionEnd } = this.state
     const { singleLine, children, value, classNames } = this.props
@@ -549,12 +612,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     }
   }
 
-  getInlineSuggestionDetails = (): {
-    hiddenPrefix: string
-    visibleText: string
-    queryInfo: QueryInfo
-    suggestion: SuggestionDataItem | string
-  } | null => {
+  getInlineSuggestionDetails = (): InlineSuggestionDetails | null => {
     if (!this.isInlineAutocomplete()) {
       return null
     }
@@ -584,18 +642,23 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       displayValue += ' '
     }
 
-    const hiddenPrefix = ''
     const visibleText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
 
     if (!visibleText) {
       return null
     }
 
+    const hiddenPrefixLength = displayValue.length - visibleText.length
+    const hiddenPrefix =
+      hiddenPrefixLength > 0 ? displayValue.slice(0, hiddenPrefixLength) : ''
+    const announcement = displayValue.trimEnd()
+
     return {
       hiddenPrefix,
       visibleText,
       queryInfo,
       suggestion: result,
+      announcement: announcement.length > 0 ? announcement : displayValue,
     }
   }
 
