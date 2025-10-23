@@ -105,9 +105,7 @@ const inlineSuggestionPrefixStyles =
   'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
 const inlineSuggestionSuffixStyles = 'whitespace-pre'
 
-type InlineSuggestionDetails<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> = {
+type InlineSuggestionDetails<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   hiddenPrefix: string
   visibleText: string
   queryInfo: QueryInfo
@@ -152,7 +150,7 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
 ]
 
 class MentionsInput<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > extends React.Component<MentionsInputProps<Extra>, MentionsInputState<Extra>> {
   static readonly defaultProps: Partial<MentionsInputProps<any>> = {
     ignoreAccents: false,
@@ -337,11 +335,7 @@ class MentionsInput<
     Object.assign(props, {
       role: 'combobox',
       'aria-autocomplete': isInlineAutocomplete ? 'inline' : 'list',
-      'aria-expanded': isInlineAutocomplete
-        ? 'false'
-        : this.isOpened()
-          ? 'true'
-          : 'false',
+      'aria-expanded': isInlineAutocomplete ? 'false' : this.isOpened() ? 'true' : 'false',
       'aria-controls': isInlineAutocomplete ? undefined : this.uuidSuggestionsOverlay,
       'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
       'aria-activedescendant': isOverlayOpen
@@ -675,8 +669,7 @@ class MentionsInput<
     }
 
     const hiddenPrefixLength = displayValue.length - visibleText.length
-    const hiddenPrefix =
-      hiddenPrefixLength > 0 ? displayValue.slice(0, hiddenPrefixLength) : ''
+    const hiddenPrefix = hiddenPrefixLength > 0 ? displayValue.slice(0, hiddenPrefixLength) : ''
     const announcement = displayValue.trimEnd()
 
     return {
@@ -1568,11 +1561,10 @@ const MeasurementBridge = ({
   useLayoutEffect(() => observe(container, updateAll), [container, observe, updateAll])
   useLayoutEffect(() => observe(highlighter, updateAll), [highlighter, observe, updateAll])
   useLayoutEffect(() => observe(input, updateAll), [input, observe, updateAll])
-  useLayoutEffect(() => observe(suggestions, updateSuggestions), [
-    observe,
-    suggestions,
-    updateSuggestions,
-  ])
+  useLayoutEffect(
+    () => observe(suggestions, updateSuggestions),
+    [observe, suggestions, updateSuggestions]
+  )
 
   useLayoutEffect(() => {
     if (!input) {

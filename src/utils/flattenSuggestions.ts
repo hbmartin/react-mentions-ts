@@ -2,16 +2,12 @@ import { Children } from 'react'
 import type { ReactNode } from 'react'
 import type { QueryInfo, SuggestionDataItem, SuggestionsMap } from '../types'
 
-export type FlattenedSuggestion<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> = {
+export type FlattenedSuggestion<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   result: SuggestionDataItem<Extra>
   queryInfo: QueryInfo
 }
 
-const flattenSuggestions = <
-  Extra extends Record<string, unknown> = Record<string, unknown>
->(
+const flattenSuggestions = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   children: ReactNode,
   suggestions: SuggestionsMap<Extra> | undefined
 ): FlattenedSuggestion<Extra>[] => {

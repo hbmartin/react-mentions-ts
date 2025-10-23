@@ -33,11 +33,9 @@ describe('#flattenSuggestions', () => {
     const flattened = flattenSuggestions(children, suggestions)
 
     expect(flattened.map((entry) => entry.queryInfo.childIndex)).toEqual([0, 0, 1])
-    expect(flattened.map((entry) => (typeof entry.result === 'string' ? entry.result : entry.result.id))).toEqual([
-      'first-1',
-      'first-2',
-      'second',
-    ])
+    expect(
+      flattened.map((entry) => (typeof entry.result === 'string' ? entry.result : entry.result.id))
+    ).toEqual(['first-1', 'first-2', 'second'])
   })
 
   it('appends orphaned suggestions ordered by their indices', () => {
@@ -61,11 +59,9 @@ describe('#flattenSuggestions', () => {
     const flattened = flattenSuggestions(children, suggestions)
 
     expect(flattened.map((entry) => entry.queryInfo.childIndex)).toEqual([0, 2, 4])
-    expect(flattened.map((entry) => (typeof entry.result === 'string' ? entry.result : entry.result.id))).toEqual([
-      'child',
-      'orphan-1',
-      'orphan-2',
-    ])
+    expect(
+      flattened.map((entry) => (typeof entry.result === 'string' ? entry.result : entry.result.id))
+    ).toEqual(['child', 'orphan-1', 'orphan-2'])
   })
 
   it('returns an empty array when no suggestions are provided', () => {
