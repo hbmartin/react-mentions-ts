@@ -1000,6 +1000,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       case KEY.RETURN:
       case KEY.TAB: {
         this.selectFocused()
+        break
       }
       default:
     }
@@ -1385,12 +1386,11 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       displayValue += ' '
     }
     const newCaretPosition = querySequenceStart + displayValue.length
-    this.setState((prevState) => ({
-      ...prevState,
+    this.setState({
       selectionStart: newCaretPosition,
       selectionEnd: newCaretPosition,
       pendingSelectionUpdate: true,
-    }))
+    })
 
     // Propagate change
     const mentions = getMentions(newValue, config)
