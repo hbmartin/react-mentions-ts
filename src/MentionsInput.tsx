@@ -22,9 +22,9 @@ import {
   getPlainText,
   getSubstringIndex,
   getSuggestionHtmlId,
-  isIE,
   isNumber,
   makeMentionsMarkup,
+  flattenSuggestions,
   mapPlainTextIndex,
   omit,
   readConfigFromChildren,
@@ -582,42 +582,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     result: SuggestionDataItem | string
     queryInfo: QueryInfo
   }> => {
-    const flattened: Array<{ result: SuggestionDataItem | string; queryInfo: QueryInfo }> = []
-    const handledIndices = new Set<number>()
-
-    const childNodes = Children.toArray(this.props.children)
-
-    childNodes.forEach((_child, childIndex) => {
-      const entry = this.state.suggestions[childIndex]
-      if (!entry) {
-        return
-      }
-
-      handledIndices.add(childIndex)
-      const { results, queryInfo } = entry
-      for (const result of results) {
-        flattened.push({ result, queryInfo })
-      }
-    })
-
-    const remainingIndices = Object.keys(this.state.suggestions)
-      .map((key) => Number.parseInt(key, 10))
-      .filter((index) => !Number.isNaN(index) && !handledIndices.has(index))
-      .sort((a, b) => a - b)
-
-    for (const index of remainingIndices) {
-      const entry = this.state.suggestions[index]
-      if (!entry) {
-        continue
-      }
-
-      const { results, queryInfo } = entry
-      for (const result of results) {
-        flattened.push({ result, queryInfo })
-      }
-    }
-
-    return flattened
+    return flattenSuggestions(this.props.children, this.state.suggestions)
   }
 
   getFocusedSuggestionEntry = (): {
@@ -912,18 +877,6 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     if ('isComposing' in native && typeof native.isComposing === 'boolean') {
       this._isComposing = native.isComposing
     }
-    if (isIE()) {
-      // if we are inside iframe, we need to find activeElement within its contentDocument
-      const activeElement = document.activeElement as
-        | (HTMLIFrameElement & { contentDocument: Document })
-        | null
-      const currentDocument = activeElement?.contentDocument ?? document
-      if (currentDocument.activeElement !== ev.target) {
-        // fix an IE bug (blur from empty input element with placeholder attribute trigger "input" event)
-        return
-      }
-    }
-
     const value = this.props.value || ''
     const config = readConfigFromChildren(this.props.children)
 
@@ -1142,9 +1095,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       })
     }
 
-    setTimeout(() => {
-      this.updateHighlighterScroll()
-    }, 1)
+    this.updateHighlighterScroll()
 
     this.props.onBlur?.(ev, clickedSuggestion)
   }

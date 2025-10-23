@@ -4,7 +4,7 @@ import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
-import { getSuggestionHtmlId } from './utils'
+import { flattenSuggestions, getSuggestionHtmlId } from './utils'
 import { cn } from './utils/cn'
 import type {
   MentionComponentProps,
@@ -165,40 +165,10 @@ function SuggestionsOverlay({
   }
 
   const renderSuggestions = (): React.ReactElement => {
-    const renderedSuggestions: React.ReactNode[] = []
-    const handledIndices = new Set<number>()
-
-    const childNodes = Children.toArray(children)
-
-    childNodes.forEach((_child, childIndex) => {
-      const entry = suggestions[childIndex]
-      if (!entry) {
-        return
-      }
-
-      handledIndices.add(childIndex)
-      const { results, queryInfo } = entry
-      for (const result of results) {
-        renderedSuggestions.push(renderSuggestion(result, queryInfo, renderedSuggestions.length))
-      }
-    })
-
-    const remainingIndices = Object.keys(suggestions)
-      .map((key) => Number.parseInt(key, 10))
-      .filter((index) => !Number.isNaN(index) && !handledIndices.has(index))
-      .sort((a, b) => a - b)
-
-    for (const index of remainingIndices) {
-      const entry = suggestions[index]
-      if (!entry) {
-        continue
-      }
-
-      const { results, queryInfo } = entry
-      for (const result of results) {
-        renderedSuggestions.push(renderSuggestion(result, queryInfo, renderedSuggestions.length))
-      }
-    }
+    const flattened = flattenSuggestions(children, suggestions)
+    const renderedSuggestions = flattened.map(({ result, queryInfo }, index) =>
+      renderSuggestion(result, queryInfo, index)
+    )
 
     const suggestionsToRender = (
       <ul
@@ -252,7 +222,6 @@ function SuggestionsOverlay({
       className={overlayClassName}
       data-open={isOpened ? 'true' : 'false'}
       data-slot="suggestions"
-      role="presentation"
       aria-live="polite"
       aria-relevant="additions text"
       aria-busy={isLoading ? 'true' : 'false'}
