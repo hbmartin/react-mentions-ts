@@ -261,8 +261,8 @@ class MentionsInput<
     document.removeEventListener('paste', this.handlePaste)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
     document.removeEventListener('selectionchange', this.handleDocumentSelectionChange)
-    if (this._scrollSyncFrame !== null && typeof window !== 'undefined') {
-      window.cancelAnimationFrame(this._scrollSyncFrame)
+    if (this._scrollSyncFrame !== null && globalThis.window !== undefined) {
+      globalThis.cancelAnimationFrame(this._scrollSyncFrame)
       this._scrollSyncFrame = null
     }
     this._pendingHighlighterRecompute = false
@@ -606,11 +606,20 @@ class MentionsInput<
   }
 
   handleCaretPositionChange = (position: CaretCoordinates | null) => {
-    this.setState({ caretPosition: position })
+    this.setState({ caretPosition: position }, () => {
+      if (position) {
+        this.updateSuggestionsPosition()
+      }
+    })
     this.scheduleHighlighterRecompute()
   }
 
   scheduleHighlighterRecompute = (): void => {
+    // Each queued setState updater runs in order, so if this fires twice before the first update finishes
+    // we'll end up at highlighterRecomputeVersion + 2, not +1. The _pendingHighlighterRecompute flag stops
+    // that, so the highlighter only recomputes once per render cycle. Paths like handleCaretPositionChange
+    // and updateHighlighterScroll can trigger the scheduler multiple times in rapid succession.
+    // React's batching trims render passes, but it won't deduplicate the updates.
     if (this._pendingHighlighterRecompute || this._didUnmount) {
       return
     }
@@ -1025,15 +1034,15 @@ class MentionsInput<
 
     const selectionStart = input.selectionStart ?? null
     const selectionEnd = input.selectionEnd ?? null
+    const selectionChanged =
+      selectionStart !== this.state.selectionStart || selectionEnd !== this.state.selectionEnd
 
-    if (selectionStart === this.state.selectionStart && selectionEnd === this.state.selectionEnd) {
-      return
+    if (selectionChanged) {
+      this.setState({
+        selectionStart,
+        selectionEnd,
+      })
     }
-
-    this.setState({
-      selectionStart,
-      selectionEnd,
-    })
 
     if (this._isComposing) {
       return
@@ -1299,20 +1308,21 @@ class MentionsInput<
     if (prevScrollLeft !== nextScrollLeft || prevScrollTop !== nextScrollTop || heightChanged) {
       this.scheduleHighlighterRecompute()
     }
-
   }
 
-  private requestHighlighterScrollSync = (): void => {
-    if (typeof window === 'undefined') {
-      this.updateHighlighterScroll()
+  private readonly requestHighlighterScrollSync = (): void => {
+    this.updateHighlighterScroll()
+
+    if (globalThis.window === undefined) {
       return
     }
 
     if (this._scrollSyncFrame !== null) {
-      return
+      globalThis.cancelAnimationFrame(this._scrollSyncFrame)
+      this._scrollSyncFrame = null
     }
 
-    this._scrollSyncFrame = window.requestAnimationFrame(() => {
+    this._scrollSyncFrame = globalThis.requestAnimationFrame(() => {
       this._scrollSyncFrame = null
       this.updateHighlighterScroll()
     })
@@ -1373,7 +1383,7 @@ class MentionsInput<
       selectionApplied = true
     }
     if (selectionApplied) {
-      this.updateHighlighterScroll()
+      this.requestHighlighterScrollSync()
     }
   }
 
