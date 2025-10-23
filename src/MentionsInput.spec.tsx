@@ -3,12 +3,21 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
+import type { MentionsInputChangeEvent } from './types'
 
 const data = [
   { id: 'first', value: 'First entry' },
   { id: 'second', value: 'Second entry' },
   { id: 'third', value: 'Third' },
 ]
+
+const getLastChange = (mock: jest.Mock): MentionsInputChangeEvent => {
+  const calls = mock.mock.calls
+  if (calls.length === 0) {
+    throw new Error('Expected onChange to have been called')
+  }
+  return calls[calls.length - 1][0] as MentionsInputChangeEvent
+}
 
 describe('MentionsInput', () => {
   it('should render a textarea by default.', () => {
@@ -121,9 +130,9 @@ describe('MentionsInput', () => {
     // Verify onChange was called with the selected mention
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled()
-      const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]
-      const [payload] = lastCall
+      const payload = getLastChange(onChange)
       expect(payload.value).toContain(data[0].id)
+      expect(payload.trigger.type).toBe('mention-add')
     })
   })
 
@@ -469,8 +478,10 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
-
+      const { value: newValue, plainTextValue: newPlainTextValue, trigger, previousValue } =
+        getLastChange(onChange)
+      expect(trigger.type).toBe('cut')
+      expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
     })
@@ -503,8 +514,10 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
-
+      const { value: newValue, plainTextValue: newPlainTextValue, trigger, previousValue } =
+        getLastChange(onChange)
+      expect(trigger.type).toBe('cut')
+      expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
     })
@@ -533,8 +546,15 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
+      const {
+        value: newValue,
+        plainTextValue: newPlainTextValue,
+        trigger,
+        previousValue,
+      } = getLastChange(onChange)
 
+      expect(trigger.type).toBe('paste')
+      expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
     })
@@ -563,8 +583,15 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
+      const {
+        value: newValue,
+        plainTextValue: newPlainTextValue,
+        trigger,
+        previousValue,
+      } = getLastChange(onChange)
 
+      expect(trigger.type).toBe('paste')
+      expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
     })
@@ -592,8 +619,15 @@ describe('MentionsInput', () => {
 
       fireEvent(textarea, event)
 
-      const [[{ value: newValue, plainTextValue: newPlainTextValue }]] = onChange.mock.calls
+      const {
+        value: newValue,
+        plainTextValue: newPlainTextValue,
+        trigger,
+        previousValue,
+      } = getLastChange(onChange)
 
+      expect(trigger.type).toBe('paste')
+      expect(previousValue).toBe('')
       expect(newValue).toEqual("Hi First, \n\nlet's add Second to the conversation.")
 
       expect(newPlainTextValue).toEqual("Hi First, \n\nlet's add Second to the conversation.")
@@ -704,12 +738,12 @@ describe('MentionsInput', () => {
         expect(onChange).toHaveBeenCalled()
       })
 
-      const [payload] = onChange.mock.calls[onChange.mock.calls.length - 1]
-
+      const payload = getLastChange(onChange)
       expect(payload.value).toBe('@[Alice](alice)')
       expect(payload.plainTextValue).toBe('Alice')
       expect(payload.mentions).toHaveLength(1)
       expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
+      expect(payload.trigger.type).toBe('mention-add')
     })
 
     it('renders the full suggestion text when configured', async () => {

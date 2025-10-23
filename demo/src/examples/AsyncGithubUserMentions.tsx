@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { MentionsInput, Mention } from '../../../src'
+import type { MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import {
   mentionPillClass,
@@ -25,7 +26,7 @@ const githubSuggestions = mergeClassNames(multilineMentionsClassNames, {
 
 export default function AsyncGithubUserMentions() {
   const [value, setValue] = useState('')
-  const onChange = (_ev: unknown, newValue: string) => setValue(newValue)
+  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard

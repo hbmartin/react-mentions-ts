@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
-import type { MentionDataItem } from '../../../src'
+import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import { mentionPillClass, singleLineMentionsClassNames } from './mentionsClassNames'
 
@@ -14,8 +14,8 @@ export default function SingleLine({
 }) {
   const [value, setValue] = useState('')
 
-  const onChange = (_ev: unknown, newValue: string) => {
-    setValue(newValue)
+  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => {
+    setValue(nextValue)
   }
 
   return (

@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
-import type { MentionDataItem } from '../../../src'
+import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import { mentionPillClass, singleLineMentionsClassNames } from './mentionsClassNames'
 
 export default function AllowSpaceInQuery({ data }: { data: MentionDataItem[] }) {
   const [value, setValue] = useState('')
 
-  const handleChange = (_event: unknown, nextValue: string) => {
+  const handleChange = ({ value: nextValue }: MentionsInputChangeEvent) => {
     setValue(nextValue)
   }
 

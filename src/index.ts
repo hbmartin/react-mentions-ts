@@ -5,4 +5,8 @@ export type {
   MentionsInputClassNames,
   MentionComponentProps,
   MentionDataItem,
+  MentionsInputChangeEvent,
+  MentionsInputChangeHandler,
+  MentionsInputChangeTrigger,
+  MentionsInputChangeTriggerType,
 } from './types'

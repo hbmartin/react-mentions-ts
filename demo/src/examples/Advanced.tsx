@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react'
 import { clsx } from 'clsx'
 
 import { MentionsInput, Mention } from '../../../src'
-import type { MentionDataItem } from '../../../src'
+import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import {
   mentionPillAccentClass,
@@ -29,7 +29,7 @@ export default function Advanced({
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
   const [value, setValue] = useState('Hi {{johndoe}}!')
-  const onChange = (_ev: unknown, newValue: string) => setValue(newValue)
+  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard
