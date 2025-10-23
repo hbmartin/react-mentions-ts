@@ -165,6 +165,41 @@ function SuggestionsOverlay({
   }
 
   const renderSuggestions = (): React.ReactElement => {
+    const renderedSuggestions: React.ReactNode[] = []
+    const handledIndices = new Set<number>()
+
+    const childNodes = Children.toArray(children)
+
+    childNodes.forEach((_child, childIndex) => {
+      const entry = suggestions[childIndex]
+      if (!entry) {
+        return
+      }
+
+      handledIndices.add(childIndex)
+      const { results, queryInfo } = entry
+      for (const result of results) {
+        renderedSuggestions.push(renderSuggestion(result, queryInfo, renderedSuggestions.length))
+      }
+    })
+
+    const remainingIndices = Object.keys(suggestions)
+      .map((key) => Number.parseInt(key, 10))
+      .filter((index) => !Number.isNaN(index) && !handledIndices.has(index))
+      .sort((a, b) => a - b)
+
+    for (const index of remainingIndices) {
+      const entry = suggestions[index]
+      if (!entry) {
+        continue
+      }
+
+      const { results, queryInfo } = entry
+      for (const result of results) {
+        renderedSuggestions.push(renderSuggestion(result, queryInfo, renderedSuggestions.length))
+      }
+    }
+
     const suggestionsToRender = (
       <ul
         ref={setUlElement}
@@ -174,16 +209,7 @@ function SuggestionsOverlay({
         className={listClassNameResolved}
         data-slot="suggestions-list"
       >
-        {/* TODO: Using Object.values on a number-keyed object can reorder by numeric key, not insertion.
-        If UX relies on insertion order, consider tracking order explicitly (e.g., use Map or an array
-        of keys) or sort deterministically. */}
-        {Object.values(suggestions).reduce<React.ReactNode[]>((acc, { results, queryInfo }) => {
-          const start = acc.length
-          for (const [i, result] of results.entries()) {
-            acc.push(renderSuggestion(result, queryInfo, start + i))
-          }
-          return acc
-        }, [])}
+        {renderedSuggestions}
       </ul>
     )
 

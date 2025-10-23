@@ -581,10 +581,44 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
   getFlattenedSuggestions = (): Array<{
     result: SuggestionDataItem | string
     queryInfo: QueryInfo
-  }> =>
-    Object.values(this.state.suggestions).flatMap(({ results, queryInfo }) =>
-      results.map((result) => ({ result, queryInfo }))
-    )
+  }> => {
+    const flattened: Array<{ result: SuggestionDataItem | string; queryInfo: QueryInfo }> = []
+    const handledIndices = new Set<number>()
+
+    const childNodes = Children.toArray(this.props.children)
+
+    childNodes.forEach((_child, childIndex) => {
+      const entry = this.state.suggestions[childIndex]
+      if (!entry) {
+        return
+      }
+
+      handledIndices.add(childIndex)
+      const { results, queryInfo } = entry
+      for (const result of results) {
+        flattened.push({ result, queryInfo })
+      }
+    })
+
+    const remainingIndices = Object.keys(this.state.suggestions)
+      .map((key) => Number.parseInt(key, 10))
+      .filter((index) => !Number.isNaN(index) && !handledIndices.has(index))
+      .sort((a, b) => a - b)
+
+    for (const index of remainingIndices) {
+      const entry = this.state.suggestions[index]
+      if (!entry) {
+        continue
+      }
+
+      const { results, queryInfo } = entry
+      for (const result of results) {
+        flattened.push({ result, queryInfo })
+      }
+    }
+
+    return flattened
+  }
 
   getFocusedSuggestionEntry = (): {
     result: SuggestionDataItem | string
