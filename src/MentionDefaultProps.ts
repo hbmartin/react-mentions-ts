@@ -10,11 +10,11 @@ export const DEFAULT_MENTION_PROPS = {
   renderSuggestion: null,
   isLoading: false,
   appendSpaceOnAdd: false,
-} satisfies Partial<MentionComponentProps> & {
-  onAdd: NonNullable<MentionComponentProps['onAdd']>
-  onRemove: NonNullable<MentionComponentProps['onRemove']>
-  displayTransform: NonNullable<MentionComponentProps['displayTransform']>
-  renderSuggestion: MentionComponentProps['renderSuggestion']
+} satisfies Partial<MentionComponentProps<any>> & {
+  onAdd: NonNullable<MentionComponentProps<any>['onAdd']>
+  onRemove: NonNullable<MentionComponentProps<any>['onRemove']>
+  displayTransform: NonNullable<MentionComponentProps<any>['displayTransform']>
+  renderSuggestion: MentionComponentProps<any>['renderSuggestion']
   isLoading: boolean
   appendSpaceOnAdd: boolean
 }

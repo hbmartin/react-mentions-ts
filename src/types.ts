@@ -8,16 +8,28 @@ import type {
   FocusEvent as ReactFocusEvent,
   SyntheticEvent,
 } from 'react'
+
 export type MentionTrigger = string | RegExp
+export type MentionIdentifier = string | number
 
-export interface MentionDataItem {
-  id: string | number
+export type MentionDataItem<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> = {
+  id: MentionIdentifier
   display?: string
-  [key: string]: unknown
-}
+} & Omit<Extra, 'id' | 'display'>
 
-export type SuggestionDataItem = MentionDataItem
-export type DataSource = MentionDataItem[] | ((query: string) => Promise<MentionDataItem[]>)
+export type SuggestionDataItem<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> = MentionDataItem<Extra> | string
+
+type MaybePromise<T> = T | Promise<T>
+
+export type DataSource<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> =
+  | ReadonlyArray<MentionDataItem<Extra>>
+  | ((query: string) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
 
 export interface QueryInfo {
   childIndex: number
@@ -27,33 +39,39 @@ export interface QueryInfo {
   plainTextValue: string
 }
 
-export type SuggestionsMap = Record<
+export type SuggestionsMap<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> = Record<
   number,
   {
     queryInfo: QueryInfo
-    results: SuggestionDataItem[]
+    results: SuggestionDataItem<Extra>[]
   }
 >
 
-export type MentionRenderSuggestion = (
-  suggestion: SuggestionDataItem | string,
+export type MentionRenderSuggestion<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> = (
+  suggestion: SuggestionDataItem<Extra>,
   query: string,
   highlightedDisplay: ReactNode,
   index: number,
   focused: boolean
 ) => ReactNode
 
-export type DisplayTransform = (id: MentionDataItem['id'], display?: string | null) => string
+export type DisplayTransform = (id: MentionIdentifier, display?: string | null) => string
 
-export interface MentionComponentProps {
+export interface MentionComponentProps<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> {
   trigger?: MentionTrigger
   markup?: string
   displayTransform?: DisplayTransform
-  renderSuggestion?: MentionRenderSuggestion | null
+  renderSuggestion?: MentionRenderSuggestion<Extra> | null
   regex?: RegExp
-  data?: DataSource
-  onAdd?: (id: MentionDataItem['id'], display: string, startPos: number, endPos: number) => void
-  onRemove?: (id: MentionDataItem['id']) => void
+  data?: DataSource<Extra>
+  onAdd?: (id: MentionIdentifier, display: string, startPos: number, endPos: number) => void
+  onRemove?: (id: MentionIdentifier) => void
   isLoading?: boolean
   appendSpaceOnAdd?: boolean
   allowSpaceInQuery?: boolean
@@ -72,17 +90,34 @@ export interface MentionsInputChangeTrigger {
   nativeEvent?: Event
 }
 
-export interface MentionsInputChangeEvent {
+export interface MentionOccurrence<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> {
+  id: string
+  display: string
+  childIndex: number
+  index: number
+  plainTextIndex: number
+  data?: MentionDataItem<Extra>
+}
+
+export interface MentionsInputChangeEvent<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> {
   trigger: MentionsInputChangeTrigger
   value: string
   plainTextValue: string
-  mentions: MentionOccurrence[]
+  mentions: MentionOccurrence<Extra>[]
   previousValue: string
 }
 
-export type MentionsInputEventData = MentionsInputChangeEvent
+export type MentionsInputEventData<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> = MentionsInputChangeEvent<Extra>
 
-export type MentionsInputChangeHandler = (change: MentionsInputChangeEvent) => void
+export type MentionsInputChangeHandler<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> = (change: MentionsInputChangeEvent<Extra>) => void
 
 export type MentionsInputKeyDownHandler = (
   event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -114,11 +149,12 @@ export type InputComponent =
       InputComponentProps & React.RefAttributes<HTMLInputElement | HTMLTextAreaElement>
     >
 
-export interface MentionsInputProps
-  extends Omit<
-    React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
-  > {
+export interface MentionsInputProps<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> extends Omit<
+      React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+      'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
+    > {
   a11ySuggestionsListLabel?: string
   suggestionsPlacement?: 'auto' | 'above' | 'below'
   appendSpaceOnAdd?: boolean
@@ -130,7 +166,7 @@ export interface MentionsInputProps
     | RefObject<HTMLInputElement | HTMLTextAreaElement>
     | ((el: HTMLInputElement | HTMLTextAreaElement | null) => void)
   onBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
-  onChange?: MentionsInputChangeHandler
+  onChange?: MentionsInputChangeHandler<Extra>
   onKeyDown?: MentionsInputKeyDownHandler
   onSelect?: (event: SyntheticEvent<InputElement>) => void
   readOnly?: boolean
@@ -141,14 +177,18 @@ export interface MentionsInputProps
   suggestionsPortalHost?: Element | Document | null
   suggestionsDisplay?: 'overlay' | 'inline'
   value?: string
-  children: ReactElement | ReactElement[]
+  children:
+    | ReactElement<MentionComponentProps<Extra>>
+    | Array<ReactElement<MentionComponentProps<Extra>>>
 }
 
-export interface MentionsInputState {
+export interface MentionsInputState<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> {
   focusIndex: number
   selectionStart: number | null
   selectionEnd: number | null
-  suggestions: SuggestionsMap
+  suggestions: SuggestionsMap<Extra>
   caretPosition: CaretCoordinates | null
   suggestionsPosition: SuggestionsPosition
   scrollFocusedIntoView?: boolean
@@ -180,14 +220,6 @@ export type MentionChildConfig = MentionComponentProps & {
   markup: string
   regex: RegExp
   displayTransform: DisplayTransform
-}
-
-export interface MentionOccurrence {
-  id: string
-  display: string
-  childIndex: number
-  index: number
-  plainTextIndex: number
 }
 
 export type InputElement = HTMLInputElement | HTMLTextAreaElement

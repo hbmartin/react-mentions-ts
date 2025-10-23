@@ -14,9 +14,11 @@ import type {
   SuggestionsMap,
 } from './types'
 
-interface SuggestionsOverlayProps {
+interface SuggestionsOverlayProps<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+> {
   readonly id: string
-  readonly suggestions?: SuggestionsMap
+  readonly suggestions?: SuggestionsMap<Extra>
   readonly a11ySuggestionsListLabel?: string
   readonly focusIndex: number
   readonly position?: 'absolute' | 'fixed'
@@ -27,7 +29,7 @@ interface SuggestionsOverlayProps {
   readonly scrollFocusedIntoView?: boolean
   readonly isLoading?: boolean
   readonly isOpened: boolean
-  readonly onSelect?: (suggestion: SuggestionDataItem | string, queryInfo: QueryInfo) => void
+  readonly onSelect?: (suggestion: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => void
   readonly ignoreAccents?: boolean
   readonly containerRef?: (node: HTMLDivElement | null) => void
   readonly children: React.ReactNode
@@ -49,7 +51,9 @@ interface SuggestionsOverlayProps {
 const overlayStyles = cva('z-[100] mt-[14px] min-w-[100px] bg-white')
 const listStyles = 'm-0 list-none p-0'
 
-function SuggestionsOverlay({
+function SuggestionsOverlay<
+  Extra extends Record<string, unknown> = Record<string, unknown>
+>({
   id,
   suggestions = {},
   a11ySuggestionsListLabel,
@@ -79,12 +83,12 @@ function SuggestionsOverlay({
   customSuggestionsContainer,
   onMouseDown,
   onMouseEnter,
-}: SuggestionsOverlayProps) {
+}: SuggestionsOverlayProps<Extra>) {
   const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null)
-  const childRenderSuggestions: (MentionRenderSuggestion | null)[] = useMemo(
+  const childRenderSuggestions: (MentionRenderSuggestion<Extra> | null)[] = useMemo(
     () =>
       Children.toArray(children).map((child) =>
-        React.isValidElement<MentionComponentProps>(child) &&
+        React.isValidElement<MentionComponentProps<Extra>>(child) &&
         typeof child.props.renderSuggestion === 'function'
           ? child.props.renderSuggestion
           : null
@@ -118,7 +122,7 @@ function SuggestionsOverlay({
   const overlayClassName = cn(overlayStyles(), className)
   const listClassNameResolved = cn(listStyles, listClassName)
 
-  const selectSuggestion = (suggestionItem: SuggestionDataItem | string, queryInfo: QueryInfo) => {
+  const selectSuggestion = (suggestionItem: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => {
     onSelect?.(suggestionItem, queryInfo)
   }
 
@@ -126,7 +130,7 @@ function SuggestionsOverlay({
     onMouseEnter?.(index)
   }
 
-  const getSuggestionId = (suggestionItem: SuggestionDataItem | string) => {
+  const getSuggestionId = (suggestionItem: SuggestionDataItem<Extra>) => {
     if (typeof suggestionItem === 'string') {
       return suggestionItem
     }
@@ -134,7 +138,7 @@ function SuggestionsOverlay({
   }
 
   const renderSuggestion = (
-    suggestionItem: SuggestionDataItem | string,
+    suggestionItem: SuggestionDataItem<Extra>,
     queryInfo: QueryInfo,
     index: number
   ) => {
@@ -145,7 +149,7 @@ function SuggestionsOverlay({
       childRenderSuggestions[childIndex] ?? DEFAULT_MENTION_PROPS.renderSuggestion
 
     return (
-      <Suggestion
+      <Suggestion<Extra>
         className={itemClassName}
         focusedClassName={focusedItemClassName}
         displayClassName={displayClassName}
