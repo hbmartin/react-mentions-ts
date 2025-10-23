@@ -43,6 +43,12 @@ describe('SuggestionsOverlay', () => {
     expect(listItems[0].textContent).toContain('First Suggestion')
     expect(listItems[1].textContent).toContain('Second Suggestion')
     expect(listItems[2].textContent).toContain('Third Suggestion')
+
+    const overlay = container.querySelector('[data-slot="suggestions"]')
+    expect(overlay).not.toBeNull()
+    expect(overlay).toHaveAttribute('aria-live', 'polite')
+    expect(overlay).toHaveAttribute('aria-relevant', 'additions text')
+    expect(overlay).toHaveAttribute('aria-busy', 'false')
   })
 
   it('should be possible to style the list.', () => {
@@ -166,6 +172,9 @@ describe('SuggestionsOverlay', () => {
     // Should have more divs when loading indicator is shown
     const loadingDivs = container.querySelectorAll('div')
     expect(loadingDivs.length).toBeGreaterThan(initialCount)
+    const overlay = container.querySelector('[data-slot="suggestions"]')
+    expect(overlay).not.toBeNull()
+    expect(overlay).toHaveAttribute('aria-busy', 'true')
     expect(container.querySelector('[data-testid="loading-indicator"]')).toBeInTheDocument()
   })
 

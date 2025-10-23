@@ -226,6 +226,10 @@ function SuggestionsOverlay({
       className={overlayClassName}
       data-open={isOpened ? 'true' : 'false'}
       data-slot="suggestions"
+      role="presentation"
+      aria-live="polite"
+      aria-relevant="additions text"
+      aria-busy={isLoading ? 'true' : 'false'}
       onMouseDown={onMouseDown}
       ref={containerRef}
       style={mergedStyle}
