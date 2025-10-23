@@ -12,22 +12,18 @@ import type {
 export type MentionTrigger = string | RegExp
 export type MentionIdentifier = string | number
 
-export type MentionDataItem<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> = {
+export type MentionDataItem<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   id: MentionIdentifier
   display?: string
 } & Omit<Extra, 'id' | 'display'>
 
-export type SuggestionDataItem<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> = MentionDataItem<Extra> | string
+export type SuggestionDataItem<Extra extends Record<string, unknown> = Record<string, unknown>> =
+  | MentionDataItem<Extra>
+  | string
 
 type MaybePromise<T> = T | Promise<T>
 
-export type DataSource<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> =
+export type DataSource<Extra extends Record<string, unknown> = Record<string, unknown>> =
   | ReadonlyArray<MentionDataItem<Extra>>
   | ((query: string) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
 
@@ -39,18 +35,17 @@ export interface QueryInfo {
   plainTextValue: string
 }
 
-export type SuggestionsMap<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> = Record<
-  number,
-  {
-    queryInfo: QueryInfo
-    results: SuggestionDataItem<Extra>[]
-  }
->
+export type SuggestionsMap<Extra extends Record<string, unknown> = Record<string, unknown>> =
+  Record<
+    number,
+    {
+      queryInfo: QueryInfo
+      results: SuggestionDataItem<Extra>[]
+    }
+  >
 
 export type MentionRenderSuggestion<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > = (
   suggestion: SuggestionDataItem<Extra>,
   query: string,
@@ -62,7 +57,7 @@ export type MentionRenderSuggestion<
 export type DisplayTransform = (id: MentionIdentifier, display?: string | null) => string
 
 export interface MentionComponentProps<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
   trigger?: MentionTrigger
   markup?: string
@@ -91,9 +86,9 @@ export interface MentionsInputChangeTrigger {
 }
 
 export interface MentionOccurrence<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
-  id: string
+  id: MentionIdentifier
   display: string
   childIndex: number
   index: number
@@ -102,7 +97,7 @@ export interface MentionOccurrence<
 }
 
 export interface MentionsInputChangeEvent<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
   trigger: MentionsInputChangeTrigger
   value: string
@@ -112,11 +107,11 @@ export interface MentionsInputChangeEvent<
 }
 
 export type MentionsInputEventData<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > = MentionsInputChangeEvent<Extra>
 
 export type MentionsInputChangeHandler<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > = (change: MentionsInputChangeEvent<Extra>) => void
 
 export type MentionsInputKeyDownHandler = (
@@ -149,12 +144,11 @@ export type InputComponent =
       InputComponentProps & React.RefAttributes<HTMLInputElement | HTMLTextAreaElement>
     >
 
-export interface MentionsInputProps<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> extends Omit<
-      React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-      'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
-    > {
+export interface MentionsInputProps<Extra extends Record<string, unknown> = Record<string, unknown>>
+  extends Omit<
+    React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+    'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
+  > {
   a11ySuggestionsListLabel?: string
   suggestionsPlacement?: 'auto' | 'above' | 'below'
   appendSpaceOnAdd?: boolean
@@ -183,7 +177,7 @@ export interface MentionsInputProps<
 }
 
 export interface MentionsInputState<
-  Extra extends Record<string, unknown> = Record<string, unknown>
+  Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
   focusIndex: number
   selectionStart: number | null

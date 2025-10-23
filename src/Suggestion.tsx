@@ -3,9 +3,7 @@ import { getSubstringIndex } from './utils'
 import { cn } from './utils/cn'
 import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
 
-interface SuggestionProps<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> {
+interface SuggestionProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
   readonly id: string
   readonly focused?: boolean
   readonly ignoreAccents?: boolean

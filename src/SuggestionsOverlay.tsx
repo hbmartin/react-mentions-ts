@@ -14,9 +14,7 @@ import type {
   SuggestionsMap,
 } from './types'
 
-interface SuggestionsOverlayProps<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> {
+interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
   readonly id: string
   readonly suggestions?: SuggestionsMap<Extra>
   readonly a11ySuggestionsListLabel?: string
@@ -51,9 +49,7 @@ interface SuggestionsOverlayProps<
 const overlayStyles = cva('z-[100] mt-[14px] min-w-[100px] bg-white')
 const listStyles = 'm-0 list-none p-0'
 
-function SuggestionsOverlay<
-  Extra extends Record<string, unknown> = Record<string, unknown>
->({
+function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
   suggestions = {},
   a11ySuggestionsListLabel,

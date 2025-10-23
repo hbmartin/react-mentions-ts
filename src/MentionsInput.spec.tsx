@@ -517,8 +517,12 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const { value: newValue, plainTextValue: newPlainTextValue, trigger, previousValue } =
-        getLastChange(onChange)
+      const {
+        value: newValue,
+        plainTextValue: newPlainTextValue,
+        trigger,
+        previousValue,
+      } = getLastChange(onChange)
       expect(trigger.type).toBe('cut')
       expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
@@ -553,8 +557,12 @@ describe('MentionsInput', () => {
 
       expect(onChange).toHaveBeenCalledTimes(1)
 
-      const { value: newValue, plainTextValue: newPlainTextValue, trigger, previousValue } =
-        getLastChange(onChange)
+      const {
+        value: newValue,
+        plainTextValue: newPlainTextValue,
+        trigger,
+        previousValue,
+      } = getLastChange(onChange)
       expect(trigger.type).toBe('cut')
       expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
@@ -843,7 +851,6 @@ describe('MentionsInput', () => {
       expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
       expect(payload.trigger.type).toBe('mention-add')
     })
-
   })
 
   describe('concurrent rendering', () => {

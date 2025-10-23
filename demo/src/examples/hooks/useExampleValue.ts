@@ -1,8 +1,5 @@
 import { useCallback, useState } from 'react'
-import type {
-  MentionsInputChangeEvent,
-  MentionsInputChangeHandler,
-} from '../../../../src'
+import type { MentionsInputChangeEvent, MentionsInputChangeHandler } from '../../../../src'
 
 function useExampleValue(
   initialValue: string
