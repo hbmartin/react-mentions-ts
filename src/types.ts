@@ -61,19 +61,16 @@ export interface MentionComponentProps {
   ignoreAccents?: boolean
 }
 
-export interface MentionsInputEventData {
-  event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+export interface MentionsInputChangeEvent {
+  event: ChangeEvent<InputElement>
   value: string
   plainTextValue: string
   mentions: MentionOccurrence[]
 }
 
-export type MentionsInputChangeHandler = (
-  event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  newValue: string,
-  newPlainTextValue: string,
-  mentions: MentionOccurrence[]
-) => void
+export type MentionsInputEventData = MentionsInputChangeEvent
+
+export type MentionsInputChangeHandler = (change: MentionsInputChangeEvent) => void
 
 export type MentionsInputKeyDownHandler = (
   event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
