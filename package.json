@@ -21,8 +21,17 @@
 		"./package.json": "./package.json"
 	},
 	"files": [
-		"dist",
-		"styles"
+		"dist/index.cjs",
+		"dist/index.cjs.map",
+		"dist/index.js",
+		"dist/index.js.map",
+		"dist/index.d.ts",
+		"dist/index.d.cts",
+		"styles",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE",
+		"package.json"
 	],
 	"sideEffects": false,
 	"scripts": {
@@ -31,7 +40,10 @@
 		"build:demo": "vite build --config demo/vite.config.ts",
 		"typecheck": "tsc --project tsconfig.json --noEmit",
 		"format": "prettier --write \"{src,test,demo/src}/**/*.{ts,tsx}\"",
-		"lint": "eslint src",
+	"lint": "eslint src",
+	"publint": "publint",
+	"types:lint": "npm_config_cache=.npm-cache attw --pack .",
+	"ci:verify": "yarn lint && yarn typecheck && yarn build && yarn publint && yarn types:lint",
 		"dev": "vite --config demo/vite.config.ts",
 		"demo": "vite --config demo/vite.config.ts",
 		"preview": "vite preview --config demo/vite.config.ts",

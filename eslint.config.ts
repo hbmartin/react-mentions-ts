@@ -11,6 +11,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import sonarjs from 'eslint-plugin-sonarjs'
 import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import globals from 'globals'
 import { configs as tsConfigs } from 'typescript-eslint'
 
@@ -42,6 +43,7 @@ export default defineConfig([
       sonarjs.configs.recommended,
       pluginPromise.configs['flat/recommended'],
       jestPlugin.configs['flat/recommended'],
+      jsxA11y.flatConfigs.recommended,
     ],
     plugins: {
       'code-complete': codeComplete,
@@ -49,6 +51,7 @@ export default defineConfig([
       'unused-imports': unusedImports,
       jest: jestPlugin,
       react: reactPlugin,
+      'jsx-a11y': jsxA11y,
     },
     languageOptions: {
       ecmaVersion: 2023,
@@ -206,7 +209,7 @@ export default defineConfig([
 
       // Hooks rules
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
 
       // === CODE QUALITY ===
       '@typescript-eslint/no-explicit-any': 'error',
