@@ -190,8 +190,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       suggestions: {},
       caretPosition: null,
       suggestionsPosition: {},
-      setSelectionAfterHandlePaste: false,
-      setSelectionAfterHandleCut: false,
+      pendingSelectionUpdate: false,
     }
   }
 
@@ -213,16 +212,8 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
 
     // maintain selection in case a mention is added/removed causing
     // the cursor to jump to the end
-    if (this.state.setSelectionAfterMentionChange === true) {
-      this.setState({ setSelectionAfterMentionChange: false })
-      this.setSelection(this.state.selectionStart, this.state.selectionEnd)
-    }
-    if (this.state.setSelectionAfterHandlePaste) {
-      this.setState({ setSelectionAfterHandlePaste: false })
-      this.setSelection(this.state.selectionStart, this.state.selectionEnd)
-    }
-    if (this.state.setSelectionAfterHandleCut === true) {
-      this.setState({ setSelectionAfterHandleCut: false })
+    if (this.state.pendingSelectionUpdate) {
+      this.setState({ pendingSelectionUpdate: false })
       this.setSelection(this.state.selectionStart, this.state.selectionEnd)
     }
   }
@@ -767,7 +758,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     this.setState({
       selectionStart: nextPos,
       selectionEnd: nextPos,
-      setSelectionAfterHandlePaste: true,
+      pendingSelectionUpdate: true,
     })
   }
 
@@ -848,7 +839,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     this.setState({
       selectionStart: safeSelectionStart,
       selectionEnd: safeSelectionStart,
-      setSelectionAfterHandleCut: true,
+      pendingSelectionUpdate: true,
     })
 
     this.executeOnChange(
@@ -911,7 +902,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     // Save current selection after change to be able to restore caret position after rerendering
     let selectionStart = ev.target.selectionStart ?? selectionStartBefore
     let selectionEnd = ev.target.selectionEnd ?? selectionEndBefore
-    let setSelectionAfterMentionChange = false
+    let shouldRestoreSelection = false
     const nativeEvent = ev.nativeEvent as unknown as CompositionEvent<InputElement> & {
       data?: string | null
       isComposing?: boolean
@@ -929,14 +920,14 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
       // only if a deletion has taken place
       selectionStart = startOfMention + (nativeEvent.data ? nativeEvent.data.length : 0)
       selectionEnd = selectionStart
-      setSelectionAfterMentionChange = true
+      shouldRestoreSelection = true
     }
 
-    this.setState({
+    this.setState((prevState) => ({
       selectionStart,
       selectionEnd,
-      setSelectionAfterMentionChange: setSelectionAfterMentionChange,
-    })
+      pendingSelectionUpdate: prevState.pendingSelectionUpdate || shouldRestoreSelection,
+    }))
 
     const mentions = getMentions(newValue, config)
 
@@ -1446,7 +1437,7 @@ class MentionsInput extends React.Component<MentionsInputProps, MentionsInputSta
     this.setState({
       selectionStart: newCaretPosition,
       selectionEnd: newCaretPosition,
-      setSelectionAfterMentionChange: true,
+      pendingSelectionUpdate: true,
     })
 
     // Propagate change
