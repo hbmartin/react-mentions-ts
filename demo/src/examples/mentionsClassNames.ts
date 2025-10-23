@@ -19,8 +19,6 @@ const baseInput =
 export const multilineMentionsClassNames: MentionsInputClassNames = {
   control: baseControl,
   highlighter: baseHighlighter,
-  highlighterSubstring: 'invisible',
-  highlighterCaret: 'inline-block align-top',
   input: baseInput,
   inlineSuggestion: 'pointer-events-none text-slate-400',
   inlineSuggestionText: 'inline-flex text-sm font-medium text-slate-400',

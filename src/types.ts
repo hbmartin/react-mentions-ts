@@ -187,6 +187,7 @@ export interface MentionsInputState<
   suggestionsPosition: SuggestionsPosition
   scrollFocusedIntoView?: boolean
   pendingSelectionUpdate: boolean
+  highlighterRecomputeVersion: number
 }
 
 export type MentionsInputClassNames = Partial<{
