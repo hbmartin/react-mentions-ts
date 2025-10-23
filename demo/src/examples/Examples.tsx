@@ -9,6 +9,7 @@ import SingleLineIgnoringAccents from './SingleLineIgnoringAccents'
 import SuggestionPortal from './SuggestionPortal'
 import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import InlineAutocomplete from './InlineAutocomplete'
+import AllowSpaceInQuery from './AllowSpaceInQuery'
 
 const users = [
   {
@@ -79,6 +80,7 @@ export default function Examples() {
           console.log(`onAdd: id=${id}, display=${display}, startPos=${startPos}, endPos=${endPos}`)
         }
       />
+      <AllowSpaceInQuery data={users} />
       <SingleLineIgnoringAccents data={users} />
       <Scrollable data={users} />
       <Advanced data={users} />

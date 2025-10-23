@@ -21,7 +21,6 @@ export default defineConfig([
     'node_modules/**',
     'coverage/**',
     'vite.config.ts',
-    'postcss.config.js',
     'tailwind.config.js',
     '.github/**',
     'storybook-static',
