@@ -172,8 +172,6 @@ class MentionsInput<
   private suggestionsElement: HTMLDivElement | null = null
   private _queryId = 0
   private _suggestionsMouseDown = false
-  private readonly _selectionStartBeforeFocus: number | null = null
-  private readonly _selectionEndBeforeFocus: number | null = null
   private _isComposing = false
   private readonly defaultSuggestionsPortalHost: HTMLElement | null
   private _isScrolling = false
@@ -239,6 +237,7 @@ class MentionsInput<
   }
 
   componentDidUpdate(
+    // @ts-expect-error TS6133
     prevProps: MentionsInputProps<Extra>,
     prevState: MentionsInputState<Extra>
   ): void {

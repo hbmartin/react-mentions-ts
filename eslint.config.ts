@@ -3,6 +3,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import codeComplete from 'eslint-plugin-code-complete'
 import importPlugin from 'eslint-plugin-import'
 import jestPlugin from 'eslint-plugin-jest'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import pluginPromise from 'eslint-plugin-promise'
 import reactPlugin from 'eslint-plugin-react'
@@ -11,7 +12,6 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import sonarjs from 'eslint-plugin-sonarjs'
 import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
-import jsxA11y from 'eslint-plugin-jsx-a11y'
 import globals from 'globals'
 import { configs as tsConfigs } from 'typescript-eslint'
 
@@ -135,6 +135,7 @@ export default defineConfig([
       'unicorn/no-array-reduce': 'off',
       'unicorn/no-null': 'off',
 
+      'sonarjs/no-dead-store': 'error',
       'sonarjs/void-use': 'off',
       'sonarjs/todo-tag': 'off',
       'sonarjs/different-types-comparison': 'off',
