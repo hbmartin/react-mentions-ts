@@ -159,6 +159,7 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
   inputRef?:
     | RefObject<HTMLInputElement | HTMLTextAreaElement>
     | ((el: HTMLInputElement | HTMLTextAreaElement | null) => void)
+  spellCheck?: boolean
   onBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
   onChange?: MentionsInputChangeHandler<Extra>
   onKeyDown?: MentionsInputKeyDownHandler
