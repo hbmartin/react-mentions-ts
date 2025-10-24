@@ -26,6 +26,29 @@ describe('#iterateMentionsMarkup', () => {
   const plainTextDisplayTransform =
     "Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation..."
 
+  it('fails when overlapping markup patterns prefer the shorter match', () => {
+    const overlappingConfig = [
+      {
+        markup: '@[__display__]',
+        displayTransform: defaultDisplayTransform,
+        serializer: createMarkupSerializer('@[__display__]'),
+      },
+      {
+        markup: '@[__display__](__id__)',
+        displayTransform: defaultDisplayTransform,
+        serializer: createMarkupSerializer('@[__display__](__id__)'),
+      },
+    ]
+
+    const overlappingValue = 'Hello @[Ada](user:ada)'
+    const markupIteratee = jest.fn()
+
+    iterateMentionsMarkup(overlappingValue, overlappingConfig, markupIteratee)
+
+    const matchedStrings = markupIteratee.mock.calls.map((call) => call[0])
+    expect(matchedStrings).toContain('@[Ada](user:ada)')
+  })
+
   it('should call the `markupIteratee` for every markup occurrence', () => {
     const markupIteratee = jest.fn()
     iterateMentionsMarkup(value, config, markupIteratee)

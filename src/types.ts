@@ -226,7 +226,6 @@ export type MentionsInputClassNames = Partial<{
 }>
 
 export type MentionChildConfig = MentionComponentProps & {
-  markup: string
   displayTransform: DisplayTransform
   serializer: MentionSerializer
 }

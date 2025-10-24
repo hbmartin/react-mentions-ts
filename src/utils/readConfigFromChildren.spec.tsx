@@ -1,7 +1,7 @@
 import React from 'react'
-import readConfigFromChildren from './readConfigFromChildren'
 import Mention from '../Mention'
 import createMarkupSerializer from '../serializers/createMarkupSerializer'
+import readConfigFromChildren from './readConfigFromChildren'
 
 const makeMention = (props: Partial<React.ComponentProps<typeof Mention>> = {}) => (
   <Mention data={[]} {...props} />
@@ -28,7 +28,6 @@ describe('readConfigFromChildren', () => {
     const config = readConfigFromChildren(makeMention({ markup: serializer }))
 
     expect(config[0]?.serializer.insert({ id: 'abc', display: 'User' })).toBe(':abc')
-    expect(config[0]?.markup).toBe('@[__display__](__id__)') // fallback detail string
   })
 
   it('preserves per-child overrides such as displayTransform', () => {
