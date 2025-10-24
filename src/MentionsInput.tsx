@@ -372,7 +372,7 @@ class MentionsInput<
   renderControl = (): React.ReactElement => {
     const { singleLine, inputComponent: CustomInput } = this.props
     const inputProps = this.getInputProps()
-    const controlClassName = this.getSlotClassName('control', controlStyles())
+    const controlClassName = this.getSlotClassName('root', controlStyles())
 
     const control = CustomInput
       ? React.createElement(
@@ -437,13 +437,9 @@ class MentionsInput<
         id={this.uuidSuggestionsOverlay}
         className={this.props.classNames?.suggestions}
         listClassName={this.props.classNames?.suggestionsList}
-        itemClassName={this.props.classNames?.suggestionItem}
-        focusedItemClassName={this.props.classNames?.suggestionItemFocused}
-        displayClassName={this.props.classNames?.suggestionDisplay}
-        highlightClassName={this.props.classNames?.suggestionHighlight}
-        loadingClassName={this.props.classNames?.loadingIndicator}
-        spinnerClassName={this.props.classNames?.loadingSpinner}
-        spinnerElementClassName={this.props.classNames?.loadingSpinnerElement}
+        itemClassName={this.props.classNames?.suggestion}
+        focusedItemClassName={this.props.classNames?.suggestionFocused}
+        loadingClassName={this.props.classNames?.loading}
         position={position}
         left={left}
         top={top}
@@ -505,18 +501,6 @@ class MentionsInput<
 
     const wrapperClassName = this.getSlotClassName('inlineSuggestion', inlineSuggestionStyles())
     const wrapperStyle: CSSProperties = { left, top }
-    const textWrapperClassName = this.getSlotClassName(
-      'inlineSuggestionText',
-      inlineSuggestionTextStyles
-    )
-    const prefixClassName = this.getSlotClassName(
-      'inlineSuggestionPrefix',
-      inlineSuggestionPrefixStyles
-    )
-    const suffixClassName = this.getSlotClassName(
-      'inlineSuggestionSuffix',
-      inlineSuggestionSuffixStyles
-    )
 
     return (
       <div
@@ -525,13 +509,13 @@ class MentionsInput<
         data-slot="inline-suggestion"
         style={wrapperStyle}
       >
-        <span className={textWrapperClassName}>
+        <span className={inlineSuggestionTextStyles}>
           {inlineSuggestion.hiddenPrefix ? (
-            <span className={prefixClassName} aria-hidden="true">
+            <span className={inlineSuggestionPrefixStyles} aria-hidden="true">
               {inlineSuggestion.hiddenPrefix}
             </span>
           ) : null}
-          <span className={suffixClassName}>{inlineSuggestion.visibleText}</span>
+          <span className={inlineSuggestionSuffixStyles}>{inlineSuggestion.visibleText}</span>
         </span>
       </div>
     )
@@ -589,8 +573,6 @@ class MentionsInput<
       <Highlighter
         containerRef={this.setHighlighterElement}
         className={classNames?.highlighter}
-        substringClassName={classNames?.highlighterSubstring}
-        caretClassName={classNames?.highlighterCaret}
         value={value}
         singleLine={singleLine}
         selectionStart={selectionStart}

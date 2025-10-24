@@ -15,8 +15,6 @@ interface SuggestionProps<Extra extends Record<string, unknown> = Record<string,
   readonly suggestion: SuggestionDataItem<Extra>
   readonly className?: string
   readonly focusedClassName?: string
-  readonly displayClassName?: string
-  readonly highlightClassName?: string
 }
 
 const suggestionItemBase = 'cursor-pointer'
@@ -35,13 +33,9 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   suggestion,
   className,
   focusedClassName,
-  displayClassName,
-  highlightClassName,
 }: SuggestionProps<Extra>) {
   const rest = { onClick, onMouseEnter }
   const itemClassName = cn(suggestionItemBase, className, focused ? focusedClassName : undefined)
-  const displayClassNameResolved = cn(suggestionDisplayStyles, displayClassName)
-  const highlightClassNameResolved = cn(suggestionHighlightStyles, highlightClassName)
 
   const getDisplay = (): string => {
     if (typeof suggestion === 'string') {
@@ -61,13 +55,13 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     const indexOfMatch = getSubstringIndex(display, query, ignoreAccents)
 
     if (indexOfMatch === -1) {
-      return <span className={displayClassNameResolved}>{display}</span>
+      return <span className={suggestionDisplayStyles}>{display}</span>
     }
 
     return (
-      <span className={displayClassNameResolved}>
+      <span className={suggestionDisplayStyles}>
         {display.slice(0, indexOfMatch)}
-        <b className={highlightClassNameResolved}>
+        <b className={suggestionHighlightStyles}>
           {display.slice(indexOfMatch, indexOfMatch + query.length)}
         </b>
         {display.slice(indexOfMatch + query.length)}

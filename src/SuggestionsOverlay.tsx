@@ -35,11 +35,7 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly listClassName?: string
   readonly itemClassName?: string
   readonly focusedItemClassName?: string
-  readonly displayClassName?: string
-  readonly highlightClassName?: string
   readonly loadingClassName?: string
-  readonly spinnerClassName?: string
-  readonly spinnerElementClassName?: string
   readonly style?: CSSProperties
   readonly customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
   readonly onMouseDown?: (event: React.MouseEvent<HTMLDivElement>) => void
@@ -70,11 +66,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   listClassName,
   itemClassName,
   focusedItemClassName,
-  displayClassName,
-  highlightClassName,
   loadingClassName,
-  spinnerClassName,
-  spinnerElementClassName,
   style: styleProp,
   customSuggestionsContainer,
   onMouseDown,
@@ -148,8 +140,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       <Suggestion<Extra>
         className={itemClassName}
         focusedClassName={focusedItemClassName}
-        displayClassName={displayClassName}
-        highlightClassName={highlightClassName}
         key={`${childIndex.toString()}-${getSuggestionId(suggestionItem).toString()}`}
         id={getSuggestionHtmlId(id, index)}
         query={query}
@@ -198,8 +188,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     return (
       <LoadingIndicator
         className={loadingClassName}
-        spinnerClassName={spinnerClassName}
-        spinnerElementClassName={spinnerElementClassName}
       />
     )
   }

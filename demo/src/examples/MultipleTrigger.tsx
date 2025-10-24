@@ -40,8 +40,8 @@ export default function MultipleTriggers({
         onMentionsChange={onMentionsChange}
         className="mentions"
         classNames={mergeClassNames(multilineMentionsClassNames, {
-          suggestionItem: suggestionRow,
-          suggestionItemFocused: clsx(suggestionRow, 'bg-indigo-50/80 text-indigo-600'),
+          suggestion: suggestionRow,
+          suggestionFocused: clsx(suggestionRow, 'bg-indigo-50/80 text-indigo-600'),
         })}
         placeholder="Mention people using '@'"
         a11ySuggestionsListLabel={'Suggested mentions'}

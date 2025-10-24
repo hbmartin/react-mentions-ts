@@ -196,6 +196,17 @@ If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*
 
 When `suggestionsDisplay="inline"`, override the `inlineSuggestion` style slot to customize the inline hint (the default demo style lives in `demo/src/examples/defaultStyle.ts`).
 
+`classNames` accepts a slimmed-down set of overrides:
+
+- `root` – wrapper around the highlighter and input
+- `highlighter` – mirror element that tracks markup
+- `input` – the actual textarea/input element
+- `inlineSuggestion` – inline autocomplete ghost text
+- `suggestions` – overlay container
+- `suggestionsList` – list element inside the overlay
+- `suggestion` / `suggestionFocused` – list item styles
+- `loading` – loading indicator wrapper
+
 See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for examples.
 
 ### CSS

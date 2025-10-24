@@ -194,24 +194,15 @@ export interface MentionsInputState<
 }
 
 export type MentionsInputClassNames = Partial<{
-  control: string
+  root: string
   highlighter: string
-  highlighterSubstring: string
-  highlighterCaret: string
   input: string
   inlineSuggestion: string
-  inlineSuggestionText: string
-  inlineSuggestionPrefix: string
-  inlineSuggestionSuffix: string
   suggestions: string
   suggestionsList: string
-  suggestionItem: string
-  suggestionItemFocused: string
-  suggestionDisplay: string
-  suggestionHighlight: string
-  loadingIndicator: string
-  loadingSpinner: string
-  loadingSpinnerElement: string
+  suggestion: string
+  suggestionFocused: string
+  loading: string
 }>
 
 export type MentionChildConfig = MentionComponentProps & {
