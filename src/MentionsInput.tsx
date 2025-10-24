@@ -160,6 +160,7 @@ class MentionsInput<
     onSelect: () => null,
     onBlur: () => null,
     suggestionsDisplay: 'overlay',
+    spellCheck: false,
   }
 
   private suggestions: SuggestionsMap<Extra> = {}
@@ -1048,7 +1049,7 @@ class MentionsInput<
       return
     }
 
-    if (selectionStart != null && selectionStart === selectionEnd) {
+    if (selectionStart !== null && selectionStart === selectionEnd) {
       this.updateMentionsQueries(input.value, selectionStart)
     } else {
       this.clearSuggestions()
@@ -1311,6 +1312,9 @@ class MentionsInput<
   }
 
   private readonly requestHighlighterScrollSync = (): void => {
+    // This first updateHighlighterScroll() calls keeps the overlay in sync immediately,
+    // so any work done later in the same tick—like scheduleHighlighterRecompute() triggered by
+    // updateHighlighterScroll() or updateSuggestionsPosition() reads the up-to-date scroll and height.
     this.updateHighlighterScroll()
 
     if (globalThis.window === undefined) {
@@ -1324,6 +1328,10 @@ class MentionsInput<
 
     this._scrollSyncFrame = globalThis.requestAnimationFrame(() => {
       this._scrollSyncFrame = null
+      // This second updateHighlighterScroll() call icks up any DOM adjustments that happen once
+      // the browser has painted (e.g., layout shifts from the just-updated input).
+      // Dropping either updateHighlighterScroll call introduces a one-frame visual lag (removing the first)
+      // or risks missing a final adjustment after the frame (removing the second)
       this.updateHighlighterScroll()
     })
   }

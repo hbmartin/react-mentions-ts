@@ -32,6 +32,28 @@ describe('MentionsInput', () => {
     expect(textarea.tagName).toBe('TEXTAREA')
   })
 
+  it('should disable spell checking on the textarea by default.', () => {
+    render(
+      <MentionsInput value="">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByDisplayValue('')
+    expect(textarea).toHaveAttribute('spellcheck', 'false')
+  })
+
+  it('should allow enabling spell checking via the spellCheck prop.', () => {
+    render(
+      <MentionsInput value="" spellCheck>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByDisplayValue('')
+    expect(textarea).toHaveAttribute('spellcheck', 'true')
+  })
+
   it('should render a regular input when singleLine is set to true.', () => {
     render(
       <MentionsInput value="" singleLine>
