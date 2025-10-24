@@ -23,7 +23,6 @@ import {
   getSubstringIndex,
   getSuggestionHtmlId,
   isNumber,
-  makeMentionsMarkup,
   flattenSuggestions,
   mapPlainTextIndex,
   omit,
@@ -1538,22 +1537,23 @@ class MentionsInput<
     // Insert mention in the marked up value at the correct position
     const value = this.props.value || ''
     const config = readConfigFromChildren(this.props.children)
+    const childConfig = config[childIndex]
     const mentionsChild = Children.toArray(this.props.children)[childIndex]
-    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionsChild)) {
+    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionsChild) || !childConfig) {
       return
     }
     const {
-      markup = DEFAULT_MENTION_PROPS.markup,
+      serializer,
       displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
       appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
       onAdd = DEFAULT_MENTION_PROPS.onAdd,
-    } = mentionsChild.props
+    } = childConfig
 
     const start = mapPlainTextIndex(value, config, querySequenceStart, 'START') as number
     const end = start + querySequenceEnd - querySequenceStart
 
     const mentionDisplay = display
-    let insert = makeMentionsMarkup(markup, id, mentionDisplay)
+    let insert = serializer.insert({ id, display: mentionDisplay })
 
     if (appendSpaceOnAdd) {
       insert += ' '

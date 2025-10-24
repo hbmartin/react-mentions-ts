@@ -1,3 +1,4 @@
+import createMarkupSerializer from '../serializers/createMarkupSerializer'
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 import markupToRegex from './markupToRegex'
 
@@ -10,11 +11,13 @@ describe('#iterateMentionsMarkup', () => {
       markup: userMarkup,
       regex: markupToRegex(userMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(userMarkup),
     },
     {
       markup: emailMarkup,
       regex: markupToRegex(emailMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(emailMarkup),
     },
   ]
 

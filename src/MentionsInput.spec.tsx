@@ -2,13 +2,31 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
-import type { MentionsInputChangeEvent } from './types'
+import type { MentionsInputChangeEvent, MentionSerializer } from './types'
 
 const data = [
   { id: 'first', value: 'First entry' },
   { id: 'second', value: 'Second entry' },
   { id: 'third', value: 'Third' },
 ]
+
+const createColonSerializer = (): MentionSerializer => ({
+  insert: ({ id }) => `:${id}`,
+  findAll: (value) => {
+    const regex = /:(\S+)/g
+    const matches = []
+    let match: RegExpExecArray | null
+    while ((match = regex.exec(value)) !== null) {
+      matches.push({
+        markup: match[0],
+        index: match.index,
+        id: match[1],
+        display: null,
+      })
+    }
+    return matches
+  },
+})
 
 const getLastMentionsChange = (mock: jest.Mock): MentionsInputChangeEvent => {
   const calls = mock.mock.calls
@@ -343,7 +361,7 @@ describe('MentionsInput', () => {
           trigger="@"
           data={data}
           markup=":__id__"
-          regex={/:(\S+)/}
+          serializer={createColonSerializer()}
           displayTransform={(id) => {
             const mention = data.find((item) => item.id === id)
             return mention ? mention.display : `:${id}`

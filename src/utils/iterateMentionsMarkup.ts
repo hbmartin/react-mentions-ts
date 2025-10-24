@@ -1,7 +1,4 @@
 import type { MentionChildConfig } from '../types'
-import combineRegExps from './combineRegExps'
-import countPlaceholders from './countPlaceholders'
-import findPositionOfCapturingGroup from './findPositionOfCapturingGroup'
 
 type MarkupIteratee = (
   match: string,
@@ -25,61 +22,53 @@ const iterateMentionsMarkup = (
   markupIteratee: MarkupIteratee,
   textIteratee: TextIteratee = emptyFn
 ): void => {
-  const regex = combineRegExps(config.map((c) => c.regex))
-
-  let accOffset = 2 // first is whole match, second is the for the capturing group of first regexp component
-  const captureGroupOffsets = config.map(({ markup }) => {
-    const result = accOffset
-    // + 1 is for the capturing group we add around each regexp component in combineRegExps
-    accOffset += countPlaceholders(markup) + 1
-    return result
+  const collectedMatches = config.flatMap((childConfig, childIndex) => {
+    return childConfig.serializer.findAll(value).map((match) => ({
+      match,
+      childIndex,
+    }))
   })
 
-  let match: RegExpExecArray | null
+  collectedMatches.sort((a, b) => {
+    if (a.match.index === b.match.index) {
+      return a.childIndex - b.childIndex
+    }
+    return a.match.index - b.match.index
+  })
+
+  const seen = new Set<string>()
   let start = 0
   let currentPlainTextIndex = 0
 
-  // detect all mention markup occurrences in the value and iterate the matches
+  for (const { match, childIndex } of collectedMatches) {
+    const key = `${match.index}:${match.markup}`
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
 
-  while ((match = regex.exec(value)) !== null) {
-    const offset = captureGroupOffsets.find((o) => Boolean(match?.[o]))
-    if (offset === undefined) {
+    if (match.index < start) {
       continue
     }
 
-    const mentionChildIndex = captureGroupOffsets.indexOf(offset)
-    if (mentionChildIndex === -1) {
-      continue
-    }
-
-    const { markup, displayTransform } = config[mentionChildIndex]
-    const idPos = offset + findPositionOfCapturingGroup(markup, 'id')
-    const displayPos = offset + findPositionOfCapturingGroup(markup, 'display')
-
-    const idMatch = match[idPos]
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (idMatch === undefined || idMatch === null) {
-      continue
-    }
-
-    const displayMatch = match[displayPos]
-    const display = displayTransform(idMatch, displayMatch ?? idMatch)
+    const { displayTransform } = config[childIndex]
+    const display = displayTransform(match.id, match.display ?? match.id)
 
     const substr = value.substring(start, match.index)
     textIteratee(substr, start, currentPlainTextIndex)
     currentPlainTextIndex += substr.length
 
     markupIteratee(
-      match[0],
+      match.markup,
       match.index,
       currentPlainTextIndex,
-      idMatch,
+      match.id,
       display,
-      mentionChildIndex,
+      childIndex,
       start
     )
     currentPlainTextIndex += display.length
-    start = regex.lastIndex
+    start = match.index + match.markup.length
   }
 
   if (start < value.length) {

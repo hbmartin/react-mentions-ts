@@ -22,29 +22,29 @@ describe('createMarkupSerializer', () => {
       },
       {
         markup: '@[Alan Turing](2)',
-        index: 25,
+        index: 26,
         id: '2',
         display: 'Alan Turing',
       },
     ])
   })
 
-  it('supports markups without a display placeholder', () => {
-    const serializer = createMarkupSerializer(':__id__')
-    const value = 'Files :abc loaded :xyz'
+  it('supports markups that only include an id placeholder', () => {
+    const serializer = createMarkupSerializer('[__id__]')
+    const value = 'Files [abc] loaded [xyz]'
 
     const matches = serializer.findAll(value)
 
     expect(matches).toEqual([
       {
-        markup: ':abc',
+        markup: '[abc]',
         index: 6,
         id: 'abc',
         display: null,
       },
       {
-        markup: ':xyz',
-        index: 18,
+        markup: '[xyz]',
+        index: 19,
         id: 'xyz',
         display: null,
       },
