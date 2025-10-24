@@ -151,7 +151,6 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
   > {
   a11ySuggestionsListLabel?: string
   suggestionsPlacement?: 'auto' | 'above' | 'below'
-  appendSpaceOnAdd?: boolean
   customSuggestionsContainer?: (children: ReactElement) => ReactElement
   disabled?: boolean
   ignoreAccents?: boolean

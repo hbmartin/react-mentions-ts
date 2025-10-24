@@ -190,6 +190,36 @@ describe('MentionsInput', () => {
     })
   })
 
+  it('should append a trailing space when the mention config requests it.', async () => {
+    const onChange = jest.fn()
+
+    render(
+      <MentionsInput value="@" onChange={onChange}>
+        <Mention trigger="@" data={data} appendSpaceOnAdd />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+
+    fireEvent.keyDown(textarea, { key: 'Enter', keyCode: 13 })
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled()
+      const payload = getLastChange(onChange)
+      expect(payload.trigger.type).toBe('mention-add')
+      expect(payload.value.endsWith(' ')).toBe(true)
+      expect(payload.plainTextValue.endsWith(' ')).toBe(true)
+    })
+  })
+
   it('should be possible to close the suggestions with esc.', async () => {
     render(
       <MentionsInput value="@">

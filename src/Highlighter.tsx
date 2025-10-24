@@ -85,7 +85,7 @@ function Highlighter({
     }
 
     const rafId =
-      globalThis.window !== undefined && typeof globalThis.requestAnimationFrame === 'function'
+      typeof globalThis.requestAnimationFrame === 'function'
         ? globalThis.requestAnimationFrame(measure)
         : undefined
 
@@ -94,7 +94,7 @@ function Highlighter({
     }
 
     return () => {
-      if (rafId !== undefined && globalThis.window !== undefined) {
+      if (rafId !== undefined && typeof globalThis.cancelAnimationFrame === 'function') {
         globalThis.cancelAnimationFrame(rafId)
       }
     }
@@ -170,7 +170,7 @@ function Highlighter({
       // the substring that comes before the caret in the final output.
       components.push(renderSubstring(substr.slice(0, splitIndex), substringComponentKey))
       substringComponentKey += 1
-      // Reassigning componentjust switches the working array to a fresh list
+      // Reassigning component just switches the working array to a fresh list
       // for the text after the caret; later we splice that array back in
       //  Without the initial push, the prefix would not land in resultComponents.
       components = [renderSubstring(substr.slice(splitIndex), substringComponentKey)]

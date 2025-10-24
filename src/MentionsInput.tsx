@@ -1312,7 +1312,7 @@ class MentionsInput<
   }
 
   private readonly requestHighlighterScrollSync = (): void => {
-    // This first updateHighlighterScroll() calls keeps the overlay in sync immediately,
+    // This first updateHighlighterScroll() call keeps the overlay in sync immediately,
     // so any work done later in the same tick—like scheduleHighlighterRecompute() triggered by
     // updateHighlighterScroll() or updateSuggestionsPosition() reads the up-to-date scroll and height.
     this.updateHighlighterScroll()
@@ -1328,7 +1328,7 @@ class MentionsInput<
 
     this._scrollSyncFrame = globalThis.requestAnimationFrame(() => {
       this._scrollSyncFrame = null
-      // This second updateHighlighterScroll() call icks up any DOM adjustments that happen once
+      // This second updateHighlighterScroll() call picks up any DOM adjustments that happen once
       // the browser has painted (e.g., layout shifts from the just-updated input).
       // Dropping either updateHighlighterScroll call introduces a one-frame visual lag (removing the first)
       // or risks missing a final adjustment after the frame (removing the second)
