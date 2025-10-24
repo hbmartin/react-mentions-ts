@@ -76,7 +76,6 @@ export interface MentionComponentProps<
   markup?: string
   displayTransform?: DisplayTransform
   renderSuggestion?: MentionRenderSuggestion<Extra> | null
-  regex?: RegExp
   data?: DataSource<Extra>
   onAdd?: (id: MentionIdentifier, display: string, startPos: number, endPos: number) => void
   onRemove?: (id: MentionIdentifier) => void
@@ -229,7 +228,6 @@ export type MentionsInputClassNames = Partial<{
 
 export type MentionChildConfig = MentionComponentProps & {
   markup: string
-  regex: RegExp
   displayTransform: DisplayTransform
   serializer: MentionSerializer
 }

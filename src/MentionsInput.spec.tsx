@@ -349,7 +349,7 @@ describe('MentionsInput', () => {
     portalContainer.remove()
   })
 
-  it('should accept a custom regex attribute', () => {
+  it('should accept a custom serializer', () => {
     const data = [
       { id: 'aaaa', display: '@A' },
       { id: 'bbbb', display: '@B' },

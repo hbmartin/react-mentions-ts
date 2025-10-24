@@ -1,5 +1,5 @@
+import createMarkupSerializer from '../serializers/createMarkupSerializer'
 import applyChangeToValue from './applyChangeToValue'
-import markupToRegex from './markupToRegex'
 
 describe('#applyChangeToValue', () => {
   const userMarkup = '@[__display__](user:__id__)'
@@ -8,13 +8,13 @@ describe('#applyChangeToValue', () => {
   const config = [
     {
       markup: userMarkup,
-      regex: markupToRegex(userMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(userMarkup),
     },
     {
       markup: emailMarkup,
-      regex: markupToRegex(emailMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(emailMarkup),
     },
   ]
 

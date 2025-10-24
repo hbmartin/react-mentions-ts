@@ -3,8 +3,6 @@ import type { ReactElement, ReactNode } from 'react'
 import type { MentionChildConfig, MentionComponentProps } from '../types'
 import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
 import createMarkupSerializer from '../serializers/createMarkupSerializer'
-import countPlaceholders from './countPlaceholders'
-import markupToRegex from './markupToRegex'
 
 const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
   Children.toArray(children).map((child) => {
@@ -14,31 +12,13 @@ const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
     const serializer =
       props.serializer ??
       (props.markup ? createMarkupSerializer(props.markup) : DEFAULT_MENTION_PROPS.serializer)
-    const regex = props.regex ? coerceCapturingGroups(props.regex, markup) : markupToRegex(markup)
-
     return {
       ...DEFAULT_MENTION_PROPS,
       ...props,
       markup,
       displayTransform,
       serializer,
-      regex,
     } satisfies MentionChildConfig
   })
-
-// make sure that the custom regex defines the correct number of capturing groups
-const coerceCapturingGroups = (regex: RegExp, markup: string): RegExp => {
-  const execResult = new RegExp(`${regex.source}|`).exec('')
-  const numberOfGroups = (execResult?.length ?? 1) - 1
-  const numberOfPlaceholders = countPlaceholders(markup)
-
-  if (numberOfGroups !== numberOfPlaceholders) {
-    throw new Error(
-      `Number of capturing groups in RegExp ${regex.toString()} (${numberOfGroups.toString()}) does not match the number of placeholders in the markup '${markup}' (${numberOfPlaceholders.toString()})`
-    )
-  }
-
-  return regex
-}
 
 export default readConfigFromChildren

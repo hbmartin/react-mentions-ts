@@ -1,5 +1,5 @@
+import createMarkupSerializer from '../serializers/createMarkupSerializer'
 import getPlainText from './getPlainText'
-import markupToRegex from './markupToRegex'
 
 describe('#getPlainText', () => {
   const userMarkup = '@[__display__](user:__id__)'
@@ -8,13 +8,13 @@ describe('#getPlainText', () => {
   const config = [
     {
       markup: userMarkup,
-      regex: markupToRegex(userMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(userMarkup),
     },
     {
       markup: emailMarkup,
-      regex: markupToRegex(emailMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(emailMarkup),
     },
   ]
 
