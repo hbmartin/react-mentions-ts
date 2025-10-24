@@ -1,7 +1,7 @@
 {
 	"name": "react-mentions-ts",
 	"private": false,
-	"version": "5.2.0",
+	"version": "5.2.1",
 	"description": "A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.",
 	"type": "module",
 	"main": "./dist/index.cjs",
