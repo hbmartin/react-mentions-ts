@@ -17,27 +17,20 @@ const baseInput =
   'relative block w-full rounded-3xl border border-transparent bg-transparent px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 focus:outline-none'
 
 export const multilineMentionsClassNames: MentionsInputClassNames = {
-  control: baseControl,
+  root: baseControl,
   highlighter: baseHighlighter,
   input: baseInput,
   inlineSuggestion: 'pointer-events-none text-slate-400',
-  inlineSuggestionText: 'inline-flex text-sm font-medium text-slate-400',
-  inlineSuggestionPrefix: 'sr-only',
-  inlineSuggestionSuffix: 'whitespace-pre text-slate-400',
   suggestions: baseSuggestions,
   suggestionsList: baseSuggestionsList,
-  suggestionItem: baseSuggestionItem,
-  suggestionItemFocused: baseSuggestionItemFocused,
-  suggestionDisplay: 'inline-flex items-center',
-  suggestionHighlight: 'font-semibold text-indigo-600',
-  loadingIndicator: 'py-4',
-  loadingSpinner: 'text-indigo-500',
-  loadingSpinnerElement: 'bg-current',
+  suggestion: baseSuggestionItem,
+  suggestionFocused: baseSuggestionItemFocused,
+  loading: 'py-4',
 }
 
 export const singleLineMentionsClassNames: MentionsInputClassNames = {
   ...multilineMentionsClassNames,
-  control: clsx(multilineMentionsClassNames.control, 'inline-block min-w-[16rem]'),
+  root: clsx(multilineMentionsClassNames.root, 'inline-block min-w-[16rem]'),
   highlighter: clsx(multilineMentionsClassNames.highlighter, 'px-3 py-2'),
   input: clsx(multilineMentionsClassNames.input, 'px-3 py-2'),
   suggestions: baseSuggestions,
@@ -46,8 +39,6 @@ export const singleLineMentionsClassNames: MentionsInputClassNames = {
 export const inlineMentionsClassNames: MentionsInputClassNames = {
   ...singleLineMentionsClassNames,
   inlineSuggestion: 'pointer-events-none text-slate-400',
-  inlineSuggestionText: 'inline-flex items-baseline gap-1',
-  inlineSuggestionSuffix: 'whitespace-pre text-slate-400',
 }
 
 export function mergeClassNames(

@@ -24,8 +24,6 @@ interface HighlighterProps {
   readonly children: React.ReactNode
   readonly singleLine?: boolean
   readonly className?: string
-  readonly substringClassName?: string
-  readonly caretClassName?: string
   readonly recomputeVersion?: number
 }
 
@@ -54,8 +52,6 @@ function Highlighter({
   children,
   singleLine,
   className,
-  substringClassName,
-  caretClassName,
   recomputeVersion,
 }: HighlighterProps) {
   const [position, setPosition] = useState<CaretCoordinates | null>(null)
@@ -113,8 +109,8 @@ function Highlighter({
   let caretPositionInMarkup: number | null | undefined
 
   const rootClassName = cn(highlighterStyles({ singleLine: Boolean(singleLine) }), className)
-  const substringClass = cn(substringStyles, substringClassName)
-  const caretClass = cn(caretStyles, caretClassName)
+  const substringClass = substringStyles
+  const caretClass = caretStyles
 
   if (selectionEnd === selectionStart) {
     caretPositionInMarkup = mapPlainTextIndex(value, config, selectionStart, 'START') as

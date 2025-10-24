@@ -2,8 +2,6 @@ import { cn } from './utils/cn'
 
 interface LoadingIndicatorProps {
   readonly className?: string
-  readonly spinnerClassName?: string
-  readonly spinnerElementClassName?: string
 }
 
 const containerStyles = 'flex justify-center py-2'
@@ -14,8 +12,6 @@ const dotDelays = [0, 1, 2, 3, 4]
 
 function LoadingIndicator({
   className,
-  spinnerClassName,
-  spinnerElementClassName,
 }: LoadingIndicatorProps) {
   return (
     <div
@@ -25,11 +21,11 @@ function LoadingIndicator({
       aria-live="polite"
       aria-label="Loading suggestions"
     >
-      <div className={cn(spinnerStyles, spinnerClassName)}>
+      <div className={spinnerStyles}>
         {dotDelays.map((delay) => (
           <span
             key={delay}
-            className={cn(spinnerDotStyles, spinnerElementClassName)}
+            className={spinnerDotStyles}
             style={{ animationDelay: `${String(delay * 0.1)}s` }}
           />
         ))}

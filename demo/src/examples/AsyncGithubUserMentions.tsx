@@ -20,8 +20,8 @@ function fetchUsers(query: string) {
 }
 
 const githubSuggestions = mergeClassNames(multilineMentionsClassNames, {
-  suggestionItem: 'flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100',
-  suggestionItemFocused: 'bg-indigo-500/20 text-indigo-100',
+  suggestion: 'flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100',
+  suggestionFocused: 'bg-indigo-500/20 text-indigo-100',
 })
 
 export default function AsyncGithubUserMentions() {

@@ -19,8 +19,8 @@ const defaultValue =
   "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... "
 
 const multiMentionClasses = mergeClassNames(multilineMentionsClassNames, {
-  suggestionItem: 'flex items-center justify-between rounded-xl px-4 py-2.5 text-sm',
-  suggestionItemFocused: 'bg-indigo-50/80 text-indigo-600',
+  suggestion: 'flex items-center justify-between rounded-xl px-4 py-2.5 text-sm',
+  suggestionFocused: 'bg-indigo-50/80 text-indigo-600',
 })
 
 function CutCopyPaste({

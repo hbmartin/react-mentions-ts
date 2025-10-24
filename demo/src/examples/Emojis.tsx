@@ -18,10 +18,8 @@ type EmojiEntry = {
 }
 
 const emojiClassNames = mergeClassNames(multilineMentionsClassNames, {
-  suggestionItem: 'flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100',
-  suggestionItemFocused: 'bg-emerald-500/20 text-emerald-800',
-  suggestionDisplay: 'flex items-center gap-3',
-  suggestionHighlight: 'font-semibold text-emerald-800',
+  suggestion: 'flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100',
+  suggestionFocused: 'bg-emerald-500/20 text-emerald-800',
 })
 
 export default function Emojis({ data }: { data: MentionDataItem[] }) {
