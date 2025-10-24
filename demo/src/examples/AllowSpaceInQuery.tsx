@@ -20,7 +20,7 @@ export default function AllowSpaceInQuery({ data }: { data: MentionDataItem[] })
       <MentionsInput
         singleLine
         value={value}
-        onChange={handleChange}
+        onMentionsChange={handleChange}
         className="mentions"
         classNames={singleLineMentionsClassNames}
         placeholder="Try typing '@gus fr' or '@mike e'"

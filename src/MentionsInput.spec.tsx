@@ -10,10 +10,10 @@ const data = [
   { id: 'third', value: 'Third' },
 ]
 
-const getLastChange = (mock: jest.Mock): MentionsInputChangeEvent => {
+const getLastMentionsChange = (mock: jest.Mock): MentionsInputChangeEvent => {
   const calls = mock.mock.calls
   if (calls.length === 0) {
-    throw new Error('Expected onChange to have been called')
+    throw new Error('Expected onMentionsChange to have been called')
   }
   return calls[calls.length - 1][0] as MentionsInputChangeEvent
 }
@@ -159,10 +159,10 @@ describe('MentionsInput', () => {
   })
 
   it('should be possible to select a suggestion with enter.', async () => {
-    const onChange = jest.fn()
+    const onMentionsChange = jest.fn()
 
     render(
-      <MentionsInput value="@" onChange={onChange}>
+      <MentionsInput value="@" onMentionsChange={onMentionsChange}>
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
@@ -181,20 +181,20 @@ describe('MentionsInput', () => {
     // Press enter to select the first suggestion
     fireEvent.keyDown(textarea, { key: 'Enter', keyCode: 13 })
 
-    // Verify onChange was called with the selected mention
+    // Verify onMentionsChange was called with the selected mention
     await waitFor(() => {
-      expect(onChange).toHaveBeenCalled()
-      const payload = getLastChange(onChange)
+      expect(onMentionsChange).toHaveBeenCalled()
+      const payload = getLastMentionsChange(onMentionsChange)
       expect(payload.value).toContain(data[0].id)
       expect(payload.trigger.type).toBe('mention-add')
     })
   })
 
   it('should append a trailing space when the mention config requests it.', async () => {
-    const onChange = jest.fn()
+    const onMentionsChange = jest.fn()
 
     render(
-      <MentionsInput value="@" onChange={onChange}>
+      <MentionsInput value="@" onMentionsChange={onMentionsChange}>
         <Mention trigger="@" data={data} appendSpaceOnAdd />
       </MentionsInput>
     )
@@ -212,8 +212,8 @@ describe('MentionsInput', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', keyCode: 13 })
 
     await waitFor(() => {
-      expect(onChange).toHaveBeenCalled()
-      const payload = getLastChange(onChange)
+      expect(onMentionsChange).toHaveBeenCalled()
+      const payload = getLastMentionsChange(onMentionsChange)
       expect(payload.trigger.type).toBe('mention-add')
       expect(payload.value.endsWith(' ')).toBe(true)
       expect(payload.plainTextValue.endsWith(' ')).toBe(true)
@@ -542,10 +542,10 @@ describe('MentionsInput', () => {
     )
 
     it('should remove a leading mention from the value when the text is cut.', () => {
-      const onChange = jest.fn()
+      const onMentionsChange = jest.fn()
 
       render(
-        <MentionsInput value={value} onChange={onChange}>
+        <MentionsInput value={value} onMentionsChange={onMentionsChange}>
           <Mention trigger="@[__display__](__id__)" data={data} />
         </MentionsInput>
       )
@@ -563,18 +563,18 @@ describe('MentionsInput', () => {
       const event = new Event('cut', { bubbles: true })
       event.clipboardData = { setData: jest.fn() }
 
-      expect(onChange).not.toHaveBeenCalled()
+      expect(onMentionsChange).not.toHaveBeenCalled()
 
       fireEvent(textarea, event)
 
-      expect(onChange).toHaveBeenCalledTimes(1)
+      expect(onMentionsChange).toHaveBeenCalledTimes(1)
 
       const {
         value: newValue,
         plainTextValue: newPlainTextValue,
         trigger,
         previousValue,
-      } = getLastChange(onChange)
+      } = getLastMentionsChange(onMentionsChange)
       expect(trigger.type).toBe('cut')
       expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
@@ -582,10 +582,10 @@ describe('MentionsInput', () => {
     })
 
     it('should remove a trailing mention from the value when the text is cut.', () => {
-      const onChange = jest.fn()
+      const onMentionsChange = jest.fn()
 
       render(
-        <MentionsInput value={value} onChange={onChange}>
+        <MentionsInput value={value} onMentionsChange={onMentionsChange}>
           <Mention trigger="@[__display__](__id__)" data={data} />
         </MentionsInput>
       )
@@ -603,18 +603,18 @@ describe('MentionsInput', () => {
       const event = new Event('cut', { bubbles: true })
       event.clipboardData = { setData: jest.fn() }
 
-      expect(onChange).not.toHaveBeenCalled()
+      expect(onMentionsChange).not.toHaveBeenCalled()
 
       fireEvent(textarea, event)
 
-      expect(onChange).toHaveBeenCalledTimes(1)
+      expect(onMentionsChange).toHaveBeenCalledTimes(1)
 
       const {
         value: newValue,
         plainTextValue: newPlainTextValue,
         trigger,
         previousValue,
-      } = getLastChange(onChange)
+      } = getLastMentionsChange(onMentionsChange)
       expect(trigger.type).toBe('cut')
       expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
@@ -622,10 +622,10 @@ describe('MentionsInput', () => {
     })
 
     it('should restore the caret to the start of the cut selection.', async () => {
-      const onChange = jest.fn()
+      const onMentionsChange = jest.fn()
 
       render(
-        <MentionsInput value={value} onChange={onChange}>
+        <MentionsInput value={value} onMentionsChange={onMentionsChange}>
           <Mention trigger="@[__display__](__id__)" data={data} />
         </MentionsInput>
       )
@@ -649,7 +649,7 @@ describe('MentionsInput', () => {
       fireEvent(textarea, event)
 
       await waitFor(() => {
-        expect(onChange).toHaveBeenCalledTimes(1)
+        expect(onMentionsChange).toHaveBeenCalledTimes(1)
       })
 
       await waitFor(() => {
@@ -659,10 +659,10 @@ describe('MentionsInput', () => {
     })
 
     it('should read mentions markup from a paste event.', () => {
-      const onChange = jest.fn()
+      const onMentionsChange = jest.fn()
 
       render(
-        <MentionsInput value={value} onChange={onChange}>
+        <MentionsInput value={value} onMentionsChange={onMentionsChange}>
           <Mention trigger="@[__display__](__id__)" data={data} />
         </MentionsInput>
       )
@@ -676,18 +676,18 @@ describe('MentionsInput', () => {
         getData: jest.fn((type) => (type === 'text/react-mentions' ? pastedText : '')),
       }
 
-      expect(onChange).not.toHaveBeenCalled()
+      expect(onMentionsChange).not.toHaveBeenCalled()
 
       fireEvent(textarea, event)
 
-      expect(onChange).toHaveBeenCalledTimes(1)
+      expect(onMentionsChange).toHaveBeenCalledTimes(1)
 
       const {
         value: newValue,
         plainTextValue: newPlainTextValue,
         trigger,
         previousValue,
-      } = getLastChange(onChange)
+      } = getLastMentionsChange(onMentionsChange)
 
       expect(trigger.type).toBe('paste')
       expect(previousValue).toBe(value)
@@ -696,10 +696,10 @@ describe('MentionsInput', () => {
     })
 
     it('should default to the standard pasted text.', () => {
-      const onChange = jest.fn()
+      const onMentionsChange = jest.fn()
 
       render(
-        <MentionsInput value={value} onChange={onChange}>
+        <MentionsInput value={value} onMentionsChange={onMentionsChange}>
           <Mention trigger="@[__display__](__id__)" data={data} />
         </MentionsInput>
       )
@@ -713,18 +713,18 @@ describe('MentionsInput', () => {
         getData: jest.fn((type) => (type === 'text/plain' ? pastedText : '')),
       }
 
-      expect(onChange).not.toHaveBeenCalled()
+      expect(onMentionsChange).not.toHaveBeenCalled()
 
       fireEvent(textarea, event)
 
-      expect(onChange).toHaveBeenCalledTimes(1)
+      expect(onMentionsChange).toHaveBeenCalledTimes(1)
 
       const {
         value: newValue,
         plainTextValue: newPlainTextValue,
         trigger,
         previousValue,
-      } = getLastChange(onChange)
+      } = getLastMentionsChange(onMentionsChange)
 
       expect(trigger.type).toBe('paste')
       expect(previousValue).toBe(value)
@@ -741,15 +741,15 @@ describe('MentionsInput', () => {
         getData: jest.fn((type) => (type === 'text/plain' ? pastedText : '')),
       }
 
-      const onChange = jest.fn()
+      const onMentionsChange = jest.fn()
 
       render(
-        <MentionsInput value="" onChange={onChange}>
+        <MentionsInput value="" onMentionsChange={onMentionsChange}>
           <Mention trigger="@[__display__](__id__)" data={data} />
         </MentionsInput>
       )
 
-      expect(onChange).not.toHaveBeenCalled()
+      expect(onMentionsChange).not.toHaveBeenCalled()
 
       const textarea = screen.getByRole('combobox')
 
@@ -760,7 +760,7 @@ describe('MentionsInput', () => {
         plainTextValue: newPlainTextValue,
         trigger,
         previousValue,
-      } = getLastChange(onChange)
+      } = getLastMentionsChange(onMentionsChange)
 
       expect(trigger.type).toBe('paste')
       expect(previousValue).toBe('')
@@ -817,7 +817,7 @@ describe('MentionsInput', () => {
         return (
           <MentionsInput
             value={value}
-            onChange={({ value: nextValue }) => setValue(nextValue)}
+            onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
             suggestionsDisplay="inline"
             {...props}
           >
@@ -883,8 +883,8 @@ describe('MentionsInput', () => {
     })
 
     it('can accept the inline suggestion with Tab', async () => {
-      const onChange = jest.fn()
-      const textbox = renderInlineMentionsInput({ onChange })
+      const onMentionsChange = jest.fn()
+      const textbox = renderInlineMentionsInput({ onMentionsChange })
 
       await waitFor(() => {
         expect(screen.getByText('ce')).toBeInTheDocument()
@@ -893,10 +893,10 @@ describe('MentionsInput', () => {
       fireEvent.keyDown(textbox, { key: 'Tab', keyCode: 9 })
 
       await waitFor(() => {
-        expect(onChange).toHaveBeenCalled()
+        expect(onMentionsChange).toHaveBeenCalled()
       })
 
-      const payload = getLastChange(onChange)
+      const payload = getLastMentionsChange(onMentionsChange)
       expect(payload.value).toBe('@[Alice](alice)')
       expect(payload.plainTextValue).toBe('Alice')
       expect(payload.mentions).toHaveLength(1)
@@ -918,7 +918,7 @@ describe('MentionsInput', () => {
       return (
         <MentionsInput
           value={value}
-          onChange={({ value: nextValue }) => {
+          onMentionsChange={({ value: nextValue }) => {
             startTransition(() => {
               setValue(nextValue)
             })
@@ -963,7 +963,7 @@ describe('MentionsInput', () => {
         <MentionsInput
           value={value}
           suggestionsDisplay="inline"
-          onChange={({ value: nextValue }) => {
+          onMentionsChange={({ value: nextValue }) => {
             startTransition(() => {
               setValue(nextValue)
             })
@@ -996,5 +996,73 @@ describe('MentionsInput', () => {
         expect(screen.getByRole('status')).toHaveTextContent('No inline suggestions available')
       })
     })
+  })
+
+  it('forwards native change events to the consumer.', () => {
+    const onChange = jest.fn()
+
+    render(
+      <MentionsInput value="" onChange={onChange}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.change(textarea, { target: { value: 'hello world' } })
+
+    expect(onChange).toHaveBeenCalled()
+    const [event] = onChange.mock.calls[0]
+    expect(event.target).toBe(textarea)
+  })
+
+  it('invokes both onMentionBlur and onBlur when focus leaves naturally.', () => {
+    const onMentionBlur = jest.fn()
+    const onBlur = jest.fn()
+
+    render(
+      <MentionsInput value="" onMentionBlur={onMentionBlur} onBlur={onBlur}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    fireEvent.blur(textarea)
+
+    expect(onMentionBlur).toHaveBeenCalled()
+    const [event, clickedSuggestion] = onMentionBlur.mock.calls[0]
+    expect(clickedSuggestion).toBe(false)
+    expect(onBlur).toHaveBeenCalledWith(event)
+  })
+
+  it('flags suggestion clicks via onMentionBlur.', async () => {
+    const onMentionBlur = jest.fn()
+
+    render(
+      <MentionsInput value="@" onMentionBlur={onMentionBlur}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+
+    const listbox = screen.getByRole('listbox', { hidden: true })
+    fireEvent.mouseDown(listbox)
+    fireEvent.blur(textarea)
+
+    await waitFor(() => {
+      expect(onMentionBlur).toHaveBeenCalled()
+    })
+
+    const [, clickedSuggestion] = onMentionBlur.mock.calls[0]
+    expect(clickedSuggestion).toBe(true)
   })
 })

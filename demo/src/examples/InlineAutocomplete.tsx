@@ -21,7 +21,7 @@ export default function InlineAutocomplete({ data }: { data: MentionDataItem[] }
     >
       <MentionsInput
         value={value}
-        onChange={({ value: nextValue }) => setValue(nextValue)}
+        onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
         className="mentions"
         classNames={inlineItalicClasses}
         suggestionsDisplay="inline"

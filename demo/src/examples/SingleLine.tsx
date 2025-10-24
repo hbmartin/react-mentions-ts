@@ -14,7 +14,7 @@ export default function SingleLine({
 }) {
   const [value, setValue] = useState('')
 
-  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => {
+  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) => {
     setValue(nextValue)
   }
 
@@ -26,7 +26,7 @@ export default function SingleLine({
       <MentionsInput
         singleLine
         value={value}
-        onChange={onChange}
+        onMentionsChange={onMentionsChange}
         className="mentions"
         classNames={singleLineMentionsClassNames}
         placeholder="Mention people using '@'"

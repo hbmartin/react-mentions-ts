@@ -13,7 +13,8 @@ export default function SingleLineIgnoringAccents({
   onAdd?: (...args: any[]) => void
 }) {
   const [value, setValue] = useState('')
-  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
+  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
+    setValue(nextValue)
 
   return (
     <ExampleCard
@@ -23,7 +24,7 @@ export default function SingleLineIgnoringAccents({
       <MentionsInput
         singleLine
         value={value}
-        onChange={onChange}
+        onMentionsChange={onMentionsChange}
         className="mentions"
         classNames={singleLineMentionsClassNames}
         placeholder="Mention people using '@'"
