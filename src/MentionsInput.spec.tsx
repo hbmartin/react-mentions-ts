@@ -349,7 +349,33 @@ describe('MentionsInput', () => {
     portalContainer.remove()
   })
 
-  it('should accept a custom serializer', () => {
+  it('should accept a custom markup string', () => {
+    const data = [
+      { id: 'aaaa', display: '@A' },
+      { id: 'bbbb', display: '@B' },
+    ]
+
+    render(
+      <MentionsInput value="[aaaa] and [bbbb] and [invalidId]">
+        <Mention
+          trigger="@"
+          data={data}
+          markup="[__id__]"
+          displayTransform={(id) => {
+            const mention = data.find((item) => item.id === id)
+            return mention ? mention.display : `[${id}]`
+          }}
+        />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+
+    expect(textarea.value).toEqual('@A and @B and [invalidId]')
+  })
+
+  it('should accept a MentionSerializer as markup', () => {
     const data = [
       { id: 'aaaa', display: '@A' },
       { id: 'bbbb', display: '@B' },
@@ -360,8 +386,7 @@ describe('MentionsInput', () => {
         <Mention
           trigger="@"
           data={data}
-          markup=":__id__"
-          serializer={createColonSerializer()}
+          markup={createColonSerializer()}
           displayTransform={(id) => {
             const mention = data.find((item) => item.id === id)
             return mention ? mention.display : `:${id}`

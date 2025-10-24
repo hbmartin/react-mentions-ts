@@ -73,7 +73,7 @@ export interface MentionComponentProps<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
   trigger?: MentionTrigger
-  markup?: string
+  markup?: string | MentionSerializer
   displayTransform?: DisplayTransform
   renderSuggestion?: MentionRenderSuggestion<Extra> | null
   data?: DataSource<Extra>
@@ -83,7 +83,6 @@ export interface MentionComponentProps<
   appendSpaceOnAdd?: boolean
   allowSpaceInQuery?: boolean
   ignoreAccents?: boolean
-  serializer?: MentionSerializer
 }
 
 export type MentionsInputChangeTriggerType =

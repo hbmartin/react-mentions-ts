@@ -1,21 +1,41 @@
 import { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import type { MentionChildConfig, MentionComponentProps } from '../types'
+import type { MentionChildConfig, MentionComponentProps, MentionSerializer } from '../types'
 import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
 import createMarkupSerializer from '../serializers/createMarkupSerializer'
+
+const DEFAULT_SERIALIZER = createMarkupSerializer(
+  typeof DEFAULT_MENTION_PROPS.markup === 'string'
+    ? DEFAULT_MENTION_PROPS.markup
+    : '@[__display__](__id__)'
+)
 
 const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
   Children.toArray(children).map((child) => {
     const props = (child as ReactElement<MentionComponentProps>).props
-    const markup = props.markup ?? DEFAULT_MENTION_PROPS.markup
+    const markupProp = props.markup ?? DEFAULT_MENTION_PROPS.markup
     const displayTransform = props.displayTransform ?? DEFAULT_MENTION_PROPS.displayTransform
-    const serializer =
-      props.serializer ??
-      (props.markup ? createMarkupSerializer(props.markup) : DEFAULT_MENTION_PROPS.serializer)
+    let resolvedMarkup: string
+    let serializer: MentionSerializer
+
+    if (typeof markupProp === 'string') {
+      resolvedMarkup = markupProp
+      serializer =
+        markupProp === DEFAULT_MENTION_PROPS.markup
+          ? DEFAULT_SERIALIZER
+          : createMarkupSerializer(markupProp)
+    } else {
+      resolvedMarkup =
+        typeof DEFAULT_MENTION_PROPS.markup === 'string'
+          ? DEFAULT_MENTION_PROPS.markup
+          : '@[__display__](__id__)'
+      serializer = markupProp
+    }
+
     return {
       ...DEFAULT_MENTION_PROPS,
       ...props,
-      markup,
+      markup: resolvedMarkup,
       displayTransform,
       serializer,
     } satisfies MentionChildConfig
