@@ -1,6 +1,13 @@
 import createMarkupSerializer from '../serializers/createMarkupSerializer'
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 
+const makeStubSerializer = (matches) => ({
+  insert: () => {
+    throw new Error('insert should not be called in this test')
+  },
+  findAll: () => matches,
+})
+
 describe('#iterateMentionsMarkup', () => {
   const userMarkup = '@[__display__](user:__id__)'
   const emailMarkup = '@[__display__](email:__id__)'
@@ -25,6 +32,58 @@ describe('#iterateMentionsMarkup', () => {
   const displayTransform = (id) => `<--${id}-->`
   const plainTextDisplayTransform =
     "Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation..."
+
+  it('prioritizes longer markup when patterns overlap', () => {
+    const overlappingConfig = [
+      {
+        markup: '@[__display__]',
+        displayTransform: defaultDisplayTransform,
+        serializer: createMarkupSerializer('@[__display__]'),
+      },
+      {
+        markup: '@[__display__](__id__)',
+        displayTransform: defaultDisplayTransform,
+        serializer: createMarkupSerializer('@[__display__](__id__)'),
+      },
+    ]
+
+    const overlappingValue = 'Hello @[Ada](user:ada)'
+    const markupIteratee = jest.fn()
+
+    iterateMentionsMarkup(overlappingValue, overlappingConfig, markupIteratee)
+
+    const matchedStrings = markupIteratee.mock.calls.map((call) => call[0])
+    expect(matchedStrings).toContain('@[Ada](user:ada)')
+    const shorterIndex = matchedStrings.indexOf('@[Ada]')
+    if (shorterIndex !== -1) {
+      expect(matchedStrings.indexOf('@[Ada](user:ada)')).toBeLessThan(shorterIndex)
+    }
+  })
+
+  it('falls back to child index when competing matches share length and start', () => {
+    const configWithEqualLength = [
+      {
+        markup: 'not-used-0',
+        displayTransform: defaultDisplayTransform,
+        serializer: makeStubSerializer([
+          { markup: 'mention', index: 0, id: 'first', display: 'first' },
+        ]),
+      },
+      {
+        markup: 'not-used-1',
+        displayTransform: defaultDisplayTransform,
+        serializer: makeStubSerializer([
+          { markup: 'mention', index: 0, id: 'second', display: 'second' },
+        ]),
+      },
+    ]
+
+    const markupIteratee = jest.fn()
+    iterateMentionsMarkup('mention', configWithEqualLength, markupIteratee)
+
+    expect(markupIteratee.mock.calls).toHaveLength(1)
+    expect(markupIteratee.mock.calls[0]?.[3]).toBe('first')
+  })
 
   it('should call the `markupIteratee` for every markup occurrence', () => {
     const markupIteratee = jest.fn()

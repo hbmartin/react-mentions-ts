@@ -29,9 +29,13 @@ const iterateMentionsMarkup = (
     }))
   })
 
+  // eslint-disable-next-line code-complete/enforce-meaningful-names
   collectedMatches.sort((a, b) => {
     if (a.match.index === b.match.index) {
-      return a.childIndex - b.childIndex
+      if (a.match.markup.length === b.match.markup.length) {
+        return a.childIndex - b.childIndex
+      }
+      return b.match.markup.length - a.match.markup.length
     }
     return a.match.index - b.match.index
   })

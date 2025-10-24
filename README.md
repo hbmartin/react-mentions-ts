@@ -138,13 +138,12 @@ Each data source is configured using a `Mention` component, which has the follow
 | data             | array or function (search, callback)                         | `null`                                      | An array of the mentionable data entries (objects with `id` & `display` keys, or a filtering function that returns an array based on a query parameter |
 | renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                                      | Allows customizing how mention suggestions are rendered (optional)                                                                                     |
 | allowSpaceInQuery | boolean                                                      | `false`                                     | Permit spaces within the search query portion after the trigger (useful for multi-word names)                                                          |
-| markup           | string                                                       | `'@[__display__](__id__)'`                  | A template string for the markup to use for mentions                                                                                                   |
+| markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'`                  | Template string for stored markup, or pass a `MentionSerializer` instance for full control                                                             |
 | displayTransform | function (id, display)                                       | returns `display`                           | Accepts a function for customizing the string that is displayed for a mention                                                                          |
-| serializer       | `MentionSerializer`                                          | `createMarkupSerializer('@[__display__](__id__)')` | Supplies the logic for writing and reading mention markup; pass a custom serializer to take full control over parsing/serialization (optional)       |
 | onAdd            | function (id, display, startPos, endPos)                     | empty function                              | Callback invoked when a suggestion has been added (optional)                                                                                           |
 | appendSpaceOnAdd | boolean                                                      | `false`                                     | Append a space when a suggestion has been added (optional)                                                                                             |
 
-> Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `serializer={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
+> Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `markup={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
 
 ### 🔄 Async Data Loading
 
