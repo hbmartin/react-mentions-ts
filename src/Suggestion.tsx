@@ -6,7 +6,6 @@ import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
 interface SuggestionProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
   readonly id: string
   readonly focused?: boolean
-  readonly ignoreAccents?: boolean
   readonly index: number
   readonly onClick: () => void
   readonly onMouseEnter: () => void
@@ -26,7 +25,6 @@ const suggestionHighlightStyles = ''
 function Suggestion<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
   focused,
-  ignoreAccents,
   index,
   onClick,
   onMouseEnter,
@@ -58,7 +56,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   }
 
   const renderHighlightedDisplay = (display: string): React.ReactNode => {
-    const indexOfMatch = getSubstringIndex(display, query, ignoreAccents)
+    const indexOfMatch = getSubstringIndex(display, query)
 
     if (indexOfMatch === -1) {
       return <span className={displayClassNameResolved}>{display}</span>

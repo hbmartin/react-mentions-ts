@@ -52,14 +52,11 @@ import type {
 } from './types'
 
 const getDataProvider = <Extra extends Record<string, unknown>>(
-  data: DataSource<Extra>,
-  ignoreAccents?: boolean
+  data: DataSource<Extra>
 ): ((query: string) => Promise<MentionDataItem<Extra>[]>) => {
   if (Array.isArray(data)) {
     return async (query: string) =>
-      data.filter(
-        (item) => getSubstringIndex(item.display || String(item.id), query, ignoreAccents) >= 0
-      )
+      data.filter((item) => getSubstringIndex(item.display || String(item.id), query) >= 0)
   }
 
   return async (query: string) => {
@@ -104,6 +101,15 @@ const inlineSuggestionPrefixStyles =
   'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
 const inlineSuggestionSuffixStyles = 'whitespace-pre'
 
+const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
+  if (typeof trigger === 'string') {
+    return makeTriggerRegex(trigger)
+  }
+
+  const flags = trigger.flags.replace(/g/g, '')
+  return new RegExp(trigger.source, flags)
+}
+
 interface InlineSuggestionDetails<Extra extends Record<string, unknown> = Record<string, unknown>> {
   hiddenPrefix: string
   visibleText: string
@@ -130,7 +136,6 @@ const visuallyHiddenStyles: CSSProperties = {
 const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
   'singleLine',
   'suggestionsPlacement',
-  'ignoreAccents',
   'a11ySuggestionsListLabel',
   'value',
   'onKeyDown',
@@ -154,7 +159,6 @@ class MentionsInput<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > extends React.Component<MentionsInputProps<Extra>, MentionsInputState<Extra>> {
   static readonly defaultProps: Partial<MentionsInputProps<any>> = {
-    ignoreAccents: false,
     singleLine: false,
     suggestionsPlacement: 'below',
     onKeyDown: () => null,
@@ -457,7 +461,6 @@ class MentionsInput<
         onMouseEnter={this.handleSuggestionsMouseEnter}
         isLoading={this.isLoading()}
         isOpened={this.isOpened()}
-        ignoreAccents={this.props.ignoreAccents}
         a11ySuggestionsListLabel={this.props.a11ySuggestionsListLabel}
       >
         {this.props.children}
@@ -1429,11 +1432,11 @@ class MentionsInput<
       if (!React.isValidElement<MentionComponentProps<Extra>>(child)) {
         return
       }
-      const { trigger = '@', allowSpaceInQuery = false } = child.props
-      const regex = makeTriggerRegex(trigger, { allowSpaceInQuery })
+      const triggerProp = child.props.trigger ?? '@'
+      const regex = resolveTriggerRegex(triggerProp)
       // eslint-disable-next-line sonarjs/prefer-regexp-exec
       const match = substring.match(regex)
-      if (match) {
+      if (match && match[1] !== undefined && match[2] !== undefined) {
         const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
         this.queryData(
           match[2],
@@ -1463,7 +1466,7 @@ class MentionsInput<
     querySequenceEnd: number,
     plainTextValue: string
   ): void => {
-    const { children, ignoreAccents } = this.props
+    const { children } = this.props
     const mentionChild = Children.toArray(children)[childIndex]
     if (!React.isValidElement<MentionComponentProps<Extra>>(mentionChild)) {
       return
@@ -1472,7 +1475,7 @@ class MentionsInput<
     if (!dataSource) {
       return
     }
-    const provideData = getDataProvider<Extra>(dataSource, ignoreAccents)
+    const provideData = getDataProvider<Extra>(dataSource)
     const resultPromise = provideData(query)
     void this.updateSuggestions(
       this._queryId,

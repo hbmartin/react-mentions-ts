@@ -81,8 +81,6 @@ export interface MentionComponentProps<
   onRemove?: (id: MentionIdentifier) => void
   isLoading?: boolean
   appendSpaceOnAdd?: boolean
-  allowSpaceInQuery?: boolean
-  ignoreAccents?: boolean
 }
 
 export type MentionsInputChangeTriggerType =
@@ -165,7 +163,6 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
   suggestionsPlacement?: 'auto' | 'above' | 'below'
   customSuggestionsContainer?: (children: ReactElement) => ReactElement
   disabled?: boolean
-  ignoreAccents?: boolean
   inputComponent?: InputComponent
   inputRef?:
     | RefObject<HTMLInputElement | HTMLTextAreaElement>

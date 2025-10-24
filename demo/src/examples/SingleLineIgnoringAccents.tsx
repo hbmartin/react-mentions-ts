@@ -16,6 +16,19 @@ export default function SingleLineIgnoringAccents({
   const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
     setValue(nextValue)
 
+  const normalize = (input: string): string =>
+    input
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+
+  const filterByQuery = async (query: string): Promise<MentionDataItem[]> => {
+    const normalizedQuery = normalize(query)
+    return data.filter((item) =>
+      normalize(item.display ?? String(item.id)).includes(normalizedQuery)
+    )
+  }
+
   return (
     <ExampleCard
       title="Single line input ignoring accents"
@@ -28,10 +41,9 @@ export default function SingleLineIgnoringAccents({
         className="mentions"
         classNames={singleLineMentionsClassNames}
         placeholder="Mention people using '@'"
-        ignoreAccents
         a11ySuggestionsListLabel={'Suggested mentions'}
       >
-        <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
+        <Mention data={filterByQuery} onAdd={onAdd} className={mentionPillClass} />
       </MentionsInput>
     </ExampleCard>
   )

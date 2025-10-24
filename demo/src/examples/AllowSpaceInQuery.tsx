@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 
 import { Mention, MentionsInput } from '../../../src'
+import { makeTriggerRegex } from '../../../src/utils/makeTriggerRegex'
 import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import { mentionPillClass, singleLineMentionsClassNames } from './mentionsClassNames'
@@ -15,7 +16,7 @@ export default function AllowSpaceInQuery({ data }: { data: MentionDataItem[] })
   return (
     <ExampleCard
       title="Multi-word queries"
-      description="With `allowSpaceInQuery`, suggestions stay open after typing spaces—handy for full names."
+      description="Pass a custom trigger RegExp to handle multi-word searches (e.g., `makeTriggerRegex('@', { allowSpaceInQuery: true })`)."
     >
       <MentionsInput
         singleLine
@@ -26,7 +27,11 @@ export default function AllowSpaceInQuery({ data }: { data: MentionDataItem[] })
         placeholder="Try typing '@gus fr' or '@mike e'"
         a11ySuggestionsListLabel="Suggested mentions"
       >
-        <Mention allowSpaceInQuery data={data} className={mentionPillClass} />
+        <Mention
+          trigger={makeTriggerRegex('@', { allowSpaceInQuery: true })}
+          data={data}
+          className={mentionPillClass}
+        />
       </MentionsInput>
     </ExampleCard>
   )

@@ -28,7 +28,6 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly isLoading?: boolean
   readonly isOpened: boolean
   readonly onSelect?: (suggestion: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => void
-  readonly ignoreAccents?: boolean
   readonly containerRef?: (node: HTMLDivElement | null) => void
   readonly children: React.ReactNode
   readonly className?: string
@@ -63,7 +62,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   isLoading,
   isOpened,
   onSelect,
-  ignoreAccents,
   containerRef,
   children,
   className,
@@ -154,7 +152,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         id={getSuggestionHtmlId(id, index)}
         query={query}
         index={index}
-        ignoreAccents={ignoreAccents}
         renderSuggestion={renderSuggestionFromChild}
         suggestion={suggestionItem}
         focused={isFocused}

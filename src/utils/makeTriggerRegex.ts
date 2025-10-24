@@ -1,10 +1,11 @@
+import type { MentionTrigger } from '../types'
 import escapeRegex from './escapeRegex'
 
 interface TriggerOptions {
   allowSpaceInQuery?: boolean
 }
 export const makeTriggerRegex = (
-  trigger: string | RegExp = '@',
+  trigger: MentionTrigger = '@',
   options: TriggerOptions = {}
 ): RegExp => {
   if (trigger instanceof RegExp) {

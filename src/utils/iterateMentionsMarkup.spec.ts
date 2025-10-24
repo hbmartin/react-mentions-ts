@@ -1,7 +1,9 @@
 import createMarkupSerializer from '../serializers/createMarkupSerializer'
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 
-const makeStubSerializer = (matches) => ({
+const makeStubSerializer = (
+  matches: Array<{ markup: string; index: number; id: string; display?: string | null }>
+) => ({
   insert: () => {
     throw new Error('insert should not be called in this test')
   },
