@@ -1,5 +1,5 @@
+import createMarkupSerializer from '../serializers/createMarkupSerializer'
 import iterateMentionsMarkup from './iterateMentionsMarkup'
-import markupToRegex from './markupToRegex'
 
 describe('#iterateMentionsMarkup', () => {
   const userMarkup = '@[__display__](user:__id__)'
@@ -8,13 +8,13 @@ describe('#iterateMentionsMarkup', () => {
   const config = [
     {
       markup: userMarkup,
-      regex: markupToRegex(userMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(userMarkup),
     },
     {
       markup: emailMarkup,
-      regex: markupToRegex(emailMarkup),
       displayTransform: defaultDisplayTransform,
+      serializer: createMarkupSerializer(emailMarkup),
     },
   ]
 

@@ -140,9 +140,11 @@ Each data source is configured using a `Mention` component, which has the follow
 | allowSpaceInQuery | boolean                                                      | `false`                                     | Permit spaces within the search query portion after the trigger (useful for multi-word names)                                                          |
 | markup           | string                                                       | `'@[__display__](__id__)'`                  | A template string for the markup to use for mentions                                                                                                   |
 | displayTransform | function (id, display)                                       | returns `display`                           | Accepts a function for customizing the string that is displayed for a mention                                                                          |
-| regex            | RegExp                                                       | automatically derived from `markup` pattern | Allows providing a custom regular expression for parsing your markup and extracting the placeholder interpolations (optional)                          |
+| serializer       | `MentionSerializer`                                          | `createMarkupSerializer('@[__display__](__id__)')` | Supplies the logic for writing and reading mention markup; pass a custom serializer to take full control over parsing/serialization (optional)       |
 | onAdd            | function (id, display, startPos, endPos)                     | empty function                              | Callback invoked when a suggestion has been added (optional)                                                                                           |
 | appendSpaceOnAdd | boolean                                                      | `false`                                     | Append a space when a suggestion has been added (optional)                                                                                             |
+
+> Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `serializer={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
 
 ### 🔄 Async Data Loading
 

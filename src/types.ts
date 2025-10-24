@@ -13,6 +13,18 @@ import type {
 export type MentionTrigger = string | RegExp
 export type MentionIdentifier = string | number
 
+export interface MentionSerializerMatch {
+  markup: string
+  index: number
+  id: string
+  display?: string | null
+}
+
+export interface MentionSerializer {
+  insert: (input: { id: MentionIdentifier; display: string }) => string
+  findAll: (value: string) => MentionSerializerMatch[]
+}
+
 export type MentionDataItem<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   id: MentionIdentifier
   display?: string
@@ -64,7 +76,6 @@ export interface MentionComponentProps<
   markup?: string
   displayTransform?: DisplayTransform
   renderSuggestion?: MentionRenderSuggestion<Extra> | null
-  regex?: RegExp
   data?: DataSource<Extra>
   onAdd?: (id: MentionIdentifier, display: string, startPos: number, endPos: number) => void
   onRemove?: (id: MentionIdentifier) => void
@@ -72,6 +83,7 @@ export interface MentionComponentProps<
   appendSpaceOnAdd?: boolean
   allowSpaceInQuery?: boolean
   ignoreAccents?: boolean
+  serializer?: MentionSerializer
 }
 
 export type MentionsInputChangeTriggerType =
@@ -216,8 +228,8 @@ export type MentionsInputClassNames = Partial<{
 
 export type MentionChildConfig = MentionComponentProps & {
   markup: string
-  regex: RegExp
   displayTransform: DisplayTransform
+  serializer: MentionSerializer
 }
 
 export type InputElement = HTMLInputElement | HTMLTextAreaElement
