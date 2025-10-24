@@ -29,7 +29,7 @@ export default function CustomSuggestionsContainer({
     >
       <MentionsInput
         value={value}
-        onChange={({ value: nextValue }) => setValue(nextValue)}
+        onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
         className="mentions"
         classNames={customContainerClasses}
         placeholder={"Mention people using '@'"}

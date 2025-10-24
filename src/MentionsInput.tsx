@@ -137,6 +137,8 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
   'onKeyDown',
   'customSuggestionsContainer',
   'onSelect',
+  'onMentionBlur',
+  'onMentionsChange',
   'onBlur',
   'onChange',
   'suggestionsPortalHost',
@@ -158,7 +160,6 @@ class MentionsInput<
     suggestionsPlacement: 'below',
     onKeyDown: () => null,
     onSelect: () => null,
-    onBlur: () => null,
     suggestionsDisplay: 'overlay',
     spellCheck: false,
   }
@@ -766,8 +767,8 @@ class MentionsInput<
     mentions: MentionOccurrence[],
     previousValue: string
   ): void => {
-    if (this.props.onChange) {
-      this.props.onChange({
+    if (this.props.onMentionsChange) {
+      this.props.onMentionsChange({
         trigger,
         value: newValue,
         plainTextValue: newPlainTextValue,
@@ -1010,6 +1011,8 @@ class MentionsInput<
       mentions,
       value
     )
+
+    this.props.onChange?.(ev)
   }
 
   // Handle input element's select event
@@ -1174,7 +1177,8 @@ class MentionsInput<
 
     this.requestHighlighterScrollSync()
 
-    this.props.onBlur?.(ev, clickedSuggestion)
+    this.props.onMentionBlur?.(ev, clickedSuggestion)
+    this.props.onBlur?.(ev)
   }
 
   handleSuggestionsMouseDown = (_ev: ReactMouseEvent<HTMLDivElement>) => {

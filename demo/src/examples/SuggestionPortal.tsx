@@ -37,7 +37,7 @@ export default function SuggestionPortal({
           <p className="mb-3 font-semibold text-emerald-200">Scrollable surface</p>
           <MentionsInput
             value={value}
-            onChange={({ value }) => setValue(value)}
+            onMentionsChange={({ value }) => setValue(value)}
             className="mentions"
             classNames={portalClassNames}
             placeholder={"Mention people using '@'"}
@@ -52,7 +52,7 @@ export default function SuggestionPortal({
           </p>
           <MentionsInput
             value={value}
-            onChange={({ value }) => setValue(value)}
+            onMentionsChange={({ value }) => setValue(value)}
             className="mentions mt-4"
             classNames={mergeClassNames(portalClassNames, {
               input: 'h-32 overflow-auto',

@@ -29,7 +29,8 @@ export default function Advanced({
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
   const [value, setValue] = useState('Hi {{johndoe}}!')
-  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
+  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
+    setValue(nextValue)
 
   return (
     <ExampleCard
@@ -47,7 +48,7 @@ export default function Advanced({
     >
       <MentionsInput
         value={value}
-        onChange={onChange}
+        onMentionsChange={onMentionsChange}
         onBlur={onBlur}
         className="mentions"
         classNames={floatingSuggestions}

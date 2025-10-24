@@ -48,7 +48,7 @@ function CutCopyPaste({
           <MultiMention
             value={sourceValue}
             data={data}
-            onChange={onSourceChange}
+            onMentionsChange={onSourceChange}
             onAdd={onSourceAdd}
             disabled={disabledSource}
           />
@@ -60,7 +60,7 @@ function CutCopyPaste({
           <MultiMention
             value={targetValue}
             data={data}
-            onChange={onTargetChange}
+            onMentionsChange={onTargetChange}
             onAdd={onTargetAdd}
           />
         </div>
@@ -82,19 +82,19 @@ function CutCopyPaste({
 const MultiMention = ({
   value,
   data,
-  onChange,
+  onMentionsChange,
   onAdd,
   disabled,
 }: {
   value: string
   data: MentionDataItem[]
-  onChange: MentionsInputChangeHandler
+  onMentionsChange: MentionsInputChangeHandler
   onAdd: (...args: any[]) => void
   disabled?: boolean
 }) => (
   <MentionsInput
     value={value}
-    onChange={onChange}
+    onMentionsChange={onMentionsChange}
     className="mentions"
     classNames={multiMentionClasses}
     placeholder={"Mention people using '@'"}

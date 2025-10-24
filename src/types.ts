@@ -1,5 +1,6 @@
 import type React from 'react'
 import type {
+  ChangeEvent,
   KeyboardEvent,
   MouseEvent,
   ReactElement,
@@ -159,8 +160,10 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
     | RefObject<HTMLInputElement | HTMLTextAreaElement>
     | ((el: HTMLInputElement | HTMLTextAreaElement | null) => void)
   spellCheck?: boolean
-  onBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
-  onChange?: MentionsInputChangeHandler<Extra>
+  onBlur?: (event: ReactFocusEvent<InputElement>) => void
+  onMentionBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
+  onChange?: (event: ChangeEvent<InputElement>) => void
+  onMentionsChange?: MentionsInputChangeHandler<Extra>
   onKeyDown?: MentionsInputKeyDownHandler
   onSelect?: (event: SyntheticEvent<InputElement>) => void
   readOnly?: boolean

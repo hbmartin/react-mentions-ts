@@ -6,13 +6,13 @@ function useExampleValue(
 ): [string, MentionsInputChangeHandler, (...args: any[]) => void] {
   const [value, setValue] = useState(initialValue)
 
-  const onChange = useCallback<MentionsInputChangeHandler>(
+  const onMentionsChange = useCallback<MentionsInputChangeHandler>(
     ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue),
     [setValue]
   )
   const onAdd = useCallback((...args) => console.log(...args), [])
 
-  return [value, onChange, onAdd]
+  return [value, onMentionsChange, onAdd]
 }
 
 export default useExampleValue

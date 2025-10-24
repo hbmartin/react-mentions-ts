@@ -25,7 +25,8 @@ export default function Scrollable({
   const [value, setValue] = useState(
     "Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... "
   )
-  const onChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
+  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
+    setValue(nextValue)
 
   return (
     <ExampleCard
@@ -34,7 +35,7 @@ export default function Scrollable({
     >
       <MentionsInput
         value={value}
-        onChange={onChange}
+        onMentionsChange={onMentionsChange}
         className="mentions"
         classNames={scrollableClasses}
         placeholder="Mention people using '@'"
