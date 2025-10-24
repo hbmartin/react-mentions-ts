@@ -18,4 +18,10 @@ describe('#getSubstringIndex', () => {
       getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'not existing substring', true)
     ).toEqual(-1)
   })
+  it('handles composed and decomposed diacritics when ignoring accents', () => {
+    expect(getSubstringIndex('Curaçao', 'cao', true)).toEqual(4)
+    // use decomposed form: 'e' + combining acute
+    const decomposed = 'Jose\u0301'
+    expect(getSubstringIndex(decomposed, 'josé', true)).toEqual(0)
+  })
 })

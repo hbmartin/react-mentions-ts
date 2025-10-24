@@ -143,6 +143,8 @@ Each data source is configured using a `Mention` component, which has the follow
 
 > Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `markup={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
 
+> When passing a `RegExp` as `trigger`, omit the global `/g` flag. The component clones the pattern internally; global regexes maintain shared `lastIndex` state and will skip matches across renders.
+
 > Want to allow spaces (or other advanced patterns) after a trigger? Pass a custom `RegExp`—for example `trigger={makeTriggerRegex('@', { allowSpaceInQuery: true })}`—instead of relying on a boolean flag.
 
 ### 🔄 Async Data Loading
