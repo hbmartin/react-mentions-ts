@@ -76,7 +76,7 @@ export interface MentionComponentProps<
   markup?: string | MentionSerializer
   displayTransform?: DisplayTransform
   renderSuggestion?: MentionRenderSuggestion<Extra> | null
-  data?: DataSource<Extra>
+  data: DataSource<Extra>
   onAdd?: (id: MentionIdentifier, display: string, startPos: number, endPos: number) => void
   onRemove?: (id: MentionIdentifier) => void
   isLoading?: boolean

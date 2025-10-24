@@ -10,30 +10,23 @@ const DEFAULT_SERIALIZER = createMarkupSerializer(DEFAULT_MENTION_PROPS.markup)
 const isMentionElement = (child: unknown): child is ReactElement<MentionComponentProps> =>
   React.isValidElement(child) &&
   (child.type === Mention ||
-    (typeof child.props === 'object' &&
-      child.props !== null &&
-      ('data' in child.props || 'markup' in child.props || 'trigger' in child.props)))
+    (typeof child.props === 'object' && child.props !== null && 'data' in child.props))
 
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
 
-const collectMentionElements = (
-  children: ReactNode,
-  acc: ReactElement<MentionComponentProps>[] = []
-): ReactElement<MentionComponentProps>[] => {
-  Children.forEach(children, (child) => {
+const collectMentionElements = (children: ReactNode): ReactElement<MentionComponentProps>[] =>
+  Children.toArray(children).flatMap((child) => {
     if (isReactFragment(child)) {
-      collectMentionElements(child.props.children, acc)
-      return
+      return collectMentionElements(child.props.children)
     }
 
     if (isMentionElement(child)) {
-      acc.push(child)
+      return [child]
     }
-  })
 
-  return acc
-}
+    return []
+  })
 
 const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
   collectMentionElements(children).map((child) => {
