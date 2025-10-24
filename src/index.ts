@@ -9,4 +9,7 @@ export type {
   MentionsInputChangeHandler,
   MentionsInputChangeTrigger,
   MentionsInputChangeTriggerType,
+  MentionSerializer,
+  MentionSerializerMatch,
 } from './types'
+export { default as createMarkupSerializer } from './serializers/createMarkupSerializer'
