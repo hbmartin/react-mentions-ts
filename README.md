@@ -64,7 +64,7 @@ function MyComponent() {
   const [value, setValue] = useState('')
 
   return (
-    <MentionsInput value={value} onChange={({ value: nextValue }) => setValue(nextValue)}>
+    <MentionsInput value={value} onMentionsChange={({ value: nextValue }) => setValue(nextValue)}>
       <Mention trigger="@" data={users} renderSuggestion={(entry) => <div>{entry.display}</div>} />
       <Mention trigger="#" data={tags} />
     </MentionsInput>
@@ -101,10 +101,12 @@ The `MentionsInput` component supports the following props:
 | Prop name                   | Type                                                    | Default value  | Description                                                                            |
 | --------------------------- | ------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
 | value                       | string                                                  | `''`           | The value containing markup for mentions                                               |
-| onChange                    | function ({ trigger, value, plainTextValue, mentions, previousValue }) | empty function | Called when the input changes; receives the updated markup value, plain text, active mentions, and the previous markup value |
+| onChange                    | function (event)                                        | `undefined`    | Standard React change event fired by the underlying input                              |
+| onMentionsChange            | function ({ trigger, value, plainTextValue, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, active mentions, and the previous markup value |
 | onKeyDown                   | function (event)                                        | empty function | A callback that is invoked when the user presses a key in the mentions input           |
 | singleLine                  | boolean                                                 | `false`        | Renders a single line text input instead of a textarea, if set to `true`               |
-| onBlur                      | function (event, clickedSuggestion)                     | empty function | Passes `true` as second argument if the blur was caused by a mousedown on a suggestion |
+| onBlur                      | function (event)                                        | `undefined`    | Invoked when the underlying input loses focus                                           |
+| onMentionBlur               | function (event, clickedSuggestion)                     | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list     |
 | suggestionsPortalHost       | DOM Element                                             | undefined      | Render suggestions into the DOM in the supplied host element.                          |
 | inputRef                    | React ref                                               | undefined      | Accepts a React ref to forward to the underlying input element                         |
 | suggestionsPlacement        | `'auto' \| 'above' \| 'below'`                          | `'below'`      | Controls where the suggestion list renders relative to the caret (`'auto'` flips when space is limited) |
@@ -116,9 +118,9 @@ The `MentionsInput` component supports the following props:
 | spellCheck                  | boolean                                                 | `false`        | Controls browser spell checking on the underlying input (disabled by default)          |
 | onSelect                    | function (event)                                        | empty function | A callback that is invoked when the user selects a portion of the text in the input    |
 
-#### onChange payload
+#### onMentionsChange payload
 
-`onChange` receives an object with the following fields:
+`onMentionsChange` receives an object with the following fields:
 
 - `value`: the latest markup string containing mentions
 - `plainTextValue`: the same content without mention markup
