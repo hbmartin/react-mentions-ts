@@ -1533,7 +1533,7 @@ class MentionsInput<
     const config = readConfigFromChildren(this.props.children)
     const childConfig = config[childIndex]
     const mentionsChild = Children.toArray(this.props.children)[childIndex]
-    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionsChild) || !childConfig) {
+    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionsChild)) {
       return
     }
     const {
@@ -1579,8 +1579,14 @@ class MentionsInput<
 
     this.executeOnChange({ type: 'mention-add' }, newValue, newPlainTextValue, mentions, value)
 
-    if (onAdd) {
-      onAdd(id, mentionDisplay, start, end)
+    if (onAdd !== undefined) {
+      onAdd({
+        id,
+        display: mentionDisplay,
+        startPos: start,
+        endPos: end,
+        serializerId: serializer.id,
+      })
     }
 
     // Make sure the suggestions overlay is closed
@@ -1590,7 +1596,7 @@ class MentionsInput<
   isLoading = (): boolean => {
     let loading = false
     React.Children.forEach(this.props.children, (child) => {
-      if (!child || !React.isValidElement<MentionComponentProps<Extra>>(child)) {
+      if (!React.isValidElement<MentionComponentProps<Extra>>(child)) {
         return
       }
       loading = loading || Boolean(child.props.isLoading)

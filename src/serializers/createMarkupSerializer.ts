@@ -1,7 +1,7 @@
 import type { MentionSerializer, MentionSerializerMatch } from '../types'
+import findPositionOfCapturingGroup from '../utils/findPositionOfCapturingGroup'
 import makeMentionsMarkup from '../utils/makeMentionsMarkup'
 import markupToRegex from '../utils/markupToRegex'
-import findPositionOfCapturingGroup from '../utils/findPositionOfCapturingGroup'
 import PLACEHOLDERS from '../utils/placeholders'
 
 const createMarkupSerializer = (markup: string): MentionSerializer => {
@@ -35,7 +35,7 @@ const createMarkupSerializer = (markup: string): MentionSerializer => {
       matches.push({
         markup: matchedMarkup,
         index: match.index,
-        id: String(idMatch),
+        id: idMatch,
         display: displayMatch ?? null,
       })
     }
@@ -44,6 +44,7 @@ const createMarkupSerializer = (markup: string): MentionSerializer => {
   }
 
   return {
+    id: markup,
     insert,
     findAll,
   }
