@@ -1,4 +1,4 @@
-import React, { Children, useLayoutEffect, useState } from 'react'
+import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import { iterateMentionsMarkup, mapPlainTextIndex, readConfigFromChildren, isNumber } from './utils'
@@ -109,7 +109,7 @@ function Highlighter({
     updatePosition,
   ])
 
-  const config: MentionChildConfig[] = readConfigFromChildren(children)
+  const config: MentionChildConfig[] = useMemo(() => readConfigFromChildren(children), [children])
   let caretPositionInMarkup: number | null | undefined
 
   const rootClassName = cn(highlighterStyles({ singleLine: Boolean(singleLine) }), className)

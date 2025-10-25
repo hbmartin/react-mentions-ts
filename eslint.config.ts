@@ -121,6 +121,7 @@ export default defineConfig([
       ],
       'import/no-duplicates': ['error', { 'prefer-inline': false }],
       'import/no-unresolved': 'error',
+      'import/no-cycle': 'error',
 
       // === DISABLE CONFLICTING RULES ===
       '@typescript-eslint/no-unused-vars': 'off', // Use unused-imports plugin

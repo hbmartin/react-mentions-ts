@@ -12,6 +12,7 @@ import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
+import Mention from './Mention'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
   applyChangeToValue,
@@ -244,7 +245,26 @@ class MentionsInput<
     } satisfies MentionsInputState<Extra>
   }
 
+  private validateChildren(): void {
+    React.Children.forEach(this.props.children, (child) => {
+      if (!React.isValidElement(child)) {
+        throw new Error(
+          'MentionsInput only accepts Mention components as children. Found invalid element.'
+        )
+      }
+      if (child.type !== Mention) {
+        throw new Error(
+          `MentionsInput only accepts Mention components as children. Found: ${
+            typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
+          }`
+        )
+      }
+    })
+  }
+
   componentDidMount(): void {
+    this.validateChildren()
+
     document.addEventListener('copy', this.handleCopy)
     document.addEventListener('cut', this.handleCut)
     document.addEventListener('paste', this.handlePaste)
@@ -255,10 +275,14 @@ class MentionsInput<
   }
 
   componentDidUpdate(
-    // @ts-expect-error TS6133
     prevProps: MentionsInputProps<Extra>,
     prevState: MentionsInputState<Extra>
   ): void {
+    // Validate children if they've changed
+    if (prevProps.children !== this.props.children) {
+      this.validateChildren()
+    }
+
     // Update position of suggestions unless this componentDidUpdate was
     // triggered by an update to suggestionsPosition.
     if (prevState.suggestionsPosition === this.state.suggestionsPosition) {
