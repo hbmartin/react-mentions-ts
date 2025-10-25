@@ -9,7 +9,7 @@ export interface MentionProps<Extra extends Record<string, unknown> = Record<str
   readonly style?: CSSProperties
 }
 
-const mentionBaseClass = 'items-center rounded-md bg-primary/20'
+const mentionBaseClass = 'rounded-md bg-primary/20'
 
 const mentionsRequiredClass =
   'inline [font-family:inherit] [font-size:inherit] [letter-spacing:inherit] [font-weight:inherit] text-transparent p-0'
