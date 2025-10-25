@@ -13,11 +13,7 @@ const removeAccents = (str: string): string => {
 
 export const normalizeString = (str: string): string => removeAccents(str).toLowerCase()
 
-const getSubstringIndex = (str: string, substr: string, ignoreAccents?: boolean): number => {
-  if (!ignoreAccents) {
-    return str.toLowerCase().indexOf(substr.toLowerCase())
-  }
-
+const getSubstringIndex = (str: string, substr: string): number => {
   return normalizeString(str).indexOf(normalizeString(substr))
 }
 

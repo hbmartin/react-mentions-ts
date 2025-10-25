@@ -465,6 +465,32 @@ describe('MentionsInput', () => {
       }).toString()
       expect(result).toEqual(String.raw`/(?:^|\s)(trigger([^trigger]*))$/`)
     })
+
+    it('should capture characters with diacritics when ignoreAccents is true', () => {
+      const regex = makeTriggerRegex('@', { ignoreAccents: true })
+      const composed = '@José'
+      const decomposed = '@Jose' + '\u0301'
+      expect(composed.match(regex)?.[2]).toBe('José')
+      expect(decomposed.match(regex)?.[2]).toBe('Jose' + '\u0301')
+    })
+  })
+
+  it('supports custom regular expression triggers passed to Mention', async () => {
+    render(
+      <MentionsInput value="#">
+        <Mention trigger={/(#([^\s]*))/g} data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
   })
 
   describe('custom cut/copy/paste', () => {

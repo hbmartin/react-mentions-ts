@@ -13,3 +13,4 @@ export type {
   MentionSerializerMatch,
 } from './types'
 export { default as createMarkupSerializer } from './serializers/createMarkupSerializer'
+export { makeTriggerRegex } from './utils/makeTriggerRegex'

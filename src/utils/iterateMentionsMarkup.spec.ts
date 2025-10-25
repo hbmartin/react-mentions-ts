@@ -1,7 +1,9 @@
 import createMarkupSerializer from '../serializers/createMarkupSerializer'
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 
-const makeStubSerializer = (matches) => ({
+const makeStubSerializer = (
+  matches: Array<{ markup: string; index: number; id: string; display?: string | null }>
+) => ({
   insert: () => {
     throw new Error('insert should not be called in this test')
   },
@@ -58,6 +60,33 @@ describe('#iterateMentionsMarkup', () => {
     if (shorterIndex !== -1) {
       expect(matchedStrings.indexOf('@[Ada](user:ada)')).toBeLessThan(shorterIndex)
     }
+    expect(markupIteratee).toHaveBeenCalledTimes(1)
+    expect(markupIteratee.mock.calls[0][0]).toBe('@[Ada](user:ada)')
+  })
+
+  it('skips overlapping shorter markup without blocking later occurrences of the same text', () => {
+    const overlappingConfig = [
+      {
+        markup: '@[__display__](user:__id__)',
+        displayTransform: defaultDisplayTransform,
+        serializer: createMarkupSerializer('@[__display__](user:__id__)'),
+      },
+      {
+        markup: '@[__display__]',
+        displayTransform: defaultDisplayTransform,
+        serializer: createMarkupSerializer('@[__display__]'),
+      },
+    ]
+
+    const overlappingValue = '@[Ada](user:ada) and @[Ada]'
+    const markupIteratee = jest.fn()
+
+    iterateMentionsMarkup(overlappingValue, overlappingConfig, markupIteratee)
+
+    expect(markupIteratee).toHaveBeenCalledTimes(2)
+    expect(markupIteratee.mock.calls[0]?.[0]).toBe('@[Ada](user:ada)')
+    expect(markupIteratee.mock.calls[1]?.[0]).toBe('@[Ada]')
+    expect(markupIteratee.mock.calls[1]?.[1]).toBe(overlappingValue.lastIndexOf('@[Ada]'))
   })
 
   it('falls back to child index when competing matches share length and start', () => {
