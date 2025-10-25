@@ -216,4 +216,228 @@ describe('makeTriggerRegex', () => {
       })
     })
   })
+
+  describe('unusual trigger characters', () => {
+    describe('colon trigger (:)', () => {
+      it('should create a valid regex for colon trigger', () => {
+        const regex = makeTriggerRegex(':')
+        expect(regex).toBeInstanceOf(RegExp)
+        expect(regex.source).not.toBe('')
+        // Verify the regex properly escapes colon
+        expect(regex.source).toContain(':')
+      })
+
+      it('should match text starting with colon at beginning', () => {
+        const regex = makeTriggerRegex(':')
+        const match = ':emoji'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[1]).toBe(':emoji')
+        expect(match?.[2]).toBe('emoji')
+      })
+
+      it('should match text starting with colon after whitespace', () => {
+        const regex = makeTriggerRegex(':')
+        const match = 'Hello :emoji'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[1]).toBe(':emoji')
+        expect(match?.[2]).toBe('emoji')
+      })
+
+      it('should not match colon in the middle of text without space', () => {
+        const regex = makeTriggerRegex(':')
+        const match = 'http://example.com'.match(regex)
+        expect(match).toBeNull()
+      })
+
+      it('should match partial emoji notation', () => {
+        const regex = makeTriggerRegex(':')
+        const testCases = [
+          { input: ':smile', expected: 'smile' },
+          { input: ':heart', expected: 'heart' },
+          { input: ':thumbs', expected: 'thumbs' },
+          { input: ':fire', expected: 'fire' },
+        ]
+
+        for (const { input, expected } of testCases) {
+          const match = input.match(regex)
+          expect(match).not.toBeNull()
+          expect(match?.[2]).toBe(expected)
+        }
+      })
+
+      it('should not match when there are multiple colons without space', () => {
+        const regex = makeTriggerRegex(':')
+        const match = 'time::now'.match(regex)
+        expect(match).toBeNull()
+      })
+
+      it('should work with allowSpaceInQuery option', () => {
+        const regex = makeTriggerRegex(':', { allowSpaceInQuery: true })
+        const match = ':multi word emoji'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('multi word emoji')
+      })
+    })
+
+    describe('forward slash trigger (/)', () => {
+      it('should create a valid regex for forward slash trigger', () => {
+        const regex = makeTriggerRegex('/')
+        expect(regex).toBeInstanceOf(RegExp)
+        expect(regex.source).not.toBe('')
+        // Verify the regex properly escapes forward slash
+        expect(regex.source).toContain('/')
+      })
+
+      it('should match text starting with slash at beginning', () => {
+        const regex = makeTriggerRegex('/')
+        const match = '/command'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[1]).toBe('/command')
+        expect(match?.[2]).toBe('command')
+      })
+
+      it('should match text starting with slash after whitespace', () => {
+        const regex = makeTriggerRegex('/')
+        const match = 'Execute /command'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[1]).toBe('/command')
+        expect(match?.[2]).toBe('command')
+      })
+
+      it('should not match slash in file paths without space', () => {
+        const regex = makeTriggerRegex('/')
+        const match = 'path/to/file'.match(regex)
+        expect(match).toBeNull()
+      })
+
+      it('should match various command names', () => {
+        const regex = makeTriggerRegex('/')
+        const testCases = [
+          { input: '/help', expected: 'help' },
+          { input: '/status', expected: 'status' },
+          { input: '/search', expected: 'search' },
+          { input: '/join', expected: 'join' },
+        ]
+
+        for (const { input, expected } of testCases) {
+          const match = input.match(regex)
+          expect(match).not.toBeNull()
+          expect(match?.[2]).toBe(expected)
+        }
+      })
+
+      it('should handle consecutive slashes properly', () => {
+        const regex = makeTriggerRegex('/')
+        // URL with // should not match
+        const match = 'https://example.com'.match(regex)
+        expect(match).toBeNull()
+      })
+
+      it('should work with allowSpaceInQuery option', () => {
+        const regex = makeTriggerRegex('/', { allowSpaceInQuery: true })
+        const match = '/search for something'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('search for something')
+      })
+
+      it('should match empty slash query', () => {
+        const regex = makeTriggerRegex('/')
+        const match = '/'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('')
+      })
+    })
+
+    describe('backslash trigger (\\)', () => {
+      it('should create a valid regex for backslash trigger', () => {
+        const regex = makeTriggerRegex('\\')
+        expect(regex).toBeInstanceOf(RegExp)
+        expect(regex.source).not.toBe('')
+        // Verify the regex properly escapes backslash
+        expect(regex.source).toContain('\\\\')
+      })
+
+      it('should match text starting with backslash at beginning', () => {
+        const regex = makeTriggerRegex('\\')
+        const match = '\\command'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[1]).toBe('\\command')
+        expect(match?.[2]).toBe('command')
+      })
+
+      it('should match text starting with backslash after whitespace', () => {
+        const regex = makeTriggerRegex('\\')
+        const match = 'LaTeX \\command'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[1]).toBe('\\command')
+        expect(match?.[2]).toBe('command')
+      })
+
+      it('should not match backslash in Windows paths without space', () => {
+        const regex = makeTriggerRegex('\\')
+        const match = 'C:\\Users\\file'.match(regex)
+        expect(match).toBeNull()
+      })
+
+      it('should match various LaTeX-style commands', () => {
+        const regex = makeTriggerRegex('\\')
+        const testCases = [
+          { input: '\\alpha', expected: 'alpha' },
+          { input: '\\beta', expected: 'beta' },
+          { input: '\\sum', expected: 'sum' },
+          { input: '\\int', expected: 'int' },
+        ]
+
+        for (const { input, expected } of testCases) {
+          const match = input.match(regex)
+          expect(match).not.toBeNull()
+          expect(match?.[2]).toBe(expected)
+        }
+      })
+
+      it('should handle consecutive backslashes properly', () => {
+        const regex = makeTriggerRegex('\\')
+        // Double backslash should not match
+        const match = '\\\\newline'.match(regex)
+        expect(match).toBeNull()
+      })
+
+      it('should work with allowSpaceInQuery option', () => {
+        const regex = makeTriggerRegex('\\', { allowSpaceInQuery: true })
+        const match = '\\text with spaces'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('text with spaces')
+      })
+
+      it('should match empty backslash query', () => {
+        const regex = makeTriggerRegex('\\')
+        const match = '\\'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('')
+      })
+    })
+
+    describe('unusual triggers with ignoreAccents option', () => {
+      it('should work with colon trigger and accented characters', () => {
+        const regex = makeTriggerRegex(':', { ignoreAccents: true })
+        const match = ':café'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('café')
+      })
+
+      it('should work with slash trigger and accented characters', () => {
+        const regex = makeTriggerRegex('/', { ignoreAccents: true })
+        const match = '/José'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('José')
+      })
+
+      it('should work with backslash trigger and accented characters', () => {
+        const regex = makeTriggerRegex('\\', { ignoreAccents: true })
+        const match = '\\Müller'.match(regex)
+        expect(match).not.toBeNull()
+        expect(match?.[2]).toBe('Müller')
+      })
+    })
+  })
 })

@@ -25,11 +25,18 @@ const emojiClassNames = mergeClassNames(multilineMentionsClassNames, {
   suggestionHighlight: 'font-semibold text-emerald-800',
 })
 
-export default function Emojis({ data }: { data: MentionDataItem[] }) {
+export default function Emojis({
+  data,
+  onAdd = () => {},
+}: {
+  data: MentionDataItem[]
+  onAdd?: (...args: any[]) => void
+}) {
   const [emojis] = useState<EmojiEntry[]>(emojisData.emojis as EmojiEntry[])
   const [value, setValue] = useState('')
 
   const queryEmojis = (query: string) => {
+    console.log('queryEmojis', query, emojis.length)
     if (!query) return Promise.resolve([])
 
     const lower = query.toLowerCase()
@@ -54,17 +61,19 @@ export default function Emojis({ data }: { data: MentionDataItem[] }) {
         placeholder={"Press ':' for emojis, mention people using '@'"}
       >
         <Mention
+          onAdd={onAdd}
           trigger="@"
           displayTransform={(username) => `@${username}`}
-          markup="@__id__"
           data={data}
           className={mentionPillClass}
           appendSpaceOnAdd
         />
         <Mention
+          onAdd={onAdd}
           trigger=":"
-          markup="__id__"
           data={queryEmojis}
+          className="bg-transparent"
+          displayTransform={(id) => String(id)}
           renderSuggestion={(suggestion, _search, highlightedDisplay, _index, focused) => {
             return (
               <div
