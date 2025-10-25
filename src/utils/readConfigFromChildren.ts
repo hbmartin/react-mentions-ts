@@ -9,8 +9,10 @@ const DEFAULT_SERIALIZER = createMarkupSerializer(DEFAULT_MENTION_PROPS.markup)
 
 const isMentionElement = (child: unknown): child is ReactElement<MentionComponentProps> =>
   React.isValidElement(child) &&
-  (child.type === Mention ||
-    (typeof child.props === 'object' && child.props !== null && 'data' in child.props))
+  child.type === Mention &&
+  typeof child.props === 'object' &&
+  child.props !== null &&
+  'data' in child.props
 
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
