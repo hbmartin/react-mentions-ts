@@ -52,11 +52,16 @@ import type {
 } from './types'
 
 const getDataProvider = <Extra extends Record<string, unknown>>(
-  data: DataSource<Extra>
+  data: DataSource<Extra>,
+  ignoreAccents: boolean
 ): ((query: string) => Promise<MentionDataItem<Extra>[]>) => {
   if (Array.isArray(data)) {
+    const items = data as ReadonlyArray<MentionDataItem<Extra>>
+    // eslint-disable-next-line @typescript-eslint/require-await
     return async (query: string) =>
-      data.filter((item) => getSubstringIndex(item.display || String(item.id), query) >= 0)
+      items.filter(
+        (item) => getSubstringIndex(item.display || String(item.id), query, ignoreAccents) >= 0
+      )
   }
 
   return async (query: string) => {
@@ -102,6 +107,7 @@ const inlineSuggestionPrefixStyles =
 const inlineSuggestionSuffixStyles = 'whitespace-pre'
 
 const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
+  // TODO move this into makeTriggerRegex
   if (typeof trigger === 'string') {
     return makeTriggerRegex(trigger)
   }
@@ -1438,12 +1444,17 @@ class MentionsInput<
       const match = substring.match(regex)
       if (match?.[1] !== undefined && match[2] !== undefined) {
         const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
-        this.queryData(
-          match[2],
+        const dataSource = child.props.data
+        const provideData = getDataProvider<Extra>(dataSource, regex.flags.includes('u'))
+        const resultPromise = provideData(match[2])
+        void this.updateSuggestions(
+          this._queryId,
           childIndex,
+          match[2],
           querySequenceStart,
           querySequenceStart + match[1].length,
-          plainTextValue
+          plainTextValue,
+          resultPromise
         )
       }
     })
@@ -1457,32 +1468,6 @@ class MentionsInput<
       suggestions: {},
       focusIndex: 0,
     })
-  }
-
-  queryData = (
-    query: string,
-    childIndex: number,
-    querySequenceStart: number,
-    querySequenceEnd: number,
-    plainTextValue: string
-  ): void => {
-    const { children } = this.props
-    const mentionChild = Children.toArray(children)[childIndex]
-    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionChild)) {
-      return
-    }
-    const dataSource = mentionChild.props.data
-    const provideData = getDataProvider<Extra>(dataSource)
-    const resultPromise = provideData(query)
-    void this.updateSuggestions(
-      this._queryId,
-      childIndex,
-      query,
-      querySequenceStart,
-      querySequenceEnd,
-      plainTextValue,
-      resultPromise
-    )
   }
 
   updateSuggestions = async (

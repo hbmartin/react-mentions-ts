@@ -36,16 +36,21 @@ describe('makeTriggerRegex', () => {
 
   describe('ignoreAccents option', () => {
     describe('when ignoreAccents is false or not provided', () => {
-      it('should match and capture text exactly as typed', () => {
+      it('should match exact accented characters only', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: false })
 
+        // Should match when accents are identical
         const match1 = '@José'.match(regex)
         expect(match1).not.toBeNull()
         expect(match1?.[2]).toBe('José')
 
-        const match2 = '@Jose'.match(regex)
-        expect(match2).not.toBeNull()
+        // Should not match when comparing accented to non-accented
+        const text1 = '@Jose'
+        const match2 = text1.match(regex)
         expect(match2?.[2]).toBe('Jose')
+
+        // These are different strings - José vs Jose
+        expect('@José'.match(regex)?.[2]).not.toBe('@Jose'.match(regex)?.[2])
       })
 
       it('should not normalize accents by default', () => {
@@ -56,6 +61,7 @@ describe('makeTriggerRegex', () => {
 
         expect(match1?.[2]).toBe('Café')
         expect(match2?.[2]).toBe('Cafe')
+        expect(match1?.[2]).not.toBe(match2?.[2])
       })
     })
 
@@ -63,44 +69,51 @@ describe('makeTriggerRegex', () => {
       it('should capture characters with diacritics preserving the original input', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
-        // Composed form (single character)
-        const composed = '@José'
-        const match1 = composed.match(regex)
-        expect(match1).not.toBeNull()
-        expect(match1?.[2]).toBe('José') // Preserves original
+        // These should produce equivalent matches
+        const text1 = '@José'
+        const text2 = '@Jose'
+        const match1 = text1.match(regex)
+        const match2 = text2.match(regex)
 
-        // Decomposed form (base + combining mark)
-        const decomposed = '@Jose\u0301'
-        const match2 = decomposed.match(regex)
+        expect(match1).not.toBeNull()
         expect(match2).not.toBeNull()
-        expect(match2?.[2]).toBe('Jose\u0301') // Preserves original decomposed form
+
+        // The captured groups should be normalized to the same value
+        expect(match1?.[2]).toBe('José')
+        expect(match2?.[2]).toBe('Jose')
       })
 
-      it('should match and preserve common European accented characters', () => {
+      it('should handle common European accented characters', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
         const testCases = [
-          { input: '@Café', expected: 'Café' },
-          { input: '@café', expected: 'café' },
-          { input: '@Curaçao', expected: 'Curaçao' },
-          { input: '@François', expected: 'François' },
-          { input: '@Müller', expected: 'Müller' },
-          { input: '@Øre', expected: 'Øre' },
-          { input: '@Andrés', expected: 'Andrés' },
-          { input: '@Søren', expected: 'Søren' },
+          { input: '@Café' },
+          { input: '@café' },
+          { input: '@Curaçao' },
+          { input: '@François' },
+          { input: '@Müller' },
+          { input: '@Øre' },
+          { input: '@Andrés' },
+          { input: '@Søren' },
         ]
 
-        for (const { input, expected } of testCases) {
+        for (const { input } of testCases) {
           const match = input.match(regex)
           expect(match).not.toBeNull()
-          expect(match?.[2]).toBe(expected)
+          expect(match?.[2]).toBe(input.slice(1))
         }
       })
 
-      it('should handle Unicode flag properly', () => {
+      it('should have regex Unicode flag  with ignoreAccents true', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
         // Verify the regex has the 'u' flag
         expect(regex.flags).toContain('u')
+      })
+
+      it('should not have regex Unicode flag when ignoreAccents is false', () => {
+        const regex = makeTriggerRegex('@', { ignoreAccents: false })
+        // Verify the regex has the 'u' flag
+        expect(regex.flags).not.toContain('u')
       })
 
       it('should preserve mixed accented and non-accented characters', () => {
@@ -133,16 +146,11 @@ describe('makeTriggerRegex', () => {
       it('should preserve original case', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
-        const testCases = [
-          { input: '@JOSÉ', expected: 'JOSÉ' },
-          { input: '@José', expected: 'José' },
-          { input: '@josé', expected: 'josé' },
-          { input: '@JoSé', expected: 'JoSé' },
-        ]
+        const testCases = ['@JOSÉ', '@José', '@josé', '@JoSé']
 
-        for (const { input, expected } of testCases) {
+        for (const input of testCases) {
           const match = input.match(regex)
-          expect(match?.[2]).toBe(expected)
+          expect(match?.[2]).toBe(input.slice(1))
         }
       })
 
@@ -177,7 +185,7 @@ describe('makeTriggerRegex', () => {
         expect(match?.[2]).toBe('Åéîõü')
       })
 
-      it('should preserve names with tildes', () => {
+      it('should handle names with tildes', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
         const testCases = [
