@@ -82,7 +82,7 @@ export default function Examples() {
       <CutCopyPaste data={users} disabledSource={false} />
       <InlineAutocomplete data={users} />
       <AsyncGithubUserMentions />
-      <Emojis data={users} />
+      <Emojis data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SuggestionPortal data={users} />
       <CustomSuggestionsContainer data={users} />
     </div>
