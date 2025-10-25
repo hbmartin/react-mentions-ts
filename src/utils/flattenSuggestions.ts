@@ -24,11 +24,10 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
     }
 
     handledIndices.add(childIndex)
-    const { results, queryInfo, resultQueryInfos } = entry
-    results.forEach((result, index) => {
-      const resultQueryInfo = resultQueryInfos?.[index] ?? queryInfo
-      flattened.push({ result, queryInfo: resultQueryInfo })
-    })
+    const { results, queryInfo } = entry
+    for (const result of results) {
+      flattened.push({ result, queryInfo })
+    }
   })
 
   const remainingIndices = Object.keys(suggestionsMap)
@@ -42,11 +41,10 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
       continue
     }
 
-    const { results, queryInfo, resultQueryInfos } = entry
-    results.forEach((result, idx) => {
-      const resultQueryInfo = resultQueryInfos?.[idx] ?? queryInfo
-      flattened.push({ result, queryInfo: resultQueryInfo })
-    })
+    const { results, queryInfo } = entry
+    for (const result of results) {
+      flattened.push({ result, queryInfo })
+    }
   }
 
   return flattened

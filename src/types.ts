@@ -28,11 +28,11 @@ export interface MentionSerializer {
 export type MentionDataItem<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   id: MentionIdentifier
   display?: string
-} & Omit<Extra, 'id' | 'display'>
+  highlights?: { start: number; end: number }[]
+} & Omit<Extra, 'id' | 'display' | 'highlights'>
 
 export type SuggestionDataItem<Extra extends Record<string, unknown> = Record<string, unknown>> =
-  | MentionDataItem<Extra>
-  | string
+  MentionDataItem<Extra>
 
 type MaybePromise<T> = T | Promise<T>
 
@@ -46,7 +46,6 @@ export interface QueryInfo {
   querySequenceStart: number
   querySequenceEnd: number
   plainTextValue: string
-  displayMatchStart?: number
 }
 
 export type SuggestionsMap<Extra extends Record<string, unknown> = Record<string, unknown>> =
@@ -55,7 +54,6 @@ export type SuggestionsMap<Extra extends Record<string, unknown> = Record<string
     {
       queryInfo: QueryInfo
       results: SuggestionDataItem<Extra>[]
-      resultQueryInfos?: QueryInfo[]
     }
   >
 

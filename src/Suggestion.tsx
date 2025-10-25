@@ -9,7 +9,6 @@ interface SuggestionProps<Extra extends Record<string, unknown> = Record<string,
   readonly onClick: () => void
   readonly onMouseEnter: () => void
   readonly query: string
-  readonly matchStart?: number
   readonly renderSuggestion?: MentionRenderSuggestion<Extra> | null
   readonly suggestion: SuggestionDataItem<Extra>
   readonly className?: string
@@ -29,7 +28,6 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   onClick,
   onMouseEnter,
   query,
-  matchStart,
   renderSuggestion,
   suggestion,
   className,
@@ -57,20 +55,30 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   }
 
   const renderHighlightedDisplay = (display: string): React.ReactNode => {
-    const indexOfMatch =
-      typeof matchStart === 'number' && Number.isFinite(matchStart) ? matchStart : -1
-
-    if (indexOfMatch === -1) {
+    if (suggestion.highlights === undefined || suggestion.highlights.length === 0) {
       return <span className={displayClassNameResolved}>{display}</span>
     }
 
     return (
       <span className={displayClassNameResolved}>
-        {display.slice(0, indexOfMatch)}
-        <b className={highlightClassNameResolved}>
-          {display.slice(indexOfMatch, indexOfMatch + query.length)}
-        </b>
-        {display.slice(indexOfMatch + query.length)}
+        {suggestion.highlights.map((highlight, index) => (
+          <>
+            {
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              display.slice(index > 0 ? suggestion.highlights![index - 1].end : 0, highlight.start)
+            }
+            <b
+              className={highlightClassNameResolved}
+              key={`highlight-${highlight.start}-${highlight.end}`}
+            >
+              {display.slice(highlight.start, highlight.end)}
+            </b>
+          </>
+        ))}
+        {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          display.slice(suggestion.highlights.at(-1)!.end)
+        }
       </span>
     )
   }
