@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { Mention, MentionsInput } from '../../../src'
@@ -9,6 +9,7 @@ import {
   mergeClassNames,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import emojisData from './emojis.json'
 
 const neverMatchingRegex = /($a)/
 
@@ -25,18 +26,8 @@ const emojiClassNames = mergeClassNames(multilineMentionsClassNames, {
 })
 
 export default function Emojis({ data }: { data: MentionDataItem[] }) {
-  const [emojis, setEmojis] = useState<EmojiEntry[]>([])
+  const [emojis] = useState<EmojiEntry[]>(emojisData.emojis as EmojiEntry[])
   const [value, setValue] = useState('')
-
-  useEffect(() => {
-    fetch(
-      'https://gist.githubusercontent.com/oliveratgithub/0bf11a9aff0d6da7b46f1490f86a71eb/raw/d8e4b78cfe66862cf3809443c1dba017f37b61db/emojis.json'
-    )
-      .then((response) => response.json())
-      .then((jsonData) => {
-        setEmojis(jsonData.emojis as EmojiEntry[])
-      })
-  }, [])
 
   const queryEmojis = (query: string) => {
     if (!query) return Promise.resolve([])
@@ -53,7 +44,7 @@ export default function Emojis({ data }: { data: MentionDataItem[] }) {
   return (
     <ExampleCard
       title="Emoji support"
-      description="Mix people mentions with emoji search powered by remote JSON data."
+      description="Mix people mentions with emoji search powered by JSON data."
     >
       <MentionsInput
         value={value}
@@ -67,14 +58,12 @@ export default function Emojis({ data }: { data: MentionDataItem[] }) {
           displayTransform={(username) => `@${username}`}
           markup="@__id__"
           data={data}
-          regex={/@(\S+)/}
           className={mentionPillClass}
           appendSpaceOnAdd
         />
         <Mention
           trigger=":"
           markup="__id__"
-          regex={neverMatchingRegex}
           data={queryEmojis}
           renderSuggestion={(suggestion, _search, highlightedDisplay, _index, focused) => {
             return (

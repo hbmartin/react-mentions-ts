@@ -277,21 +277,20 @@ class MentionsInput<
       return false
     }
 
+    // eslint-disable-next-line code-complete/enforce-meaningful-names
     return config1.every((cfg1, index) => {
+      // eslint-disable-next-line code-complete/enforce-meaningful-names
       const cfg2 = config2[index]
-      if (!cfg2) {
-        return false
-      }
 
       // Compare key properties that determine config identity
       return (
-        cfg1.data === cfg2.data &&
-        cfg1.trigger === cfg2.trigger &&
-        cfg1.serializer.id === cfg2.serializer.id &&
-        cfg1.displayTransform === cfg2.displayTransform &&
-        cfg1.appendSpaceOnAdd === cfg2.appendSpaceOnAdd &&
-        cfg1.onAdd === cfg2.onAdd &&
-        cfg1.isLoading === cfg2.isLoading
+        ((typeof cfg1.trigger === 'string' &&
+          typeof cfg2.trigger === 'string' &&
+          cfg1.trigger === cfg2.trigger) ||
+          (cfg1.trigger instanceof RegExp &&
+            cfg2.trigger instanceof RegExp &&
+            cfg1.trigger.source === cfg2.trigger.source)) &&
+        cfg1.serializer.id === cfg2.serializer.id
       )
     })
   }
@@ -313,15 +312,7 @@ class MentionsInput<
     prevState: MentionsInputState<Extra>
   ): void {
     // Validate children if they've changed
-    if (Array.isArray(prevProps.children) && Array.isArray(this.props.children)) {
-      if (prevProps.children.length !== this.props.children.length) {
-        this.validateChildren()
-      }
-    } else if (!Array.isArray(prevProps.children) && !Array.isArray(this.props.children)) {
-      if (prevProps.children.key !== this.props.children.key) {
-        this.validateChildren()
-      }
-    } else {
+    if (prevProps.children !== this.props.children) {
       this.validateChildren()
     }
 
