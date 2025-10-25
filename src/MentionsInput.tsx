@@ -1436,7 +1436,7 @@ class MentionsInput<
       const regex = resolveTriggerRegex(triggerProp)
       // eslint-disable-next-line sonarjs/prefer-regexp-exec
       const match = substring.match(regex)
-      if (match && match[1] !== undefined && match[2] !== undefined) {
+      if (match?.[1] !== undefined && match[2] !== undefined) {
         const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
         this.queryData(
           match[2],
@@ -1472,9 +1472,6 @@ class MentionsInput<
       return
     }
     const dataSource = mentionChild.props.data
-    if (!dataSource) {
-      return
-    }
     const provideData = getDataProvider<Extra>(dataSource)
     const resultPromise = provideData(query)
     void this.updateSuggestions(

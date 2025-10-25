@@ -57,6 +57,22 @@ describe('readConfigFromChildren', () => {
     expect(config[1]?.trigger).toBe('#')
   })
 
+  it('ignores non-mention nodes with data prop', () => {
+    const config = readConfigFromChildren(
+      <>
+        {/* @ts-expect-error - Testing with invalid prop to ensure non-Mention nodes are filtered */}
+        <span data="text-node">text node</span>
+        {null}
+        {makeMention({ markup: '@[__display__](__id__)', trigger: '@' })}
+        {makeMention({ markup: '#__id__', trigger: '#' })}
+      </>
+    )
+
+    expect(config).toHaveLength(2)
+    expect(config[0]?.trigger).toBe('@')
+    expect(config[1]?.trigger).toBe('#')
+  })
+
   it('handles nested fragments and arrays of mentions', () => {
     const config = readConfigFromChildren(
       <>
