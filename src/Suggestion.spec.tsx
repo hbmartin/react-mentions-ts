@@ -51,20 +51,6 @@ describe('Suggestion', () => {
 
     expect(container.textContent).toContain('Test Suggestion')
 
-    // Test with string suggestion
-    const { container: container2 } = render(
-      <Suggestion
-        id="suggestion-2"
-        index={1}
-        query="foo"
-        suggestion="String Suggestion"
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
-      />
-    )
-
-    expect(container2.textContent).toContain('String Suggestion')
-
     // Test with suggestion that has no display, should fall back to id
     const { container: container3 } = render(
       <Suggestion

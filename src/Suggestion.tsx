@@ -41,10 +41,6 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   const highlightClassNameResolved = cn(suggestionHighlightStyles, highlightClassName)
 
   const getDisplay = (): string => {
-    if (typeof suggestion === 'string') {
-      return suggestion
-    }
-
     const { id: suggestionId, display } = suggestion
 
     if (typeof display === 'string' && display.length > 0) {
