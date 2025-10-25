@@ -1,6 +1,6 @@
 import React from 'react'
-import flattenSuggestions from './flattenSuggestions'
 import type { SuggestionDataItem, SuggestionsMap } from '../types'
+import flattenSuggestions from './flattenSuggestions'
 
 const createSuggestion = (id: string, display?: string): SuggestionDataItem => ({
   id,

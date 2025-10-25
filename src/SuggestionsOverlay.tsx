@@ -124,11 +124,11 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     onMouseEnter?.(index)
   }
 
-  const getSuggestionId = (suggestionItem: SuggestionDataItem<Extra>) => {
+  const getSuggestionId = (suggestionItem: SuggestionDataItem<Extra>): string => {
     if (typeof suggestionItem === 'string') {
       return suggestionItem
     }
-    return suggestionItem.id
+    return String(suggestionItem.id)
   }
 
   const renderSuggestion = (
@@ -148,7 +148,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         focusedClassName={focusedItemClassName}
         displayClassName={displayClassName}
         highlightClassName={highlightClassName}
-        key={`${childIndex.toString()}-${getSuggestionId(suggestionItem).toString()}`}
+        key={`${childIndex.toString()}-${getSuggestionId(suggestionItem)}`}
         id={getSuggestionHtmlId(id, index)}
         query={query}
         index={index}

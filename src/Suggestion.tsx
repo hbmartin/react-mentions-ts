@@ -1,5 +1,4 @@
 import React from 'react'
-import { getSubstringIndex } from './utils'
 import { cn } from './utils/cn'
 import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
 
@@ -56,19 +55,27 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   }
 
   const renderHighlightedDisplay = (display: string): React.ReactNode => {
-    const indexOfMatch = getSubstringIndex(display, query)
-
-    if (indexOfMatch === -1) {
+    if (suggestion.highlights === undefined || suggestion.highlights.length === 0) {
       return <span className={displayClassNameResolved}>{display}</span>
     }
 
     return (
-      <span className={displayClassNameResolved}>
-        {display.slice(0, indexOfMatch)}
-        <b className={highlightClassNameResolved}>
-          {display.slice(indexOfMatch, indexOfMatch + query.length)}
-        </b>
-        {display.slice(indexOfMatch + query.length)}
+      <span className={displayClassNameResolved} key={`highlighted-display-${id}`}>
+        {suggestion.highlights.map((highlight, index) => (
+          <React.Fragment key={`highlight-${highlight.start}-${highlight.end}`}>
+            {
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              display.slice(index > 0 ? suggestion.highlights![index - 1].end : 0, highlight.start)
+            }
+            <b className={highlightClassNameResolved}>
+              {display.slice(highlight.start, highlight.end)}
+            </b>
+          </React.Fragment>
+        ))}
+        {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          display.slice(suggestion.highlights.at(-1)!.end)
+        }
       </span>
     )
   }

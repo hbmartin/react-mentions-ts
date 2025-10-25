@@ -59,9 +59,17 @@ const getDataProvider = <Extra extends Record<string, unknown>>(
     const items = data as ReadonlyArray<MentionDataItem<Extra>>
     // eslint-disable-next-line @typescript-eslint/require-await
     return async (query: string) =>
-      items.filter(
-        (item) => getSubstringIndex(item.display || String(item.id), query, ignoreAccents) >= 0
-      )
+      items.flatMap((item) => {
+        const index = getSubstringIndex(item.display || String(item.id), query, ignoreAccents)
+        return index >= 0
+          ? [
+              {
+                ...item,
+                highlights: [{ start: index, end: index + query.length }],
+              },
+            ]
+          : []
+      })
   }
 
   return async (query: string) => {
@@ -1486,16 +1494,18 @@ class MentionsInput<
     const data: MentionDataItem<Extra>[] = await Promise.resolve(results)
     // save in property so that multiple sync state updates from different mentions sources
     // won't overwrite each other
+    const queryInfo: QueryInfo = {
+      childIndex,
+      query,
+      querySequenceStart,
+      querySequenceEnd,
+      plainTextValue,
+    }
+
     this.suggestions = {
       ...this.suggestions,
       [childIndex]: {
-        queryInfo: {
-          childIndex,
-          query,
-          querySequenceStart,
-          querySequenceEnd,
-          plainTextValue,
-        },
+        queryInfo,
         results: data,
       },
     }
