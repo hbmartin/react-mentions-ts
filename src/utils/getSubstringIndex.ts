@@ -1,5 +1,4 @@
 /* eslint-disable code-complete/enforce-meaningful-names */
-import lettersDiacritics from './diacritics'
 
 const removeAccents = (str: string): string => {
   let formattedStr = str

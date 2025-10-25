@@ -106,7 +106,7 @@ const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
     return makeTriggerRegex(trigger)
   }
 
-  const flags = trigger.flags.replace(/g/g, '')
+  const flags = trigger.flags.replaceAll('g', '')
   return new RegExp(trigger.source, flags)
 }
 

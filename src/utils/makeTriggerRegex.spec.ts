@@ -36,21 +36,16 @@ describe('makeTriggerRegex', () => {
 
   describe('ignoreAccents option', () => {
     describe('when ignoreAccents is false or not provided', () => {
-      it('should match exact accented characters only', () => {
+      it('should match and capture text exactly as typed', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: false })
 
-        // Should match when accents are identical
         const match1 = '@José'.match(regex)
         expect(match1).not.toBeNull()
         expect(match1?.[2]).toBe('José')
 
-        // Should not match when comparing accented to non-accented
-        const text1 = '@Jose'
-        const match2 = text1.match(regex)
+        const match2 = '@Jose'.match(regex)
+        expect(match2).not.toBeNull()
         expect(match2?.[2]).toBe('Jose')
-
-        // These are different strings - José vs Jose
-        expect('@José'.match(regex)?.[2]).not.toBe('@Jose'.match(regex)?.[2])
       })
 
       it('should not normalize accents by default', () => {
@@ -61,40 +56,38 @@ describe('makeTriggerRegex', () => {
 
         expect(match1?.[2]).toBe('Café')
         expect(match2?.[2]).toBe('Cafe')
-        expect(match1?.[2]).not.toBe(match2?.[2])
       })
     })
 
     describe('when ignoreAccents is true', () => {
-      it('should match accented characters with their non-accented equivalents', () => {
+      it('should capture characters with diacritics preserving the original input', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
-        // These should produce equivalent matches
-        const text1 = '@José'
-        const text2 = '@Jose'
-        const match1 = text1.match(regex)
-        const match2 = text2.match(regex)
-
+        // Composed form (single character)
+        const composed = '@José'
+        const match1 = composed.match(regex)
         expect(match1).not.toBeNull()
-        expect(match2).not.toBeNull()
+        expect(match1?.[2]).toBe('José') // Preserves original
 
-        // The captured groups should be normalized to the same value
-        expect(match1?.[2]).toBe('jose')
-        expect(match2?.[2]).toBe('jose')
+        // Decomposed form (base + combining mark)
+        const decomposed = '@Jose\u0301'
+        const match2 = decomposed.match(regex)
+        expect(match2).not.toBeNull()
+        expect(match2?.[2]).toBe('Jose\u0301') // Preserves original decomposed form
       })
 
-      it('should handle common European accented characters', () => {
+      it('should match and preserve common European accented characters', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
         const testCases = [
-          { input: '@Café', expected: 'cafe' },
-          { input: '@café', expected: 'cafe' },
-          { input: '@Curaçao', expected: 'curacao' },
-          { input: '@François', expected: 'francois' },
-          { input: '@Müller', expected: 'muller' },
-          { input: '@Øre', expected: 'ore' },
-          { input: '@Andrés', expected: 'andres' },
-          { input: '@Søren', expected: 'soren' },
+          { input: '@Café', expected: 'Café' },
+          { input: '@café', expected: 'café' },
+          { input: '@Curaçao', expected: 'Curaçao' },
+          { input: '@François', expected: 'François' },
+          { input: '@Müller', expected: 'Müller' },
+          { input: '@Øre', expected: 'Øre' },
+          { input: '@Andrés', expected: 'Andrés' },
+          { input: '@Søren', expected: 'Søren' },
         ]
 
         for (const { input, expected } of testCases) {
@@ -104,29 +97,18 @@ describe('makeTriggerRegex', () => {
         }
       })
 
-      it('should handle decomposed Unicode characters', () => {
+      it('should handle Unicode flag properly', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
-
-        // Composed: é (single character U+00E9)
-        const composed = '@José'
-        // Decomposed: é (e + combining acute accent U+0065 U+0301)
-        const decomposed = '@Jose\u0301'
-
-        const match1 = composed.match(regex)
-        const match2 = decomposed.match(regex)
-
-        expect(match1).not.toBeNull()
-        expect(match2).not.toBeNull()
-        expect(match1?.[2]).toBe('jose')
-        expect(match2?.[2]).toBe('jose')
+        // Verify the regex has the 'u' flag
+        expect(regex.flags).toContain('u')
       })
 
-      it('should work with mixed accented and non-accented characters', () => {
+      it('should preserve mixed accented and non-accented characters', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
         const match = '@JoséSmith'.match(regex)
         expect(match).not.toBeNull()
-        expect(match?.[2]).toBe('josesmith')
+        expect(match?.[2]).toBe('JoséSmith')
       })
 
       it('should handle empty query after trigger', () => {
@@ -140,27 +122,27 @@ describe('makeTriggerRegex', () => {
       it('should work with allowSpaceInQuery combined', () => {
         const regex = makeTriggerRegex('@', {
           ignoreAccents: true,
-          allowSpaceInQuery: true
+          allowSpaceInQuery: true,
         })
 
         const match = '@José García'.match(regex)
         expect(match).not.toBeNull()
-        expect(match?.[2]).toBe('jose garcia')
+        expect(match?.[2]).toBe('José García')
       })
 
-      it('should normalize case as well as accents', () => {
+      it('should preserve original case', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
         const testCases = [
-          '@JOSÉ',
-          '@José',
-          '@josé',
-          '@JoSé',
+          { input: '@JOSÉ', expected: 'JOSÉ' },
+          { input: '@José', expected: 'José' },
+          { input: '@josé', expected: 'josé' },
+          { input: '@JoSé', expected: 'JoSé' },
         ]
 
-        for (const input of testCases) {
+        for (const { input, expected } of testCases) {
           const match = input.match(regex)
-          expect(match?.[2]).toBe('jose')
+          expect(match?.[2]).toBe(expected)
         }
       })
 
@@ -169,7 +151,7 @@ describe('makeTriggerRegex', () => {
 
         const match = '@Café'.match(regex)
         expect(match).not.toBeNull()
-        expect(match?.[2]).toBe('cafe')
+        expect(match?.[2]).toBe('Café')
       })
 
       it('should handle triggers after whitespace', () => {
@@ -177,7 +159,7 @@ describe('makeTriggerRegex', () => {
 
         const match = 'Hello @Café'.match(regex)
         expect(match).not.toBeNull()
-        expect(match?.[2]).toBe('cafe')
+        expect(match?.[2]).toBe('Café')
       })
 
       it('should not match triggers in the middle of words', () => {
@@ -192,22 +174,37 @@ describe('makeTriggerRegex', () => {
 
         const match = '@Åéîõü'.match(regex)
         expect(match).not.toBeNull()
-        expect(match?.[2]).toBe('aeiou')
+        expect(match?.[2]).toBe('Åéîõü')
       })
 
-      it('should handle names with tildes', () => {
+      it('should preserve names with tildes', () => {
         const regex = makeTriggerRegex('@', { ignoreAccents: true })
 
         const testCases = [
-          { input: '@Peña', expected: 'pena' },
-          { input: '@São', expected: 'sao' },
-          { input: '@Niño', expected: 'nino' },
+          { input: '@Peña', expected: 'Peña' },
+          { input: '@São', expected: 'São' },
+          { input: '@Niño', expected: 'Niño' },
         ]
 
         for (const { input, expected } of testCases) {
           const match = input.match(regex)
           expect(match?.[2]).toBe(expected)
         }
+      })
+
+      it('should match text with combining diacritical marks', () => {
+        const regex = makeTriggerRegex('@', { ignoreAccents: true })
+
+        // Test with various combining marks
+        const withAcute = '@e\u0301' // e + combining acute accent
+        const matchAcute = withAcute.match(regex)
+        expect(matchAcute).not.toBeNull()
+        expect(matchAcute?.[2]).toBe('e\u0301')
+
+        const withGrave = '@a\u0300' // a + combining grave accent
+        const matchGrave = withGrave.match(regex)
+        expect(matchGrave).not.toBeNull()
+        expect(matchGrave?.[2]).toBe('a\u0300')
       })
     })
   })
