@@ -60,20 +60,17 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     }
 
     return (
-      <span className={displayClassNameResolved}>
+      <span className={displayClassNameResolved} key={`highlighted-display-${id}`}>
         {suggestion.highlights.map((highlight, index) => (
-          <>
+          <React.Fragment key={`highlight-${highlight.start}-${highlight.end}`}>
             {
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               display.slice(index > 0 ? suggestion.highlights![index - 1].end : 0, highlight.start)
             }
-            <b
-              className={highlightClassNameResolved}
-              key={`highlight-${highlight.start}-${highlight.end}`}
-            >
+            <b className={highlightClassNameResolved}>
               {display.slice(highlight.start, highlight.end)}
             </b>
-          </>
+          </React.Fragment>
         ))}
         {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

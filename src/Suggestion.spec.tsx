@@ -86,7 +86,7 @@ describe('Suggestion', () => {
         id="suggestion-1"
         index={0}
         query="Test"
-        suggestion={{ id: '1', display: 'Test Suggestion' }}
+        suggestion={{ id: '1', display: 'Test Suggestion', highlights: [{ start: 0, end: 4 }] }}
         onClick={jest.fn()}
         onMouseEnter={jest.fn()}
       />
@@ -102,7 +102,7 @@ describe('Suggestion', () => {
         id="suggestion-2"
         index={1}
         query="Sugg"
-        suggestion={{ id: '2', display: 'Test Suggestion' }}
+        suggestion={{ id: '2', display: 'Test Suggestion', highlights: [{ start: 5, end: 9 }] }}
         onClick={jest.fn()}
         onMouseEnter={jest.fn()}
       />
