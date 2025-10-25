@@ -11,8 +11,8 @@ import React, { Children, useLayoutEffect } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
-import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Mention from './Mention'
+import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
   applyChangeToValue,
@@ -242,6 +242,7 @@ class MentionsInput<
       suggestionsPosition: {},
       pendingSelectionUpdate: false,
       highlighterRecomputeVersion: 0,
+      config: readConfigFromChildren(props.children),
     } satisfies MentionsInputState<Extra>
   }
 
@@ -259,6 +260,39 @@ class MentionsInput<
           }`
         )
       }
+    })
+
+    // Compute new config and update state if changed
+    const newConfig = readConfigFromChildren(this.props.children)
+    if (!this.configsEqual(this.state.config, newConfig)) {
+      this.setState({ config: newConfig })
+    }
+  }
+
+  private configsEqual(
+    config1: ReturnType<typeof readConfigFromChildren>,
+    config2: ReturnType<typeof readConfigFromChildren>
+  ): boolean {
+    if (config1.length !== config2.length) {
+      return false
+    }
+
+    return config1.every((cfg1, index) => {
+      const cfg2 = config2[index]
+      if (!cfg2) {
+        return false
+      }
+
+      // Compare key properties that determine config identity
+      return (
+        cfg1.data === cfg2.data &&
+        cfg1.trigger === cfg2.trigger &&
+        cfg1.serializer.id === cfg2.serializer.id &&
+        cfg1.displayTransform === cfg2.displayTransform &&
+        cfg1.appendSpaceOnAdd === cfg2.appendSpaceOnAdd &&
+        cfg1.onAdd === cfg2.onAdd &&
+        cfg1.isLoading === cfg2.isLoading
+      )
     })
   }
 
@@ -279,7 +313,15 @@ class MentionsInput<
     prevState: MentionsInputState<Extra>
   ): void {
     // Validate children if they've changed
-    if (prevProps.children !== this.props.children) {
+    if (Array.isArray(prevProps.children) && Array.isArray(this.props.children)) {
+      if (prevProps.children.length !== this.props.children.length) {
+        this.validateChildren()
+      }
+    } else if (!Array.isArray(prevProps.children) && !Array.isArray(this.props.children)) {
+      if (prevProps.children.key !== this.props.children.key) {
+        this.validateChildren()
+      }
+    } else {
       this.validateChildren()
     }
 
@@ -787,7 +829,7 @@ class MentionsInput<
     }
 
     const { selectionStart, selectionEnd } = this.state
-    if (selectionStart == null || selectionEnd == null || selectionStart !== selectionEnd) {
+    if (selectionStart === null || selectionEnd === null || selectionStart !== selectionEnd) {
       return false
     }
 
@@ -796,7 +838,7 @@ class MentionsInput<
 
   // Returns the text to set as the value of the textarea with all markups removed
   getPlainText = (): string => {
-    return getPlainText(this.props.value || '', readConfigFromChildren(this.props.children))
+    return getPlainText(this.props.value || '', this.state.config)
   }
 
   executeOnChange = (
@@ -828,20 +870,24 @@ class MentionsInput<
     event.preventDefault()
 
     const { selectionStart, selectionEnd } = this.state
-    const { value, children } = this.props
+    const { value } = this.props
     const valueText = value ?? ''
 
-    const config = readConfigFromChildren(children)
     const safeSelectionStart = selectionStart ?? 0
     const safeSelectionEnd = selectionEnd ?? safeSelectionStart
 
     const markupStartIndex = mapPlainTextIndex(
       valueText,
-      config,
+      this.state.config,
       safeSelectionStart,
       'START'
     ) as number
-    const markupEndIndex = mapPlainTextIndex(valueText, config, safeSelectionEnd, 'END') as number
+    const markupEndIndex = mapPlainTextIndex(
+      valueText,
+      this.state.config,
+      safeSelectionEnd,
+      'END'
+    ) as number
 
     const clipboardData = event.clipboardData
     const pastedMentions = clipboardData.getData('text/react-mentions')
@@ -854,9 +900,9 @@ class MentionsInput<
       pastedMentions || pastedData
     ).replaceAll('\r', '')
 
-    const newPlainTextValue = getPlainText(newValue, config)
+    const newPlainTextValue = getPlainText(newValue, this.state.config)
 
-    const mentions = getMentions(newValue, config)
+    const mentions = getMentions(newValue, this.state.config)
 
     this.executeOnChange(
       { type: 'paste', nativeEvent: event },
@@ -868,12 +914,12 @@ class MentionsInput<
 
     // Move the cursor position to the end of the pasted data
     const startOfMention =
-      selectionStart == undefined
+      selectionStart === null
         ? undefined
-        : findStartOfMentionInPlainText(valueText, config, selectionStart)
+        : findStartOfMentionInPlainText(valueText, this.state.config, selectionStart)
     const nextPos =
       (startOfMention ?? safeSelectionStart) +
-      getPlainText(pastedMentions || pastedData, config).length
+      getPlainText(pastedMentions || pastedData, this.state.config).length
     this.setState({
       selectionStart: nextPos,
       selectionEnd: nextPos,
@@ -890,14 +936,22 @@ class MentionsInput<
     // in state to ensure copy & paste also works on disabled inputs & textareas
     const selectionStart = input.selectionStart ?? 0
     const selectionEnd = input.selectionEnd ?? selectionStart
-    const { children, value } = this.props
+    const { value } = this.props
     const valueText = value ?? ''
     const clipboardData = event.clipboardData
 
-    const config = readConfigFromChildren(children)
-
-    const markupStartIndex = mapPlainTextIndex(valueText, config, selectionStart, 'START') as number
-    const markupEndIndex = mapPlainTextIndex(valueText, config, selectionEnd, 'END') as number
+    const markupStartIndex = mapPlainTextIndex(
+      valueText,
+      this.state.config,
+      selectionStart,
+      'START'
+    ) as number
+    const markupEndIndex = mapPlainTextIndex(
+      valueText,
+      this.state.config,
+      selectionEnd,
+      'END'
+    ) as number
 
     clipboardData.setData('text/plain', input.value.slice(selectionStart, selectionEnd))
     clipboardData.setData('text/react-mentions', valueText.slice(markupStartIndex, markupEndIndex))
@@ -933,27 +987,31 @@ class MentionsInput<
     this.saveSelectionToClipboard(event)
 
     const { selectionStart, selectionEnd } = this.state
-    const { children, value } = this.props
+    const { value } = this.props
     const valueText = value ?? ''
 
-    const config = readConfigFromChildren(children)
     const safeSelectionStart = selectionStart ?? 0
     const safeSelectionEnd = selectionEnd ?? safeSelectionStart
 
     const markupStartIndex = mapPlainTextIndex(
       valueText,
-      config,
+      this.state.config,
       safeSelectionStart,
       'START'
     ) as number
-    const markupEndIndex = mapPlainTextIndex(valueText, config, safeSelectionEnd, 'END') as number
+    const markupEndIndex = mapPlainTextIndex(
+      valueText,
+      this.state.config,
+      safeSelectionEnd,
+      'END'
+    ) as number
 
     const newValue = [valueText.slice(0, markupStartIndex), valueText.slice(markupEndIndex)].join(
       ''
     )
-    const newPlainTextValue = getPlainText(newValue, config)
+    const newPlainTextValue = getPlainText(newValue, this.state.config)
 
-    const mentions = getMentions(newValue, config)
+    const mentions = getMentions(newValue, this.state.config)
 
     this.setState({
       selectionStart: safeSelectionStart,
@@ -977,17 +1035,16 @@ class MentionsInput<
       this._isComposing = native.isComposing
     }
     const value = this.props.value || ''
-    const config = readConfigFromChildren(this.props.children)
 
     let newPlainTextValue = ev.target.value
 
     let selectionStartBefore = this.state.selectionStart
-    if (selectionStartBefore == undefined) {
+    if (selectionStartBefore === null) {
       selectionStartBefore = ev.target.selectionStart ?? 0
     }
 
     let selectionEndBefore = this.state.selectionEnd
-    if (selectionEndBefore == undefined) {
+    if (selectionEndBefore === null) {
       selectionEndBefore = ev.target.selectionEnd ?? selectionStartBefore
     }
 
@@ -1000,11 +1057,11 @@ class MentionsInput<
         selectionEndBefore,
         selectionEndAfter: ev.target.selectionEnd ?? selectionEndBefore,
       },
-      config
+      this.state.config
     )
 
     // In case a mention is deleted, also adjust the new plain text value
-    newPlainTextValue = getPlainText(newValue, config)
+    newPlainTextValue = getPlainText(newValue, this.state.config)
 
     // Save current selection after change to be able to restore caret position after rerendering
     let selectionStart = ev.target.selectionStart ?? selectionStartBefore
@@ -1017,7 +1074,7 @@ class MentionsInput<
 
     // Adjust selection range in case a mention will be deleted by the characters outside of the
     // selection range that are automatically deleted
-    const startOfMention = findStartOfMentionInPlainText(value, config, selectionStart)
+    const startOfMention = findStartOfMentionInPlainText(value, this.state.config, selectionStart)
 
     if (
       startOfMention !== undefined &&
@@ -1036,7 +1093,7 @@ class MentionsInput<
       pendingSelectionUpdate: prevState.pendingSelectionUpdate || shouldRestoreSelection,
     }))
 
-    const mentions = getMentions(newValue, config)
+    const mentions = getMentions(newValue, this.state.config)
 
     if (nativeEvent.isComposing && selectionStart === selectionEnd && this.inputElement) {
       this.updateMentionsQueries(this.inputElement.value, selectionStart)
@@ -1448,9 +1505,8 @@ class MentionsInput<
 
     const value = this.props.value ?? ''
     const { children } = this.props
-    const config = readConfigFromChildren(children)
 
-    const positionInValue = mapPlainTextIndex(value, config, caretPosition, 'NULL')
+    const positionInValue = mapPlainTextIndex(value, this.state.config, caretPosition, 'NULL')
 
     // If caret is inside of mention, do not query
     if (positionInValue === null || positionInValue === undefined) {
@@ -1460,7 +1516,7 @@ class MentionsInput<
     // Extract substring in between the end of the previous mention and the caret
     const substringStartIndex = getEndOfLastMention(
       value.slice(0, Math.max(0, positionInValue)),
-      config
+      this.state.config
     )
     const substring = plainTextValue.slice(substringStartIndex, caretPosition)
 
@@ -1554,8 +1610,6 @@ class MentionsInput<
     const { id, display } = this.getSuggestionData(suggestion)
     // Insert mention in the marked up value at the correct position
     const value = this.props.value || ''
-    const config = readConfigFromChildren(this.props.children)
-    const childConfig = config[childIndex]
     const mentionsChild = Children.toArray(this.props.children)[childIndex]
     if (!React.isValidElement<MentionComponentProps<Extra>>(mentionsChild)) {
       return
@@ -1565,9 +1619,9 @@ class MentionsInput<
       displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
       appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
       onAdd = DEFAULT_MENTION_PROPS.onAdd,
-    } = childConfig
+    } = this.state.config[childIndex]
 
-    const start = mapPlainTextIndex(value, config, querySequenceStart, 'START') as number
+    const start = mapPlainTextIndex(value, this.state.config, querySequenceStart, 'START') as number
     const end = start + querySequenceEnd - querySequenceStart
 
     const mentionDisplay = display
@@ -1593,7 +1647,7 @@ class MentionsInput<
     })
 
     // Propagate change
-    const mentions = getMentions(newValue, config)
+    const mentions = getMentions(newValue, this.state.config)
     const newPlainTextValue = spliceString(
       plainTextValue,
       querySequenceStart,

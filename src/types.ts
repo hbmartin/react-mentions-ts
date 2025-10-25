@@ -206,6 +206,7 @@ export interface MentionsInputState<
   scrollFocusedIntoView?: boolean
   pendingSelectionUpdate: boolean
   highlighterRecomputeVersion: number
+  config: MentionChildConfig[]
 }
 
 export type MentionsInputClassNames = Partial<{
