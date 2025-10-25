@@ -1486,17 +1486,29 @@ class MentionsInput<
     const data: MentionDataItem<Extra>[] = await Promise.resolve(results)
     // save in property so that multiple sync state updates from different mentions sources
     // won't overwrite each other
+    const baseQueryInfo: QueryInfo = {
+      childIndex,
+      query,
+      querySequenceStart,
+      querySequenceEnd,
+      plainTextValue,
+    }
+
+    const resultQueryInfos = data.map((suggestionItem) => {
+      const { display } = this.getSuggestionData(suggestionItem)
+      const displayMatchStart = getSubstringIndex(display, query)
+      return {
+        ...baseQueryInfo,
+        displayMatchStart,
+      }
+    })
+
     this.suggestions = {
       ...this.suggestions,
       [childIndex]: {
-        queryInfo: {
-          childIndex,
-          query,
-          querySequenceStart,
-          querySequenceEnd,
-          plainTextValue,
-        },
+        queryInfo: baseQueryInfo,
         results: data,
+        resultQueryInfos,
       },
     }
 

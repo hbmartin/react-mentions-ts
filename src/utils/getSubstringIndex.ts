@@ -10,12 +10,18 @@ const stripWithMap = (s: string) => {
     const nfd = char.normalize('NFD')
     // Remove combining marks
     const base = nfd.replaceAll(/\p{M}/gu, '')
-    // For each code point added to `out`, store its original index
-    // (NFD won't expand letters like 'æ' → 'ae', so this is safe for most accents)
-    for (const _ of base) {
+
+    // Track the starting position in `out` before adding `base`
+    const outStartPos = out.length
+    out += base
+
+    // For each UTF-16 code unit added to `out`, map it back to position i
+    // This ensures map[k] corresponds to indexOf results which operate on UTF-16 code units
+    // Without this, surrogate pairs (emojis) would cause off-by-one mapping errors
+    for (let j = outStartPos; j < out.length; j++) {
       map.push(i)
     }
-    out += base
+
     i += char.length
   }
   return { text: out, map }
@@ -28,7 +34,9 @@ const getSubstringIndex = (
   caseInsensitive?: boolean
 ): number => {
   if (ignoreAccents !== true) {
-    return haystack.toLowerCase().indexOf(needle.toLowerCase())
+    const h = caseInsensitive === false ? haystack : haystack.toLowerCase()
+    const n = caseInsensitive === false ? needle : needle.toLowerCase()
+    return h.indexOf(n)
   }
 
   const prep = (s: string) => {

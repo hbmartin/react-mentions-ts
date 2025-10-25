@@ -151,6 +151,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         key={`${childIndex.toString()}-${getSuggestionId(suggestionItem).toString()}`}
         id={getSuggestionHtmlId(id, index)}
         query={query}
+        matchStart={queryInfo.displayMatchStart}
         index={index}
         renderSuggestion={renderSuggestionFromChild}
         suggestion={suggestionItem}

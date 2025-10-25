@@ -1,5 +1,4 @@
 import React from 'react'
-import { getSubstringIndex } from './utils'
 import { cn } from './utils/cn'
 import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
 
@@ -10,6 +9,7 @@ interface SuggestionProps<Extra extends Record<string, unknown> = Record<string,
   readonly onClick: () => void
   readonly onMouseEnter: () => void
   readonly query: string
+  readonly matchStart?: number
   readonly renderSuggestion?: MentionRenderSuggestion<Extra> | null
   readonly suggestion: SuggestionDataItem<Extra>
   readonly className?: string
@@ -29,6 +29,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   onClick,
   onMouseEnter,
   query,
+  matchStart,
   renderSuggestion,
   suggestion,
   className,
@@ -56,7 +57,8 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   }
 
   const renderHighlightedDisplay = (display: string): React.ReactNode => {
-    const indexOfMatch = getSubstringIndex(display, query)
+    const indexOfMatch =
+      typeof matchStart === 'number' && Number.isFinite(matchStart) ? matchStart : -1
 
     if (indexOfMatch === -1) {
       return <span className={displayClassNameResolved}>{display}</span>
