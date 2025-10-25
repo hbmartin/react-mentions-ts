@@ -21,6 +21,7 @@ export interface MentionSerializerMatch {
 }
 
 export interface MentionSerializer {
+  id: string
   insert: (input: { id: MentionIdentifier; display: string }) => string
   findAll: (value: string) => MentionSerializerMatch[]
 }
@@ -77,7 +78,13 @@ export interface MentionComponentProps<
   displayTransform?: DisplayTransform
   renderSuggestion?: MentionRenderSuggestion<Extra> | null
   data: DataSource<Extra>
-  onAdd?: (id: MentionIdentifier, display: string, startPos: number, endPos: number) => void
+  onAdd?: (params: {
+    id: MentionIdentifier
+    display: string
+    startPos: number
+    endPos: number
+    serializerId: string
+  }) => void
   onRemove?: (id: MentionIdentifier) => void
   isLoading?: boolean
   appendSpaceOnAdd?: boolean

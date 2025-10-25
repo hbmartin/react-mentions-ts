@@ -34,9 +34,10 @@ const getSubstringIndex = (
   caseInsensitive?: boolean
 ): number => {
   if (ignoreAccents !== true) {
-    const h = caseInsensitive === false ? haystack : haystack.toLowerCase()
-    const n = caseInsensitive === false ? needle : needle.toLowerCase()
-    return h.indexOf(n)
+    if (caseInsensitive === false) {
+      return haystack.indexOf(needle)
+    }
+    return haystack.toLowerCase().indexOf(needle.toLowerCase())
   }
 
   const prep = (s: string) => {

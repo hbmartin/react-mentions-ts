@@ -9,8 +9,10 @@ export interface MentionProps<Extra extends Record<string, unknown> = Record<str
   readonly style?: CSSProperties
 }
 
-const mentionBaseClass =
-  'inline items-center rounded-md bg-indigo-500/20 p-0 [font-family:inherit] [font-size:inherit] [letter-spacing:inherit] [font-weight:inherit] text-transparent'
+const mentionBaseClass = 'items-center rounded-md bg-primary/20'
+
+const mentionsRequiredClass =
+  'inline [font-family:inherit] [font-size:inherit] [letter-spacing:inherit] [font-weight:inherit] text-transparent p-0'
 
 export default function Mention<Extra extends Record<string, unknown> = Record<string, unknown>>({
   display,
@@ -18,7 +20,7 @@ export default function Mention<Extra extends Record<string, unknown> = Record<s
   style,
 }: MentionProps<Extra>) {
   return (
-    <strong className={cn(className, mentionBaseClass)} style={style}>
+    <strong className={cn(mentionBaseClass, className, mentionsRequiredClass)} style={style}>
       {display}
     </strong>
   )

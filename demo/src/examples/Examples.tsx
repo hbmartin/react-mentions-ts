@@ -2,7 +2,7 @@ import Advanced from './Advanced'
 import AsyncGithubUserMentions from './AsyncGithubUserMentions'
 import Emojis from './Emojis'
 import CutCopyPaste from './CutCopyPaste'
-import MultipleTrigger from './MultipleTrigger'
+import MultipleTriggers from './MultipleTriggers'
 import Scrollable from './Scrollable'
 import SingleLine from './SingleLine'
 import SingleLineIgnoringAccents from './SingleLineIgnoringAccents'
@@ -73,13 +73,8 @@ const users = [
 export default function Examples() {
   return (
     <div className="grid gap-8">
-      <MultipleTrigger data={users} />
-      <SingleLine
-        data={users}
-        onAdd={(id, display, startPos, endPos) =>
-          console.log(`onAdd: id=${id}, display=${display}, startPos=${startPos}, endPos=${endPos}`)
-        }
-      />
+      <MultipleTriggers data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
+      <SingleLine data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <AllowSpaceInQuery data={users} />
       <SingleLineIgnoringAccents data={users} />
       <Scrollable data={users} />

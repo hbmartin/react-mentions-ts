@@ -68,8 +68,7 @@ export function mergeClassNames(
   return merged
 }
 
-export const mentionPillClass =
-  'rounded-full bg-indigo-500/15 px-2 py-0.5 text-sm font-medium text-indigo-600'
+export const mentionPillClass = 'px-2 py-0.5 text-sm font-medium text-indigo-600'
 
 export const mentionPillAccentClass =
-  'rounded-full bg-emerald-500/15 px-2 py-0.5 text-sm font-medium text-emerald-600'
+  'rounded-sm bg-emerald-500/15 px-2 py-0.5 text-sm font-medium text-emerald-600'

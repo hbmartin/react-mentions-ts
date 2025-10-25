@@ -25,15 +25,14 @@ export default function MultipleTriggers({
   onAdd?: (...args: any[]) => void
 }) {
   const [value, setValue] = useState(
-    "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... "
+    "Hi @[John Doe](user:johndoe), \n\nlet's add [joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... "
   )
-  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
-    setValue(nextValue)
+  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard
       title="Multiple trigger patterns"
-      description="Mention teammates with @usernames or add quick email tokens — the input switches styling intelligently based on the trigger."
+      description="Mention teammates with @usernames or type an email address — the input switches styling based on the trigger."
     >
       <MentionsInput
         value={value}
@@ -71,7 +70,7 @@ export default function MultipleTriggers({
         />
 
         <Mention
-          markup="@[__display__](email:__id__)"
+          markup="[__display__](email:__id__)"
           trigger={emailRegex}
           data={(search) => [{ id: search, display: search }]}
           onAdd={onAdd}
