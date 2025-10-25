@@ -17,10 +17,9 @@ export const makeTriggerRegex = (
   const escapedTriggerChar = escapeRegex(trigger)
 
   if (ignoreAccents) {
-    // When ignoreAccents is true, use Unicode-aware pattern that matches
-    // any Unicode letter including those with diacritical marks
-    // \p{L} matches any Unicode letter
-    // \p{M} matches combining marks (diacritics)
+    // When ignoreAccents is true, use a Unicode-aware pattern.
+    // The 'u' flag enables Unicode mode, which makes the regex
+    // correctly handle astral symbols and complex characters.
     const spacePattern = allowSpaceInQuery === true ? '' : '\\s'
 
     // Match Unicode letters and combining marks, but exclude the trigger and optionally spaces
