@@ -26,8 +26,7 @@ const githubSuggestions = mergeClassNames(multilineMentionsClassNames, {
 
 export default function AsyncGithubUserMentions() {
   const [value, setValue] = useState('')
-  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
-    setValue(nextValue)
+  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard

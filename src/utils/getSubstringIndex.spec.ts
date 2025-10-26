@@ -100,8 +100,9 @@ describe('#getSubstringIndex', () => {
       if (pos === 1) return undefined
       return String.prototype.codePointAt.call(this, pos)
     })
-    ;(haystackWrapper as unknown as { codePointAt: (pos: number) => number | undefined }).codePointAt =
-      codePointAtMock
+    ;(
+      haystackWrapper as unknown as { codePointAt: (pos: number) => number | undefined }
+    ).codePointAt = codePointAtMock
 
     const result = getSubstringIndex(haystackWrapper as unknown as string, 'c', true)
 
