@@ -1,4 +1,5 @@
 import applyChangeToValue from './applyChangeToValue'
+import * as getPlainTextModule from './getPlainText'
 import createMarkupSerializer from './createMarkupSerializer'
 
 describe('#applyChangeToValue', () => {
@@ -251,6 +252,40 @@ describe('#applyChangeToValue', () => {
     )
   })
 
+  it('normalizes selection values that are reported as the string "undefined"', () => {
+    const baseValue = 'Sample value'
+    const basePlain = 'Sample value'
+    const changed = `x${basePlain}`
+
+    const result = applyChangeToValue(
+      baseValue,
+      changed,
+      {
+        selectionStartBefore: 'undefined',
+        selectionEndBefore: 'undefined',
+        selectionEndAfter: 1,
+      },
+      config
+    )
+
+    expect(result).toEqual(`x${baseValue}`)
+  })
+
+  it('adjusts for composition events that leave selections unchanged', () => {
+    const result = applyChangeToValue(
+      value,
+      plainText,
+      {
+        selectionStartBefore: 10,
+        selectionEndBefore: 10,
+        selectionEndAfter: 10,
+      },
+      config
+    )
+
+    expect(result).toEqual(value)
+  })
+
   it('should correctly handle text auto-correction', () => {
     const result = applyChangeToValue(
       'ill',
@@ -263,5 +298,36 @@ describe('#applyChangeToValue', () => {
       config
     )
     expect(result).toEqual("I'll")
+  })
+
+  it('re-runs splice logic when the reconstructed plain text differs from the target plain text', () => {
+    const actualGetPlainText = getPlainTextModule.default
+    const getPlainTextSpy = jest
+      .spyOn(getPlainTextModule, 'default')
+      .mockImplementationOnce((inputValue, inputConfig) =>
+        actualGetPlainText(inputValue, inputConfig)
+      )
+      .mockImplementationOnce(() => 'intermediate mismatch')
+      .mockImplementation((inputValue, inputConfig) => actualGetPlainText(inputValue, inputConfig))
+
+    try {
+      const baseValue = 'Hello world'
+      const changed = 'Hello brave world'
+      const result = applyChangeToValue(
+        baseValue,
+        changed,
+        {
+          selectionStartBefore: 6,
+          selectionEndBefore: 6,
+          selectionEndAfter: 12,
+        },
+        config
+      )
+
+      expect(result).toEqual(changed)
+      expect(getPlainTextSpy).toHaveBeenCalledTimes(3)
+    } finally {
+      getPlainTextSpy.mockRestore()
+    }
   })
 })

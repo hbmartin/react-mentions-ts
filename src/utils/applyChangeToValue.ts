@@ -36,7 +36,6 @@ const applyChangeToValue = (
   const { selectionEndAfter } = selection
 
   const oldPlainTextValue = getPlainText(value, config)
-
   const lengthDelta = oldPlainTextValue.length - plainTextValue.length
   if (selectionStartBefore === undefined) {
     selectionStartBefore = selectionEndAfter + lengthDelta
@@ -46,11 +45,20 @@ const applyChangeToValue = (
     selectionEndBefore = selectionStartBefore
   }
 
+  if (
+    oldPlainTextValue === plainTextValue &&
+    selectionStartBefore === selectionEndBefore &&
+    selectionEndBefore === selectionEndAfter
+  ) {
+    return value
+  }
+
   // Fixes an issue with replacing combined characters for complex input. Eg like accented letters on OSX
   if (
     selectionStartBefore === selectionEndBefore &&
     selectionEndBefore === selectionEndAfter &&
-    oldPlainTextValue.length === plainTextValue.length
+    oldPlainTextValue.length === plainTextValue.length &&
+    oldPlainTextValue !== plainTextValue
   ) {
     // TODO: write tests to determine if this should instead be:
     selectionStartBefore = Math.max(0, selectionStartBefore - 1)
@@ -86,7 +94,7 @@ const applyChangeToValue = (
 
   if (!willRemoveMention) {
     // test for auto-completion changes
-    const controlPlainTextValue = getPlainText(newValue, config)
+    let controlPlainTextValue = getPlainText(newValue, config)
     if (controlPlainTextValue !== plainTextValue) {
       // some auto-correction is going on
 
@@ -114,6 +122,7 @@ const applyChangeToValue = (
         value.length
       )
       newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
+      controlPlainTextValue = getPlainText(newValue, config)
     }
   }
 
