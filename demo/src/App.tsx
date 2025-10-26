@@ -18,18 +18,15 @@ const App: React.FC = () => (
           system. Swap styling strategies, customise suggestion experiences, and ship polished UX in
           minutes.
         </p>
-        <p className="mt-6 text-sm text-slate-400">
-          Crafted by HM &amp; Signavio — open-sourced under BSD on{' '}
+        <h2 className="mt-6 text-2xl text-slate-400">
           <a
             className="font-semibold text-indigo-300 underline-offset-4 transition hover:text-indigo-200 hover:underline"
             href="https://github.com/hbmartin/react-mentions-ts"
-            target="_blank"
             rel="noreferrer"
           >
-            GitHub
+            Install and Setup
           </a>
-          .
-        </p>
+        </h2>
       </header>
 
       <Examples />

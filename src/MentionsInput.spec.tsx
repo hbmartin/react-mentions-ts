@@ -1000,6 +1000,134 @@ describe('MentionsInput', () => {
     })
   })
 
+  describe('mention selection change', () => {
+    const mentionMarkup = '@[First](first)'
+    const mentionDisplay = 'First'
+    const defaultValue = `${mentionMarkup} remainder`
+
+    const renderMentionsInput = (
+      props: Partial<React.ComponentProps<typeof MentionsInput>> = {},
+      value: string = defaultValue
+    ) => {
+      const utils = render(
+        <MentionsInput value={value} {...props}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      fireEvent.focus(textarea)
+      return { textarea, ...utils }
+    }
+
+    it('reports inside and boundary for caret placements within a mention', async () => {
+      const onMentionSelectionChange = jest.fn()
+      const { textarea } = renderMentionsInput({ onMentionSelectionChange })
+
+      onMentionSelectionChange.mockClear()
+      textarea.setSelectionRange(2, 2)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+      let selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      expect(selections).toHaveLength(1)
+      expect(selections[0]).toMatchObject({
+        id: 'first',
+        selection: 'inside',
+        plainTextStart: 0,
+        plainTextEnd: mentionDisplay.length,
+      })
+
+      onMentionSelectionChange.mockClear()
+      textarea.setSelectionRange(0, 0)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+      selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      expect(selections).toHaveLength(1)
+      expect(selections[0]).toMatchObject({
+        selection: 'boundary',
+      })
+
+      onMentionSelectionChange.mockClear()
+      const mentionEnd = mentionDisplay.length
+      textarea.setSelectionRange(mentionEnd, mentionEnd)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+      selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      expect(selections).toHaveLength(1)
+      expect(selections[0]).toMatchObject({
+        selection: 'boundary',
+        plainTextEnd: mentionEnd,
+      })
+    })
+
+    it('classifies range selections as partial and full', async () => {
+      const onMentionSelectionChange = jest.fn()
+      const { textarea } = renderMentionsInput({ onMentionSelectionChange })
+
+      onMentionSelectionChange.mockClear()
+      textarea.setSelectionRange(1, mentionDisplay.length - 1)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+      let selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      expect(selections).toHaveLength(1)
+      expect(selections[0]).toMatchObject({
+        selection: 'partial',
+      })
+
+      onMentionSelectionChange.mockClear()
+      textarea.setSelectionRange(0, mentionDisplay.length)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+      selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      expect(selections).toHaveLength(1)
+      expect(selections[0]).toMatchObject({
+        selection: 'full',
+      })
+    })
+
+    it('updates highlighted mentions with selection attributes', async () => {
+      const { textarea, container } = renderMentionsInput()
+      const mentionEnd = mentionDisplay.length
+
+      textarea.setSelectionRange(2, 2)
+      fireEvent.select(textarea)
+
+      await waitFor(() => {
+        const highlighted = container.querySelector(
+          '[data-slot="highlighter"] [data-mention-selection]'
+        )
+        expect(highlighted).not.toBeNull()
+        expect(highlighted).toHaveAttribute('data-mention-selection', 'inside')
+      })
+
+      textarea.setSelectionRange(mentionEnd + 1, mentionEnd + 1)
+      fireEvent.select(textarea)
+
+      await waitFor(() => {
+        const highlighted = container.querySelector(
+          '[data-slot="highlighter"] [data-mention-selection]'
+        )
+        expect(highlighted).toBeNull()
+      })
+
+      textarea.setSelectionRange(mentionEnd, mentionEnd)
+      fireEvent.select(textarea)
+
+      await waitFor(() => {
+        const highlighted = container.querySelector(
+          '[data-slot="highlighter"] [data-mention-selection]'
+        )
+        expect(highlighted).not.toBeNull()
+        expect(highlighted).toHaveAttribute('data-mention-selection', 'boundary')
+      })
+    })
+  })
+
   describe('inline autocomplete', () => {
     const inlineData = [
       { id: 'alice', display: 'Alice' },

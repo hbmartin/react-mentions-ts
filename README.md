@@ -18,6 +18,7 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
 - 🎨 **Tailwind v4 Ready** - First-class support for Tailwind CSS v4 utility styling
 - ⚡ **Async Data Loading** - Load suggestions dynamically from APIs
 - 🔍 **Smart Suggestions** - Real-time filtering and matching
+- 🪄 **Caret Aware** - Detect when the caret overlaps mentions and style them via data attributes
 - ♿ **Accessible** - Built with ARIA labels and keyboard navigation
 - 🎯 **TypeScript First** - Written in TypeScript with complete type definitions
 - 🧪 **Well Tested** - Comprehensive test suite with Testing Library
@@ -102,6 +103,7 @@ The `MentionsInput` component supports the following props:
 | -------------------------- | ---------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | value                      | string                                                                 | `''`           | The value containing markup for mentions                                                                                              |
 | onMentionsChange           | function ({ trigger, value, plainTextValue, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, active mentions, and the previous markup value |
+| onMentionSelectionChange   | function (selection)                                                   | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries         |
 | onKeyDown                  | function (event)                                                       | empty function | A callback that is invoked when the user presses a key in the mentions input                                                          |
 | singleLine                 | boolean                                                                | `false`        | Renders a single line text input instead of a textarea, if set to `true`                                                              |
 | onMentionBlur              | function (event, clickedSuggestion)                                    | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list                                                   |
@@ -124,6 +126,21 @@ The `MentionsInput` component supports the following props:
 - `mentions`: the mention occurrences extracted from the new value
 - `previousValue`: the markup string before the change
 - `trigger`: metadata about what caused the change. `trigger.type` is one of `'input'`, `'paste'`, `'cut'`, `'mention-add'`, or `'mention-remove'`, and, when available, `trigger.nativeEvent` references the originating DOM event (optional; do not rely on its exact shape). Regular text edits (typing, Backspace/Delete) use `trigger.type: 'input'`.
+
+#### onMentionSelectionChange payload
+
+`onMentionSelectionChange` receives an array of [`MentionSelection`](./src/types.ts) entries. The array is ordered by the mention positions in the current value and is empty when the caret/selection does not intersect with any mentions. Each entry includes:
+
+- All fields from `MentionOccurrence` (`id`, `display`, `childIndex`, `index`, `plainTextIndex`, and the resolved `data` item when available)
+- `plainTextStart` / `plainTextEnd`: the inclusive/exclusive plain-text boundaries of the mention
+- `serializerId`: identifies which `Mention` child produced the selection (useful when multiple triggers share an `id`)
+- `selection`: one of:
+  - `'inside'` – the caret is collapsed somewhere between the mention boundaries
+  - `'boundary'` – the caret is collapsed exactly on the start or end boundary
+  - `'partial'` – a range selection overlaps the mention without covering it completely
+  - `'full'` – the selection fully covers the mention
+
+The callback fires on every selection change, so you can keep live state in sync with caret movement.
 
 ### Mention Props
 
@@ -194,6 +211,24 @@ If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*
   <Mention style={mentionStyle} />
 </MentionsInput>
 ```
+
+### Caret-driven styling hooks
+
+Every rendered mention (both in the hidden highlighter and the user-editable input) now exposes a `data-mention-selection` attribute whenever the caret or selection overlaps it. The attribute reflects the current coverage (`inside`, `boundary`, `partial`, or `full`), so you can target focus states without extra bookkeeping:
+
+```tsx
+<Mention
+  trigger="@"
+  data={users}
+  className="rounded-full bg-indigo-500/25 px-2 py-0.5 text-sm font-semibold text-indigo-100 transition
+             data-[mention-selection=inside]:bg-emerald-500/35 data-[mention-selection=inside]:text-emerald-50
+             data-[mention-selection=boundary]:ring-2 data-[mention-selection=boundary]:ring-indigo-300
+             data-[mention-selection=partial]:bg-amber-500/35 data-[mention-selection=partial]:text-amber-50
+             data-[mention-selection=full]:bg-indigo-500 data-[mention-selection=full]:text-white"
+/>
+```
+
+See the “Caret mention states” demo (`demo/src/examples/MentionSelection.tsx`) for a complete example that combines styling with the `onMentionSelectionChange` callback.
 
 When `suggestionsDisplay="inline"`, override the `inlineSuggestion` style slot to customize the inline hint (the default demo style lives in `demo/src/examples/defaultStyle.ts`).
 

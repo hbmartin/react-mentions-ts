@@ -70,6 +70,8 @@ export type MentionRenderSuggestion<
 
 export type DisplayTransform = (id: MentionIdentifier, display?: string | null) => string
 
+export type MentionSelectionState = 'inside' | 'boundary' | 'partial' | 'full'
+
 export interface MentionComponentProps<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
@@ -88,6 +90,7 @@ export interface MentionComponentProps<
   onRemove?: (id: MentionIdentifier) => void
   isLoading?: boolean
   appendSpaceOnAdd?: boolean
+  selectionState?: MentionSelectionState
 }
 
 export type MentionsInputChangeTriggerType =
@@ -111,6 +114,15 @@ export interface MentionOccurrence<
   index: number
   plainTextIndex: number
   data?: MentionDataItem<Extra>
+}
+
+export interface MentionSelection<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> extends MentionOccurrence<Extra> {
+  selection: MentionSelectionState
+  plainTextStart: number
+  plainTextEnd: number
+  serializerId: string
 }
 
 export interface MentionsInputChangeEvent<
@@ -179,6 +191,7 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
   onMentionBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
   onChange?: (event: ChangeEvent<InputElement>) => void
   onMentionsChange?: MentionsInputChangeHandler<Extra>
+  onMentionSelectionChange?: (selection: MentionSelection<Extra>[]) => void
   onKeyDown?: MentionsInputKeyDownHandler
   onSelect?: (event: SyntheticEvent<InputElement>) => void
   readOnly?: boolean

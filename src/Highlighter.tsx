@@ -9,7 +9,12 @@ import {
   cn,
 } from './utils'
 import { useEffectEvent } from './utils/useEffectEvent'
-import type { CaretCoordinates, MentionChildConfig, MentionComponentProps } from './types'
+import type {
+  CaretCoordinates,
+  MentionChildConfig,
+  MentionComponentProps,
+  MentionSelectionState,
+} from './types'
 
 const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {
   if (Object.hasOwn(usedKeys, id)) {
@@ -32,6 +37,7 @@ interface HighlighterProps {
   readonly substringClassName?: string
   readonly caretClassName?: string
   readonly recomputeVersion?: number
+  readonly mentionSelectionMap?: Record<string, MentionSelectionState>
 }
 
 // Note: singleLine intentionally overrides whitespace/break behavior
@@ -63,6 +69,7 @@ function Highlighter({
   substringClassName,
   caretClassName,
   recomputeVersion,
+  mentionSelectionMap,
 }: HighlighterProps) {
   const [position, setPosition] = useState<CaretCoordinates | null>(null)
   const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
@@ -120,6 +127,7 @@ function Highlighter({
       | number
       | undefined
   }
+  const selectionMap = mentionSelectionMap ?? {}
 
   const resultComponents: React.ReactNode[] = []
   const componentKeys: Record<string, number> = {}
@@ -137,9 +145,12 @@ function Highlighter({
     id: string,
     display: string,
     mentionChildIndex: number,
-    key: string
+    key: string,
+    plainTextIndex: number
   ) => {
-    const props = { id, display, key }
+    const selectionKey = `${mentionChildIndex}:${plainTextIndex}`
+    const selectionState = selectionMap[selectionKey]
+    const props = { id, display, key, selectionState }
     const child = Children.toArray(children)[
       mentionChildIndex
     ] as React.ReactElement<MentionComponentProps>
@@ -182,13 +193,15 @@ function Highlighter({
   const mentionIteratee = (
     markup: string,
     index: number,
-    _plainTextIndex: number,
+    plainTextIndex: number,
     id: string,
     display: string,
     mentionChildIndex: number
   ) => {
     const key = generateComponentKey(componentKeys, id)
-    components.push(getMentionComponentForMatch(id, display, mentionChildIndex, key))
+    components.push(
+      getMentionComponentForMatch(id, display, mentionChildIndex, key, plainTextIndex)
+    )
   }
 
   iterateMentionsMarkup(value, config, mentionIteratee, textIteratee)
