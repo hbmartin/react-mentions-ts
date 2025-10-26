@@ -1,8 +1,8 @@
 /* eslint-disable sonarjs/no-nested-functions */
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
-import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import * as utils from './utils'
+import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
 import type { MentionsInputChangeEvent, MentionSerializer } from './types'
 
@@ -109,7 +109,7 @@ describe('MentionsInput', () => {
     })
 
     it('should throw when children include non-element content.', () => {
-      expect(() => render(<MentionsInput value="">{'text child'}</MentionsInput>)).toThrow(
+      expect(() => render(<MentionsInput value="">text child</MentionsInput>)).toThrow(
         'MentionsInput only accepts Mention components as children. Found invalid element.'
       )
     })
@@ -1016,7 +1016,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      const textarea = screen.getByRole('combobox')
       fireEvent.focus(textarea)
       return { textarea, ...utils }
     }
@@ -1139,7 +1139,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      const textarea = screen.getByRole('combobox')
       fireEvent.focus(textarea)
 
       const initialIndex = textarea.value.indexOf('First') + 1
@@ -1201,7 +1201,7 @@ describe('MentionsInput', () => {
           </MentionsInput>
         )
 
-        const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+        const textarea = screen.getByRole('combobox')
         fireEvent.focus(textarea)
         textarea.setSelectionRange(2, 2)
         fireEvent.select(textarea)
@@ -1290,7 +1290,6 @@ describe('MentionsInput', () => {
       expect(combobox).toHaveAttribute('role', 'combobox')
       expect(combobox).toHaveAttribute('aria-autocomplete', 'inline')
       expect(combobox).toHaveAttribute('aria-expanded', 'false')
-      expect(combobox).not.toHaveAttribute('aria-controls')
 
       const liveRegion = screen.getByRole('status')
       expect(liveRegion).toHaveAttribute('aria-live', 'polite')
@@ -1603,9 +1602,9 @@ describe('MentionsInput', () => {
         }),
       })
       Object.defineProperty(suggestions, 'offsetHeight', { value: 20, configurable: true })
-      document.body.appendChild(highlighter)
-      document.body.appendChild(suggestions)
-      document.body.appendChild(container)
+      document.body.append(highlighter)
+      document.body.append(suggestions)
+      document.body.append(container)
 
       instance.highlighterElement = highlighter
       instance.suggestionsElement = suggestions
@@ -1697,9 +1696,9 @@ describe('MentionsInput', () => {
       expect(updatePosition.mock.calls.length).toBe(positionCalls + 1)
 
       unmountBridge()
-      observers.forEach((observer) => {
+      for (const observer of observers) {
         expect(observer.disconnect).toHaveBeenCalled()
-      })
+      }
       ;(globalThis as any).ResizeObserver = originalResizeObserver
       unmount()
     })

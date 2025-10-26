@@ -540,7 +540,6 @@ class MentionsInput<
       role: 'combobox',
       'aria-autocomplete': isInlineAutocomplete ? 'inline' : 'list',
       'aria-expanded': isInlineAutocomplete ? 'false' : this.isOpened() ? 'true' : 'false',
-      'aria-controls': isInlineAutocomplete ? undefined : this.uuidSuggestionsOverlay,
       'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
       'aria-activedescendant': isOverlayOpen
         ? getSuggestionHtmlId(this.uuidSuggestionsOverlay, this.state.focusIndex)
