@@ -50,6 +50,7 @@ const highlighterStyles = cva(
 const substringStyles = 'text-transparent'
 const caretStyles = 'relative inline-block h-0 w-0 align-baseline'
 
+// eslint-disable-next-line code-complete/low-function-cohesion
 function Highlighter({
   selectionStart,
   selectionEnd,
@@ -77,6 +78,7 @@ function Highlighter({
   })
 
   // Ensure caret position updates whenever content/selection affects layout.
+  // eslint-disable-next-line code-complete/low-function-cohesion
   useLayoutEffect(() => {
     if (caretElement === null) {
       return undefined

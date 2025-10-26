@@ -58,6 +58,7 @@ describe('#iterateMentionsMarkup', () => {
     expect(matchedStrings).toContain('@[Ada](user:ada)')
     const shorterIndex = matchedStrings.indexOf('@[Ada]')
     if (shorterIndex !== -1) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(matchedStrings.indexOf('@[Ada](user:ada)')).toBeLessThan(shorterIndex)
     }
     expect(markupIteratee).toHaveBeenCalledTimes(1)

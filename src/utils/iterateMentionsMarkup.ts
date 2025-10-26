@@ -58,7 +58,7 @@ const iterateMentionsMarkup = (
     const { displayTransform } = config[childIndex]
     const display = displayTransform(match.id, match.display ?? match.id)
 
-    const substr = value.substring(start, match.index)
+    const substr = value.slice(start, match.index)
     textIteratee(substr, start, currentPlainTextIndex)
     currentPlainTextIndex += substr.length
 

@@ -2,8 +2,11 @@ import PLACEHOLDERS from './placeholders'
 
 type PlaceholderName = 'id' | 'display'
 
+// eslint-disable-next-line code-complete/low-function-cohesion
 const findPositionOfCapturingGroup = (markup: string, parameterName: PlaceholderName): number => {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (parameterName !== 'id' && parameterName !== 'display') {
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     throw new Error(`Second arg must be either "id" or "display", got: "${parameterName}"`)
   }
 

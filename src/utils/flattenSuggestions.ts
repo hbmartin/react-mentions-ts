@@ -2,7 +2,9 @@ import { Children } from 'react'
 import type { ReactNode } from 'react'
 import type { QueryInfo, SuggestionDataItem, SuggestionsMap } from '../types'
 
-export type FlattenedSuggestion<Extra extends Record<string, unknown> = Record<string, unknown>> = {
+export interface FlattenedSuggestion<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> {
   result: SuggestionDataItem<Extra>
   queryInfo: QueryInfo
 }
@@ -17,10 +19,10 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
 
   const childNodes = Children.toArray(children)
 
-  childNodes.forEach((_child, childIndex) => {
+  for (const [childIndex, _child] of childNodes.entries()) {
     const entry = suggestionsMap[childIndex]
     if (!entry) {
-      return
+      continue
     }
 
     handledIndices.add(childIndex)
@@ -28,7 +30,7 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
     for (const result of results) {
       flattened.push({ result, queryInfo })
     }
-  })
+  }
 
   const remainingIndices = Object.keys(suggestionsMap)
     .map((key) => Number.parseInt(key, 10))

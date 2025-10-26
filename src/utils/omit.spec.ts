@@ -10,12 +10,12 @@ describe('#omit', () => {
   ]
 
   for (const value of values) {
-    it(`should omit values from input with given key `, () => {
+    it(`should omit values from input with given key`, () => {
       expect(omit(value.input, value.keys, value.other)).toEqual(value.expected)
     })
   }
 
-  it(`should omit values from input with given mutliples arguments `, () => {
+  it(`should omit values from input with given mutliples arguments`, () => {
     expect(omit({ a: 2, b: 3 }, 'style', ['someKey', 'otherKey', 'b'])).toEqual({ a: 2 })
   })
 })

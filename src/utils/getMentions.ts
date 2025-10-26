@@ -8,7 +8,7 @@ const getMentions = (
   const mentions: MentionOccurrence[] = []
   iterateMentionsMarkup(value, config, (_match, index, plainTextIndex, id, display, childIndex) => {
     mentions.push({
-      id: String(id),
+      id,
       display,
       childIndex,
       index,

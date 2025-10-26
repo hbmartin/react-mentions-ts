@@ -1,7 +1,7 @@
 import markupToRegex from './markupToRegex'
 
 describe('#markupToRegex', () => {
-  it('it should generate a regex that matches the markup for the given pattern', () => {
+  it('should generate a regex that matches the markup for the given pattern', () => {
     const regex = markupToRegex('@[__display__](foo:__id__)')
 
     const [mention, display, id] = regex.exec('Hi @[Foo](foo:1), how are you?')
@@ -11,7 +11,7 @@ describe('#markupToRegex', () => {
     expect(id).toEqual('1')
   })
 
-  it('it should match lazily', () => {
+  it('should match lazily', () => {
     const regex = markupToRegex('@[__display__](foo:__id__)')
 
     const [mention, display, id] = regex.exec('Hi @[Foo](foo:1)](bar:2), how are you?')

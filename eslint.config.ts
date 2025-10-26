@@ -14,6 +14,8 @@ import eslintPluginUnicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
 import globals from 'globals'
 import { configs as tsConfigs } from 'typescript-eslint'
+import eslintPluginSecurity from 'eslint-plugin-security'
+import packageJson from 'eslint-plugin-package-json'
 
 export default defineConfig([
   globalIgnores([
@@ -44,6 +46,8 @@ export default defineConfig([
       pluginPromise.configs['flat/recommended'],
       jestPlugin.configs['flat/recommended'],
       jsxA11y.flatConfigs.recommended,
+      eslintPluginSecurity.configs.recommended,
+      packageJson.configs.recommended,
     ],
     plugins: {
       'code-complete': codeComplete,
@@ -135,12 +139,14 @@ export default defineConfig([
       'unicorn/no-useless-undefined': 'off',
       'unicorn/no-array-reduce': 'off',
       'unicorn/no-null': 'off',
+      'unicorn/prefer-string-raw': 'off',
 
       'sonarjs/no-dead-store': 'error',
       'sonarjs/void-use': 'off',
       'sonarjs/todo-tag': 'off',
       'sonarjs/different-types-comparison': 'off',
       'sonarjs/pseudo-random': 'off',
+      'sonarjs/prefer-regexp-exec': 'off',
 
       'code-complete/no-late-argument-usage': 'error',
       'code-complete/low-function-cohesion': 'error',

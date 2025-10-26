@@ -21,7 +21,7 @@ describe('#getPlainText', () => {
   const value =
     "Hi @[John Doe](user:johndoe), \n\nlet's add @[joe@smoe.com](email:joe@smoe.com) to this conversation..."
 
-  it('should replace markup with the correct display values ', () => {
+  it('should replace markup with the correct display values', () => {
     expect(getPlainText(value, config)).toEqual(
       "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
     )

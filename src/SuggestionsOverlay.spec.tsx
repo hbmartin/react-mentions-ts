@@ -93,7 +93,7 @@ describe('SuggestionsOverlay', () => {
       </SuggestionsOverlay>
     )
 
-    const listItems = Array.from(container.querySelectorAll('li[role="option"]')).map((item) =>
+    const listItems = [...container.querySelectorAll('li[role="option"]')].map((item) =>
       item.textContent?.trim()
     )
     expect(listItems).toHaveLength(3)

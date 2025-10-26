@@ -50,6 +50,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     return String(suggestionId)
   }
 
+  // eslint-disable-next-line sonarjs/function-return-type
   const renderHighlightedDisplay = (display: string): React.ReactNode => {
     if (suggestion.highlights === undefined || suggestion.highlights.length === 0) {
       return <span className={displayClassNameResolved}>{display}</span>
@@ -76,6 +77,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     )
   }
 
+  // eslint-disable-next-line sonarjs/function-return-type
   const renderContent = (): React.ReactNode => {
     const display = getDisplay()
     const highlightedDisplay = renderHighlightedDisplay(display)
