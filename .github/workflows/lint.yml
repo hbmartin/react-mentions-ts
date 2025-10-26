@@ -6,6 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -13,4 +15,38 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: yarn.lock
       - run: yarn --frozen-lockfile
-      - run: yarn lint
+      - name: Determine ESLint scope
+        id: lint_scope
+        run: |
+          set -eo pipefail
+          if [ "${GITHUB_REF_NAME}" = "master" ]; then
+            echo "mode=all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch origin master:refs/remotes/origin/master
+          CHANGED_FILES=$(git diff --name-only origin/master...HEAD -- 'src/**/*.{js,jsx,ts,tsx}')
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "mode=files"
+            echo "files<<EOF"
+            echo "$CHANGED_FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: Run ESLint on entire project
+        if: steps.lint_scope.outputs.mode == 'all'
+        run: yarn lint
+      - name: Run ESLint on changed files
+        if: steps.lint_scope.outputs.mode == 'files'
+        run: |
+          set -eo pipefail
+          echo "Running ESLint on changed files: ${{ steps.lint_scope.outputs.files }}"
+          yarn run eslint ${{ steps.lint_scope.outputs.files }}
+      - name: Skip ESLint (no relevant changes)
+        if: steps.lint_scope.outputs.mode == 'skip'
+        run: echo "No matching files changed; skipping ESLint."

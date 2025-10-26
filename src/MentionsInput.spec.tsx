@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/no-nested-functions */
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
 import type { MentionsInputChangeEvent, MentionSerializer } from './types'
@@ -86,9 +86,18 @@ describe('MentionsInput', () => {
     expect(input.tagName).toBe('INPUT')
   })
 
-  it('should throw when children include non-mention elements.', () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
-    try {
+  describe('validation', () => {
+    let consoleError: jest.SpyInstance
+
+    beforeEach(() => {
+      consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      consoleError.mockRestore()
+    })
+
+    it('should throw when children include non-mention elements.', () => {
       expect(() =>
         render(
           <MentionsInput value="">
@@ -96,29 +105,15 @@ describe('MentionsInput', () => {
           </MentionsInput>
         )
       ).toThrow('MentionsInput only accepts Mention components as children. Found: div')
-    } finally {
-      consoleError.mockRestore()
-    }
-  })
+    })
 
-  it('should throw when children include non-element content.', () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      expect(() =>
-        render(
-          <MentionsInput value="">
-            {'text child'}
-          </MentionsInput>
-        )
-      ).toThrow('MentionsInput only accepts Mention components as children. Found invalid element.')
-    } finally {
-      consoleError.mockRestore()
-    }
-  })
+    it('should throw when children include non-element content.', () => {
+      expect(() => render(<MentionsInput value="">{'text child'}</MentionsInput>)).toThrow(
+        'MentionsInput only accepts Mention components as children. Found invalid element.'
+      )
+    })
 
-  it('should throw when multiple Mention children share the same trigger.', () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
-    try {
+    it('should throw when multiple Mention children share the same trigger.', () => {
       expect(() =>
         render(
           <MentionsInput value="">
@@ -127,9 +122,7 @@ describe('MentionsInput', () => {
           </MentionsInput>
         )
       ).toThrow('MentionsInput does not support Mention children with duplicate triggers: @.')
-    } finally {
-      consoleError.mockRestore()
-    }
+    })
   })
 
   it('should show a list of suggestions once the trigger key has been entered.', async () => {
@@ -1273,5 +1266,198 @@ describe('MentionsInput', () => {
 
     const [, clickedSuggestion] = onMentionBlur.mock.calls[0]
     expect(clickedSuggestion).toBe(true)
+  })
+
+  describe('internal behaviors', () => {
+    it('exposes null-returning defaults for keydown and select handlers.', () => {
+      expect(MentionsInput.defaultProps?.onKeyDown?.()).toBeNull()
+      expect(MentionsInput.defaultProps?.onSelect?.()).toBeNull()
+    })
+
+    it('updates scroll flags when handling document scroll.', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      instance.suggestionsElement = document.createElement('div')
+      const updateSpy = jest
+        .spyOn(instance, 'updateSuggestionsPosition')
+        .mockImplementation(() => undefined)
+      const raf = jest
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0)
+          return 1
+        })
+
+      act(() => {
+        instance.handleDocumentScroll()
+      })
+
+      expect(updateSpy).toHaveBeenCalled()
+      expect(instance._isScrolling).toBe(false)
+
+      raf.mockRestore()
+      updateSpy.mockRestore()
+      unmount()
+    })
+
+    it('tracks composition state transitions.', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+
+      act(() => {
+        instance.handleCompositionStart()
+      })
+      expect(instance._isComposing).toBe(true)
+
+      act(() => {
+        instance.handleCompositionEnd()
+      })
+      expect(instance._isComposing).toBe(false)
+
+      unmount()
+    })
+
+    it('positions suggestions using computed styles.', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      await waitFor(() => {
+        expect(ref.current).not.toBeNull()
+      })
+
+      const instance = ref.current as unknown as any
+      const highlighter = document.createElement('div')
+      const suggestions = document.createElement('div')
+      const container = document.createElement('div')
+      highlighter.style.fontSize = '18px'
+      suggestions.style.marginLeft = '5px'
+      suggestions.style.marginTop = '7px'
+      Object.defineProperty(highlighter, 'getBoundingClientRect', {
+        value: () => ({
+          left: 4,
+          top: 6,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+        }),
+      })
+      Object.defineProperty(suggestions, 'offsetHeight', { value: 20, configurable: true })
+      document.body.appendChild(highlighter)
+      document.body.appendChild(suggestions)
+      document.body.appendChild(container)
+
+      instance.highlighterElement = highlighter
+      instance.suggestionsElement = suggestions
+      instance.containerElement = container
+
+      const setStateMock = jest.spyOn(instance, 'setState').mockImplementation((update, cb) => {
+        const nextState =
+          typeof update === 'function' ? update(instance.state, instance.props) : update
+        Object.assign(instance.state, nextState)
+        cb?.()
+      })
+
+      instance.state.caretPosition = { left: 10, top: 12 }
+      instance.state.suggestionsPosition = {}
+
+      act(() => {
+        instance.updateSuggestionsPosition()
+      })
+
+      expect(instance.state.suggestionsPosition.position).toBe('fixed')
+      expect(typeof instance.state.suggestionsPosition.left).toBe('number')
+      expect(typeof instance.state.suggestionsPosition.top).toBe('number')
+
+      highlighter.remove()
+      suggestions.remove()
+      container.remove()
+      setStateMock.mockRestore()
+      unmount()
+    })
+
+    it('syncs measurement bridge observers and cleans up.', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      await waitFor(() => {
+        expect(ref.current).not.toBeNull()
+      })
+
+      const instance = ref.current as unknown as any
+      const container = document.createElement('div')
+      const highlighter = document.createElement('div')
+      const input = document.createElement('textarea')
+      const suggestions = document.createElement('div')
+      instance.containerElement = container
+      instance.highlighterElement = highlighter
+      instance.inputElement = input
+      instance.suggestionsElement = suggestions
+
+      const syncScroll = jest.fn()
+      const updatePosition = jest.fn()
+      instance.updateHighlighterScroll = syncScroll
+      instance.updateSuggestionsPosition = updatePosition
+
+      const originalResizeObserver = (globalThis as any).ResizeObserver
+      const observers: Array<{ observe: jest.Mock; disconnect: jest.Mock }> = []
+      class MockResizeObserver {
+        private readonly callback: () => void
+        observe: jest.Mock
+        disconnect: jest.Mock
+        constructor(cb: () => void) {
+          this.callback = cb
+          this.observe = jest.fn(() => {
+            this.callback()
+          })
+          this.disconnect = jest.fn()
+          observers.push(this)
+        }
+      }
+      ;(globalThis as any).ResizeObserver = MockResizeObserver
+
+      const bridgeElement = instance.renderMeasurementBridge() as React.ReactElement
+      const { unmount: unmountBridge } = render(bridgeElement)
+
+      expect(syncScroll).toHaveBeenCalled()
+      expect(updatePosition).toHaveBeenCalled()
+
+      const syncCalls = syncScroll.mock.calls.length
+      const positionCalls = updatePosition.mock.calls.length
+
+      act(() => {
+        input.dispatchEvent(new Event('scroll'))
+      })
+
+      expect(syncScroll.mock.calls.length).toBe(syncCalls + 1)
+      expect(updatePosition.mock.calls.length).toBe(positionCalls + 1)
+
+      unmountBridge()
+      observers.forEach((observer) => {
+        expect(observer.disconnect).toHaveBeenCalled()
+      })
+      ;(globalThis as any).ResizeObserver = originalResizeObserver
+      unmount()
+    })
   })
 })
