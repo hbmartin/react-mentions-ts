@@ -143,6 +143,7 @@ export default defineConfig([
       'sonarjs/pseudo-random': 'off',
 
       'code-complete/no-late-argument-usage': 'error',
+      'code-complete/low-function-cohesion': 'error',
       'code-complete/enforce-meaningful-names': 'error',
       'code-complete/no-magic-numbers-except-zero-one': 'off',
       'code-complete/no-boolean-params': 'off',

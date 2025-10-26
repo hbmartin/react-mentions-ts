@@ -4,16 +4,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "*.config.ts", "scripts"],
-  "exclude": [
-    "dist",
-    "coverage",
-    "build",
-    "node_modules",
-    "demo",
-    "tests",
-    "**/*.spec.ts",
-    "**/*.spec.tsx",
-    "eslint.config.ts"
-  ]
+  "include": ["src/**/*", "*.config.ts", "scripts"],
+  "exclude": ["dist", "coverage", "build", "node_modules", "demo", "tests"]
 }

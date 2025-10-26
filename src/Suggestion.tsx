@@ -1,5 +1,5 @@
 import React from 'react'
-import { cn } from './utils/cn'
+import { cn } from './utils'
 import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
 
 interface SuggestionProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
