@@ -272,30 +272,55 @@ describe('MentionsInput', () => {
       { id: 'b', value: 'B' },
     ]
 
-    render(
+    const { rerender } = render(
       <MentionsInput value="@">
         <Mention trigger="@" data={data} />
         <Mention trigger=":" data={extraData} />
       </MentionsInput>
     )
 
-    const textarea = screen.getByRole('combobox')
-    fireEvent.focus(textarea)
+    const focusAndSelect = () => {
+      const activeTextarea = screen.getByRole('combobox')
+      fireEvent.focus(activeTextarea)
+      activeTextarea.setSelectionRange(1, 1)
+      fireEvent.select(activeTextarea)
+      return activeTextarea
+    }
 
-    // Set selection to position 1 (after @)
-    textarea.setSelectionRange(1, 1)
-    fireEvent.select(textarea)
+    focusAndSelect()
 
-    // Wait for suggestions to appear and check count
+    // Wait for @ suggestions to appear and check count
     await waitFor(() => {
       const suggestions = screen.getAllByRole('option', { hidden: true })
-      expect(suggestions).toHaveLength(data.length + extraData.length)
+      expect(suggestions).toHaveLength(data.length)
       const texts = suggestions.map((item) => item.textContent?.trim() ?? '')
       for (const [index, { id }] of data.entries()) {
         expect(texts[index]).toContain(id)
       }
+      for (const { id } of extraData) {
+        expect(texts.some((text) => text.includes(id))).toBe(false)
+      }
+    })
+
+    rerender(
+      <MentionsInput value=":">
+        <Mention trigger="@" data={data} />
+        <Mention trigger=":" data={extraData} />
+      </MentionsInput>
+    )
+
+    focusAndSelect()
+
+    // Wait for : suggestions to appear and check count
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions).toHaveLength(extraData.length)
+      const texts = suggestions.map((item) => item.textContent?.trim() ?? '')
       for (const [index, { id }] of extraData.entries()) {
-        expect(texts[data.length + index]).toContain(id)
+        expect(texts[index]).toContain(id)
+      }
+      for (const { id } of data) {
+        expect(texts.some((text) => text.includes(id))).toBe(false)
       }
     })
   })
