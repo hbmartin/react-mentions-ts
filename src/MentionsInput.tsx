@@ -469,8 +469,10 @@ class MentionsInput<
         ref={this.setContainerElement}
         className={rootClassName}
         style={style}
-        data-single-line={singleLine ? 'true' : undefined}
-        data-multi-line={singleLine ? undefined : 'true'}
+        data-single-line={
+          (singleLine ?? MentionsInput.defaultProps.singleLine) ? 'true' : undefined
+        }
+        data-multi-line={(singleLine ?? MentionsInput.defaultProps.singleLine) ? undefined : 'true'}
       >
         {this.renderControl()}
         {this.renderSuggestionsOverlay()}

@@ -1231,10 +1231,7 @@ describe('MentionsInput', () => {
     it('returns multiple selections when a range overlaps several mentions', async () => {
       const onMentionSelectionChange = jest.fn()
       const valueWithTwoMentions = '@[First](first) and @[Second](second) together'
-      const { textarea } = renderMentionsInput(
-        { onMentionSelectionChange },
-        valueWithTwoMentions
-      )
+      const { textarea } = renderMentionsInput({ onMentionSelectionChange }, valueWithTwoMentions)
 
       textarea.setSelectionRange(0, valueWithTwoMentions.indexOf('Second') + 2)
       fireEvent.select(textarea)

@@ -217,7 +217,7 @@ function Highlighter({
       className={rootClassName}
       data-slot="highlighter"
       data-single-line={singleLine ? 'true' : undefined}
-      data-multi-line={singleLine ? 'true' : undefined}
+      data-multi-line={singleLine ? undefined : 'true'}
       style={HIGHLIGHTER_OVERLAY_STYLE}
       ref={containerRef}
     >

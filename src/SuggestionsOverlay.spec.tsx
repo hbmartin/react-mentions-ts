@@ -387,9 +387,7 @@ describe('SuggestionsOverlay', () => {
 
   it('forwards the container ref and customises the suggestions list wrapper', () => {
     const ref = jest.fn()
-    const wrap = jest.fn((node: React.ReactElement) => (
-      <div data-testid="wrapped">{node}</div>
-    ))
+    const wrap = jest.fn((node: React.ReactElement) => <div data-testid="wrapped">{node}</div>)
 
     const { getByTestId } = render(
       <SuggestionsOverlay
