@@ -29,8 +29,8 @@ import {
   omit,
   readConfigFromChildren,
   spliceString,
+  cn,
 } from './utils'
-import { cn } from './utils/cn'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { useEffectEvent } from './utils/useEffectEvent'
 import type {
@@ -51,6 +51,7 @@ import type {
   SuggestionsPosition,
   InputElement,
 } from './types'
+import type { FlattenedSuggestion } from './utils/flattenSuggestions'
 
 const getDataProvider = <Extra extends Record<string, unknown>>(
   data: DataSource<Extra>,
@@ -725,10 +726,7 @@ class MentionsInput<
 
   isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
 
-  getFlattenedSuggestions = (): Array<{
-    result: SuggestionDataItem<Extra>
-    queryInfo: QueryInfo
-  }> => {
+  getFlattenedSuggestions = (): FlattenedSuggestion<Extra>[] => {
     return flattenSuggestions<Extra>(this.props.children, this.state.suggestions)
   }
 

@@ -49,7 +49,8 @@
 		"preview": "vite preview --config demo/vite.config.ts",
 		"test": "BROWSERSLIST_IGNORE_OLD_DATA=true jest",
 		"test:watch": "BROWSERSLIST_IGNORE_OLD_DATA=true jest --watch",
-		"knip": "knip"
+		"knip": "knip --strict",
+		"fta": "fta src"
 	},
 	"repository": {
 		"type": "git",
@@ -114,8 +115,9 @@
 		"eslint-plugin-react-hooks": "^7.0.1",
 		"eslint-plugin-react-refresh": "^0.4.24",
 		"eslint-plugin-sonarjs": "^3.0.5",
-		"eslint-plugin-unicorn": "^61.0.2",
+		"eslint-plugin-unicorn": "^62.0.0",
 		"eslint-plugin-unused-imports": "^4.3.0",
+		"fta-cli": "^3.0.0",
 		"identity-obj-proxy": "^3.0.0",
 		"jest": "^30.2.0",
 		"jest-environment-jsdom": "^30.2.0",

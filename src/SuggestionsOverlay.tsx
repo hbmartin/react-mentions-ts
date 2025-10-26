@@ -4,8 +4,7 @@ import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
-import { flattenSuggestions, getSuggestionHtmlId } from './utils'
-import { cn } from './utils/cn'
+import { cn, flattenSuggestions, getSuggestionHtmlId } from './utils'
 import type {
   MentionComponentProps,
   MentionRenderSuggestion,
@@ -13,6 +12,7 @@ import type {
   SuggestionDataItem,
   SuggestionsMap,
 } from './types'
+import type { FlattenedSuggestion } from './utils/flattenSuggestions'
 
 interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
   readonly id: string
@@ -155,7 +155,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   }
 
   const renderSuggestions = (): React.ReactElement => {
-    const flattened = flattenSuggestions(children, suggestions)
+    const flattened: FlattenedSuggestion<Extra>[] = flattenSuggestions(children, suggestions)
     const renderedSuggestions = flattened.map(({ result, queryInfo }, index) =>
       renderSuggestion(result, queryInfo, index)
     )
