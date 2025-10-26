@@ -261,12 +261,6 @@ test('mentions work correctly', async () => {
 })
 ```
 
-## 🤝 Contributing
-
-- Contributions are welcome! If you want to contribute, first of all: **thank you!** ❤️
-- Please check out our [Contributing Guide](/CONTRIBUTING.md) for guidelines about how to proceed.
-- React Mentions is licensed under the [BSD-3-Clause License](LICENSE).
-
 ## 🙏 Acknowledgments
 
 This project is a TypeScript rewrite and modernization of the original [react-mentions](https://github.com/signavio/react-mentions) library.

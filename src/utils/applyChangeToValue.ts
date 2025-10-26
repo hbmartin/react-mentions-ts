@@ -25,6 +25,7 @@ const ensureNumber = (value: number | null | undefined, fallback: number): numbe
 
 // Applies a change from the plain text textarea to the underlying marked up value
 // guided by the textarea text selection ranges before and after the change
+// eslint-disable-next-line code-complete/low-function-cohesion
 const applyChangeToValue = (
   value: string,
   plainTextValue: string,
@@ -122,7 +123,12 @@ const applyChangeToValue = (
         value.length
       )
       newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
+      // eslint-disable-next-line sonarjs/no-dead-store
       controlPlainTextValue = getPlainText(newValue, config)
+      // After we perform the second splice, we want to make sure the “control” plain text we’re comparing against is actually in sync with the
+      // new markup. Even though we don’t currently use controlPlainTextValue again in this function, recomputing it right after the rewrite
+      // documents that the mismatch has been resolved and gives us an up-to-date value if we ever extend the logic (for example, adding a
+      // follow-up check or loop).
     }
   }
 
