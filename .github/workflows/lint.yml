@@ -44,10 +44,15 @@ jobs:
         run: yarn lint
       - name: Run ESLint on changed files
         if: steps.lint_scope.outputs.mode == 'files'
+        shell: bash
+        env:
+          ESLINT_FILES: ${{ steps.lint_scope.outputs.files }}
         run: |
           set -eo pipefail
-          echo "Running ESLint on changed files: ${{ steps.lint_scope.outputs.files }}"
-          yarn run eslint ${{ steps.lint_scope.outputs.files }}
+          echo "Running ESLint on changed files:"
+          mapfile -t FILES <<<"$ESLINT_FILES"
+          printf '%s\n' "${FILES[@]}"
+          yarn run eslint "${FILES[@]}"
       - name: Skip ESLint (no relevant changes)
         if: steps.lint_scope.outputs.mode == 'skip'
         run: echo "No matching files changed; skipping ESLint."
