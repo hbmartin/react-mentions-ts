@@ -29,8 +29,7 @@ export default function Advanced({
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
   const [value, setValue] = useState('Hi {{johndoe}}!')
-  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
-    setValue(nextValue)
+  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard

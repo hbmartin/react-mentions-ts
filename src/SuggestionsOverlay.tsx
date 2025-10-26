@@ -41,7 +41,7 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly spinnerElementClassName?: string
   readonly style?: CSSProperties
   readonly customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
-  readonly onMouseDown?: React.MouseEventHandler<Element>
+  readonly onMouseDown?: React.MouseEventHandler
   readonly onMouseEnter?: (index: number) => void
 }
 
@@ -191,16 +191,12 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       return null
     }
 
-    const handleLoadingMouseDown: React.MouseEventHandler<HTMLDivElement> = (event) => {
-      onMouseDown?.(event)
-    }
-
     return (
       <LoadingIndicator
         className={loadingClassName}
         spinnerClassName={spinnerClassName}
         spinnerElementClassName={spinnerElementClassName}
-        onMouseDown={handleLoadingMouseDown}
+        onMouseDown={onMouseDown}
       />
     )
   }

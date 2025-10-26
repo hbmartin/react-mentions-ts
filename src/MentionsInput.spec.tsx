@@ -86,6 +86,52 @@ describe('MentionsInput', () => {
     expect(input.tagName).toBe('INPUT')
   })
 
+  it('should throw when children include non-mention elements.', () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect(() =>
+        render(
+          <MentionsInput value="">
+            <div>Invalid child</div>
+          </MentionsInput>
+        )
+      ).toThrow('MentionsInput only accepts Mention components as children. Found: div')
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
+  it('should throw when children include non-element content.', () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect(() =>
+        render(
+          <MentionsInput value="">
+            {'text child'}
+          </MentionsInput>
+        )
+      ).toThrow('MentionsInput only accepts Mention components as children. Found invalid element.')
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
+  it('should throw when multiple Mention children share the same trigger.', () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect(() =>
+        render(
+          <MentionsInput value="">
+            <Mention trigger="@" data={data} />
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+      ).toThrow('MentionsInput does not support Mention children with duplicate triggers: @.')
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
   it('should show a list of suggestions once the trigger key has been entered.', async () => {
     render(
       <MentionsInput value="@">
@@ -326,6 +372,36 @@ describe('MentionsInput', () => {
     })
   })
 
+  it('should load suggestions from async data providers.', async () => {
+    const asyncData = jest.fn(async (query: string) => {
+      await Promise.resolve()
+      return [
+        { id: 'async-one', display: 'Async One' },
+        { id: 'async-two', display: 'Async Two' },
+      ]
+    })
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith('a')
+    })
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions).toHaveLength(2)
+    })
+  })
+
   it('should scroll the highlighter in sync with the textarea', () => {
     const { container } = render(
       <MentionsInput
@@ -373,6 +449,44 @@ describe('MentionsInput', () => {
 
     // Cleanup
     portalContainer.remove()
+  })
+
+  it('should render suggestions inline when suggestionsPortalHost is null.', async () => {
+    const { container } = render(
+      <MentionsInput value="@" suggestionsPortalHost={null}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const suggestionsNode = container.querySelector('[data-slot="suggestions"]')
+      expect(suggestionsNode).toBeTruthy()
+      expect(container.contains(suggestionsNode)).toBe(true)
+    })
+  })
+
+  it('should accept a Document instance as the suggestionsPortalHost.', async () => {
+    render(
+      <MentionsInput value="@" suggestionsPortalHost={document}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const suggestionsNode = document.body.querySelector('[data-slot="suggestions"]')
+      expect(suggestionsNode).toBeTruthy()
+      expect(suggestionsNode?.parentElement).toBe(document.body)
+    })
   })
 
   it('should accept a custom markup string', () => {

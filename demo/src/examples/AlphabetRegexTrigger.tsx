@@ -13,7 +13,13 @@ export default function AlphabetRegexTrigger({
   onAdd = () => {},
 }: {
   data: MentionDataItem[]
-  onAdd?: (params: { id: string | number; display: string; startPos: number; endPos: number; serializerId: string }) => void
+  onAdd?: (params: {
+    id: string | number
+    display: string
+    startPos: number
+    endPos: number
+    serializerId: string
+  }) => void
 }) {
   const [value, setValue] = useState(
     'Type a name using only letters to see inline suggestions pop up - try walter or lydia.'
