@@ -4,20 +4,14 @@ import { clsx } from 'clsx'
 import { Mention, MentionsInput } from '../../../src'
 import type { MentionDataItem, MentionSelection } from '../../../src'
 import ExampleCard from './ExampleCard'
-import {
-  mergeClassNames,
-  multilineMentionsClassNames,
-} from './mentionsClassNames'
+import { mergeClassNames, multilineMentionsClassNames } from './mentionsClassNames'
 import { useExampleValue } from './hooks'
 
 const initialValue =
   'Sync with @[Walter White](walter) and @[Jesse Pinkman](jesse) before the hand-off.'
 
 const selectionAwareClassNames = mergeClassNames(multilineMentionsClassNames, {
-  highlighter: clsx(
-    multilineMentionsClassNames.highlighter,
-    'transition-shadow'
-  ),
+  highlighter: clsx(multilineMentionsClassNames.highlighter, 'transition-shadow'),
 })
 
 const mentionChipClass = clsx(
@@ -29,11 +23,7 @@ const mentionChipClass = clsx(
   'data-[mention-selection=full]:bg-indigo-500 data-[mention-selection=full]:text-white'
 )
 
-export default function MentionSelectionExample({
-  data,
-}: {
-  data: MentionDataItem[]
-}) {
+export default function MentionSelectionExample({ data }: { data: MentionDataItem[] }) {
   const [value, onMentionsChange, onAdd] = useExampleValue(initialValue)
   const [selection, setSelection] = useState<MentionSelection[]>([])
 
@@ -78,23 +68,15 @@ export default function MentionSelectionExample({
             placeholder={"Mention teammates using '@'"}
             a11ySuggestionsListLabel={'Suggested mentions'}
           >
-            <Mention
-              trigger="@"
-              data={data}
-              onAdd={onAdd}
-              className={mentionChipClass}
-            />
+            <Mention trigger="@" data={data} onAdd={onAdd} className={mentionChipClass} />
           </MentionsInput>
           <p className="text-xs text-slate-400">
-            Mentions receive a `data-mention-selection` attribute in both the
-            input and highlighter layers, so you can style boundary, inside,
-            partial, or full selections independently.
+            Mentions receive a `data-mention-selection` attribute in both the input and highlighter
+            layers, so you can style boundary, inside, partial, or full selections independently.
           </p>
         </div>
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-slate-200">
-            Active mention selection
-          </h4>
+          <h4 className="text-sm font-semibold text-slate-200">Active mention selection</h4>
           <ul className="space-y-2 rounded-3xl bg-slate-900/40 p-4 shadow-inner shadow-slate-950/40 backdrop-blur">
             {listItems}
           </ul>

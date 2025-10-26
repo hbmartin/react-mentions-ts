@@ -116,9 +116,8 @@ export interface MentionOccurrence<
   data?: MentionDataItem<Extra>
 }
 
-export interface MentionSelection<
-  Extra extends Record<string, unknown> = Record<string, unknown>,
-> extends MentionOccurrence<Extra> {
+export interface MentionSelection<Extra extends Record<string, unknown> = Record<string, unknown>>
+  extends MentionOccurrence<Extra> {
   selection: MentionSelectionState
   plainTextStart: number
   plainTextEnd: number
@@ -213,6 +212,7 @@ export interface MentionsInputState<
   focusIndex: number
   selectionStart: number | null
   selectionEnd: number | null
+  cachedMentions: MentionOccurrence<Extra>[]
   suggestions: SuggestionsMap<Extra>
   caretPosition: CaretCoordinates | null
   suggestionsPosition: SuggestionsPosition

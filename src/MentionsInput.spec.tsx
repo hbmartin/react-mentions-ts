@@ -1126,6 +1126,46 @@ describe('MentionsInput', () => {
         expect(highlighted).toHaveAttribute('data-mention-selection', 'boundary')
       })
     })
+
+    it('refreshes cached mentions when the value prop changes', async () => {
+      const onMentionSelectionChange = jest.fn()
+      const initialValue = '@[First](first) remainder'
+      const updatedValue = '@[Second](second) remainder'
+
+      const { rerender } = render(
+        <MentionsInput value={initialValue} onMentionSelectionChange={onMentionSelectionChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      fireEvent.focus(textarea)
+
+      const initialIndex = textarea.value.indexOf('First') + 1
+      expect(initialIndex).toBeGreaterThan(0)
+      textarea.setSelectionRange(initialIndex, initialIndex)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalled())
+      const firstSelection = onMentionSelectionChange.mock.calls.at(-1)?.[0]
+      expect(firstSelection?.[0]?.display).toBe('First')
+
+      onMentionSelectionChange.mockClear()
+      rerender(
+        <MentionsInput value={updatedValue} onMentionSelectionChange={onMentionSelectionChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const updatedIndex = textarea.value.indexOf('Second') + 1
+      expect(updatedIndex).toBeGreaterThan(0)
+      textarea.setSelectionRange(updatedIndex, updatedIndex)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalled())
+      const secondSelection = onMentionSelectionChange.mock.calls[0][0]
+      expect(secondSelection?.[0]?.display).toBe('Second')
+    })
   })
 
   describe('inline autocomplete', () => {

@@ -147,6 +147,7 @@ export default defineConfig([
       'sonarjs/different-types-comparison': 'off',
       'sonarjs/pseudo-random': 'off',
       'sonarjs/prefer-regexp-exec': 'off',
+      'security/detect-object-injection': 'off',
 
       'code-complete/no-late-argument-usage': 'error',
       'code-complete/low-function-cohesion': 'error',
