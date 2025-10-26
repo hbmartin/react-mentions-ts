@@ -32,7 +32,7 @@ interface HighlighterProps {
   readonly onCaretPositionChange: (position: CaretCoordinates) => void
   readonly containerRef?: (node: HTMLDivElement | null) => void
   readonly children: React.ReactNode
-  readonly singleLine?: boolean
+  readonly singleLine: boolean
   readonly className?: string
   readonly substringClassName?: string
   readonly caretClassName?: string
@@ -118,7 +118,7 @@ function Highlighter({
   const config: MentionChildConfig[] = useMemo(() => readConfigFromChildren(children), [children])
   let caretPositionInMarkup: number | null | undefined
 
-  const rootClassName = cn(highlighterStyles({ singleLine: Boolean(singleLine) }), className)
+  const rootClassName = cn(highlighterStyles({ singleLine }), className)
   const substringClass = cn(substringStyles, substringClassName)
   const caretClass = cn(caretStyles, caretClassName)
 
@@ -216,8 +216,8 @@ function Highlighter({
     <div
       className={rootClassName}
       data-slot="highlighter"
-      data-single-line={singleLine === true ? 'true' : undefined}
-      data-multi-line={singleLine === false || singleLine === undefined ? undefined : 'true'}
+      data-single-line={singleLine ? 'true' : undefined}
+      data-multi-line={singleLine ? undefined : 'true'}
       style={HIGHLIGHTER_OVERLAY_STYLE}
       ref={containerRef}
     >

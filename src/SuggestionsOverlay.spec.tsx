@@ -348,4 +348,81 @@ describe('SuggestionsOverlay', () => {
     fireEvent.mouseEnter(listItems[2])
     expect(onMouseEnter).toHaveBeenCalledWith(2)
   })
+
+  it('does not render anything when closed', () => {
+    const { container } = render(
+      <SuggestionsOverlay id="test-suggestions" suggestions={{}} focusIndex={0} isOpened={false}>
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('merges positioning props and inline styles onto the overlay element', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="styled-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        position="fixed"
+        left={42}
+        top={88}
+        width={320}
+        style={{ backgroundColor: 'rgb(255, 0, 0)' }}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const overlay = container.querySelector('[data-slot="suggestions"]') as HTMLDivElement
+    expect(overlay).not.toBeNull()
+    expect(overlay.style.position).toBe('fixed')
+    expect(overlay.style.left).toBe('42px')
+    expect(overlay.style.top).toBe('88px')
+    expect(overlay.style.width).toBe('320px')
+    expect(overlay.style.backgroundColor).toBe('rgb(255, 0, 0)')
+  })
+
+  it('forwards the container ref and customises the suggestions list wrapper', () => {
+    const ref = jest.fn()
+    const wrap = jest.fn((node: React.ReactElement) => <div data-testid="wrapped">{node}</div>)
+
+    const { getByTestId } = render(
+      <SuggestionsOverlay
+        id="wrapped-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        containerRef={ref}
+        customSuggestionsContainer={wrap}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(getByTestId('wrapped')).toBeInTheDocument()
+    expect(wrap).toHaveBeenCalled()
+    expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement))
+  })
+
+  it('passes mouse down events through to the supplied handler', () => {
+    const handleMouseDown = jest.fn()
+    const { container } = render(
+      <SuggestionsOverlay
+        id="mouse-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        onMouseDown={handleMouseDown}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+    fireEvent.mouseDown(list, { button: 0 })
+    expect(handleMouseDown).toHaveBeenCalledTimes(1)
+  })
 })
