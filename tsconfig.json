@@ -5,5 +5,5 @@
     "types": ["node"]
   },
   "include": ["src/**/*", "*.config.ts", "scripts"],
-  "exclude": ["dist", "coverage", "build", "node_modules", "demo", "tests"]
+  "exclude": ["dist_build", "coverage", "build", "node_modules", "demo", "tests", "**/*.spec.ts", "**/*.spec.tsx"]
 }
