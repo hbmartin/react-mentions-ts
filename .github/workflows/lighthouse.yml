@@ -16,13 +16,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: yarn
+          node-version: '22.x'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Build library
+        run: yarn build
+
+      - name: Build demo
+        run: yarn build:demo --base=/react-mentions-ts/
+
       - name: Run Lighthouse CI
-        run: yarn lighthouse
+        run: npx @lhci/cli@0.15.x autorun
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

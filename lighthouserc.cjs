@@ -1,8 +1,10 @@
 /** @type {import('@lhci/cli').LighthouseCiConfig} */
-const config = {
+module.exports = {
   ci: {
     collect: {
       staticDistDir: 'demo/dist',
+      numberOfRuns: 2,
+      startServerReadyTimeout: 120_000,
     },
     assert: {
       preset: 'lighthouse:recommended',
@@ -15,5 +17,3 @@ const config = {
     },
   },
 }
-
-export default config
