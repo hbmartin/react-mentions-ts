@@ -216,8 +216,8 @@ function Highlighter({
     <div
       className={rootClassName}
       data-slot="highlighter"
-      data-single-line={singleLine ? 'true' : undefined}
-      data-multi-line={singleLine ? undefined : 'true'}
+      data-single-line={singleLine === true ? 'true' : undefined}
+      data-multi-line={singleLine === false || singleLine === undefined ? undefined : 'true'}
       style={HIGHLIGHTER_OVERLAY_STYLE}
       ref={containerRef}
     >

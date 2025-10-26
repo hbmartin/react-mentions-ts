@@ -31,6 +31,7 @@ import {
   spliceString,
   cn,
 } from './utils'
+import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { useEffectEvent } from './utils/useEffectEvent'
 import type {
@@ -132,26 +133,25 @@ const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
 const getMentionSelectionKey = (childIndex: number, plainTextIndex: number): string =>
   `${childIndex}:${plainTextIndex}`
 
-const areMentionSelectionsEqual = <Extra extends Record<string, unknown>>(
-  a: ReadonlyArray<MentionSelection<Extra>>,
-  b: ReadonlyArray<MentionSelection<Extra>>
+const areMentionOccurrencesEqual = <Extra extends Record<string, unknown>>(
+  a: ReadonlyArray<MentionOccurrence<Extra>>,
+  b: ReadonlyArray<MentionOccurrence<Extra>>
 ): boolean => {
   if (a.length !== b.length) {
     return false
   }
 
-  return a.every((selection, index) => {
+  return a.every((mention, index) => {
     const other = b[index]
     if (!other) {
       return false
     }
 
     return (
-      selection.id === other.id &&
-      selection.childIndex === other.childIndex &&
-      selection.plainTextStart === other.plainTextStart &&
-      selection.plainTextEnd === other.plainTextEnd &&
-      selection.selection === other.selection
+      mention.id === other.id &&
+      mention.childIndex === other.childIndex &&
+      mention.plainTextIndex === other.plainTextIndex &&
+      mention.display === other.display
     )
   })
 }
@@ -264,6 +264,8 @@ class MentionsInput<
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
     this.inlineAutocompleteLiveRegionId = `${this.uuidSuggestionsOverlay}-inline-live`
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
+    const initialConfig = readConfigFromChildren(props.children)
+    const initialValue = props.value ?? ''
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -274,18 +276,20 @@ class MentionsInput<
       focusIndex: 0,
       selectionStart: null,
       selectionEnd: null,
+      cachedMentions: getMentions(initialValue, initialConfig) as MentionOccurrence<Extra>[],
       suggestions: {},
       caretPosition: null,
       suggestionsPosition: {},
       pendingSelectionUpdate: false,
       highlighterRecomputeVersion: 0,
-      config: readConfigFromChildren(props.children),
+      config: initialConfig,
     } satisfies MentionsInputState<Extra>
   }
 
   private validateChildren(): void {
     const seenChildren = new Set<string>()
 
+    // eslint-disable-next-line code-complete/low-function-cohesion
     React.Children.forEach(this.props.children, (child) => {
       if (!React.isValidElement(child)) {
         throw new Error(
@@ -316,7 +320,11 @@ class MentionsInput<
     // Compute new config and update state if changed
     const newConfig = readConfigFromChildren(this.props.children)
     if (!this.configsEqual(this.state.config, newConfig)) {
-      this.setState({ config: newConfig })
+      const currentValue = this.props.value ?? ''
+      this.setState({
+        config: newConfig,
+        cachedMentions: getMentions(currentValue, newConfig) as MentionOccurrence<Extra>[],
+      })
     }
   }
 
@@ -358,6 +366,7 @@ class MentionsInput<
     this.updateSuggestionsPosition()
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   componentDidUpdate(
     prevProps: MentionsInputProps<Extra>,
     prevState: MentionsInputState<Extra>
@@ -383,16 +392,37 @@ class MentionsInput<
     const selectionPositionsChanged =
       this.state.selectionStart !== prevState.selectionStart ||
       this.state.selectionEnd !== prevState.selectionEnd
-    const valueChanged =
-      this.props.value !== prevProps.value || this.state.config !== prevState.config
+
+    const previousValue = prevProps.value ?? ''
+    const currentValue = this.props.value ?? ''
+    const configChanged = this.state.config !== prevState.config
+    const valueChanged = currentValue !== previousValue || configChanged
+
+    let mentionsForSelection = this.state.cachedMentions
+
+    if (valueChanged) {
+      const nextMentions = getMentions(
+        currentValue,
+        this.state.config
+      ) as MentionOccurrence<Extra>[]
+      mentionsForSelection = nextMentions
+      if (!areMentionOccurrencesEqual(nextMentions, this.state.cachedMentions)) {
+        this.setState({ cachedMentions: nextMentions })
+      }
+    }
 
     if (selectionPositionsChanged || valueChanged) {
-      const currentSelection = this.getCurrentMentionSelectionDetails()
+      const currentSelection = this.computeMentionSelectionDetails(
+        mentionsForSelection,
+        this.state.config,
+        this.state.selectionStart,
+        this.state.selectionEnd
+      )
       let shouldEmit = selectionPositionsChanged
 
       if (!shouldEmit && valueChanged) {
         const previousSelection = this.computeMentionSelectionDetails(
-          prevProps.value ?? '',
+          prevState.cachedMentions,
           prevState.config,
           prevState.selectionStart,
           prevState.selectionEnd
@@ -445,6 +475,7 @@ class MentionsInput<
     this.containerElement = el
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   getInputProps = (): InputComponentProps => {
     const { readOnly, disabled, singleLine } = this.props
 
@@ -570,7 +601,7 @@ class MentionsInput<
     this.suggestionsElement = el
   }
 
-  // eslint-disable-next-line sonarjs/function-return-type
+  // eslint-disable-next-line code-complete/low-function-cohesion
   renderSuggestionsOverlay = (): React.ReactNode | null => {
     if (this.isInlineAutocomplete()) {
       return null
@@ -622,6 +653,7 @@ class MentionsInput<
     return suggestionsNode
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   renderInlineSuggestion = (): React.ReactNode => {
     if (!this.isInlineAutocomplete()) {
       return null
@@ -822,6 +854,7 @@ class MentionsInput<
     }
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   getInlineSuggestionDetails = (): InlineSuggestionDetails<Extra> | null => {
     if (!this.isInlineAutocomplete()) {
       return null
@@ -887,6 +920,7 @@ class MentionsInput<
     return displayValue
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   canApplyInlineSuggestion = (): boolean => {
     if (!this.isInlineAutocomplete()) {
       return false
@@ -910,8 +944,9 @@ class MentionsInput<
     return getPlainText(this.props.value || '', this.state.config)
   }
 
-  private computeMentionSelectionDetails = (
-    value: string,
+  // eslint-disable-next-line code-complete/low-function-cohesion
+  private readonly computeMentionSelectionDetails = (
+    mentions: ReadonlyArray<MentionOccurrence<Extra>>,
     config: ReadonlyArray<MentionChildConfig>,
     selectionStart: number | null,
     selectionEnd: number | null
@@ -924,7 +959,6 @@ class MentionsInput<
     const end = Math.max(selectionStart, selectionEnd)
     const isCollapsed = start === end
 
-    const mentions = getMentions(value, config) as MentionOccurrence<Extra>[]
     if (mentions.length === 0) {
       return { selections: [], selectionMap: {} }
     }
@@ -944,8 +978,7 @@ class MentionsInput<
           selectionState = 'boundary'
         }
       } else if (start < mentionEnd && end > mentionStart) {
-        selectionState =
-          start <= mentionStart && end >= mentionEnd ? 'full' : 'partial'
+        selectionState = start <= mentionStart && end >= mentionEnd ? 'full' : 'partial'
       }
 
       if (selectionState === null) {
@@ -969,17 +1002,16 @@ class MentionsInput<
     return { selections, selectionMap }
   }
 
-  private getCurrentMentionSelectionDetails = (): MentionSelectionComputation<Extra> => {
-    const value = this.props.value ?? ''
+  private readonly getCurrentMentionSelectionDetails = (): MentionSelectionComputation<Extra> => {
     return this.computeMentionSelectionDetails(
-      value,
+      this.state.cachedMentions,
       this.state.config,
       this.state.selectionStart,
       this.state.selectionEnd
     )
   }
 
-  private getCurrentMentionSelectionMap = (): Record<string, MentionSelectionState> => {
+  private readonly getCurrentMentionSelectionMap = (): Record<string, MentionSelectionState> => {
     const { selectionMap } = this.getCurrentMentionSelectionDetails()
     return selectionMap
   }
@@ -1172,6 +1204,7 @@ class MentionsInput<
   }
 
   // Handle input element's change event
+  // eslint-disable-next-line code-complete/low-function-cohesion
   handleChange = (ev: ChangeEvent<InputElement>) => {
     const native = ev.nativeEvent
     if ('isComposing' in native && typeof native.isComposing === 'boolean') {
@@ -1260,6 +1293,7 @@ class MentionsInput<
     this.props.onSelect?.(ev)
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   private readonly syncSelectionFromInput = (
     reason: 'select' | 'selectionchange' = 'selectionchange'
   ): void => {
@@ -1300,6 +1334,7 @@ class MentionsInput<
     this.requestHighlighterScrollSync()
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   handleKeyDown = (ev: KeyboardEvent<InputElement>) => {
     const inlineAutocomplete = this.isInlineAutocomplete()
 
@@ -1420,7 +1455,7 @@ class MentionsInput<
     this.props.onBlur?.(ev)
   }
 
-  handleSuggestionsMouseDown = (_ev: ReactMouseEvent<Element>) => {
+  handleSuggestionsMouseDown = (_ev: ReactMouseEvent) => {
     this._suggestionsMouseDown = true
   }
 
@@ -1431,6 +1466,7 @@ class MentionsInput<
     })
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   updateSuggestionsPosition = (): void => {
     const { caretPosition } = this.state
     const { suggestionsPlacement = 'below' } = this.props
@@ -1519,6 +1555,7 @@ class MentionsInput<
     })
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   updateHighlighterScroll = (): void => {
     const input = this.inputElement
     const highlighter = this.highlighterElement
@@ -1603,6 +1640,7 @@ class MentionsInput<
     this._isComposing = false
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   setSelection = (selectionStart: number | null, selectionEnd: number | null): void => {
     if (selectionStart === null || selectionEnd === null) {
       return
@@ -1665,6 +1703,7 @@ class MentionsInput<
 
     // Check if suggestions have to be shown:
     // Match the trigger patterns of all Mention children on the extracted substring
+    // eslint-disable-next-line code-complete/low-function-cohesion
     React.Children.forEach(children, (child, childIndex) => {
       if (!React.isValidElement<MentionComponentProps<Extra>>(child)) {
         return
@@ -1745,6 +1784,7 @@ class MentionsInput<
     })
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   addMention = (
     suggestion: SuggestionDataItem<Extra>,
     { childIndex, querySequenceStart, querySequenceEnd, plainTextValue }: QueryInfo
@@ -1914,7 +1954,7 @@ const MeasurementBridge = ({
     return () => {
       input.removeEventListener('scroll', handleScroll)
     }
-  }, [input, syncScroll, updateSuggestions])
+  }, [input])
 
   return null
 }

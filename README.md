@@ -129,7 +129,7 @@ The `MentionsInput` component supports the following props:
 
 #### onMentionSelectionChange payload
 
-`onMentionSelectionChange` receives an array of [`MentionSelection`](./src/types.ts) entries. The array is ordered by the mention positions in the current value and is empty when the caret/selection does not intersect with any mentions. Each entry includes:
+`onMentionSelectionChange` receives an array of [`MentionSelection`](https://github.com/hbmartin/react-mentions-ts/blob/master/src/types.ts) entries. The array is ordered by the mention positions in the current value and is empty when the caret/selection does not intersect with any mentions. Each entry includes:
 
 - All fields from `MentionOccurrence` (`id`, `display`, `childIndex`, `index`, `plainTextIndex`, and the resolved `data` item when available)
 - `plainTextStart` / `plainTextEnd`: the inclusive/exclusive plain-text boundaries of the mention

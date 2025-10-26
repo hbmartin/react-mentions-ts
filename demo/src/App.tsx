@@ -22,7 +22,6 @@ const App: React.FC = () => (
           <a
             className="font-semibold text-indigo-300 underline-offset-4 transition hover:text-indigo-200 hover:underline"
             href="https://github.com/hbmartin/react-mentions-ts"
-            rel="noreferrer"
           >
             Install and Setup
           </a>
