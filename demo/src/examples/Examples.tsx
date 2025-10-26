@@ -10,6 +10,7 @@ import SuggestionPortal from './SuggestionPortal'
 import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import InlineAutocomplete from './InlineAutocomplete'
 import AllowSpaceInQuery from './AllowSpaceInQuery'
+import AlphabetRegexTrigger from './AlphabetRegexTrigger'
 
 const users = [
   {
@@ -76,6 +77,7 @@ export default function Examples() {
       <MultipleTriggers data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SingleLine data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <AllowSpaceInQuery data={users} />
+      <AlphabetRegexTrigger data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SingleLineIgnoringAccents data={users} />
       <Scrollable data={users} />
       <Advanced data={users} />

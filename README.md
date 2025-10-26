@@ -1,6 +1,5 @@
 # React Mentions TS
 
-[![npm version](https://badge.fury.io/js/react-mentions-ts.svg)](https://www.npmjs.com/package/react-mentions-ts)
 [![CI](https://github.com/hbmartin/react-mentions-ts/workflows/CI/badge.svg)](https://github.com/hbmartin/react-mentions-ts/actions)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)](https://bundlephobia.com/package/react-mentions-ts)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -98,22 +97,22 @@ function MyComponent() {
 
 The `MentionsInput` component supports the following props:
 
-| Prop name                  | Type                                                         | Default value  | Description                                                  |
-| -------------------------- | ------------------------------------------------------------ | -------------- | ------------------------------------------------------------ |
-| value                      | string                                                       | `''`           | The value containing markup for mentions                     |
+| Prop name                  | Type                                                                   | Default value  | Description                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| value                      | string                                                                 | `''`           | The value containing markup for mentions                                                                                              |
 | onMentionsChange           | function ({ trigger, value, plainTextValue, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, active mentions, and the previous markup value |
-| onKeyDown                  | function (event)                                             | empty function | A callback that is invoked when the user presses a key in the mentions input |
-| singleLine                 | boolean                                                      | `false`        | Renders a single line text input instead of a textarea, if set to `true` |
-| onMentionBlur              | function (event, clickedSuggestion)                          | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list |
-| suggestionsPortalHost      | DOM Element                                                  | undefined      | Render suggestions into the DOM in the supplied host element. |
-| inputRef                   | React ref                                                    | undefined      | Accepts a React ref to forward to the underlying input element |
-| suggestionsPlacement       | `'auto' \| 'above' \| 'below'`                               | `'below'`      | Controls where the suggestion list renders relative to the caret (`'auto'` flips when space is limited) |
-| a11ySuggestionsListLabel   | string                                                       | `''`           | This label would be exposed to screen readers when suggestion popup appears |
-| customSuggestionsContainer | function(children)                                           | empty function | Allows customizing the container of the suggestions          |
-| inputComponent             | React component                                              | undefined      | Allows the use of a custom input component                   |
-| suggestionsDisplay         | `'overlay' \| 'inline'`                                      | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints |
-| spellCheck                 | boolean                                                      | `false`        | Controls browser spell checking on the underlying input (disabled by default) |
-| onSelect                   | function (event)                                             | empty function | A callback that is invoked when the user selects a portion of the text in the input |
+| onKeyDown                  | function (event)                                                       | empty function | A callback that is invoked when the user presses a key in the mentions input                                                          |
+| singleLine                 | boolean                                                                | `false`        | Renders a single line text input instead of a textarea, if set to `true`                                                              |
+| onMentionBlur              | function (event, clickedSuggestion)                                    | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list                                                   |
+| suggestionsPortalHost      | DOM Element                                                            | undefined      | Render suggestions into the DOM in the supplied host element.                                                                         |
+| inputRef                   | React ref                                                              | undefined      | Accepts a React ref to forward to the underlying input element                                                                        |
+| suggestionsPlacement       | `'auto' \| 'above' \| 'below'`                                         | `'below'`      | Controls where the suggestion list renders relative to the caret (`'auto'` flips when space is limited)                               |
+| a11ySuggestionsListLabel   | string                                                                 | `''`           | This label would be exposed to screen readers when suggestion popup appears                                                           |
+| customSuggestionsContainer | function(children)                                                     | empty function | Allows customizing the container of the suggestions                                                                                   |
+| inputComponent             | React component                                                        | undefined      | Allows the use of a custom input component                                                                                            |
+| suggestionsDisplay         | `'overlay' \| 'inline'`                                                | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints                                                      |
+| spellCheck                 | boolean                                                                | `false`        | Controls browser spell checking on the underlying input (disabled by default)                                                         |
+| onSelect                   | function (event)                                                       | empty function | A callback that is invoked when the user selects a portion of the text in the input                                                   |
 
 #### onMentionsChange payload
 
@@ -129,15 +128,15 @@ The `MentionsInput` component supports the following props:
 
 Each data source is configured using a `Mention` component, which has the following props:
 
-| Prop name        | Type                                                         | Default value              | Description                                                  |
-| ---------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------ |
-| trigger          | RegExp or string                                             | `'@'`                      | Defines the char sequence upon which to trigger querying the data source |
+| Prop name        | Type                                                         | Default value              | Description                                                                                                                                            |
+| ---------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| trigger          | RegExp or string                                             | `'@'`                      | Defines the char sequence upon which to trigger querying the data source                                                                               |
 | data             | array or function (search, callback)                         | `null`                     | An array of the mentionable data entries (objects with `id` & `display` keys, or a filtering function that returns an array based on a query parameter |
-| renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                     | Allows customizing how mention suggestions are rendered (optional) |
-| markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'` | Template string for stored markup, or pass a `MentionSerializer` instance for full control |
-| displayTransform | function (id, display)                                       | returns `display`          | Accepts a function for customizing the string that is displayed for a mention |
-| onAdd            | function ({id, display, startPos, endPos, serializerId})     | empty function             | Callback invoked when a suggestion has been added (optional) |
-| appendSpaceOnAdd | boolean                                                      | `false`                    | Append a space when a suggestion has been added (optional)   |
+| renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                     | Allows customizing how mention suggestions are rendered (optional)                                                                                     |
+| markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'` | Template string for stored markup, or pass a `MentionSerializer` instance for full control                                                             |
+| displayTransform | function (id, display)                                       | returns `display`          | Accepts a function for customizing the string that is displayed for a mention                                                                          |
+| onAdd            | function ({id, display, startPos, endPos, serializerId})     | empty function             | Callback invoked when a suggestion has been added (optional)                                                                                           |
+| appendSpaceOnAdd | boolean                                                      | `false`                    | Append a space when a suggestion has been added (optional)                                                                                             |
 
 > Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `markup={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
 
@@ -179,8 +178,8 @@ module.exports = {
 
 ```css
 /* src/index.css (or your global stylesheet) */
-@import "tailwindcss";
-@import "react-mentions-ts/styles/tailwind.css";
+@import 'tailwindcss';
+@import 'react-mentions-ts/styles/tailwind.css';
 ```
 
 The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source "../dist";` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
