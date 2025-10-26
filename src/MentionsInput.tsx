@@ -1280,7 +1280,7 @@ class MentionsInput<
     this.props.onBlur?.(ev)
   }
 
-  handleSuggestionsMouseDown = (_ev: ReactMouseEvent<HTMLDivElement>) => {
+  handleSuggestionsMouseDown = (_ev: ReactMouseEvent<Element>) => {
     this._suggestionsMouseDown = true
   }
 

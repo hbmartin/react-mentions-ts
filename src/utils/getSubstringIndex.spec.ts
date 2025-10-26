@@ -93,4 +93,19 @@ describe('#getSubstringIndex', () => {
     // These limitations are inherent to using NFD normalization, which only handles
     // combining marks (accents), not character decomposition into base letter sequences
   })
+
+  it('skips characters gracefully when String#codePointAt reports undefined', () => {
+    const haystackWrapper = new String('abc')
+    const codePointAtMock = jest.fn(function (this: String, pos: number) {
+      if (pos === 1) return undefined
+      return String.prototype.codePointAt.call(this, pos)
+    })
+    ;(haystackWrapper as unknown as { codePointAt: (pos: number) => number | undefined }).codePointAt =
+      codePointAtMock
+
+    const result = getSubstringIndex(haystackWrapper as unknown as string, 'c', true)
+
+    expect(codePointAtMock).toHaveBeenCalledWith(1)
+    expect(result).toBe(2)
+  })
 })

@@ -6,6 +6,7 @@ const stripWithMap = (s: string) => {
   for (let i = 0; i < s.length; ) {
     const codePoint = s.codePointAt(i)
     if (codePoint === undefined) {
+      i++
       continue
     }
     const char = String.fromCodePoint(codePoint)

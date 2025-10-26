@@ -12,7 +12,10 @@
       "Bash(cat:*)",
       "Bash(npm info:*)",
       "WebSearch",
-      "Bash(yarn test:*)"
+      "Bash(yarn test:*)",
+      "WebFetch(domain:codilime.com)",
+      "WebFetch(domain:www.testim.io)",
+      "WebFetch(domain:www.angularminds.com)"
     ],
     "deny": [],
     "ask": []

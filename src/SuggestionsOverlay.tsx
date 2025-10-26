@@ -41,7 +41,7 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly spinnerElementClassName?: string
   readonly style?: CSSProperties
   readonly customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
-  readonly onMouseDown?: (event: React.MouseEvent<HTMLDivElement>) => void
+  readonly onMouseDown?: React.MouseEventHandler<Element>
   readonly onMouseEnter?: (index: number) => void
 }
 
@@ -161,6 +161,10 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       renderSuggestion(result, queryInfo, index)
     )
 
+    const handleListMouseDown: React.MouseEventHandler<HTMLUListElement> = (event) => {
+      onMouseDown?.(event)
+    }
+
     const suggestionsToRender = (
       <ul
         ref={setUlElement}
@@ -169,6 +173,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         aria-label={a11ySuggestionsListLabel}
         className={listClassNameResolved}
         data-slot="suggestions-list"
+        onMouseDown={handleListMouseDown}
       >
         {renderedSuggestions}
       </ul>
@@ -186,11 +191,16 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       return null
     }
 
+    const handleLoadingMouseDown: React.MouseEventHandler<HTMLDivElement> = (event) => {
+      onMouseDown?.(event)
+    }
+
     return (
       <LoadingIndicator
         className={loadingClassName}
         spinnerClassName={spinnerClassName}
         spinnerElementClassName={spinnerElementClassName}
+        onMouseDown={handleLoadingMouseDown}
       />
     )
   }
@@ -209,7 +219,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   const mergedStyle = styleProp ? { ...overlayStyle, ...styleProp } : overlayStyle
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={overlayClassName}
       data-open={isOpened ? 'true' : 'false'}
@@ -217,7 +226,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       aria-live="polite"
       aria-relevant="additions text"
       aria-busy={isLoading ? 'true' : 'false'}
-      onMouseDown={onMouseDown}
       ref={containerRef}
       style={mergedStyle}
     >
