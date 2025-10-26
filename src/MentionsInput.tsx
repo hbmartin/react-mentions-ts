@@ -442,7 +442,16 @@ class MentionsInput<
       }
 
       if (shouldEmit && this.props.onMentionSelectionChange) {
-        this.props.onMentionSelectionChange(currentSelection.selections)
+        const selectionMentionIds = currentSelection.selections.map((selection) => selection.id)
+        const selectionContext = {
+          value: currentValue,
+          plainTextValue: getPlainText(currentValue, this.state.config),
+          mentions: mentionsForSelection,
+          mentionIds: selectionMentionIds,
+          mentionId: selectionMentionIds.length === 1 ? selectionMentionIds[0] : undefined,
+        }
+
+        this.props.onMentionSelectionChange(currentSelection.selections, selectionContext)
       }
     }
   }
@@ -1022,7 +1031,8 @@ class MentionsInput<
     newValue: string,
     newPlainTextValue: string,
     mentions: MentionOccurrence[],
-    previousValue: string
+    previousValue: string,
+    mentionId?: MentionIdentifier
   ): void => {
     if (this.props.onMentionsChange) {
       this.props.onMentionsChange({
@@ -1031,6 +1041,7 @@ class MentionsInput<
         plainTextValue: newPlainTextValue,
         mentions: mentions as MentionOccurrence<Extra>[],
         previousValue,
+        mentionId,
       })
     }
   }
@@ -1838,7 +1849,14 @@ class MentionsInput<
       displayValue
     )
 
-    this.executeOnChange({ type: 'mention-add' }, newValue, newPlainTextValue, mentions, value)
+    this.executeOnChange(
+      { type: 'mention-add' },
+      newValue,
+      newPlainTextValue,
+      mentions,
+      value,
+      id
+    )
 
     if (onAdd !== undefined) {
       onAdd({

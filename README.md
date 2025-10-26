@@ -102,8 +102,8 @@ The `MentionsInput` component supports the following props:
 | Prop name                  | Type                                                                   | Default value  | Description                                                                                                                           |
 | -------------------------- | ---------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | value                      | string                                                                 | `''`           | The value containing markup for mentions                                                                                              |
-| onMentionsChange           | function ({ trigger, value, plainTextValue, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, active mentions, and the previous markup value |
-| onMentionSelectionChange   | function (selection)                                                   | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries         |
+| onMentionsChange           | function ({ trigger, value, plainTextValue, mentionId, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, the affected mention id (when applicable), active mentions, and the previous markup value |
+| onMentionSelectionChange   | function (selection, context)                                          | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries and a metadata context containing the current value, plain text, and mention identifiers |
 | onKeyDown                  | function (event)                                                       | empty function | A callback that is invoked when the user presses a key in the mentions input                                                          |
 | singleLine                 | boolean                                                                | `false`        | Renders a single line text input instead of a textarea, if set to `true`                                                              |
 | onMentionBlur              | function (event, clickedSuggestion)                                    | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list                                                   |
@@ -123,6 +123,7 @@ The `MentionsInput` component supports the following props:
 
 - `value`: the latest markup string containing mentions
 - `plainTextValue`: the same content without mention markup
+- `mentionId`: the identifier of the mention that triggered the change when the `trigger.type` is mention-specific (e.g. `'mention-add'`); otherwise `undefined`
 - `mentions`: the mention occurrences extracted from the new value
 - `previousValue`: the markup string before the change
 - `trigger`: metadata about what caused the change. `trigger.type` is one of `'input'`, `'paste'`, `'cut'`, `'mention-add'`, or `'mention-remove'`, and, when available, `trigger.nativeEvent` references the originating DOM event (optional; do not rely on its exact shape). Regular text edits (typing, Backspace/Delete) use `trigger.type: 'input'`.
@@ -141,6 +142,13 @@ The `MentionsInput` component supports the following props:
   - `'full'` – the selection fully covers the mention
 
 The callback fires on every selection change, so you can keep live state in sync with caret movement.
+
+The optional `context` argument includes:
+
+- `value` / `plainTextValue`: the latest markup and plain-text representations
+- `mentions`: the mentions found in the current value
+- `mentionIds`: the identifiers for the mentions covered by the current selection (ordered)
+- `mentionId`: the identifier when the selection maps to a single mention; otherwise `undefined`
 
 ### Mention Props
 
