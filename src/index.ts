@@ -11,6 +11,8 @@ export type {
   MentionsInputChangeTriggerType,
   MentionSerializer,
   MentionSerializerMatch,
+  MentionSelection,
+  MentionSelectionState,
 } from './types'
 export { default as createMarkupSerializer } from './utils/createMarkupSerializer'
 export { makeTriggerRegex } from './utils/makeTriggerRegex'

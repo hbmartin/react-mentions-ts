@@ -11,6 +11,7 @@ import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import InlineAutocomplete from './InlineAutocomplete'
 import AllowSpaceInQuery from './AllowSpaceInQuery'
 import AlphabetRegexTrigger from './AlphabetRegexTrigger'
+import MentionSelection from './MentionSelection'
 
 const users = [
   {
@@ -82,6 +83,7 @@ export default function Examples() {
       <Scrollable data={users} />
       <Advanced data={users} />
       <CutCopyPaste data={users} disabledSource={false} />
+      <MentionSelection data={users} />
       <InlineAutocomplete data={users} />
       <AsyncGithubUserMentions />
       <Emojis data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />

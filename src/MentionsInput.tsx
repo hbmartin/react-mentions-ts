@@ -41,6 +41,9 @@ import type {
   MentionDataItem,
   MentionIdentifier,
   MentionOccurrence,
+  MentionSelection,
+  MentionSelectionState,
+  MentionChildConfig,
   MentionsInputProps,
   MentionsInputState,
   MentionsInputClassNames,
@@ -126,6 +129,38 @@ const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
   return new RegExp(trigger.source, flags)
 }
 
+const getMentionSelectionKey = (childIndex: number, plainTextIndex: number): string =>
+  `${childIndex}:${plainTextIndex}`
+
+const areMentionSelectionsEqual = <Extra extends Record<string, unknown>>(
+  a: ReadonlyArray<MentionSelection<Extra>>,
+  b: ReadonlyArray<MentionSelection<Extra>>
+): boolean => {
+  if (a.length !== b.length) {
+    return false
+  }
+
+  return a.every((selection, index) => {
+    const other = b[index]
+    if (!other) {
+      return false
+    }
+
+    return (
+      selection.id === other.id &&
+      selection.childIndex === other.childIndex &&
+      selection.plainTextStart === other.plainTextStart &&
+      selection.plainTextEnd === other.plainTextEnd &&
+      selection.selection === other.selection
+    )
+  })
+}
+
+interface MentionSelectionComputation<Extra extends Record<string, unknown>> {
+  selections: MentionSelection<Extra>[]
+  selectionMap: Record<string, MentionSelectionState>
+}
+
 interface InlineSuggestionDetails<Extra extends Record<string, unknown> = Record<string, unknown>> {
   hiddenPrefix: string
   visibleText: string
@@ -159,6 +194,7 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
   'onSelect',
   'onMentionBlur',
   'onMentionsChange',
+  'onMentionSelectionChange',
   'onBlur',
   'onChange',
   'suggestionsPortalHost',
@@ -342,6 +378,34 @@ class MentionsInput<
     if (this.state.pendingSelectionUpdate) {
       this.setState({ pendingSelectionUpdate: false })
       this.setSelection(this.state.selectionStart, this.state.selectionEnd)
+    }
+
+    const selectionPositionsChanged =
+      this.state.selectionStart !== prevState.selectionStart ||
+      this.state.selectionEnd !== prevState.selectionEnd
+    const valueChanged =
+      this.props.value !== prevProps.value || this.state.config !== prevState.config
+
+    if (selectionPositionsChanged || valueChanged) {
+      const currentSelection = this.getCurrentMentionSelectionDetails()
+      let shouldEmit = selectionPositionsChanged
+
+      if (!shouldEmit && valueChanged) {
+        const previousSelection = this.computeMentionSelectionDetails(
+          prevProps.value ?? '',
+          prevState.config,
+          prevState.selectionStart,
+          prevState.selectionEnd
+        )
+        shouldEmit = !areMentionSelectionsEqual(
+          previousSelection.selections,
+          currentSelection.selections
+        )
+      }
+
+      if (shouldEmit && this.props.onMentionSelectionChange) {
+        this.props.onMentionSelectionChange(currentSelection.selections)
+      }
     }
   }
 
@@ -672,6 +736,7 @@ class MentionsInput<
   renderHighlighter = (): React.ReactElement => {
     const { selectionStart, selectionEnd, highlighterRecomputeVersion } = this.state
     const { singleLine, children, value, classNames } = this.props
+    const mentionSelectionMap = this.getCurrentMentionSelectionMap()
     return (
       <Highlighter
         containerRef={this.setHighlighterElement}
@@ -684,6 +749,7 @@ class MentionsInput<
         selectionEnd={selectionEnd}
         recomputeVersion={highlighterRecomputeVersion}
         onCaretPositionChange={this.handleCaretPositionChange}
+        mentionSelectionMap={mentionSelectionMap}
       >
         {children}
       </Highlighter>
@@ -842,6 +908,80 @@ class MentionsInput<
   // Returns the text to set as the value of the textarea with all markups removed
   getPlainText = (): string => {
     return getPlainText(this.props.value || '', this.state.config)
+  }
+
+  private computeMentionSelectionDetails = (
+    value: string,
+    config: ReadonlyArray<MentionChildConfig>,
+    selectionStart: number | null,
+    selectionEnd: number | null
+  ): MentionSelectionComputation<Extra> => {
+    if (selectionStart === null || selectionEnd === null) {
+      return { selections: [], selectionMap: {} }
+    }
+
+    const start = Math.min(selectionStart, selectionEnd)
+    const end = Math.max(selectionStart, selectionEnd)
+    const isCollapsed = start === end
+
+    const mentions = getMentions(value, config) as MentionOccurrence<Extra>[]
+    if (mentions.length === 0) {
+      return { selections: [], selectionMap: {} }
+    }
+
+    const selections: MentionSelection<Extra>[] = []
+    const selectionMap: Record<string, MentionSelectionState> = {}
+
+    for (const mention of mentions) {
+      const mentionStart = mention.plainTextIndex
+      const mentionEnd = mentionStart + mention.display.length
+      let selectionState: MentionSelectionState | null = null
+
+      if (isCollapsed) {
+        if (start > mentionStart && start < mentionEnd) {
+          selectionState = 'inside'
+        } else if (start === mentionStart || start === mentionEnd) {
+          selectionState = 'boundary'
+        }
+      } else if (start < mentionEnd && end > mentionStart) {
+        selectionState =
+          start <= mentionStart && end >= mentionEnd ? 'full' : 'partial'
+      }
+
+      if (selectionState === null) {
+        continue
+      }
+
+      const serializerId = config[mention.childIndex]?.serializer.id ?? ''
+      const entry: MentionSelection<Extra> = {
+        ...mention,
+        selection: selectionState,
+        plainTextStart: mentionStart,
+        plainTextEnd: mentionEnd,
+        serializerId,
+      }
+
+      selections.push(entry)
+      selectionMap[getMentionSelectionKey(mention.childIndex, mention.plainTextIndex)] =
+        selectionState
+    }
+
+    return { selections, selectionMap }
+  }
+
+  private getCurrentMentionSelectionDetails = (): MentionSelectionComputation<Extra> => {
+    const value = this.props.value ?? ''
+    return this.computeMentionSelectionDetails(
+      value,
+      this.state.config,
+      this.state.selectionStart,
+      this.state.selectionEnd
+    )
+  }
+
+  private getCurrentMentionSelectionMap = (): Record<string, MentionSelectionState> => {
+    const { selectionMap } = this.getCurrentMentionSelectionDetails()
+    return selectionMap
   }
 
   executeOnChange = (

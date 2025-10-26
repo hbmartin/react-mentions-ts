@@ -18,10 +18,15 @@ export default function Mention<Extra extends Record<string, unknown> = Record<s
   display,
   className,
   style,
+  selectionState,
 }: MentionProps<Extra>) {
   return (
-    <strong className={cn(mentionBaseClass, className, mentionsRequiredClass)} style={style}>
+    <span
+      className={cn(mentionBaseClass, className, mentionsRequiredClass)}
+      style={style}
+      data-mention-selection={selectionState ?? undefined}
+    >
       {display}
-    </strong>
+    </span>
   )
 }
