@@ -1,6 +1,7 @@
 # React Mentions TS
 
 [![CI](https://github.com/hbmartin/react-mentions-ts/workflows/CI/badge.svg)](https://github.com/hbmartin/react-mentions-ts/actions)
+[![codecov](https://codecov.io/gh/hbmartin/react-mentions-ts/graph/badge.svg?token=Po1nDYEr5f)](https://codecov.io/gh/hbmartin/react-mentions-ts)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)](https://bundlephobia.com/package/react-mentions-ts)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)

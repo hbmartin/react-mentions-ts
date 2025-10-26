@@ -1,9 +1,11 @@
+import type { MouseEventHandler } from 'react'
 import { cn } from './utils'
 
 interface LoadingIndicatorProps {
   readonly className?: string
   readonly spinnerClassName?: string
   readonly spinnerElementClassName?: string
+  readonly onMouseDown?: MouseEventHandler<HTMLDivElement>
 }
 
 const containerStyles = 'flex justify-center py-2'
@@ -16,6 +18,7 @@ function LoadingIndicator({
   className,
   spinnerClassName,
   spinnerElementClassName,
+  onMouseDown,
 }: LoadingIndicatorProps) {
   return (
     <div
@@ -24,6 +27,7 @@ function LoadingIndicator({
       role="status"
       aria-live="polite"
       aria-label="Loading suggestions"
+      onMouseDown={onMouseDown}
     >
       <div className={cn(spinnerStyles, spinnerClassName)}>
         {dotDelays.map((delay) => (

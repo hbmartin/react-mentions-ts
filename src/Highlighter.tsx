@@ -106,15 +106,7 @@ function Highlighter({
       }
     }
     // value/selection/singleLine impact layout/position
-  }, [
-    caretElement,
-    value,
-    selectionStart,
-    selectionEnd,
-    singleLine,
-    recomputeVersion,
-    updatePosition,
-  ])
+  }, [caretElement, value, selectionStart, selectionEnd, singleLine, recomputeVersion])
 
   const config: MentionChildConfig[] = useMemo(() => readConfigFromChildren(children), [children])
   let caretPositionInMarkup: number | null | undefined
