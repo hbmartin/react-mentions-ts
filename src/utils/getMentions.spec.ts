@@ -1,4 +1,4 @@
-import createMarkupSerializer from '../serializers/createMarkupSerializer'
+import createMarkupSerializer from './createMarkupSerializer'
 import getMentions from './getMentions'
 
 describe('#getMentions', () => {

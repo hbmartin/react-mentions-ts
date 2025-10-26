@@ -3,10 +3,8 @@ import type { ReactElement, ReactNode } from 'react'
 import type { MentionChildConfig, MentionComponentProps, MentionSerializer } from '../types'
 import Mention from '../Mention'
 import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
-import createMarkupSerializer from '../serializers/createMarkupSerializer'
+import createMarkupSerializer from './createMarkupSerializer'
 import PLACEHOLDERS from './placeholders'
-
-const DEFAULT_SERIALIZER = createMarkupSerializer(DEFAULT_MENTION_PROPS.markup)
 
 /**
  * Generates a markup template based on the trigger character.
@@ -57,27 +55,10 @@ const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
     const props = child.props
     const trigger = props.trigger ?? DEFAULT_MENTION_PROPS.trigger
     const displayTransform = props.displayTransform ?? DEFAULT_MENTION_PROPS.displayTransform
-    let serializer: MentionSerializer
-
-    // If markup is explicitly provided, use it
-    if (props.markup !== undefined) {
-      const markupProp = props.markup
-      if (typeof markupProp === 'string') {
-        serializer =
-          markupProp === DEFAULT_MENTION_PROPS.markup
-            ? DEFAULT_SERIALIZER
-            : createMarkupSerializer(markupProp)
-      } else {
-        serializer = markupProp
-      }
-    } else {
-      // No markup provided: generate trigger-specific markup to avoid collisions
-      const generatedMarkup = generateMarkupForTrigger(trigger)
-      serializer =
-        generatedMarkup === DEFAULT_MENTION_PROPS.markup
-          ? DEFAULT_SERIALIZER
-          : createMarkupSerializer(generatedMarkup)
-    }
+    const serializer: MentionSerializer =
+      props.markup !== undefined && typeof props.markup !== 'string'
+        ? props.markup
+        : createMarkupSerializer(props.markup ?? generateMarkupForTrigger(trigger))
 
     return {
       ...DEFAULT_MENTION_PROPS,

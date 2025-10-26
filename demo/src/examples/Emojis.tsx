@@ -36,9 +36,6 @@ export default function Emojis({
   const [value, setValue] = useState('')
 
   const queryEmojis = (query: string) => {
-    console.log('queryEmojis', query, emojis.length)
-    if (!query) return Promise.resolve([])
-
     const lower = query.toLowerCase()
     return Promise.resolve(
       emojis
