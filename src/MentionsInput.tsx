@@ -247,6 +247,8 @@ class MentionsInput<
   }
 
   private validateChildren(): void {
+    const seenChildren = new Set<string>()
+
     React.Children.forEach(this.props.children, (child) => {
       if (!React.isValidElement(child)) {
         throw new Error(
@@ -260,6 +262,18 @@ class MentionsInput<
           }`
         )
       }
+      const trigger =
+        child.props.trigger === undefined
+          ? DEFAULT_MENTION_PROPS.trigger
+          : typeof child.props.trigger === 'string'
+            ? child.props.trigger
+            : child.props.trigger.source
+      if (seenChildren.has(trigger)) {
+        throw new Error(
+          `MentionsInput does not support Mention children with duplicate triggers: ${trigger}.`
+        )
+      }
+      seenChildren.add(trigger)
     })
 
     // Compute new config and update state if changed

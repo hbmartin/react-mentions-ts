@@ -275,7 +275,7 @@ describe('MentionsInput', () => {
     render(
       <MentionsInput value="@">
         <Mention trigger="@" data={data} />
-        <Mention trigger="@" data={extraData} />
+        <Mention trigger=":" data={extraData} />
       </MentionsInput>
     )
 
@@ -291,12 +291,12 @@ describe('MentionsInput', () => {
       const suggestions = screen.getAllByRole('option', { hidden: true })
       expect(suggestions).toHaveLength(data.length + extraData.length)
       const texts = suggestions.map((item) => item.textContent?.trim() ?? '')
-      data.forEach(({ id }, index) => {
+      for (const [index, { id }] of data.entries()) {
         expect(texts[index]).toContain(id)
-      })
-      extraData.forEach(({ id }, index) => {
+      }
+      for (const [index, { id }] of extraData.entries()) {
         expect(texts[data.length + index]).toContain(id)
-      })
+      }
     })
   })
 
@@ -478,7 +478,7 @@ describe('MentionsInput', () => {
   it('supports custom regular expression triggers passed to Mention', async () => {
     render(
       <MentionsInput value="#">
-        <Mention trigger={/(#([^\s]*))/g} data={data} />
+        <Mention trigger={/(#(\S*))/g} data={data} />
       </MentionsInput>
     )
 
