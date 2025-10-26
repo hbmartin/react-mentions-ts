@@ -90,6 +90,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     [children]
   )
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   useLayoutEffect(() => {
     if (!ulElement || ulElement.offsetHeight >= ulElement.scrollHeight || !scrollFocusedIntoView) {
       return
@@ -208,6 +209,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   const mergedStyle = styleProp ? { ...overlayStyle, ...styleProp } : overlayStyle
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={overlayClassName}
       data-open={isOpened ? 'true' : 'false'}

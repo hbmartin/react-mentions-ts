@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-nested-functions */
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'

@@ -7,7 +7,7 @@ describe('#isNumber', () => {
     new Object(0),
     true,
     new Date(),
-    new Error(),
+    new Error('test'),
     { a: 1 },
     /x/,
     'a',
@@ -21,6 +21,7 @@ describe('#isNumber', () => {
   }
 
   for (const value of failingValues) {
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     it(`should return "false" for non-numbers: ${value}`, () => {
       const result = isNumber(value)
       expect(result).toBe(false)

@@ -22,6 +22,7 @@ const mapPlainTextIndex = (
 
   let result: number | null | undefined
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   const textIteratee = (substr: string, index: number, substrPlainTextIndex: number): void => {
     if (result !== undefined) {
       return
@@ -33,6 +34,7 @@ const mapPlainTextIndex = (
     }
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   const markupIteratee = (
     markup: string,
     index: number,

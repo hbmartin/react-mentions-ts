@@ -2,6 +2,7 @@ import isPlainObject from './isPlainObject'
 
 export type PlainObject = Record<string, unknown>
 
+// eslint-disable-next-line code-complete/low-function-cohesion
 export const mergeDeep = <T extends PlainObject, S extends PlainObject>(
   target: T,
   source: S

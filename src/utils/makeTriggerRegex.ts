@@ -5,6 +5,7 @@ interface TriggerOptions {
   ignoreAccents?: boolean
 }
 
+// eslint-disable-next-line code-complete/low-function-cohesion
 export const makeTriggerRegex = (
   trigger: string | RegExp = '@',
   options: TriggerOptions = {}
@@ -25,7 +26,6 @@ export const makeTriggerRegex = (
     // Match Unicode letters and combining marks, but exclude the trigger and optionally spaces
     // The pattern allows letters followed by zero or more combining marks
     return new RegExp(
-      // eslint-disable-next-line unicorn/prefer-string-raw
       `(?:^|\\s)(${escapedTriggerChar}((?:[^${spacePattern}${escapedTriggerChar}])*))$`,
       'u' // Unicode flag enables \p{} syntax
     )
@@ -35,7 +35,6 @@ export const makeTriggerRegex = (
   // first capture group is the part to be replaced on completion
   // second capture group is for extracting the search query
   return new RegExp(
-    // eslint-disable-next-line unicorn/prefer-string-raw
     `(?:^|\\s)(${escapedTriggerChar}([^${allowSpaceInQuery === true ? '' : '\\s'}${escapedTriggerChar}]*))$`
   )
 }

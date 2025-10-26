@@ -38,6 +38,7 @@ const isReactFragment = (child: unknown): child is ReactElement<{ children?: Rea
   React.isValidElement(child) && child.type === React.Fragment
 
 const collectMentionElements = (children: ReactNode): ReactElement<MentionComponentProps>[] =>
+  // eslint-disable-next-line code-complete/low-function-cohesion
   Children.toArray(children).flatMap((child) => {
     if (isReactFragment(child)) {
       return collectMentionElements(child.props.children)

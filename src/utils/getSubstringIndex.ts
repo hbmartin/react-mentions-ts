@@ -1,15 +1,18 @@
-/* eslint-disable code-complete/enforce-meaningful-names */
+// eslint-disable-next-line code-complete/low-function-cohesion, code-complete/enforce-meaningful-names
 const stripWithMap = (s: string) => {
   let out = ''
   const map: number[] = []
   // Iterate by code point to preserve surrogate pairs
   for (let i = 0; i < s.length; ) {
-    const cp = s.codePointAt(i)!
-    const char = String.fromCodePoint(cp)
+    const codePoint = s.codePointAt(i)
+    if (codePoint === undefined) {
+      continue
+    }
+    const char = String.fromCodePoint(codePoint)
     // NFD: base + combining marks (if any)
-    const nfd = char.normalize('NFD')
+    const normalized = char.normalize('NFD')
     // Remove combining marks
-    const base = nfd.replaceAll(/\p{M}/gu, '')
+    const base = normalized.replaceAll(/\p{M}/gu, '')
 
     // Track the starting position in `out` before adding `base`
     const outStartPos = out.length
@@ -40,10 +43,11 @@ const getSubstringIndex = (
     return haystack.toLowerCase().indexOf(needle.toLowerCase())
   }
 
+  // eslint-disable-next-line code-complete/enforce-meaningful-names
   const prep = (s: string) => {
     const { text, map } = stripWithMap(s)
-    const t = caseInsensitive === false ? text : text.toLowerCase()
-    return { text: t, map }
+    const transformedText = caseInsensitive === false ? text : text.toLowerCase()
+    return { text: transformedText, map }
   }
 
   const { text: H, map } = prep(haystack)

@@ -1531,7 +1531,6 @@ class MentionsInput<
       }
       const triggerProp = child.props.trigger ?? '@'
       const regex = resolveTriggerRegex(triggerProp)
-      // eslint-disable-next-line sonarjs/prefer-regexp-exec
       const match = substring.match(regex)
       if (match?.[1] !== undefined && match[2] !== undefined) {
         const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)

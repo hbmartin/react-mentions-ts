@@ -1,5 +1,5 @@
-import createMarkupSerializer from './createMarkupSerializer'
 import applyChangeToValue from './applyChangeToValue'
+import createMarkupSerializer from './createMarkupSerializer'
 
 describe('#applyChangeToValue', () => {
   const userMarkup = '@[__display__](user:__id__)'
