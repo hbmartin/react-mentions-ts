@@ -25,6 +25,7 @@ const ensureNumber = (value: number | null | undefined, fallback: number): numbe
 
 // Applies a change from the plain text textarea to the underlying marked up value
 // guided by the textarea text selection ranges before and after the change
+// eslint-disable-next-line code-complete/low-function-cohesion
 const applyChangeToValue = (
   value: string,
   plainTextValue: string,
@@ -36,7 +37,6 @@ const applyChangeToValue = (
   const { selectionEndAfter } = selection
 
   const oldPlainTextValue = getPlainText(value, config)
-
   const lengthDelta = oldPlainTextValue.length - plainTextValue.length
   if (selectionStartBefore === undefined) {
     selectionStartBefore = selectionEndAfter + lengthDelta
@@ -46,11 +46,20 @@ const applyChangeToValue = (
     selectionEndBefore = selectionStartBefore
   }
 
+  if (
+    oldPlainTextValue === plainTextValue &&
+    selectionStartBefore === selectionEndBefore &&
+    selectionEndBefore === selectionEndAfter
+  ) {
+    return value
+  }
+
   // Fixes an issue with replacing combined characters for complex input. Eg like accented letters on OSX
   if (
     selectionStartBefore === selectionEndBefore &&
     selectionEndBefore === selectionEndAfter &&
-    oldPlainTextValue.length === plainTextValue.length
+    oldPlainTextValue.length === plainTextValue.length &&
+    oldPlainTextValue !== plainTextValue
   ) {
     // TODO: write tests to determine if this should instead be:
     selectionStartBefore = Math.max(0, selectionStartBefore - 1)
@@ -86,7 +95,7 @@ const applyChangeToValue = (
 
   if (!willRemoveMention) {
     // test for auto-completion changes
-    const controlPlainTextValue = getPlainText(newValue, config)
+    let controlPlainTextValue = getPlainText(newValue, config)
     if (controlPlainTextValue !== plainTextValue) {
       // some auto-correction is going on
 
@@ -114,6 +123,12 @@ const applyChangeToValue = (
         value.length
       )
       newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
+      // eslint-disable-next-line sonarjs/no-dead-store
+      controlPlainTextValue = getPlainText(newValue, config)
+      // After we perform the second splice, we want to make sure the “control” plain text we’re comparing against is actually in sync with the
+      // new markup. Even though we don’t currently use controlPlainTextValue again in this function, recomputing it right after the rewrite
+      // documents that the mismatch has been resolved and gives us an up-to-date value if we ever extend the logic (for example, adding a
+      // follow-up check or loop).
     }
   }
 
