@@ -99,7 +99,6 @@ describe('readConfigFromChildren', () => {
       const config = readConfigFromChildren(children)
 
       // Both should use the same serializer instance for efficiency
-      // expect(config[0].serializer).toBe(config[1].serializer)
       expect(config[0].serializer.id).toBe('@[__display__](__id__)')
       expect(config[1].serializer.id).toBe('@[__display__](__id__)')
     })

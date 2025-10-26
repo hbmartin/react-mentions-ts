@@ -1,4 +1,4 @@
-import createMarkupSerializer from './/createMarkupSerializer'
+import createMarkupSerializer from './createMarkupSerializer'
 import findStartOfMentionInPlainText from './findStartOfMentionInPlainText'
 
 describe('#findStartOfMentionInPlainText', () => {

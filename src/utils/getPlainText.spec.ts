@@ -1,4 +1,4 @@
-import createMarkupSerializer from './/createMarkupSerializer'
+import createMarkupSerializer from './createMarkupSerializer'
 import getPlainText from './getPlainText'
 
 describe('#getPlainText', () => {
