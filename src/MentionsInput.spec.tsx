@@ -2,6 +2,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
+import * as utils from './utils'
 import { Mention, MentionsInput } from './index'
 import type { MentionsInputChangeEvent, MentionSerializer } from './types'
 
@@ -1165,6 +1166,84 @@ describe('MentionsInput', () => {
       await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalled())
       const secondSelection = onMentionSelectionChange.mock.calls[0][0]
       expect(secondSelection?.[0]?.display).toBe('Second')
+    })
+
+    it('reuses cached mentions for caret-only updates', async () => {
+      const getMentionsSpy = jest.spyOn(utils, 'getMentions')
+      try {
+        const onMentionSelectionChange = jest.fn()
+        const { textarea } = renderMentionsInput({
+          onMentionSelectionChange,
+        })
+
+        await waitFor(() => expect(getMentionsSpy).toHaveBeenCalled())
+        getMentionsSpy.mockClear()
+        onMentionSelectionChange.mockClear()
+
+        textarea.setSelectionRange(2, 2)
+        fireEvent.select(textarea)
+
+        await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+        expect(getMentionsSpy).not.toHaveBeenCalled()
+      } finally {
+        getMentionsSpy.mockRestore()
+      }
+    })
+
+    it('clears cached mentions when the mention config changes', async () => {
+      const getMentionsSpy = jest.spyOn(utils, 'getMentions')
+      try {
+        const onMentionSelectionChange = jest.fn()
+        const initialValue = '@[First](first) and more text'
+        const { rerender } = render(
+          <MentionsInput value={initialValue} onMentionSelectionChange={onMentionSelectionChange}>
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+
+        const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+        fireEvent.focus(textarea)
+        textarea.setSelectionRange(2, 2)
+        fireEvent.select(textarea)
+
+        await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalled())
+
+        getMentionsSpy.mockClear()
+        onMentionSelectionChange.mockClear()
+
+        rerender(
+          <MentionsInput value={initialValue} onMentionSelectionChange={onMentionSelectionChange}>
+            <Mention trigger="#" data={data} />
+          </MentionsInput>
+        )
+
+        textarea.setSelectionRange(2, 2)
+        fireEvent.select(textarea)
+
+        await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+        expect(onMentionSelectionChange.mock.calls[0][0]).toHaveLength(0)
+        expect(getMentionsSpy).toHaveBeenCalled()
+      } finally {
+        getMentionsSpy.mockRestore()
+      }
+    })
+
+    it('returns multiple selections when a range overlaps several mentions', async () => {
+      const onMentionSelectionChange = jest.fn()
+      const valueWithTwoMentions = '@[First](first) and @[Second](second) together'
+      const { textarea } = renderMentionsInput(
+        { onMentionSelectionChange },
+        valueWithTwoMentions
+      )
+
+      textarea.setSelectionRange(0, valueWithTwoMentions.indexOf('Second') + 2)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+      const selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      expect(selections).toHaveLength(2)
+      expect(selections[0]).toMatchObject({ id: 'first' })
+      expect(selections[1]).toMatchObject({ id: 'second' })
     })
   })
 

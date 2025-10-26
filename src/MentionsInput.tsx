@@ -133,6 +133,11 @@ const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
 const getMentionSelectionKey = (childIndex: number, plainTextIndex: number): string =>
   `${childIndex}:${plainTextIndex}`
 
+// Separate from areMentionSelectionsEqual because here we are deduping the raw mentions
+// produced by getMentions. At this point we only care about the immutable identity of the
+// mention in the document (childIndex + plainText location + id/display). Selection-derived
+// metadata (serializerId, selection state) is computed later when we emit the payload, so
+// comparing the lighter-weight occurrences lets us skip work before we build those objects.
 const areMentionOccurrencesEqual = <Extra extends Record<string, unknown>>(
   a: ReadonlyArray<MentionOccurrence<Extra>>,
   b: ReadonlyArray<MentionOccurrence<Extra>>
@@ -210,7 +215,10 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
 class MentionsInput<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > extends React.Component<MentionsInputProps<Extra>, MentionsInputState<Extra>> {
-  static readonly defaultProps: Partial<MentionsInputProps<any>> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static readonly defaultProps: Partial<MentionsInputProps<any>> & {
+    singleLine: boolean
+  } = {
     singleLine: false,
     suggestionsPlacement: 'below',
     onKeyDown: () => null,
@@ -486,15 +494,12 @@ class MentionsInput<
 
     const { ...restPassthrough } = passthroughProps
 
-    const baseClassName = this.getSlotClassName(
-      'input',
-      inputStyles({ singleLine: Boolean(singleLine) })
-    )
+    const baseClassName = this.getSlotClassName('input', inputStyles({ singleLine }))
 
     const props: Record<string, unknown> = {
       ...restPassthrough,
       className: baseClassName,
-      value: this.getPlainText(),
+      value: getPlainText(this.props.value ?? '', this.state.config),
       onScroll: this.updateHighlighterScroll,
       'data-slot': 'input',
       'data-single-line': singleLine ? 'true' : undefined,
@@ -776,7 +781,7 @@ class MentionsInput<
         substringClassName={classNames?.highlighterSubstring}
         caretClassName={classNames?.highlighterCaret}
         value={value}
-        singleLine={singleLine}
+        singleLine={singleLine ?? MentionsInput.defaultProps.singleLine}
         selectionStart={selectionStart}
         selectionEnd={selectionEnd}
         recomputeVersion={highlighterRecomputeVersion}
@@ -937,11 +942,6 @@ class MentionsInput<
     }
 
     return selectionEnd === inlineSuggestion.queryInfo.querySequenceEnd
-  }
-
-  // Returns the text to set as the value of the textarea with all markups removed
-  getPlainText = (): string => {
-    return getPlainText(this.props.value || '', this.state.config)
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -1492,7 +1492,7 @@ class MentionsInput<
 
     const position: SuggestionsPosition = {}
 
-    // if suggestions menu is in a portal, update position to be releative to its portal node
+    // if suggestions menu is in a portal, update position to be relative to its portal node
     if (resolvedPortalHost) {
       const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
       const width = Math.min(desiredWidth, viewportWidth)
