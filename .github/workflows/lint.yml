@@ -25,7 +25,8 @@ jobs:
           fi
 
           git fetch origin master:refs/remotes/origin/master
-          CHANGED_FILES=$(git diff --name-only origin/master...HEAD -- 'src/**/*.{js,jsx,ts,tsx}')
+          CHANGED_FILES=$(git diff --name-only origin/master...HEAD | grep -E '^src/.*\.(js|jsx|ts|tsx)$' || true)
+          echo "Changed files:${CHANGED_FILES:+$'\n'}$CHANGED_FILES"
 
           if [ -z "$CHANGED_FILES" ]; then
             echo "mode=skip" >> "$GITHUB_OUTPUT"
