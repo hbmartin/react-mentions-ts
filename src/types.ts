@@ -155,10 +155,7 @@ export type MentionsInputChangeHandler<
 
 export type MentionSelectionChangeHandler<
   Extra extends Record<string, unknown> = Record<string, unknown>,
-> = (
-  selection: MentionSelection<Extra>[],
-  context?: MentionSelectionChangeEvent<Extra>
-) => void
+> = (selection: MentionSelection<Extra>[], context?: MentionSelectionChangeEvent<Extra>) => void
 
 export type MentionsInputKeyDownHandler = (
   event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -231,6 +228,7 @@ export interface MentionsInputState<
   selectionStart: number | null
   selectionEnd: number | null
   cachedMentions: MentionOccurrence<Extra>[]
+  cachedPlainText: string
   suggestions: SuggestionsMap<Extra>
   caretPosition: CaretCoordinates | null
   suggestionsPosition: SuggestionsPosition

@@ -285,6 +285,7 @@ class MentionsInput<
       selectionStart: null,
       selectionEnd: null,
       cachedMentions: getMentions(initialValue, initialConfig) as MentionOccurrence<Extra>[],
+      cachedPlainText: getPlainText(initialValue, initialConfig),
       suggestions: {},
       caretPosition: null,
       suggestionsPosition: {},
@@ -332,6 +333,7 @@ class MentionsInput<
       this.setState({
         config: newConfig,
         cachedMentions: getMentions(currentValue, newConfig) as MentionOccurrence<Extra>[],
+        cachedPlainText: getPlainText(currentValue, newConfig),
       })
     }
   }
@@ -407,6 +409,7 @@ class MentionsInput<
     const valueChanged = currentValue !== previousValue || configChanged
 
     let mentionsForSelection = this.state.cachedMentions
+    let plainTextForSelection = this.state.cachedPlainText
 
     if (valueChanged) {
       const nextMentions = getMentions(
@@ -414,8 +417,17 @@ class MentionsInput<
         this.state.config
       ) as MentionOccurrence<Extra>[]
       mentionsForSelection = nextMentions
-      if (!areMentionOccurrencesEqual(nextMentions, this.state.cachedMentions)) {
-        this.setState({ cachedMentions: nextMentions })
+      const nextPlainText = getPlainText(currentValue, this.state.config)
+      plainTextForSelection = nextPlainText
+
+      if (
+        !areMentionOccurrencesEqual(nextMentions, this.state.cachedMentions) ||
+        nextPlainText !== this.state.cachedPlainText
+      ) {
+        this.setState({
+          cachedMentions: nextMentions,
+          cachedPlainText: nextPlainText,
+        })
       }
     }
 
@@ -445,7 +457,7 @@ class MentionsInput<
         const selectionMentionIds = currentSelection.selections.map((selection) => selection.id)
         const selectionContext = {
           value: currentValue,
-          plainTextValue: getPlainText(currentValue, this.state.config),
+          plainTextValue: plainTextForSelection,
           mentions: mentionsForSelection,
           mentionIds: selectionMentionIds,
           mentionId: selectionMentionIds.length === 1 ? selectionMentionIds[0] : undefined,
@@ -1849,14 +1861,7 @@ class MentionsInput<
       displayValue
     )
 
-    this.executeOnChange(
-      { type: 'mention-add' },
-      newValue,
-      newPlainTextValue,
-      mentions,
-      value,
-      id
-    )
+    this.executeOnChange({ type: 'mention-add' }, newValue, newPlainTextValue, mentions, value, id)
 
     if (onAdd !== undefined) {
       onAdd({
