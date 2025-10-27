@@ -259,11 +259,10 @@ export type MentionsInputClassNames = Partial<{
   loadingSpinnerElement: string
 }>
 
-export type MentionChildConfig<
-  Extra extends Record<string, unknown> = Record<string, unknown>,
-> = MentionComponentProps<Extra> & {
-  displayTransform: DisplayTransform
-  serializer: MentionSerializer
-}
+export type MentionChildConfig<Extra extends Record<string, unknown> = Record<string, unknown>> =
+  MentionComponentProps<Extra> & {
+    displayTransform: DisplayTransform
+    serializer: MentionSerializer
+  }
 
 export type InputElement = HTMLInputElement | HTMLTextAreaElement

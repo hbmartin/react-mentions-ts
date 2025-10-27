@@ -128,6 +128,8 @@ const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
   }
 
   const flags = trigger.flags.replaceAll('g', '')
+  // Reconstruct provided RegExp without global flag; whitelist flags to avoid surprises.
+  /* eslint-disable-next-line security/detect-non-literal-regexp -- reconstructing a vetted RegExp to strip 'g' */
   return new RegExp(trigger.source, flags)
 }
 
@@ -140,18 +142,15 @@ const getMentionSelectionKey = (childIndex: number, plainTextIndex: number): str
 // metadata (serializerId, selection state) is computed later when we emit the payload, so
 // comparing the lighter-weight occurrences lets us skip work before we build those objects.
 const areMentionOccurrencesEqual = <Extra extends Record<string, unknown>>(
-  a: ReadonlyArray<MentionOccurrence<Extra>>,
-  b: ReadonlyArray<MentionOccurrence<Extra>>
+  prevMentions: ReadonlyArray<MentionOccurrence<Extra>>,
+  nextMentions: ReadonlyArray<MentionOccurrence<Extra>>
 ): boolean => {
-  if (a.length !== b.length) {
+  if (prevMentions.length !== nextMentions.length) {
     return false
   }
 
-  return a.every((mention, index) => {
-    const other = b[index]
-    if (!other) {
-      return false
-    }
+  return prevMentions.every((mention, index) => {
+    const other = nextMentions[index]
 
     return (
       mention.id === other.id &&
@@ -333,8 +332,10 @@ class MentionsInput<
     const newConfig = readConfigFromChildren<Extra>(this.props.children)
     if (!this.configsEqual(this.state.config, newConfig)) {
       const currentValue = this.props.value ?? ''
-      const { mentions: nextMentions, plainText: nextPlainText } =
-        getMentionsAndPlainText<Extra>(currentValue, newConfig)
+      const { mentions: nextMentions, plainText: nextPlainText } = getMentionsAndPlainText<Extra>(
+        currentValue,
+        newConfig
+      )
       this.setState({
         config: newConfig,
         cachedMentions: nextMentions,

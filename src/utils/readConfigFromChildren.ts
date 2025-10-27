@@ -1,10 +1,6 @@
 import React, { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import type {
-  MentionChildConfig,
-  MentionComponentProps,
-  MentionSerializer,
-} from '../types'
+import type { MentionChildConfig, MentionComponentProps, MentionSerializer } from '../types'
 import Mention from '../Mention'
 import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
 import createMarkupSerializer from './createMarkupSerializer'
