@@ -41,9 +41,7 @@ describe('#getMentionsAndPlainText', () => {
         plainTextIndex: 25,
       },
     ])
-    expect(plainText).toBe(
-      "Hi John Doe, \n\nlet's add joe@smoe.com to this conversation..."
-    )
+    expect(plainText).toBe("Hi John Doe, \n\nlet's add joe@smoe.com to this conversation...")
   })
 
   it('respects displayTransform for plain text and mention occurrences', () => {

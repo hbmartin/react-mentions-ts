@@ -191,8 +191,8 @@ function Highlighter({
   }
 
   const mentionIteratee = (
-    markup: string,
-    index: number,
+    _markup: string,
+    _index: number,
     plainTextIndex: number,
     id: string,
     display: string,

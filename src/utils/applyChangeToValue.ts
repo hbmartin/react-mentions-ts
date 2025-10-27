@@ -26,17 +26,17 @@ const ensureNumber = (value: number | null | undefined, fallback: number): numbe
 // Applies a change from the plain text textarea to the underlying marked up value
 // guided by the textarea text selection ranges before and after the change
 // eslint-disable-next-line code-complete/low-function-cohesion
-const applyChangeToValue = (
+const applyChangeToValue = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: string,
   plainTextValue: string,
   selection: SelectionChange,
-  config: ReadonlyArray<MentionChildConfig>
+  config: ReadonlyArray<MentionChildConfig<Extra>>
 ): string => {
   let selectionStartBefore = normalizeSelectionPoint(selection.selectionStartBefore)
   let selectionEndBefore = normalizeSelectionPoint(selection.selectionEndBefore)
   const { selectionEndAfter } = selection
 
-  const oldPlainTextValue = getPlainText(value, config)
+  const oldPlainTextValue = getPlainText<Extra>(value, config)
   const lengthDelta = oldPlainTextValue.length - plainTextValue.length
   if (selectionStartBefore === undefined) {
     selectionStartBefore = selectionEndAfter + lengthDelta
@@ -79,23 +79,23 @@ const applyChangeToValue = (
   }
 
   let mappedSpliceStart = ensureNumber(
-    mapPlainTextIndex(value, config, spliceStart, 'START'),
+    mapPlainTextIndex<Extra>(value, config, spliceStart, 'START'),
     value.length
   )
   let mappedSpliceEnd = ensureNumber(
-    mapPlainTextIndex(value, config, spliceEnd, 'END'),
+    mapPlainTextIndex<Extra>(value, config, spliceEnd, 'END'),
     value.length
   )
 
-  const controlSpliceStart = mapPlainTextIndex(value, config, spliceStart, 'NULL')
-  const controlSpliceEnd = mapPlainTextIndex(value, config, spliceEnd, 'NULL')
+  const controlSpliceStart = mapPlainTextIndex<Extra>(value, config, spliceStart, 'NULL')
+  const controlSpliceEnd = mapPlainTextIndex<Extra>(value, config, spliceEnd, 'NULL')
   const willRemoveMention = controlSpliceStart === null || controlSpliceEnd === null
 
   let newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
 
   if (!willRemoveMention) {
     // test for auto-completion changes
-    let controlPlainTextValue = getPlainText(newValue, config)
+    let controlPlainTextValue = getPlainText<Extra>(newValue, config)
     if (controlPlainTextValue !== plainTextValue) {
       // some auto-correction is going on
 
@@ -115,16 +115,16 @@ const applyChangeToValue = (
 
       // re-map the corrected indices
       mappedSpliceStart = ensureNumber(
-        mapPlainTextIndex(value, config, spliceStart, 'START'),
+        mapPlainTextIndex<Extra>(value, config, spliceStart, 'START'),
         value.length
       )
       mappedSpliceEnd = ensureNumber(
-        mapPlainTextIndex(value, config, spliceEnd, 'END'),
+        mapPlainTextIndex<Extra>(value, config, spliceEnd, 'END'),
         value.length
       )
       newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
       // eslint-disable-next-line sonarjs/no-dead-store
-      controlPlainTextValue = getPlainText(newValue, config)
+      controlPlainTextValue = getPlainText<Extra>(newValue, config)
       // After we perform the second splice, we want to make sure the “control” plain text we’re comparing against is actually in sync with the
       // new markup. Even though we don’t currently use controlPlainTextValue again in this function, recomputing it right after the rewrite
       // documents that the mismatch has been resolved and gives us an up-to-date value if we ever extend the logic (for example, adding a

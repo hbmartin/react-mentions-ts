@@ -16,9 +16,9 @@ const emptyFn: TextIteratee = () => {}
 
 // Finds all occurrences of the markup in the value and calls the `markupIteratee` callback for each of them.
 // The optional `textIteratee` callback is called for each plain text ranges in between these markup occurrences.
-const iterateMentionsMarkup = (
+const iterateMentionsMarkup = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: string,
-  config: ReadonlyArray<MentionChildConfig>,
+  config: ReadonlyArray<MentionChildConfig<Extra>>,
   markupIteratee: MarkupIteratee,
   textIteratee: TextIteratee = emptyFn
 ): void => {

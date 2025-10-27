@@ -10,9 +10,9 @@ type InMarkupCorrection = 'START' | 'END' | 'NULL'
 //   - 'START' to return the index of the mention markup's first char (default)
 //   - 'END' to return the index after its last char
 //   - 'NULL' to return null
-const mapPlainTextIndex = (
+const mapPlainTextIndex = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: string,
-  config: ReadonlyArray<MentionChildConfig>,
+  config: ReadonlyArray<MentionChildConfig<Extra>>,
   indexInPlainText: number | null | undefined,
   inMarkupCorrection: InMarkupCorrection = 'START'
 ): number | null | undefined => {

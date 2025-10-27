@@ -4,9 +4,11 @@ import iterateMentionsMarkup from './iterateMentionsMarkup'
 // For a given indexInPlainText that lies inside a mention,
 // returns the index of the first char of the mention in the plain text.
 // If indexInPlainText does not lie inside a mention, returns undefined.
-const findStartOfMentionInPlainText = (
+const findStartOfMentionInPlainText = <
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+>(
   value: string,
-  config: ReadonlyArray<MentionChildConfig>,
+  config: ReadonlyArray<MentionChildConfig<Extra>>,
   indexInPlainText: number
 ): number | undefined => {
   let result = indexInPlainText
