@@ -124,12 +124,23 @@ export interface MentionSelection<Extra extends Record<string, unknown> = Record
   serializerId: string
 }
 
+export interface MentionSelectionChangeEvent<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> {
+  value: string
+  plainTextValue: string
+  mentions: MentionOccurrence<Extra>[]
+  mentionIds: MentionIdentifier[]
+  mentionId?: MentionIdentifier
+}
+
 export interface MentionsInputChangeEvent<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
   trigger: MentionsInputChangeTrigger
   value: string
   plainTextValue: string
+  mentionId?: MentionIdentifier
   mentions: MentionOccurrence<Extra>[]
   previousValue: string
 }
@@ -141,6 +152,13 @@ export type MentionsInputEventData<
 export type MentionsInputChangeHandler<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > = (change: MentionsInputChangeEvent<Extra>) => void
+
+export type MentionSelectionChangeHandler<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> = (
+  selection: MentionSelection<Extra>[],
+  context?: MentionSelectionChangeEvent<Extra>
+) => void
 
 export type MentionsInputKeyDownHandler = (
   event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -190,7 +208,7 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
   onMentionBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
   onChange?: (event: ChangeEvent<InputElement>) => void
   onMentionsChange?: MentionsInputChangeHandler<Extra>
-  onMentionSelectionChange?: (selection: MentionSelection<Extra>[]) => void
+  onMentionSelectionChange?: MentionSelectionChangeHandler<Extra>
   onKeyDown?: MentionsInputKeyDownHandler
   onSelect?: (event: SyntheticEvent<InputElement>) => void
   readOnly?: boolean

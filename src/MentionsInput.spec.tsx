@@ -245,6 +245,7 @@ describe('MentionsInput', () => {
       expect(onMentionsChange).toHaveBeenCalled()
       const payload = getLastMentionsChange(onMentionsChange)
       expect(payload.value).toContain(data[0].id)
+      expect(payload.mentionId).toBe(data[0].id)
       expect(payload.trigger.type).toBe('mention-add')
     })
   })
@@ -274,6 +275,7 @@ describe('MentionsInput', () => {
       expect(onMentionsChange).toHaveBeenCalled()
       const payload = getLastMentionsChange(onMentionsChange)
       expect(payload.trigger.type).toBe('mention-add')
+      expect(payload.mentionId).toBe(data[0].id)
       expect(payload.value.endsWith(' ')).toBe(true)
       expect(payload.plainTextValue.endsWith(' ')).toBe(true)
     })
@@ -1025,18 +1027,27 @@ describe('MentionsInput', () => {
       const onMentionSelectionChange = jest.fn()
       const { textarea } = renderMentionsInput({ onMentionSelectionChange })
 
+      const expectedPlainTextValue = `${mentionDisplay} remainder`
+
       onMentionSelectionChange.mockClear()
       textarea.setSelectionRange(2, 2)
       fireEvent.select(textarea)
 
       await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
       let selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      const firstContext = onMentionSelectionChange.mock.calls[0][1] as Record<string, unknown>
       expect(selections).toHaveLength(1)
       expect(selections[0]).toMatchObject({
         id: 'first',
         selection: 'inside',
         plainTextStart: 0,
         plainTextEnd: mentionDisplay.length,
+      })
+      expect(firstContext).toMatchObject({
+        mentionId: 'first',
+        mentionIds: ['first'],
+        value: defaultValue,
+        plainTextValue: expectedPlainTextValue,
       })
 
       onMentionSelectionChange.mockClear()
@@ -1045,9 +1056,16 @@ describe('MentionsInput', () => {
 
       await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
       selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      const secondContext = onMentionSelectionChange.mock.calls[0][1] as Record<string, unknown>
       expect(selections).toHaveLength(1)
       expect(selections[0]).toMatchObject({
         selection: 'boundary',
+      })
+      expect(secondContext).toMatchObject({
+        mentionId: 'first',
+        mentionIds: ['first'],
+        value: defaultValue,
+        plainTextValue: expectedPlainTextValue,
       })
 
       onMentionSelectionChange.mockClear()
@@ -1057,10 +1075,17 @@ describe('MentionsInput', () => {
 
       await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
       selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      const thirdContext = onMentionSelectionChange.mock.calls[0][1] as Record<string, unknown>
       expect(selections).toHaveLength(1)
       expect(selections[0]).toMatchObject({
         selection: 'boundary',
         plainTextEnd: mentionEnd,
+      })
+      expect(thirdContext).toMatchObject({
+        mentionId: 'first',
+        mentionIds: ['first'],
+        value: defaultValue,
+        plainTextValue: expectedPlainTextValue,
       })
     })
 
@@ -1074,9 +1099,14 @@ describe('MentionsInput', () => {
 
       await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
       let selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      const partialContext = onMentionSelectionChange.mock.calls[0][1] as Record<string, unknown>
       expect(selections).toHaveLength(1)
       expect(selections[0]).toMatchObject({
         selection: 'partial',
+      })
+      expect(partialContext).toMatchObject({
+        mentionId: 'first',
+        mentionIds: ['first'],
       })
 
       onMentionSelectionChange.mockClear()
@@ -1085,9 +1115,14 @@ describe('MentionsInput', () => {
 
       await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
       selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      const fullContext = onMentionSelectionChange.mock.calls[0][1] as Record<string, unknown>
       expect(selections).toHaveLength(1)
       expect(selections[0]).toMatchObject({
         selection: 'full',
+      })
+      expect(fullContext).toMatchObject({
+        mentionId: 'first',
+        mentionIds: ['first'],
       })
     })
 
@@ -1238,9 +1273,14 @@ describe('MentionsInput', () => {
 
       await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
       const selections = onMentionSelectionChange.mock.calls[0][0] as Array<Record<string, unknown>>
+      const context = onMentionSelectionChange.mock.calls[0][1] as Record<string, unknown>
       expect(selections).toHaveLength(2)
       expect(selections[0]).toMatchObject({ id: 'first' })
       expect(selections[1]).toMatchObject({ id: 'second' })
+      expect(context).toMatchObject({
+        mentionId: undefined,
+        mentionIds: ['first', 'second'],
+      })
     })
   })
 
@@ -1346,6 +1386,7 @@ describe('MentionsInput', () => {
       expect(payload.plainTextValue).toBe('Alice')
       expect(payload.mentions).toHaveLength(1)
       expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
+      expect(payload.mentionId).toBe('alice')
       expect(payload.trigger.type).toBe('mention-add')
     })
   })
