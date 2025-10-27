@@ -34,8 +34,10 @@ jobs:
           set +e
           DEBUG=lhci: npx @lhci/cli@0.15.x autorun
           LHCI_EXIT_CODE=$?
+          ls -la .lighthouseci
           set -e
           ls -la
+          pwd
 
           REPORTS_DIR=$(node -p "(() => {
             const cfg = require('./lighthouserc.cjs')
@@ -71,4 +73,4 @@ jobs:
         with:
           name: lighthouse-artifacts
           if-no-files-found: ignore
-          path: ${{ steps.lighthouseci.outputs.resultsPath }}
+          path: .lighthouseci
