@@ -29,16 +29,23 @@ jobs:
         run: yarn build:demo --base=/react-mentions-ts/
 
       - name: Run Lighthouse CI
+        id: lighthouseci
         run: DEBUG=lhci:*,-*:verbose npx @lhci/cli@0.15.x autorun
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
-      - name: Upload Lighthouse artifacts
+      - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-reports
           if-no-files-found: ignore
-          path: |
-            .lighthouseci/
-            lighthouse-reports/
+          path: lighthouse-reports/
+
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-artifacts
+          if-no-files-found: ignore
+          path: ${{ steps.lighthouseci.outputs.resultsPath }}
