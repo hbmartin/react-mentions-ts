@@ -4,11 +4,11 @@ module.exports = {
     collect: {
       staticDistDir: 'demo/dist',
       numberOfRuns: 2,
-      startServerReadyTimeout: 120_000,
+      startServerReadyTimeout: 30_000,
       settings: {
         logLevel: 'verbose',
-        chromeFlags: '--enable-logging=stderr'
-      }
+        chromeFlags: '--enable-logging=stderr',
+      },
     },
     assert: {
       preset: 'lighthouse:recommended',

@@ -30,7 +30,29 @@ jobs:
 
       - name: Run Lighthouse CI
         id: lighthouseci
-        run: DEBUG=lhci:*,-*:verbose npx @lhci/cli@0.15.x autorun
+        run: |
+          set +e
+          DEBUG=lhci:*,-*:verbose npx @lhci/cli@0.15.x autorun
+          LHCI_EXIT_CODE=$?
+          set -e
+
+          REPORTS_DIR=$(node -p "(() => {
+            const cfg = require('./lighthouserc.cjs')
+            const dir = (cfg && cfg.ci && cfg.ci.upload && cfg.ci.upload.outputDir) || 'lighthouse-reports'
+            return dir.startsWith('./') ? dir.slice(2) : dir
+          })()")
+
+          mkdir -p .lighthouseci
+          mkdir -p "$REPORTS_DIR"
+
+          if [ -f ".lighthouseci/manifest.json" ] && [ -z "$(ls -A "$REPORTS_DIR" 2>/dev/null)" ]; then
+            npx @lhci/cli@0.15.x upload --target=filesystem --outputDir="$REPORTS_DIR" || true
+          fi
+
+          echo "resultsPath=.lighthouseci" >> "$GITHUB_OUTPUT"
+          echo "reportsPath=$REPORTS_DIR" >> "$GITHUB_OUTPUT"
+
+          exit $LHCI_EXIT_CODE
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
@@ -40,7 +62,7 @@ jobs:
         with:
           name: lighthouse-reports
           if-no-files-found: ignore
-          path: lighthouse-reports/
+          path: ${{ steps.lighthouseci.outputs.reportsPath }}
 
       - name: Upload Lighthouse artifacts
         if: always()
