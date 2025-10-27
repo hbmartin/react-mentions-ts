@@ -1,6 +1,10 @@
 import React, { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import type { MentionChildConfig, MentionComponentProps, MentionSerializer } from '../types'
+import type {
+  MentionChildConfig,
+  MentionComponentProps,
+  MentionSerializer,
+} from '../types'
 import Mention from '../Mention'
 import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
 import createMarkupSerializer from './createMarkupSerializer'
@@ -27,7 +31,9 @@ const generateMarkupForTrigger = (trigger: string | RegExp | undefined): string 
   return `${trigger}[${PLACEHOLDERS.display}](${PLACEHOLDERS.id})`
 }
 
-const isMentionElement = (child: unknown): child is ReactElement<MentionComponentProps> =>
+const isMentionElement = <Extra extends Record<string, unknown>>(
+  child: unknown
+): child is ReactElement<MentionComponentProps<Extra>> =>
   React.isValidElement(child) &&
   child.type === Mention &&
   typeof child.props === 'object' &&
@@ -37,22 +43,26 @@ const isMentionElement = (child: unknown): child is ReactElement<MentionComponen
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
 
-const collectMentionElements = (children: ReactNode): ReactElement<MentionComponentProps>[] =>
+const collectMentionElements = <Extra extends Record<string, unknown>>(
+  children: ReactNode
+): ReactElement<MentionComponentProps<Extra>>[] =>
   // eslint-disable-next-line code-complete/low-function-cohesion
   Children.toArray(children).flatMap((child) => {
     if (isReactFragment(child)) {
-      return collectMentionElements(child.props.children)
+      return collectMentionElements<Extra>(child.props.children)
     }
 
-    if (isMentionElement(child)) {
+    if (isMentionElement<Extra>(child)) {
       return [child]
     }
 
     return []
   })
 
-const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
-  collectMentionElements(children).map((child) => {
+const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<string, unknown>>(
+  children: ReactNode
+): MentionChildConfig<Extra>[] =>
+  collectMentionElements<Extra>(children).map((child) => {
     const props = child.props
     const trigger = props.trigger ?? DEFAULT_MENTION_PROPS.trigger
     const displayTransform = props.displayTransform ?? DEFAULT_MENTION_PROPS.displayTransform
@@ -66,7 +76,7 @@ const readConfigFromChildren = (children: ReactNode): MentionChildConfig[] =>
       ...props,
       displayTransform,
       serializer,
-    } satisfies MentionChildConfig
+    } satisfies MentionChildConfig<Extra>
   })
 
 export default readConfigFromChildren

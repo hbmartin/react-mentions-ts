@@ -235,7 +235,7 @@ export interface MentionsInputState<
   scrollFocusedIntoView?: boolean
   pendingSelectionUpdate: boolean
   highlighterRecomputeVersion: number
-  config: MentionChildConfig[]
+  config: MentionChildConfig<Extra>[]
 }
 
 export type MentionsInputClassNames = Partial<{
@@ -259,7 +259,9 @@ export type MentionsInputClassNames = Partial<{
   loadingSpinnerElement: string
 }>
 
-export type MentionChildConfig = MentionComponentProps & {
+export type MentionChildConfig<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> = MentionComponentProps<Extra> & {
   displayTransform: DisplayTransform
   serializer: MentionSerializer
 }

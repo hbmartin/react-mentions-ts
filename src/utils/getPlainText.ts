@@ -1,7 +1,10 @@
 import type { MentionChildConfig } from '../types'
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 
-const getPlainText = (value: string, config: ReadonlyArray<MentionChildConfig>): string => {
+const getPlainText = <Extra extends Record<string, unknown> = Record<string, unknown>>(
+  value: string,
+  config: ReadonlyArray<MentionChildConfig<Extra>>
+): string => {
   let result = ''
   iterateMentionsMarkup(
     value,

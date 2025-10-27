@@ -273,12 +273,10 @@ class MentionsInput<
     this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
     this.inlineAutocompleteLiveRegionId = `${this.uuidSuggestionsOverlay}-inline-live`
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
-    const initialConfig = readConfigFromChildren(props.children)
+    const initialConfig = readConfigFromChildren<Extra>(props.children)
     const initialValue = props.value ?? ''
-    const { mentions: initialMentions, plainText: initialPlainText } = getMentionsAndPlainText(
-      initialValue,
-      initialConfig
-    )
+    const { mentions: initialMentions, plainText: initialPlainText } =
+      getMentionsAndPlainText<Extra>(initialValue, initialConfig)
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -289,7 +287,7 @@ class MentionsInput<
       focusIndex: 0,
       selectionStart: null,
       selectionEnd: null,
-      cachedMentions: initialMentions as MentionOccurrence<Extra>[],
+      cachedMentions: initialMentions,
       cachedPlainText: initialPlainText,
       suggestions: {},
       caretPosition: null,
@@ -332,24 +330,22 @@ class MentionsInput<
     })
 
     // Compute new config and update state if changed
-    const newConfig = readConfigFromChildren(this.props.children)
+    const newConfig = readConfigFromChildren<Extra>(this.props.children)
     if (!this.configsEqual(this.state.config, newConfig)) {
       const currentValue = this.props.value ?? ''
-      const { mentions: nextMentions, plainText: nextPlainText } = getMentionsAndPlainText(
-        currentValue,
-        newConfig
-      )
+      const { mentions: nextMentions, plainText: nextPlainText } =
+        getMentionsAndPlainText<Extra>(currentValue, newConfig)
       this.setState({
         config: newConfig,
-        cachedMentions: nextMentions as MentionOccurrence<Extra>[],
+        cachedMentions: nextMentions,
         cachedPlainText: nextPlainText,
       })
     }
   }
 
   private configsEqual(
-    config1: ReturnType<typeof readConfigFromChildren>,
-    config2: ReturnType<typeof readConfigFromChildren>
+    config1: ReadonlyArray<MentionChildConfig<Extra>>,
+    config2: ReadonlyArray<MentionChildConfig<Extra>>
   ): boolean {
     if (config1.length !== config2.length) {
       return false
@@ -417,17 +413,14 @@ class MentionsInput<
     const configChanged = this.state.config !== prevState.config
     const valueChanged = currentValue !== previousValue || configChanged
 
-    let mentionsForSelection = this.state.cachedMentions
-    let plainTextForSelection = this.state.cachedPlainText
+    const recalculatedMentions = valueChanged
+      ? getMentionsAndPlainText<Extra>(currentValue, this.state.config)
+      : null
+    const mentionsForSelection = recalculatedMentions?.mentions ?? this.state.cachedMentions
+    const plainTextForSelection = recalculatedMentions?.plainText ?? this.state.cachedPlainText
 
-    if (valueChanged) {
-      const { mentions: nextMentionsRaw, plainText: nextPlainText } = getMentionsAndPlainText(
-        currentValue,
-        this.state.config
-      )
-      const nextMentions = nextMentionsRaw as MentionOccurrence<Extra>[]
-      mentionsForSelection = nextMentions
-      plainTextForSelection = nextPlainText
+    if (recalculatedMentions) {
+      const { mentions: nextMentions, plainText: nextPlainText } = recalculatedMentions
 
       if (
         !areMentionOccurrencesEqual(nextMentions, this.state.cachedMentions) ||
@@ -978,7 +971,7 @@ class MentionsInput<
   // eslint-disable-next-line code-complete/low-function-cohesion
   private readonly computeMentionSelectionDetails = (
     mentions: ReadonlyArray<MentionOccurrence<Extra>>,
-    config: ReadonlyArray<MentionChildConfig>,
+    config: ReadonlyArray<MentionChildConfig<Extra>>,
     selectionStart: number | null,
     selectionEnd: number | null
   ): MentionSelectionComputation<Extra> => {
@@ -1051,7 +1044,7 @@ class MentionsInput<
     trigger: MentionsInputChangeTrigger,
     newValue: string,
     newPlainTextValue: string,
-    mentions: MentionOccurrence[],
+    mentions: MentionOccurrence<Extra>[],
     previousValue: string,
     mentionId?: MentionIdentifier
   ): void => {
@@ -1060,7 +1053,7 @@ class MentionsInput<
         trigger,
         value: newValue,
         plainTextValue: newPlainTextValue,
-        mentions: mentions as MentionOccurrence<Extra>[],
+        mentions,
         previousValue,
         mentionId,
       })

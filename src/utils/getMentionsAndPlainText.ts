@@ -1,17 +1,17 @@
 import type { MentionChildConfig, MentionOccurrence } from '../types'
 import iterateMentionsMarkup from './iterateMentionsMarkup'
 
-const getMentionsAndPlainText = (
+const getMentionsAndPlainText = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: string,
-  config: ReadonlyArray<MentionChildConfig>
-): { mentions: MentionOccurrence[]; plainText: string } => {
-  const mentions: MentionOccurrence[] = []
+  config: ReadonlyArray<MentionChildConfig<Extra>>
+): { mentions: MentionOccurrence<Extra>[]; plainText: string } => {
+  const mentions: MentionOccurrence<Extra>[] = []
   let plainText = ''
 
   iterateMentionsMarkup(
     value,
     config,
-    (match, index, plainTextIndex, id, display, childIndex, _lastMentionEndIndex) => {
+    (_match, index, plainTextIndex, id, display, childIndex, _lastMentionEndIndex) => {
       mentions.push({
         id,
         display,
