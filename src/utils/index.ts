@@ -5,6 +5,7 @@ export { default as findStartOfMentionInPlainText } from './findStartOfMentionIn
 export { default as flattenSuggestions } from './flattenSuggestions'
 export { default as getEndOfLastMention } from './getEndOfLastMention'
 export { default as getMentions } from './getMentions'
+export { default as getMentionsAndPlainText } from './getMentionsAndPlainText'
 export { default as getPlainText } from './getPlainText'
 export { default as getSubstringIndex } from './getSubstringIndex'
 export { default as getSuggestionHtmlId } from './getSuggestionHtmlId'

@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  profile: 'assertive'
+  review_status: true
+  commit_status: true
+  fail_commit_status: true
+  collapse_walkthrough: true
+  poem: false

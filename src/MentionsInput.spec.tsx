@@ -1204,29 +1204,29 @@ describe('MentionsInput', () => {
     })
 
     it('reuses cached mentions for caret-only updates', async () => {
-      const getMentionsSpy = jest.spyOn(utils, 'getMentions')
+      const getMentionsAndPlainTextSpy = jest.spyOn(utils, 'getMentionsAndPlainText')
       try {
         const onMentionSelectionChange = jest.fn()
         const { textarea } = renderMentionsInput({
           onMentionSelectionChange,
         })
 
-        await waitFor(() => expect(getMentionsSpy).toHaveBeenCalled())
-        getMentionsSpy.mockClear()
+        await waitFor(() => expect(getMentionsAndPlainTextSpy).toHaveBeenCalled())
+        getMentionsAndPlainTextSpy.mockClear()
         onMentionSelectionChange.mockClear()
 
         textarea.setSelectionRange(2, 2)
         fireEvent.select(textarea)
 
         await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
-        expect(getMentionsSpy).not.toHaveBeenCalled()
+        expect(getMentionsAndPlainTextSpy).not.toHaveBeenCalled()
       } finally {
-        getMentionsSpy.mockRestore()
+        getMentionsAndPlainTextSpy.mockRestore()
       }
     })
 
     it('clears cached mentions when the mention config changes', async () => {
-      const getMentionsSpy = jest.spyOn(utils, 'getMentions')
+      const getMentionsAndPlainTextSpy = jest.spyOn(utils, 'getMentionsAndPlainText')
       try {
         const onMentionSelectionChange = jest.fn()
         const initialValue = '@[First](first) and more text'
@@ -1243,7 +1243,7 @@ describe('MentionsInput', () => {
 
         await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalled())
 
-        getMentionsSpy.mockClear()
+        getMentionsAndPlainTextSpy.mockClear()
         onMentionSelectionChange.mockClear()
 
         rerender(
@@ -1257,9 +1257,9 @@ describe('MentionsInput', () => {
 
         await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
         expect(onMentionSelectionChange.mock.calls[0][0]).toHaveLength(0)
-        expect(getMentionsSpy).toHaveBeenCalled()
+        expect(getMentionsAndPlainTextSpy).toHaveBeenCalled()
       } finally {
-        getMentionsSpy.mockRestore()
+        getMentionsAndPlainTextSpy.mockRestore()
       }
     })
 

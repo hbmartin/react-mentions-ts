@@ -21,6 +21,7 @@ import {
   getEndOfLastMention,
   getMentions,
   getPlainText,
+  getMentionsAndPlainText,
   getSubstringIndex,
   getSuggestionHtmlId,
   isNumber,
@@ -274,6 +275,10 @@ class MentionsInput<
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
     const initialConfig = readConfigFromChildren(props.children)
     const initialValue = props.value ?? ''
+    const { mentions: initialMentions, plainText: initialPlainText } = getMentionsAndPlainText(
+      initialValue,
+      initialConfig
+    )
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -284,8 +289,8 @@ class MentionsInput<
       focusIndex: 0,
       selectionStart: null,
       selectionEnd: null,
-      cachedMentions: getMentions(initialValue, initialConfig) as MentionOccurrence<Extra>[],
-      cachedPlainText: getPlainText(initialValue, initialConfig),
+      cachedMentions: initialMentions as MentionOccurrence<Extra>[],
+      cachedPlainText: initialPlainText,
       suggestions: {},
       caretPosition: null,
       suggestionsPosition: {},
@@ -330,10 +335,14 @@ class MentionsInput<
     const newConfig = readConfigFromChildren(this.props.children)
     if (!this.configsEqual(this.state.config, newConfig)) {
       const currentValue = this.props.value ?? ''
+      const { mentions: nextMentions, plainText: nextPlainText } = getMentionsAndPlainText(
+        currentValue,
+        newConfig
+      )
       this.setState({
         config: newConfig,
-        cachedMentions: getMentions(currentValue, newConfig) as MentionOccurrence<Extra>[],
-        cachedPlainText: getPlainText(currentValue, newConfig),
+        cachedMentions: nextMentions as MentionOccurrence<Extra>[],
+        cachedPlainText: nextPlainText,
       })
     }
   }
@@ -412,12 +421,12 @@ class MentionsInput<
     let plainTextForSelection = this.state.cachedPlainText
 
     if (valueChanged) {
-      const nextMentions = getMentions(
+      const { mentions: nextMentionsRaw, plainText: nextPlainText } = getMentionsAndPlainText(
         currentValue,
         this.state.config
-      ) as MentionOccurrence<Extra>[]
+      )
+      const nextMentions = nextMentionsRaw as MentionOccurrence<Extra>[]
       mentionsForSelection = nextMentions
-      const nextPlainText = getPlainText(currentValue, this.state.config)
       plainTextForSelection = nextPlainText
 
       if (
