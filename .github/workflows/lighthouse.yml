@@ -32,9 +32,10 @@ jobs:
         id: lighthouseci
         run: |
           set +e
-          DEBUG=lhci:*,-*:verbose npx @lhci/cli@0.15.x autorun
+          DEBUG=lhci: npx @lhci/cli@0.15.x autorun
           LHCI_EXIT_CODE=$?
           set -e
+          ls -la
 
           REPORTS_DIR=$(node -p "(() => {
             const cfg = require('./lighthouserc.cjs')
