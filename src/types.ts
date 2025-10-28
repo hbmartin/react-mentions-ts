@@ -210,6 +210,7 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
   onSelect?: (event: SyntheticEvent<InputElement>) => void
   readOnly?: boolean
   singleLine?: boolean
+  autoResize?: boolean
   style?: React.CSSProperties
   className?: string
   classNames?: MentionsInputClassNames
