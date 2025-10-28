@@ -125,7 +125,7 @@
 		"jest-environment-jsdom": "^30.2.0",
 		"jiti": "^2.6.1",
 		"jsonc-eslint-parser": "^2.4.1",
-		"knip": "^5.66.3",
+		"knip": "^5.66.4",
 		"prettier": "^3.6.2",
 		"publint": "^0.3.15",
 		"react": "^19.2.0",

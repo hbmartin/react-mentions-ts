@@ -210,6 +210,7 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
   'className',
   'classNames',
   'suggestionsDisplay',
+  'autoResize',
 ]
 
 class MentionsInput<
@@ -220,6 +221,7 @@ class MentionsInput<
     singleLine: boolean
   } = {
     singleLine: false,
+    autoResize: false,
     suggestionsPlacement: 'below',
     onKeyDown: () => null,
     onSelect: () => null,
@@ -380,6 +382,10 @@ class MentionsInput<
     document.addEventListener('selectionchange', this.handleDocumentSelectionChange)
 
     this.updateSuggestionsPosition()
+
+    if (this.props.autoResize) {
+      this.resetTextareaHeight()
+    }
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -413,6 +419,10 @@ class MentionsInput<
     const currentValue = this.props.value ?? ''
     const configChanged = this.state.config !== prevState.config
     const valueChanged = currentValue !== previousValue || configChanged
+
+    if (this.props.autoResize && (valueChanged || prevProps.autoResize !== this.props.autoResize)) {
+      this.resetTextareaHeight()
+    }
 
     const recalculatedMentions = valueChanged
       ? getMentionsAndPlainText<Extra>(currentValue, this.state.config)
@@ -624,6 +634,22 @@ class MentionsInput<
       inputRef(el)
     } else if (inputRef) {
       ;(inputRef as React.RefObject<InputElement | null>).current = el
+    }
+
+    if (this.props.autoResize) {
+      this.resetTextareaHeight()
+    }
+  }
+
+  private readonly resetTextareaHeight = (): void => {
+    const input = this.inputElement
+    if (!input) {
+      return
+    }
+
+    if (typeof HTMLTextAreaElement !== 'undefined' && input instanceof HTMLTextAreaElement) {
+      input.style.height = 'auto'
+      input.style.height = `${input.scrollHeight}px`
     }
   }
 
@@ -1312,6 +1338,10 @@ class MentionsInput<
     )
 
     this.props.onChange?.(ev)
+
+    if (this.props.autoResize) {
+      this.resetTextareaHeight()
+    }
   }
 
   // Handle input element's select event

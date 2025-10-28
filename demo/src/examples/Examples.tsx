@@ -12,6 +12,7 @@ import InlineAutocomplete from './InlineAutocomplete'
 import AllowSpaceInQuery from './AllowSpaceInQuery'
 import AlphabetRegexTrigger from './AlphabetRegexTrigger'
 import MentionSelection from './MentionSelection'
+import AutoResize from './AutoResize'
 
 const users = [
   {
@@ -81,6 +82,7 @@ export default function Examples() {
       <AlphabetRegexTrigger data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SingleLineIgnoringAccents data={users} />
       <Scrollable data={users} />
+      <AutoResize data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <Advanced data={users} />
       <CutCopyPaste data={users} disabledSource={false} />
       <MentionSelection data={users} />
