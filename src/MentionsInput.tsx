@@ -244,6 +244,7 @@ class MentionsInput<
   private _pendingHighlighterRecompute = false
   private _didUnmount = false
   private _scrollSyncFrame: number | null = null
+  private _autoResizeFrame: number | null = null
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
@@ -383,7 +384,7 @@ class MentionsInput<
 
     this.updateSuggestionsPosition()
 
-    this.resetTextareaHeight('componentDidMount')
+    this.resetTextareaHeight()
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -418,7 +419,7 @@ class MentionsInput<
     const configChanged = this.state.config !== prevState.config
     const valueChanged = currentValue !== previousValue || configChanged
 
-    if (this.props.autoResize && (valueChanged || prevProps.autoResize !== this.props.autoResize)) {
+    if (valueChanged || prevProps.autoResize !== this.props.autoResize) {
       this.resetTextareaHeight()
     }
 
@@ -485,9 +486,21 @@ class MentionsInput<
     document.removeEventListener('paste', this.handlePaste)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
     document.removeEventListener('selectionchange', this.handleDocumentSelectionChange)
-    if (this._scrollSyncFrame !== null && globalThis.window !== undefined) {
+    if (
+      this._scrollSyncFrame !== null &&
+      globalThis.window !== undefined &&
+      typeof globalThis.cancelAnimationFrame === 'function'
+    ) {
       globalThis.cancelAnimationFrame(this._scrollSyncFrame)
       this._scrollSyncFrame = null
+    }
+    if (
+      this._autoResizeFrame !== null &&
+      globalThis.window !== undefined &&
+      typeof globalThis.cancelAnimationFrame === 'function'
+    ) {
+      globalThis.cancelAnimationFrame(this._autoResizeFrame)
+      this._autoResizeFrame = null
     }
     this._pendingHighlighterRecompute = false
     this._didUnmount = true
@@ -633,24 +646,59 @@ class MentionsInput<
     } else if (inputRef) {
       ;(inputRef as React.RefObject<InputElement | null>).current = el
     }
-
-    this.resetTextareaHeight('setInputRef')
   }
 
-  private readonly resetTextareaHeight = (tag: string): void => {
-    console.log('resetTextareaHeight', tag)
-    if (this.props.autoResize !== true || this.props.singleLine === true) {
-      return
-    }
-    const input = this.inputElement
-    if (!input) {
+  private readonly resetTextareaHeight = (): void => {
+    if (this.props.singleLine === true || this.props.autoResize !== true) {
       return
     }
 
-    if (typeof HTMLTextAreaElement !== 'undefined' && input instanceof HTMLTextAreaElement) {
-      input.style.height = 'auto'
-      input.style.height = `${input.scrollHeight}px`
+    const hasTextarea =
+      typeof HTMLTextAreaElement !== 'undefined' && this.inputElement instanceof HTMLTextAreaElement
+
+    const measure = () => {
+      const element = this.inputElement
+      if (
+        !element ||
+        typeof HTMLTextAreaElement === 'undefined' ||
+        !(element instanceof HTMLTextAreaElement)
+      ) {
+        return
+      }
+
+      element.style.height = 'auto'
+      element.style.overflowY = 'hidden'
+
+      let borderAdjustment = 0
+      if (globalThis.window !== undefined && typeof globalThis.getComputedStyle === 'function') {
+        const computed = globalThis.getComputedStyle(element)
+        const parse = (value: string | null | undefined) =>
+          value ? Number.parseFloat(value) || 0 : 0
+        borderAdjustment = parse(computed.borderTopWidth) + parse(computed.borderBottomWidth)
+      }
+
+      const nextHeight = element.scrollHeight + borderAdjustment
+      element.style.height = `${nextHeight}px`
     }
+
+    measure()
+
+    if (
+      !hasTextarea ||
+      globalThis.window === undefined ||
+      typeof globalThis.requestAnimationFrame !== 'function'
+    ) {
+      return
+    }
+
+    if (this._autoResizeFrame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
+      globalThis.cancelAnimationFrame(this._autoResizeFrame)
+    }
+
+    this._autoResizeFrame = globalThis.requestAnimationFrame(() => {
+      this._autoResizeFrame = null
+      measure()
+    })
   }
 
   setSuggestionsElement = (el: HTMLDivElement | null) => {
