@@ -659,7 +659,10 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      expect(combobox.style.height).toBe('64px')
+      const computed = window.getComputedStyle(combobox)
+      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
       expect(combobox.style.overflowY).toBe('hidden')
     })
 
@@ -688,7 +691,10 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      expect(combobox.style.height).toBe('88px')
+      const computed = window.getComputedStyle(combobox)
+      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
       expect(combobox.style.overflowY).toBe('hidden')
     })
 
@@ -732,7 +738,12 @@ describe('MentionsInput', () => {
       })
 
       await waitFor(() => {
-        expect(combobox.style.height).toBe('150px')
+        const computed = window.getComputedStyle(combobox)
+        const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+        const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+        expect(Number.parseFloat(combobox.style.height)).toBe(
+          scrollHeight + borderTop + borderBottom
+        )
         expect(combobox.style.overflowY).toBe('hidden')
       })
     })
@@ -752,12 +763,10 @@ describe('MentionsInput', () => {
 
     it('adds border widths to the measured height', () => {
       const onMentionsChange = jest.fn()
-      const getComputedStyleSpy = jest.spyOn(window, 'getComputedStyle').mockReturnValue(
-        {
-          borderTopWidth: '4px',
-          borderBottomWidth: '6px',
-        } as unknown as CSSStyleDeclaration
-      )
+      const getComputedStyleSpy = jest.spyOn(window, 'getComputedStyle').mockReturnValue({
+        borderTopWidth: '4px',
+        borderBottomWidth: '6px',
+      } as unknown as CSSStyleDeclaration)
 
       const { rerender } = render(
         <MentionsInput autoResize value="initial" onMentionsChange={onMentionsChange}>
@@ -775,7 +784,11 @@ describe('MentionsInput', () => {
       scrollHeight = 90
 
       rerender(
-        <MentionsInput autoResize value="initial content extended" onMentionsChange={onMentionsChange}>
+        <MentionsInput
+          autoResize
+          value="initial content extended"
+          onMentionsChange={onMentionsChange}
+        >
           <Mention trigger="@" data={data} />
         </MentionsInput>
       )
@@ -809,7 +822,10 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      expect(textarea.style.height).toBe('72px')
+      const computed = window.getComputedStyle(textarea)
+      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      expect(Number.parseFloat(textarea.style.height)).toBe(scrollHeight + borderTop + borderBottom)
       expect(textarea.style.overflowY).toBe('hidden')
 
       rerender(
