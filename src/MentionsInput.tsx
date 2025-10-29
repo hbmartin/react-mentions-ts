@@ -244,6 +244,19 @@ class MentionsInput<
   private _pendingHighlighterRecompute = false
   private _didUnmount = false
   private _scrollSyncFrame: number | null = null
+  private _autoResizeFrame: number | null = null
+
+  private cancelScheduledFrame(frameKey: '_scrollSyncFrame' | '_autoResizeFrame'): void {
+    const frame = this[frameKey]
+    if (
+      frame !== null &&
+      globalThis.window !== undefined &&
+      typeof globalThis.cancelAnimationFrame === 'function'
+    ) {
+      globalThis.cancelAnimationFrame(frame)
+      this[frameKey] = null
+    }
+  }
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
@@ -383,9 +396,7 @@ class MentionsInput<
 
     this.updateSuggestionsPosition()
 
-    if (this.props.autoResize) {
-      this.resetTextareaHeight()
-    }
+    this.resetTextareaHeight()
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -420,7 +431,7 @@ class MentionsInput<
     const configChanged = this.state.config !== prevState.config
     const valueChanged = currentValue !== previousValue || configChanged
 
-    if (this.props.autoResize && (valueChanged || prevProps.autoResize !== this.props.autoResize)) {
+    if (valueChanged || prevProps.autoResize !== this.props.autoResize) {
       this.resetTextareaHeight()
     }
 
@@ -487,10 +498,8 @@ class MentionsInput<
     document.removeEventListener('paste', this.handlePaste)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
     document.removeEventListener('selectionchange', this.handleDocumentSelectionChange)
-    if (this._scrollSyncFrame !== null && globalThis.window !== undefined) {
-      globalThis.cancelAnimationFrame(this._scrollSyncFrame)
-      this._scrollSyncFrame = null
-    }
+    this.cancelScheduledFrame('_scrollSyncFrame')
+    this.cancelScheduledFrame('_autoResizeFrame')
     this._pendingHighlighterRecompute = false
     this._didUnmount = true
   }
@@ -635,22 +644,68 @@ class MentionsInput<
     } else if (inputRef) {
       ;(inputRef as React.RefObject<InputElement | null>).current = el
     }
-
-    if (this.props.autoResize) {
-      this.resetTextareaHeight()
-    }
   }
 
   private readonly resetTextareaHeight = (): void => {
-    const input = this.inputElement
-    if (!input) {
+    const hasTextarea =
+      typeof HTMLTextAreaElement !== 'undefined' && this.inputElement instanceof HTMLTextAreaElement
+
+    // When disabled or in single-line mode, clear any previously applied inline sizing.
+    if (this.props.singleLine === true || this.props.autoResize !== true) {
+      if (hasTextarea) {
+        this.inputElement!.style.height = ''
+        this.inputElement!.style.overflowY = ''
+      }
+      if (this._autoResizeFrame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
+        globalThis.cancelAnimationFrame(this._autoResizeFrame)
+        this._autoResizeFrame = null
+      }
       return
     }
 
-    if (typeof HTMLTextAreaElement !== 'undefined' && input instanceof HTMLTextAreaElement) {
-      input.style.height = 'auto'
-      input.style.height = `${input.scrollHeight}px`
+    const measure = () => {
+      const element = this.inputElement
+      if (
+        !element ||
+        typeof HTMLTextAreaElement === 'undefined' ||
+        !(element instanceof HTMLTextAreaElement)
+      ) {
+        return
+      }
+
+      element.style.height = 'auto'
+      element.style.overflowY = 'hidden'
+
+      let borderAdjustment = 0
+      if (globalThis.window !== undefined && typeof globalThis.getComputedStyle === 'function') {
+        const computed = globalThis.getComputedStyle(element)
+        const parse = (value: string | null | undefined) =>
+          value ? Number.parseFloat(value) || 0 : 0
+        borderAdjustment = parse(computed.borderTopWidth) + parse(computed.borderBottomWidth)
+      }
+
+      const nextHeight = element.scrollHeight + borderAdjustment
+      element.style.height = `${nextHeight}px`
     }
+
+    measure()
+
+    if (
+      !hasTextarea ||
+      globalThis.window === undefined ||
+      typeof globalThis.requestAnimationFrame !== 'function'
+    ) {
+      return
+    }
+
+    if (this._autoResizeFrame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
+      globalThis.cancelAnimationFrame(this._autoResizeFrame)
+    }
+
+    this._autoResizeFrame = globalThis.requestAnimationFrame(() => {
+      this._autoResizeFrame = null
+      measure()
+    })
   }
 
   setSuggestionsElement = (el: HTMLDivElement | null) => {
@@ -1338,10 +1393,6 @@ class MentionsInput<
     )
 
     this.props.onChange?.(ev)
-
-    if (this.props.autoResize) {
-      this.resetTextareaHeight()
-    }
   }
 
   // Handle input element's select event

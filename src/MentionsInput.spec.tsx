@@ -629,6 +629,216 @@ describe('MentionsInput', () => {
     })
   })
 
+  describe('autoResize', () => {
+    it('resizes the textarea to the scroll height after a controlled value update', () => {
+      const onMentionsChange = jest.fn()
+      const { rerender } = render(
+        <MentionsInput autoResize value="short" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const combobox = screen.getByRole('combobox')
+      let scrollHeight = 0
+      Object.defineProperty(combobox, 'scrollHeight', {
+        configurable: true,
+        get: () => scrollHeight,
+      })
+
+      expect(combobox.style.height).not.toBe('64px')
+
+      scrollHeight = 64
+
+      rerender(
+        <MentionsInput
+          autoResize
+          value="a slightly longer value"
+          onMentionsChange={onMentionsChange}
+        >
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const computed = window.getComputedStyle(combobox)
+      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
+      expect(combobox.style.overflowY).toBe('hidden')
+    })
+
+    it('updates the textarea height when autoResize toggles from false to true', () => {
+      const onMentionsChange = jest.fn()
+      const { rerender } = render(
+        <MentionsInput autoResize={false} value="initial" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const combobox = screen.getByRole('combobox')
+      let scrollHeight = 0
+      Object.defineProperty(combobox, 'scrollHeight', {
+        configurable: true,
+        get: () => scrollHeight,
+      })
+
+      expect(combobox.style.height).toBe('')
+
+      scrollHeight = 88
+
+      rerender(
+        <MentionsInput autoResize value="initial" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const computed = window.getComputedStyle(combobox)
+      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
+      expect(combobox.style.overflowY).toBe('hidden')
+    })
+
+    it('applies the latest scroll height after user input changes while autoResize is enabled', async () => {
+      const ControlledInput = () => {
+        const [value, setValue] = React.useState('short text')
+        return (
+          <MentionsInput
+            autoResize
+            value={value}
+            onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+          >
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+      }
+
+      render(<ControlledInput />)
+
+      const combobox = screen.getByRole('combobox')
+      let scrollHeight = 0
+      Object.defineProperty(combobox, 'scrollHeight', {
+        configurable: true,
+        get: () => scrollHeight,
+      })
+
+      const updatedValue = `${combobox.value} that is now longer`
+      combobox.focus()
+      combobox.setSelectionRange(combobox.value.length, combobox.value.length)
+
+      scrollHeight = 150
+
+      await act(async () => {
+        fireEvent.change(combobox, {
+          target: {
+            value: updatedValue,
+            selectionStart: updatedValue.length,
+            selectionEnd: updatedValue.length,
+          },
+        })
+      })
+
+      await waitFor(() => {
+        const computed = window.getComputedStyle(combobox)
+        const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+        const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+        expect(Number.parseFloat(combobox.style.height)).toBe(
+          scrollHeight + borderTop + borderBottom
+        )
+        expect(combobox.style.overflowY).toBe('hidden')
+      })
+    })
+
+    it('skips resizing when rendering a single-line input', () => {
+      render(
+        <MentionsInput autoResize singleLine value="single line">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const input = screen.getByRole('combobox')
+      expect(input.tagName).toBe('INPUT')
+      expect(input.style.height).toBe('')
+      expect(input.style.overflowY).toBe('')
+    })
+
+    it('adds border widths to the measured height', () => {
+      const onMentionsChange = jest.fn()
+      const getComputedStyleSpy = jest.spyOn(window, 'getComputedStyle').mockReturnValue({
+        borderTopWidth: '4px',
+        borderBottomWidth: '6px',
+      } as unknown as CSSStyleDeclaration)
+
+      const { rerender } = render(
+        <MentionsInput autoResize value="initial" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      let scrollHeight = 0
+      Object.defineProperty(textarea, 'scrollHeight', {
+        configurable: true,
+        get: () => scrollHeight,
+      })
+
+      scrollHeight = 90
+
+      rerender(
+        <MentionsInput
+          autoResize
+          value="initial content extended"
+          onMentionsChange={onMentionsChange}
+        >
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      expect(textarea.style.height).toBe('100px')
+      expect(textarea.style.overflowY).toBe('hidden')
+
+      getComputedStyleSpy.mockRestore()
+    })
+
+    it('clears inline sizing when autoResize is disabled', () => {
+      const onMentionsChange = jest.fn()
+      const { rerender } = render(
+        <MentionsInput autoResize value="draft" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      let scrollHeight = 0
+      Object.defineProperty(textarea, 'scrollHeight', {
+        configurable: true,
+        get: () => scrollHeight,
+      })
+
+      scrollHeight = 72
+
+      rerender(
+        <MentionsInput autoResize value="draft updated" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const computed = window.getComputedStyle(textarea)
+      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
+      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      expect(Number.parseFloat(textarea.style.height)).toBe(scrollHeight + borderTop + borderBottom)
+      expect(textarea.style.overflowY).toBe('hidden')
+
+      rerender(
+        <MentionsInput autoResize={false} value="draft updated" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      expect(textarea.style.height).toBe('')
+      expect(textarea.style.overflowY).toBe('')
+    })
+  })
+
   describe('custom cut/copy/paste', () => {
     const plainTextValue = "Hi First, \n\nlet's add Second to the conversation."
     const value = "Hi @[First](first), \n\nlet's add @[Second](second) to the conversation."
