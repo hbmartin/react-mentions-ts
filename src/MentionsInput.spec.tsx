@@ -278,6 +278,8 @@ describe('MentionsInput', () => {
       expect(payload.mentionId).toBe(data[0].id)
       expect(payload.value.endsWith(' ')).toBe(true)
       expect(payload.plainTextValue.endsWith(' ')).toBe(true)
+      expect(payload.idValue.endsWith(' ')).toBe(true)
+      expect(payload.idValue.trim()).toBe(data[0].id)
     })
   })
 
@@ -1238,6 +1240,7 @@ describe('MentionsInput', () => {
       const { textarea } = renderMentionsInput({ onMentionSelectionChange })
 
       const expectedPlainTextValue = `${mentionDisplay} remainder`
+      const expectedIdValue = `${data[0].id} remainder`
 
       onMentionSelectionChange.mockClear()
       textarea.setSelectionRange(2, 2)
@@ -1258,6 +1261,7 @@ describe('MentionsInput', () => {
         mentionIds: ['first'],
         value: defaultValue,
         plainTextValue: expectedPlainTextValue,
+        idValue: expectedIdValue,
       })
 
       onMentionSelectionChange.mockClear()
@@ -1276,6 +1280,7 @@ describe('MentionsInput', () => {
         mentionIds: ['first'],
         value: defaultValue,
         plainTextValue: expectedPlainTextValue,
+        idValue: expectedIdValue,
       })
 
       onMentionSelectionChange.mockClear()
@@ -1296,12 +1301,14 @@ describe('MentionsInput', () => {
         mentionIds: ['first'],
         value: defaultValue,
         plainTextValue: expectedPlainTextValue,
+        idValue: expectedIdValue,
       })
     })
 
     it('classifies range selections as partial and full', async () => {
       const onMentionSelectionChange = jest.fn()
       const { textarea } = renderMentionsInput({ onMentionSelectionChange })
+      const expectedIdValue = `${data[0].id} remainder`
 
       onMentionSelectionChange.mockClear()
       textarea.setSelectionRange(1, mentionDisplay.length - 1)
@@ -1317,6 +1324,7 @@ describe('MentionsInput', () => {
       expect(partialContext).toMatchObject({
         mentionId: 'first',
         mentionIds: ['first'],
+        idValue: expectedIdValue,
       })
 
       onMentionSelectionChange.mockClear()
@@ -1333,6 +1341,7 @@ describe('MentionsInput', () => {
       expect(fullContext).toMatchObject({
         mentionId: 'first',
         mentionIds: ['first'],
+        idValue: expectedIdValue,
       })
     })
 
@@ -1490,6 +1499,7 @@ describe('MentionsInput', () => {
       expect(context).toMatchObject({
         mentionId: undefined,
         mentionIds: ['first', 'second'],
+        idValue: 'first and second together',
       })
     })
   })
@@ -1594,6 +1604,7 @@ describe('MentionsInput', () => {
       const payload = getLastMentionsChange(onMentionsChange)
       expect(payload.value).toBe('@[Alice](alice)')
       expect(payload.plainTextValue).toBe('Alice')
+      expect(payload.idValue).toBe('alice')
       expect(payload.mentions).toHaveLength(1)
       expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
       expect(payload.mentionId).toBe('alice')

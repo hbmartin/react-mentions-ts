@@ -4,9 +4,10 @@ import iterateMentionsMarkup from './iterateMentionsMarkup'
 const getMentionsAndPlainText = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: string,
   config: ReadonlyArray<MentionChildConfig<Extra>>
-): { mentions: MentionOccurrence<Extra>[]; plainText: string } => {
+): { mentions: MentionOccurrence<Extra>[]; plainText: string; idValue: string } => {
   const mentions: MentionOccurrence<Extra>[] = []
   let plainText = ''
+  let idValue = ''
 
   iterateMentionsMarkup(
     value,
@@ -20,13 +21,15 @@ const getMentionsAndPlainText = <Extra extends Record<string, unknown> = Record<
         plainTextIndex,
       })
       plainText += display
+      idValue += String(id)
     },
     (text) => {
       plainText += text
+      idValue += text
     }
   )
 
-  return { mentions, plainText }
+  return { mentions, plainText, idValue }
 }
 
 export default getMentionsAndPlainText

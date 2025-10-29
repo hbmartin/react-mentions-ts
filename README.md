@@ -102,7 +102,7 @@ The `MentionsInput` component supports the following props:
 | Prop name                  | Type                                                                   | Default value  | Description                                                                                                                           |
 | -------------------------- | ---------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | value                      | string                                                                 | `''`           | The value containing markup for mentions                                                                                              |
-| onMentionsChange           | function ({ trigger, value, plainTextValue, mentionId, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, the affected mention id (when applicable), active mentions, and the previous markup value |
+| onMentionsChange           | function ({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, id-based text, the affected mention id (when applicable), active mentions, and the previous markup value |
 | onMentionSelectionChange   | function (selection, context)                                          | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries and a metadata context containing the current value, plain text, and mention identifiers |
 | onKeyDown                  | function (event)                                                       | empty function | A callback that is invoked when the user presses a key in the mentions input                                                          |
 | singleLine                 | boolean                                                                | `false`        | Renders a single line text input instead of a textarea, if set to `true`                                                              |
@@ -124,6 +124,7 @@ The `MentionsInput` component supports the following props:
 
 - `value`: the latest markup string containing mentions
 - `plainTextValue`: the same content without mention markup
+- `idValue`: the plain-text view with each mention display substituted for its identifier (useful for downstream parsing/search)
 - `mentionId`: the identifier of the mention that triggered the change when the `trigger.type` is mention-specific (e.g. `'mention-add'`); otherwise `undefined`
 - `mentions`: the mention occurrences extracted from the new value
 - `previousValue`: the markup string before the change
@@ -146,7 +147,7 @@ The callback fires on every selection change, so you can keep live state in sync
 
 The optional `context` argument includes:
 
-- `value` / `plainTextValue`: the latest markup and plain-text representations
+- `value` / `plainTextValue` / `idValue`: the latest markup, display-based plain text, and id-based plain text representations
 - `mentions`: the mentions found in the current value
 - `mentionIds`: the identifiers for the mentions covered by the current selection (ordered)
 - `mentionId`: the identifier when the selection maps to a single mention; otherwise `undefined`

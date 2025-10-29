@@ -24,7 +24,7 @@ describe('#getMentionsAndPlainText', () => {
   const displayTransform = (id) => `<--${id}-->`
 
   it('returns mentions and plain text in a single pass', () => {
-    const { mentions, plainText } = getMentionsAndPlainText(value, config)
+    const { mentions, plainText, idValue } = getMentionsAndPlainText(value, config)
     expect(mentions).toEqual([
       {
         id: 'johndoe',
@@ -42,10 +42,11 @@ describe('#getMentionsAndPlainText', () => {
       },
     ])
     expect(plainText).toBe("Hi John Doe, \n\nlet's add joe@smoe.com to this conversation...")
+    expect(idValue).toBe("Hi johndoe, \n\nlet's add joe@smoe.com to this conversation...")
   })
 
   it('respects displayTransform for plain text and mention occurrences', () => {
-    const { mentions, plainText } = getMentionsAndPlainText(
+    const { mentions, plainText, idValue } = getMentionsAndPlainText(
       value,
       config.map((c) => ({ ...c, displayTransform }))
     )
@@ -68,5 +69,6 @@ describe('#getMentionsAndPlainText', () => {
     expect(plainText).toBe(
       "Hi <--johndoe-->, \n\nlet's add <--joe@smoe.com--> to this conversation..."
     )
+    expect(idValue).toBe("Hi johndoe, \n\nlet's add joe@smoe.com to this conversation...")
   })
 })

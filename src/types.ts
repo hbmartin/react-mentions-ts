@@ -129,6 +129,7 @@ export interface MentionSelectionChangeEvent<
 > {
   value: string
   plainTextValue: string
+  idValue: string
   mentions: MentionOccurrence<Extra>[]
   mentionIds: MentionIdentifier[]
   mentionId?: MentionIdentifier
@@ -140,6 +141,7 @@ export interface MentionsInputChangeEvent<
   trigger: MentionsInputChangeTrigger
   value: string
   plainTextValue: string
+  idValue: string
   mentionId?: MentionIdentifier
   mentions: MentionOccurrence<Extra>[]
   previousValue: string
@@ -230,6 +232,7 @@ export interface MentionsInputState<
   selectionEnd: number | null
   cachedMentions: MentionOccurrence<Extra>[]
   cachedPlainText: string
+  cachedIdValue: string
   suggestions: SuggestionsMap<Extra>
   caretPosition: CaretCoordinates | null
   suggestionsPosition: SuggestionsPosition
