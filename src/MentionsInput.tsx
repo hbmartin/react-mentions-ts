@@ -20,6 +20,7 @@ import {
   findStartOfMentionInPlainText,
   getEndOfLastMention,
   getMentions,
+  getIdValue,
   getPlainText,
   getMentionsAndPlainText,
   getSubstringIndex,
@@ -289,8 +290,11 @@ class MentionsInput<
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
     const initialConfig = readConfigFromChildren<Extra>(props.children)
     const initialValue = props.value ?? ''
-    const { mentions: initialMentions, plainText: initialPlainText } =
-      getMentionsAndPlainText<Extra>(initialValue, initialConfig)
+    const {
+      mentions: initialMentions,
+      plainText: initialPlainText,
+      idValue: initialIdValue,
+    } = getMentionsAndPlainText<Extra>(initialValue, initialConfig)
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -303,6 +307,7 @@ class MentionsInput<
       selectionEnd: null,
       cachedMentions: initialMentions,
       cachedPlainText: initialPlainText,
+      cachedIdValue: initialIdValue,
       suggestions: {},
       caretPosition: null,
       suggestionsPosition: {},
@@ -440,17 +445,24 @@ class MentionsInput<
       : null
     const mentionsForSelection = recalculatedMentions?.mentions ?? this.state.cachedMentions
     const plainTextForSelection = recalculatedMentions?.plainText ?? this.state.cachedPlainText
+    const idValueForSelection = recalculatedMentions?.idValue ?? this.state.cachedIdValue
 
     if (recalculatedMentions) {
-      const { mentions: nextMentions, plainText: nextPlainText } = recalculatedMentions
+      const {
+        mentions: nextMentions,
+        plainText: nextPlainText,
+        idValue: nextIdValue,
+      } = recalculatedMentions
 
       if (
         !areMentionOccurrencesEqual(nextMentions, this.state.cachedMentions) ||
-        nextPlainText !== this.state.cachedPlainText
+        nextPlainText !== this.state.cachedPlainText ||
+        nextIdValue !== this.state.cachedIdValue
       ) {
         this.setState({
           cachedMentions: nextMentions,
           cachedPlainText: nextPlainText,
+          cachedIdValue: nextIdValue,
         })
       }
     }
@@ -482,6 +494,7 @@ class MentionsInput<
         const selectionContext = {
           value: currentValue,
           plainTextValue: plainTextForSelection,
+          idValue: idValueForSelection,
           mentions: mentionsForSelection,
           mentionIds: selectionMentionIds,
           mentionId: selectionMentionIds.length === 1 ? selectionMentionIds[0] : undefined,
@@ -1126,6 +1139,7 @@ class MentionsInput<
     trigger: MentionsInputChangeTrigger,
     newValue: string,
     newPlainTextValue: string,
+    newIdValue: string,
     mentions: MentionOccurrence<Extra>[],
     previousValue: string,
     mentionId?: MentionIdentifier
@@ -1135,6 +1149,7 @@ class MentionsInput<
         trigger,
         value: newValue,
         plainTextValue: newPlainTextValue,
+        idValue: newIdValue,
         mentions,
         previousValue,
         mentionId,
@@ -1184,6 +1199,7 @@ class MentionsInput<
     ).replaceAll('\r', '')
 
     const newPlainTextValue = getPlainText(newValue, this.state.config)
+    const newIdValue = getIdValue(newValue, this.state.config)
 
     const mentions = getMentions(newValue, this.state.config)
 
@@ -1191,6 +1207,7 @@ class MentionsInput<
       { type: 'paste', nativeEvent: event },
       newValue,
       newPlainTextValue,
+      newIdValue,
       mentions,
       valueText
     )
@@ -1293,6 +1310,7 @@ class MentionsInput<
       ''
     )
     const newPlainTextValue = getPlainText(newValue, this.state.config)
+    const newIdValue = getIdValue(newValue, this.state.config)
 
     const mentions = getMentions(newValue, this.state.config)
 
@@ -1306,6 +1324,7 @@ class MentionsInput<
       { type: 'cut', nativeEvent: event },
       newValue,
       newPlainTextValue,
+      newIdValue,
       mentions,
       valueText
     )
@@ -1346,6 +1365,7 @@ class MentionsInput<
 
     // In case a mention is deleted, also adjust the new plain text value
     newPlainTextValue = getPlainText(newValue, this.state.config)
+    const newIdValue = getIdValue(newValue, this.state.config)
 
     // Save current selection after change to be able to restore caret position after rerendering
     let selectionStart = ev.target.selectionStart ?? selectionStartBefore
@@ -1388,6 +1408,7 @@ class MentionsInput<
       { type: 'input', nativeEvent: ev.nativeEvent },
       newValue,
       newPlainTextValue,
+      newIdValue,
       mentions,
       value
     )
@@ -1944,8 +1965,17 @@ class MentionsInput<
       querySequenceEnd,
       displayValue
     )
+    const newIdValue = getIdValue(newValue, this.state.config)
 
-    this.executeOnChange({ type: 'mention-add' }, newValue, newPlainTextValue, mentions, value, id)
+    this.executeOnChange(
+      { type: 'mention-add' },
+      newValue,
+      newPlainTextValue,
+      newIdValue,
+      mentions,
+      value,
+      id
+    )
 
     if (onAdd !== undefined) {
       onAdd({
