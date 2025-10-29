@@ -246,6 +246,18 @@ class MentionsInput<
   private _scrollSyncFrame: number | null = null
   private _autoResizeFrame: number | null = null
 
+  private cancelScheduledFrame(frameKey: '_scrollSyncFrame' | '_autoResizeFrame'): void {
+    const frame = this[frameKey]
+    if (
+      frame !== null &&
+      globalThis.window !== undefined &&
+      typeof globalThis.cancelAnimationFrame === 'function'
+    ) {
+      globalThis.cancelAnimationFrame(frame)
+      this[frameKey] = null
+    }
+  }
+
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
     const extra = classNames?.[slot]
@@ -486,22 +498,8 @@ class MentionsInput<
     document.removeEventListener('paste', this.handlePaste)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
     document.removeEventListener('selectionchange', this.handleDocumentSelectionChange)
-    if (
-      this._scrollSyncFrame !== null &&
-      globalThis.window !== undefined &&
-      typeof globalThis.cancelAnimationFrame === 'function'
-    ) {
-      globalThis.cancelAnimationFrame(this._scrollSyncFrame)
-      this._scrollSyncFrame = null
-    }
-    if (
-      this._autoResizeFrame !== null &&
-      globalThis.window !== undefined &&
-      typeof globalThis.cancelAnimationFrame === 'function'
-    ) {
-      globalThis.cancelAnimationFrame(this._autoResizeFrame)
-      this._autoResizeFrame = null
-    }
+    this.cancelScheduledFrame('_scrollSyncFrame')
+    this.cancelScheduledFrame('_autoResizeFrame')
     this._pendingHighlighterRecompute = false
     this._didUnmount = true
   }
