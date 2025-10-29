@@ -383,9 +383,7 @@ class MentionsInput<
 
     this.updateSuggestionsPosition()
 
-    if (this.props.autoResize) {
-      this.resetTextareaHeight()
-    }
+    this.resetTextareaHeight('componentDidMount')
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -636,12 +634,14 @@ class MentionsInput<
       ;(inputRef as React.RefObject<InputElement | null>).current = el
     }
 
-    if (this.props.autoResize) {
-      this.resetTextareaHeight()
-    }
+    this.resetTextareaHeight('setInputRef')
   }
 
-  private readonly resetTextareaHeight = (): void => {
+  private readonly resetTextareaHeight = (tag: string): void => {
+    console.log('resetTextareaHeight', tag)
+    if (this.props.autoResize !== true || this.props.singleLine === true) {
+      return
+    }
     const input = this.inputElement
     if (!input) {
       return
@@ -1338,10 +1338,6 @@ class MentionsInput<
     )
 
     this.props.onChange?.(ev)
-
-    if (this.props.autoResize) {
-      this.resetTextareaHeight()
-    }
   }
 
   // Handle input element's select event
