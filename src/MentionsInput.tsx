@@ -649,12 +649,21 @@ class MentionsInput<
   }
 
   private readonly resetTextareaHeight = (): void => {
-    if (this.props.singleLine === true || this.props.autoResize !== true) {
-      return
-    }
-
     const hasTextarea =
       typeof HTMLTextAreaElement !== 'undefined' && this.inputElement instanceof HTMLTextAreaElement
+
+    // When disabled or in single-line mode, clear any previously applied inline sizing.
+    if (this.props.singleLine === true || this.props.autoResize !== true) {
+      if (hasTextarea) {
+        this.inputElement!.style.height = ''
+        this.inputElement!.style.overflowY = ''
+      }
+      if (this._autoResizeFrame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
+        globalThis.cancelAnimationFrame(this._autoResizeFrame)
+        this._autoResizeFrame = null
+      }
+      return
+    }
 
     const measure = () => {
       const element = this.inputElement
