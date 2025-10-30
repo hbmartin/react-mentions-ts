@@ -21,9 +21,7 @@ describe('#getIdValue', () => {
     const value =
       "Hi @[John Doe](user:johndoe), let's add @[joe@smoe.com](email:joe@smoe.com) to this thread."
 
-    expect(getIdValue(value, config)).toBe(
-      "Hi johndoe, let's add joe@smoe.com to this thread."
-    )
+    expect(getIdValue(value, config)).toBe("Hi johndoe, let's add joe@smoe.com to this thread.")
   })
 
   it('stringifies numeric identifiers while preserving surrounding text', () => {
