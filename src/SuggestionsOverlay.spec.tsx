@@ -13,7 +13,6 @@ const createSuggestionsMap = (
       query: 'test',
       querySequenceStart: 0,
       querySequenceEnd: 5,
-      plainTextValue: '@test',
     },
     results: suggestions,
   },
@@ -65,7 +64,6 @@ describe('SuggestionsOverlay', () => {
           query: 'a',
           querySequenceStart: 0,
           querySequenceEnd: 2,
-          plainTextValue: '@a',
         },
         results: secondChildSuggestions,
       },
@@ -75,7 +73,6 @@ describe('SuggestionsOverlay', () => {
           query: 'a',
           querySequenceStart: 0,
           querySequenceEnd: 2,
-          plainTextValue: '@a',
         },
         results: firstChildSuggestions,
       },
@@ -385,6 +382,36 @@ describe('SuggestionsOverlay', () => {
     expect(overlay.style.backgroundColor).toBe('rgb(255, 0, 0)')
   })
 
+  it('applies accessibility label and merges inline style overrides', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="a11y-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        a11ySuggestionsListLabel="People suggestions"
+        position="fixed"
+        right={24}
+        width={200}
+        style={{ width: '480px', backgroundColor: 'rgb(0, 0, 255)' }}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]')
+    expect(list).not.toBeNull()
+    expect(list).toHaveAttribute('aria-label', 'People suggestions')
+
+    const overlay = container.querySelector('[data-slot="suggestions"]') as HTMLDivElement
+    expect(overlay).not.toBeNull()
+    expect(overlay.style.position).toBe('fixed')
+    expect(overlay.style.right).toBe('24px')
+    // Inline style should override width from numeric prop.
+    expect(overlay.style.width).toBe('480px')
+    expect(overlay.style.backgroundColor).toBe('rgb(0, 0, 255)')
+  })
+
   it('forwards the container ref and customises the suggestions list wrapper', () => {
     const ref = jest.fn()
     const wrap = jest.fn((node: React.ReactElement) => <div data-testid="wrapped">{node}</div>)
@@ -423,6 +450,80 @@ describe('SuggestionsOverlay', () => {
 
     const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
     fireEvent.mouseDown(list, { button: 0 })
+    expect(handleMouseDown).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses a mention child renderSuggestion when provided', () => {
+    const customRender = jest.fn((suggestion, query, highlightedDisplay: React.ReactNode) => (
+      <div data-testid={`custom-${suggestion.id}`}>
+        Custom:
+        <span data-testid="highlight">{query}</span>
+        {highlightedDisplay}
+      </div>
+    ))
+
+    const suggestionsMap: SuggestionsMap = {
+      0: {
+        queryInfo: {
+          childIndex: 0,
+          query: 'alpha',
+          querySequenceStart: 0,
+          querySequenceEnd: 5,
+        },
+        results: [{ id: 'child-0', display: 'Child Zero' }],
+      },
+      1: {
+        queryInfo: {
+          childIndex: 1,
+          query: 'beta',
+          querySequenceStart: 0,
+          querySequenceEnd: 4,
+        },
+        results: [{ id: 'child-1', display: 'Child One' }],
+      },
+    }
+
+    const { getByTestId, getByText } = render(
+      <SuggestionsOverlay
+        id="custom-render-overlay"
+        suggestions={suggestionsMap}
+        focusIndex={0}
+        isOpened
+      >
+        <Mention trigger="@" data={[]} renderSuggestion={customRender} />
+        <Mention trigger="#" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(customRender).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'child-0', display: 'Child Zero' }),
+      'alpha',
+      expect.anything(),
+      0,
+      true
+    )
+    expect(getByTestId('custom-child-0')).toBeInTheDocument()
+    expect(getByTestId('custom-child-0')).toHaveTextContent('Custom:')
+    expect(getByText('Child One')).toBeInTheDocument()
+  })
+
+  it('forwards mouse down events from the loading indicator', () => {
+    const handleMouseDown = jest.fn()
+
+    const { getByTestId } = render(
+      <SuggestionsOverlay
+        id="loading-overlay"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        isLoading
+        onMouseDown={handleMouseDown}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    fireEvent.mouseDown(getByTestId('loading-indicator'))
     expect(handleMouseDown).toHaveBeenCalledTimes(1)
   })
 })

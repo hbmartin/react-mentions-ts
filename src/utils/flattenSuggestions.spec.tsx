@@ -12,7 +12,6 @@ const createQueryInfo = (childIndex: number) => ({
   query: `query-${childIndex}`,
   querySequenceStart: childIndex,
   querySequenceEnd: childIndex + 1,
-  plainTextValue: `plain-${childIndex}`,
 })
 
 describe('#flattenSuggestions', () => {

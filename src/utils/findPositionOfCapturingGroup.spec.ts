@@ -20,4 +20,11 @@ describe('#findPositionOfCapturingGroup', () => {
       expect(findPositionOfCapturingGroup(markup, 'id')).toEqual(positions.id)
     })
   }
+
+  it("throws if markup doesn't contain any supported placeholders", () => {
+    const markup = 'no placeholders here'
+    expect(() => findPositionOfCapturingGroup(markup, 'display')).toThrow(
+      "The markup 'no placeholders here' does not contain either of the placeholders '__id__' or '__display__'"
+    )
+  })
 })

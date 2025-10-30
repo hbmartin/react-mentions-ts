@@ -27,7 +27,10 @@ export default function MultipleTriggers({
   const [value, setValue] = useState(
     "Hi @[John Doe](user:johndoe), \n\nlet's add [joe@smoe.com](email:joe@smoe.com) and @[John Doe](user:johndoe) to this conversation... "
   )
-  const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
+  const onMentionsChange = (change: MentionsInputChangeEvent) => {
+    console.log('onMentionsChange', change)
+    setValue(change.value)
+  }
 
   return (
     <ExampleCard

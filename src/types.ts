@@ -46,7 +46,6 @@ export interface QueryInfo {
   query: string
   querySequenceStart: number
   querySequenceEnd: number
-  plainTextValue: string
 }
 
 export type SuggestionsMap<Extra extends Record<string, unknown> = Record<string, unknown>> =

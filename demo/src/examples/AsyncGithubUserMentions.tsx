@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { MentionsInput, Mention } from '../../../src'
-import type { MentionsInputChangeEvent } from '../../../src'
+import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import {
   mentionPillClass,
@@ -10,18 +10,16 @@ import {
   multilineMentionsClassNames,
 } from './mentionsClassNames'
 
-function fetchUsers(query: string) {
+async function fetchUsers(query: string): Promise<MentionDataItem[]> {
   if (!query) return Promise.resolve([])
-  return fetch(`https://api.github.com/search/users?q=${query}`)
-    .then((res) => res.json())
-    .then((res) =>
-      res.items.map((user: { login: string }) => ({ display: user.login, id: user.login }))
-    )
+  const response = await fetch(`https://api.github.com/search/users?q=${query}`)
+  const data = await response.json()
+  return data.items.map((user: { login: string }) => ({ display: user.login, id: user.login }))
 }
 
 const githubSuggestions = mergeClassNames(multilineMentionsClassNames, {
-  suggestionItem: 'flex items-center gap-3 px-4 py-2.5 text-sm text-slate-100',
-  suggestionItemFocused: 'bg-indigo-500/20 text-indigo-100',
+  suggestionItem: 'flex items-center gap-3 px-4 py-2.5 text-sm text-slate-900',
+  suggestionItemFocused: 'bg-indigo-500/20 text-indigo-900',
 })
 
 export default function AsyncGithubUserMentions() {
