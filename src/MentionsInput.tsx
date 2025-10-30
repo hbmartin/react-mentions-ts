@@ -19,8 +19,6 @@ import {
   countSuggestions,
   findStartOfMentionInPlainText,
   getEndOfLastMention,
-  getMentions,
-  getIdValue,
   getPlainText,
   getMentionsAndPlainText,
   getSubstringIndex,
@@ -1198,10 +1196,11 @@ class MentionsInput<
       pastedMentions || pastedData
     ).replaceAll('\r', '')
 
-    const newPlainTextValue = getPlainText(newValue, this.state.config)
-    const newIdValue = getIdValue(newValue, this.state.config)
-
-    const mentions = getMentions(newValue, this.state.config)
+    const {
+      mentions,
+      plainText: newPlainTextValue,
+      idValue: newIdValue,
+    } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
 
     this.executeOnChange(
       { type: 'paste', nativeEvent: event },
@@ -1309,10 +1308,11 @@ class MentionsInput<
     const newValue = [valueText.slice(0, markupStartIndex), valueText.slice(markupEndIndex)].join(
       ''
     )
-    const newPlainTextValue = getPlainText(newValue, this.state.config)
-    const newIdValue = getIdValue(newValue, this.state.config)
-
-    const mentions = getMentions(newValue, this.state.config)
+    const {
+      mentions,
+      plainText: newPlainTextValue,
+      idValue: newIdValue,
+    } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
 
     this.setState({
       selectionStart: safeSelectionStart,
@@ -1363,9 +1363,13 @@ class MentionsInput<
       this.state.config
     )
 
-    // In case a mention is deleted, also adjust the new plain text value
-    newPlainTextValue = getPlainText(newValue, this.state.config)
-    const newIdValue = getIdValue(newValue, this.state.config)
+    // Recalculate derived representations against the updated markup
+    const {
+      mentions,
+      plainText: recalculatedPlainTextValue,
+      idValue: newIdValue,
+    } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
+    newPlainTextValue = recalculatedPlainTextValue
 
     // Save current selection after change to be able to restore caret position after rerendering
     let selectionStart = ev.target.selectionStart ?? selectionStartBefore
@@ -1396,8 +1400,6 @@ class MentionsInput<
       selectionEnd,
       pendingSelectionUpdate: prevState.pendingSelectionUpdate || shouldRestoreSelection,
     }))
-
-    const mentions = getMentions(newValue, this.state.config)
 
     if (nativeEvent.isComposing && selectionStart === selectionEnd && this.inputElement) {
       this.updateMentionsQueries(this.inputElement.value, selectionStart)
@@ -1916,7 +1918,7 @@ class MentionsInput<
   // eslint-disable-next-line code-complete/low-function-cohesion
   addMention = (
     suggestion: SuggestionDataItem<Extra>,
-    { childIndex, querySequenceStart, querySequenceEnd, plainTextValue }: QueryInfo
+    { childIndex, querySequenceStart, querySequenceEnd }: QueryInfo
   ): void => {
     const { id, display } = this.getSuggestionData(suggestion)
     // Insert mention in the marked up value at the correct position
@@ -1958,14 +1960,11 @@ class MentionsInput<
     })
 
     // Propagate change
-    const mentions = getMentions(newValue, this.state.config)
-    const newPlainTextValue = spliceString(
-      plainTextValue,
-      querySequenceStart,
-      querySequenceEnd,
-      displayValue
-    )
-    const newIdValue = getIdValue(newValue, this.state.config)
+    const {
+      mentions,
+      plainText: newPlainTextValue,
+      idValue: newIdValue,
+    } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
 
     this.executeOnChange(
       { type: 'mention-add' },
