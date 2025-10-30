@@ -19,7 +19,6 @@ import {
   countSuggestions,
   findStartOfMentionInPlainText,
   getEndOfLastMention,
-  getIdValue,
   getPlainText,
   getMentionsAndPlainText,
   getSubstringIndex,
