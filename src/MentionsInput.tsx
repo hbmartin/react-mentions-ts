@@ -1853,7 +1853,6 @@ class MentionsInput<
           match[2],
           querySequenceStart,
           querySequenceStart + match[1].length,
-          plainTextValue,
           resultPromise
         )
       }
@@ -1876,7 +1875,6 @@ class MentionsInput<
     query: string,
     querySequenceStart: number,
     querySequenceEnd: number,
-    plainTextValue: string,
     results: MentionDataItem<Extra>[] | Promise<MentionDataItem<Extra>[]>
   ): Promise<void> => {
     if (queryId !== this._queryId) {
@@ -1891,7 +1889,6 @@ class MentionsInput<
       query,
       querySequenceStart,
       querySequenceEnd,
-      plainTextValue,
     }
 
     this.suggestions = {
