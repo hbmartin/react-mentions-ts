@@ -7,7 +7,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   SyntheticEvent,
 } from 'react'
-import React, { Children, useLayoutEffect } from 'react'
+import React, { Children, useId, useLayoutEffect, useMemo } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
@@ -98,6 +98,13 @@ const KEY = {
 } as const
 
 const suggestionHandledKeys = new Set<string>([KEY.ESC, KEY.DOWN, KEY.UP, KEY.RETURN, KEY.TAB])
+
+type MentionsInputIdContextValue = {
+  overlayId: string
+  inlineAutocompleteLiveRegionId: string
+}
+
+const MentionsInputIdContext = React.createContext<MentionsInputIdContextValue | null>(null)
 
 const rootStyles = cva('relative overflow-y-visible')
 const controlStyles = cva('relative')
@@ -212,7 +219,7 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
   'autoResize',
 ]
 
-class MentionsInput<
+class MentionsInputBase<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > extends React.Component<MentionsInputProps<Extra>, MentionsInputState<Extra>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -227,6 +234,9 @@ class MentionsInput<
     suggestionsDisplay: 'overlay',
     spellCheck: false,
   }
+
+  static contextType = MentionsInputIdContext
+  declare context: MentionsInputIdContextValue | null
 
   private suggestions: SuggestionsMap<Extra> = {}
   private readonly uuidSuggestionsOverlay: string
@@ -283,8 +293,13 @@ class MentionsInput<
 
   constructor(props: MentionsInputProps<Extra>) {
     super(props)
-    this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
-    this.inlineAutocompleteLiveRegionId = `${this.uuidSuggestionsOverlay}-inline-live`
+    const contextIds = this.context
+    const overlayId =
+      contextIds?.overlayId ?? MentionsInputBase.getFallbackSuggestionsOverlayId(props)
+
+    this.uuidSuggestionsOverlay = overlayId
+    this.inlineAutocompleteLiveRegionId =
+      contextIds?.inlineAutocompleteLiveRegionId ?? `${overlayId}-inline-live`
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
     const initialConfig = readConfigFromChildren<Extra>(props.children)
     const initialValue = props.value ?? ''
@@ -524,9 +539,11 @@ class MentionsInput<
         className={rootClassName}
         style={style}
         data-single-line={
-          (singleLine ?? MentionsInput.defaultProps.singleLine) ? 'true' : undefined
+          (singleLine ?? MentionsInputBase.defaultProps.singleLine) ? 'true' : undefined
         }
-        data-multi-line={(singleLine ?? MentionsInput.defaultProps.singleLine) ? undefined : 'true'}
+        data-multi-line={
+          (singleLine ?? MentionsInputBase.defaultProps.singleLine) ? undefined : 'true'
+        }
       >
         {this.renderControl()}
         {this.renderSuggestionsOverlay()}
@@ -898,7 +915,7 @@ class MentionsInput<
         substringClassName={classNames?.highlighterSubstring}
         caretClassName={classNames?.highlighterCaret}
         value={value}
-        singleLine={singleLine ?? MentionsInput.defaultProps.singleLine}
+        singleLine={singleLine ?? MentionsInputBase.defaultProps.singleLine}
         selectionStart={selectionStart}
         selectionEnd={selectionEnd}
         recomputeVersion={highlighterRecomputeVersion}
@@ -2001,6 +2018,15 @@ class MentionsInput<
   isOpened = (): boolean =>
     isNumber(this.state.selectionStart) &&
     (countSuggestions(this.state.suggestions) !== 0 || this.isLoading())
+
+  private static getFallbackSuggestionsOverlayId<
+    Extra extends Record<string, unknown> = Record<string, unknown>,
+  >(props: MentionsInputProps<Extra>): string {
+    if (props.id) {
+      return `${props.id}-suggestions`
+    }
+    return Math.random().toString(16).slice(2)
+  }
 }
 
 /**
@@ -2093,4 +2119,32 @@ const MeasurementBridge = ({
   return null
 }
 
-export default MentionsInput
+function MentionsInputWithStableIds<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+>(
+  props: MentionsInputProps<Extra>,
+  ref: React.ForwardedRef<MentionsInputBase<Extra>>
+) {
+  const reactId = useId()
+  const sanitizedId = reactId.replace(/:/g, '-')
+  const overlayId = props.id ? `${props.id}-suggestions` : `react-mentions-${sanitizedId}`
+  const inlineAutocompleteLiveRegionId = `${overlayId}-inline-live`
+  const contextValue = useMemo(
+    () => ({ overlayId, inlineAutocompleteLiveRegionId }),
+    [overlayId, inlineAutocompleteLiveRegionId]
+  )
+
+  return (
+    <MentionsInputIdContext.Provider value={contextValue}>
+      <MentionsInputBase<Extra> {...props} ref={ref} />
+    </MentionsInputIdContext.Provider>
+  )
+}
+
+const MentionsInput = React.forwardRef(MentionsInputWithStableIds) as unknown as typeof MentionsInputBase
+
+MentionsInput.displayName = 'MentionsInput'
+;(MentionsInput as unknown as { defaultProps: typeof MentionsInputBase.defaultProps }).defaultProps =
+  MentionsInputBase.defaultProps
+
+export default MentionsInput as unknown as typeof MentionsInputBase
