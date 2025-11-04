@@ -8,8 +8,8 @@ interface LoadingIndicatorProps {
   readonly onMouseDown?: MouseEventHandler<HTMLDivElement>
 }
 
-const containerStyles = 'flex justify-center py-2'
-const spinnerStyles = 'flex items-center gap-1 text-muted-foreground'
+const containerStyles = 'flex justify-center py-4'
+const spinnerStyles = 'flex items-center gap-2 text-primary'
 const spinnerDotStyles = 'inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current'
 
 const dotDelays = [0, 1, 2, 3, 4]

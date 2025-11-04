@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { Mention, MentionsInput } from '../../../src'
 import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
-import { mentionPillClass, singleLineMentionsClassNames } from './mentionsClassNames'
 
 export default function SingleLine({
   data,
@@ -28,11 +27,10 @@ export default function SingleLine({
         value={value}
         onMentionsChange={onMentionsChange}
         className="mentions"
-        classNames={singleLineMentionsClassNames}
         placeholder="Mention people using '@'"
         a11ySuggestionsListLabel={'Suggested mentions'}
       >
-        <Mention data={data} onAdd={onAdd} className={mentionPillClass} />
+        <Mention data={data} onAdd={onAdd} />
       </MentionsInput>
     </ExampleCard>
   )

@@ -45,8 +45,11 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly onMouseEnter?: (index: number) => void
 }
 
-const overlayStyles = cva('z-[100] mt-[14px] min-w-[100px] bg-white')
-const listStyles = 'm-0 list-none p-0'
+const overlayStyles = cva(
+  'z-[100] mt-3 w-full min-w-[16rem] overflow-hidden rounded-2xl border border-border bg-popover shadow-xl ring-1 ring-ring backdrop-blur supports-[backdrop-filter]:bg-popover/95'
+)
+const listStyles =
+  'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
 
 function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,

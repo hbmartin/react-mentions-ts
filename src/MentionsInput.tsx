@@ -100,9 +100,11 @@ const KEY = {
 const suggestionHandledKeys = new Set<string>([KEY.ESC, KEY.DOWN, KEY.UP, KEY.RETURN, KEY.TAB])
 
 const rootStyles = cva('relative overflow-y-visible')
-const controlStyles = cva('relative')
+const controlStyles = cva(
+  'relative overflow-hidden rounded-3xl border border-border bg-card px-0 py-0 shadow-inner'
+)
 const inputStyles = cva(
-  'relative block w-full m-0 box-border bg-transparent [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]',
+  'relative block w-full m-0 box-border rounded-3xl border border-transparent bg-transparent px-4 py-3 text-sm leading-relaxed text-foreground transition placeholder:text-muted-foreground focus:outline-none [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]',
   {
     variants: {
       singleLine: {
@@ -113,12 +115,12 @@ const inputStyles = cva(
   }
 )
 const inlineSuggestionStyles = cva(
-  'absolute inline-block pointer-events-none [color:inherit] opacity-40 whitespace-pre [font-family:inherit] [font-size:inherit] [letter-spacing:inherit] z-[2]'
+  'absolute inline-flex pointer-events-none text-muted-foreground opacity-80 whitespace-pre z-[2] [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]'
 )
-const inlineSuggestionTextStyles = 'relative inline-block'
-const inlineSuggestionPrefixStyles =
-  'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
-const inlineSuggestionSuffixStyles = 'whitespace-pre'
+const inlineSuggestionTextStyles =
+  'relative inline-flex items-baseline gap-1 text-sm font-medium text-muted-foreground'
+const inlineSuggestionPrefixStyles = 'sr-only'
+const inlineSuggestionSuffixStyles = 'whitespace-pre text-muted-foreground'
 
 const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
   // TODO move this into makeTriggerRegex
