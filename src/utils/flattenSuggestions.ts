@@ -1,3 +1,4 @@
+/* eslint-disable code-complete/enforce-meaningful-names */
 import { Children } from 'react'
 import type { ReactNode } from 'react'
 import type { QueryInfo, SuggestionDataItem, SuggestionsMap } from '../types'
@@ -9,6 +10,7 @@ export interface FlattenedSuggestion<
   queryInfo: QueryInfo
 }
 
+// eslint-disable-next-line code-complete/low-function-cohesion
 const flattenSuggestions = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   children: ReactNode,
   suggestions: SuggestionsMap<Extra> | undefined

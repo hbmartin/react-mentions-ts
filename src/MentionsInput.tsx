@@ -27,12 +27,12 @@ import {
   flattenSuggestions,
   mapPlainTextIndex,
   omit,
-  readConfigFromChildren,
   spliceString,
   cn,
 } from './utils'
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
+import readConfigFromChildren from './utils/readConfigFromChildren'
 import { useEffectEvent } from './utils/useEffectEvent'
 import type {
   CaretCoordinates,
@@ -2076,7 +2076,7 @@ const MeasurementBridge = ({
 
   useLayoutEffect(() => {
     updateAll()
-  }, [updateAll])
+  }, [])
 
   useLayoutEffect(() => observe(container, updateAll), [container, observe, updateAll])
   useLayoutEffect(() => observe(highlighter, updateAll), [highlighter, observe, updateAll])
@@ -2087,7 +2087,7 @@ const MeasurementBridge = ({
   )
 
   useLayoutEffect(() => {
-    if (typeof window === 'undefined') {
+    if (globalThis.window === undefined) {
       return undefined
     }
 
@@ -2096,11 +2096,11 @@ const MeasurementBridge = ({
     }
 
     window.addEventListener('resize', handleViewportChange)
-    window.addEventListener('orientationchange', handleViewportChange)
+    globalThis.addEventListener('orientationchange', handleViewportChange)
 
     return () => {
       window.removeEventListener('resize', handleViewportChange)
-      window.removeEventListener('orientationchange', handleViewportChange)
+      globalThis.removeEventListener('orientationchange', handleViewportChange)
     }
   }, [updateAll])
 

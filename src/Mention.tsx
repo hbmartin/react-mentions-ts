@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { cn } from './utils'
+import cn from './utils/cn'
 import type { MentionComponentProps } from './types'
 
 export interface MentionProps<Extra extends Record<string, unknown> = Record<string, unknown>>

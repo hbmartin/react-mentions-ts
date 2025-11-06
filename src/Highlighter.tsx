@@ -1,13 +1,8 @@
 import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
-import {
-  iterateMentionsMarkup,
-  mapPlainTextIndex,
-  readConfigFromChildren,
-  isNumber,
-  cn,
-} from './utils'
+import { iterateMentionsMarkup, mapPlainTextIndex, isNumber, cn } from './utils'
+import readConfigFromChildren from './utils/readConfigFromChildren'
 import { useEffectEvent } from './utils/useEffectEvent'
 import type {
   CaretCoordinates,
