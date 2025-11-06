@@ -21,7 +21,7 @@ const getMentionsAndPlainText = <Extra extends Record<string, unknown> = Record<
         plainTextIndex,
       })
       plainText += display
-      idValue += String(id)
+      idValue += id
     },
     (text) => {
       plainText += text

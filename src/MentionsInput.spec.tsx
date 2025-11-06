@@ -87,6 +87,66 @@ describe('MentionsInput', () => {
     expect(input.tagName).toBe('INPUT')
   })
 
+  describe('single-line versus multi-line modes', () => {
+    it('switches DOM structure and data attributes when toggling modes.', () => {
+      const { container, rerender } = render(
+        <MentionsInput value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const initialRoot = container.firstElementChild as HTMLElement
+      expect(initialRoot).toHaveAttribute('data-multi-line', 'true')
+      expect(initialRoot).not.toHaveAttribute('data-single-line')
+
+      let inputElement = container.querySelector('[data-slot="input"]') as HTMLElement
+      expect(inputElement.tagName).toBe('TEXTAREA')
+      expect(inputElement).toHaveAttribute('data-multi-line', 'true')
+      expect(inputElement).not.toHaveAttribute('data-single-line')
+
+      rerender(
+        <MentionsInput value="" singleLine>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const updatedRoot = container.firstElementChild as HTMLElement
+      expect(updatedRoot).toHaveAttribute('data-single-line', 'true')
+      expect(updatedRoot).not.toHaveAttribute('data-multi-line')
+
+      inputElement = container.querySelector('[data-slot="input"]') as HTMLElement
+      expect(inputElement.tagName).toBe('INPUT')
+      expect(inputElement).toHaveAttribute('data-single-line', 'true')
+      expect(inputElement).not.toHaveAttribute('data-multi-line')
+    })
+
+    it('keeps the highlighter whitespace handling in sync with the singleLine prop.', () => {
+      const { container, rerender } = render(
+        <MentionsInput value="Hello">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const control = container.querySelector('[data-slot="control"]') as HTMLElement
+      const initialHighlighter = control.firstElementChild as HTMLElement
+      expect(initialHighlighter).toHaveClass('whitespace-pre-wrap')
+      expect(initialHighlighter).toHaveClass('break-words')
+      expect(initialHighlighter).not.toHaveClass('break-normal')
+
+      rerender(
+        <MentionsInput value="Hello" singleLine>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const updatedControl = container.querySelector('[data-slot="control"]') as HTMLElement
+      const updatedHighlighter = updatedControl.firstElementChild as HTMLElement
+      expect(updatedHighlighter).toHaveClass('whitespace-pre')
+      expect(updatedHighlighter).toHaveClass('break-normal')
+      expect(updatedHighlighter).not.toHaveClass('whitespace-pre-wrap')
+    })
+  })
+
   describe('validation', () => {
     let consoleError: jest.SpyInstance
 
@@ -661,7 +721,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const computed = window.getComputedStyle(combobox)
+      const computed = globalThis.getComputedStyle(combobox)
       const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
       const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
       expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
@@ -693,7 +753,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const computed = window.getComputedStyle(combobox)
+      const computed = globalThis.getComputedStyle(combobox)
       const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
       const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
       expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
@@ -740,7 +800,7 @@ describe('MentionsInput', () => {
       })
 
       await waitFor(() => {
-        const computed = window.getComputedStyle(combobox)
+        const computed = globalThis.getComputedStyle(combobox)
         const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
         const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
         expect(Number.parseFloat(combobox.style.height)).toBe(
@@ -765,7 +825,7 @@ describe('MentionsInput', () => {
 
     it('adds border widths to the measured height', () => {
       const onMentionsChange = jest.fn()
-      const getComputedStyleSpy = jest.spyOn(window, 'getComputedStyle').mockReturnValue({
+      const getComputedStyleSpy = jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
         borderTopWidth: '4px',
         borderBottomWidth: '6px',
       } as unknown as CSSStyleDeclaration)
@@ -824,7 +884,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const computed = window.getComputedStyle(textarea)
+      const computed = globalThis.getComputedStyle(textarea)
       const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
       const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
       expect(Number.parseFloat(textarea.style.height)).toBe(scrollHeight + borderTop + borderBottom)
@@ -2032,16 +2092,28 @@ describe('MentionsInput', () => {
       const originalRemove = window.removeEventListener
       const handlers: Partial<Record<string, EventListener>> = {}
       const addListener = jest
-        .spyOn(window, 'addEventListener')
-        .mockImplementation((type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
-          handlers[type] = listener as EventListener
-          return originalAdd.call(window, type, listener, options)
-        })
+        .spyOn(globalThis, 'addEventListener')
+        .mockImplementation(
+          (
+            type: string,
+            listener: EventListenerOrEventListenerObject,
+            options?: boolean | AddEventListenerOptions
+          ) => {
+            handlers[type] = listener as EventListener
+            return originalAdd.call(globalThis, type, listener, options)
+          }
+        )
       const removeListener = jest
-        .spyOn(window, 'removeEventListener')
-        .mockImplementation((type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) => {
-          return originalRemove.call(window, type, listener, options)
-        })
+        .spyOn(globalThis, 'removeEventListener')
+        .mockImplementation(
+          (
+            type: string,
+            listener: EventListenerOrEventListenerObject,
+            options?: boolean | EventListenerOptions
+          ) => {
+            return originalRemove.call(globalThis, type, listener, options)
+          }
+        )
 
       const bridgeElement = instance.renderMeasurementBridge() as React.ReactElement
       const { unmount: unmountBridge } = render(bridgeElement)
@@ -2060,14 +2132,14 @@ describe('MentionsInput', () => {
       expect(updatePosition.mock.calls.length).toBe(positionCalls + 1)
 
       act(() => {
-        window.dispatchEvent(new Event('resize'))
+        globalThis.dispatchEvent(new Event('resize'))
       })
 
       expect(syncScroll.mock.calls.length).toBeGreaterThan(syncCalls + 1)
       expect(updatePosition.mock.calls.length).toBeGreaterThan(positionCalls + 1)
 
       act(() => {
-        window.dispatchEvent(new Event('orientationchange'))
+        globalThis.dispatchEvent(new Event('orientationchange'))
       })
 
       expect(syncScroll.mock.calls.length).toBeGreaterThan(syncCalls + 2)

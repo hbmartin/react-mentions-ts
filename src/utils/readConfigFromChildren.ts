@@ -1,9 +1,9 @@
 import React, { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import type { MentionChildConfig, MentionComponentProps, MentionSerializer } from '../types'
-import Mention from '../Mention'
 import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
 import createMarkupSerializer from './createMarkupSerializer'
+import { isMentionElement } from './isMentionElement'
 import PLACEHOLDERS from './placeholders'
 
 /**
@@ -27,22 +27,12 @@ const generateMarkupForTrigger = (trigger: string | RegExp | undefined): string 
   return `${trigger}[${PLACEHOLDERS.display}](${PLACEHOLDERS.id})`
 }
 
-const isMentionElement = <Extra extends Record<string, unknown>>(
-  child: unknown
-): child is ReactElement<MentionComponentProps<Extra>> =>
-  React.isValidElement(child) &&
-  child.type === Mention &&
-  typeof child.props === 'object' &&
-  child.props !== null &&
-  'data' in child.props
-
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
 
 const collectMentionElements = <Extra extends Record<string, unknown>>(
   children: ReactNode
 ): ReactElement<MentionComponentProps<Extra>>[] =>
-  // eslint-disable-next-line code-complete/low-function-cohesion
   Children.toArray(children).flatMap((child) => {
     if (isReactFragment(child)) {
       return collectMentionElements<Extra>(child.props.children)
