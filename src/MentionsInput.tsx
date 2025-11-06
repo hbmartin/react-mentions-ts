@@ -46,6 +46,7 @@ import type {
   MentionSelectionState,
   MentionChildConfig,
   MentionsInputProps,
+  MentionsInputAnchorMode,
   MentionsInputState,
   MentionsInputClassNames,
   MentionsInputChangeTrigger,
@@ -192,6 +193,7 @@ const visuallyHiddenStyles: CSSProperties = {
 
 const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
   'singleLine',
+  'anchorMode',
   'suggestionsPlacement',
   'a11ySuggestionsListLabel',
   'value',
@@ -223,6 +225,7 @@ class MentionsInput<
   } = {
     singleLine: false,
     autoResize: false,
+    anchorMode: 'caret',
     suggestionsPlacement: 'below',
     onKeyDown: () => null,
     onSelect: () => null,
@@ -1603,6 +1606,8 @@ class MentionsInput<
   updateSuggestionsPosition = (): void => {
     const { caretPosition } = this.state
     const { suggestionsPlacement = 'below' } = this.props
+    const anchorMode: MentionsInputAnchorMode = this.props.anchorMode ?? 'caret'
+    const anchorToLeft = anchorMode === 'left'
     const resolvedPortalHost = this.resolvePortalHost()
 
     const suggestions = this.suggestionsElement
@@ -1617,7 +1622,7 @@ class MentionsInput<
     const caretOffsetParentRect = highlighter.getBoundingClientRect()
     const caretHeight = getComputedStyleLengthProp(highlighter, 'font-size')
     const viewportRelative = {
-      left: caretOffsetParentRect.left + caretPosition.left,
+      left: caretOffsetParentRect.left + (anchorToLeft ? 0 : caretPosition.left),
       top: caretOffsetParentRect.top + caretPosition.top + caretHeight,
     }
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
@@ -1636,7 +1641,9 @@ class MentionsInput<
       left -= getComputedStyleLengthProp(suggestions, 'margin-left')
       top -= getComputedStyleLengthProp(suggestions, 'margin-top')
       // take into account highlighter/textinput scrolling:
-      left -= highlighter.scrollLeft
+      if (!anchorToLeft) {
+        left -= highlighter.scrollLeft
+      }
       top -= highlighter.scrollTop
       // guard for mentions suggestions list clipped by window edges
       const maxLeft = Math.max(0, viewportWidth - width)
@@ -1655,10 +1662,12 @@ class MentionsInput<
       const containerWidth = container.offsetWidth
       const width = Math.min(desiredWidth, containerWidth)
       position.width = width
-      const left = caretPosition.left - highlighter.scrollLeft
+      const left = anchorToLeft ? 0 : caretPosition.left - highlighter.scrollLeft
       const top = caretPosition.top - highlighter.scrollTop
       // guard for mentions suggestions list clipped by right edge of window
-      if (left + width > containerWidth) {
+      if (anchorToLeft) {
+        position.left = 0
+      } else if (left + width > containerWidth) {
         position.right = 0
       } else {
         position.left = left
@@ -1679,7 +1688,8 @@ class MentionsInput<
       position.left === this.state.suggestionsPosition.left &&
       position.top === this.state.suggestionsPosition.top &&
       position.position === this.state.suggestionsPosition.position &&
-      position.width === this.state.suggestionsPosition.width
+      position.width === this.state.suggestionsPosition.width &&
+      position.right === this.state.suggestionsPosition.right
     ) {
       return
     }

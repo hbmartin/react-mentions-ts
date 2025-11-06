@@ -13,6 +13,7 @@ import AllowSpaceInQuery from './AllowSpaceInQuery'
 import AlphabetRegexTrigger from './AlphabetRegexTrigger'
 import MentionSelection from './MentionSelection'
 import AutoResize from './AutoResize'
+import LeftAnchored from './LeftAnchored'
 
 const users = [
   {
@@ -91,6 +92,7 @@ export default function Examples() {
       <Emojis data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SuggestionPortal data={users} />
       <CustomSuggestionsContainer data={users} />
+      <LeftAnchored data={users} />
     </div>
   )
 }
