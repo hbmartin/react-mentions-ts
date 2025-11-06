@@ -1851,7 +1851,7 @@ describe('MentionsInput', () => {
       const suggestions = document.createElement('div')
       const container = document.createElement('div')
       highlighter.style.fontSize = '18px'
-      suggestions.style.marginLeft = '5px'
+      suggestions.style.marginLeft = '0px'
       suggestions.style.marginTop = '7px'
       Object.defineProperty(highlighter, 'getBoundingClientRect', {
         value: () => ({
@@ -1871,6 +1871,10 @@ describe('MentionsInput', () => {
       instance.highlighterElement = highlighter
       instance.suggestionsElement = suggestions
       instance.containerElement = container
+      highlighter.scrollLeft = 5
+      highlighter.scrollTop = 3
+      Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
+      Object.defineProperty(container, 'offsetWidth', { value: 320, configurable: true })
 
       const setStateMock = jest.spyOn(instance, 'setState').mockImplementation((update, cb) => {
         const nextState =
@@ -1887,8 +1891,91 @@ describe('MentionsInput', () => {
       })
 
       expect(instance.state.suggestionsPosition.position).toBe('fixed')
-      expect(typeof instance.state.suggestionsPosition.left).toBe('number')
+      expect(instance.state.suggestionsPosition.left).toBe(9)
       expect(typeof instance.state.suggestionsPosition.top).toBe('number')
+
+      act(() => {
+        instance.state.suggestionsPosition = {}
+      })
+      Object.assign(instance.props, { anchorMode: 'left' })
+
+      act(() => {
+        instance.updateSuggestionsPosition()
+      })
+
+      expect(instance.state.suggestionsPosition.position).toBe('fixed')
+      expect(instance.state.suggestionsPosition.left).toBe(4)
+
+      highlighter.remove()
+      suggestions.remove()
+      container.remove()
+      setStateMock.mockRestore()
+      unmount()
+    })
+
+    it('anchors suggestions to the control edge when using anchorMode="left" outside portals.', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="" anchorMode="left">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      await waitFor(() => {
+        expect(ref.current).not.toBeNull()
+      })
+
+      const instance = ref.current as unknown as any
+      Object.defineProperty(instance, 'resolvePortalHost', {
+        value: () => null,
+        configurable: true,
+        writable: true,
+      })
+
+      const highlighter = document.createElement('div')
+      const suggestions = document.createElement('div')
+      const container = document.createElement('div')
+      highlighter.style.fontSize = '16px'
+      Object.defineProperty(highlighter, 'getBoundingClientRect', {
+        value: () => ({
+          left: 2,
+          top: 8,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+        }),
+      })
+      Object.defineProperty(highlighter, 'offsetWidth', { value: 180, configurable: true })
+      Object.defineProperty(container, 'offsetWidth', { value: 220, configurable: true })
+      Object.defineProperty(suggestions, 'offsetHeight', { value: 40, configurable: true })
+      document.body.append(highlighter)
+      document.body.append(suggestions)
+      document.body.append(container)
+
+      highlighter.scrollLeft = 14
+      highlighter.scrollTop = 5
+
+      instance.highlighterElement = highlighter
+      instance.suggestionsElement = suggestions
+      instance.containerElement = container
+      instance.state.caretPosition = { left: 32, top: 18 }
+      instance.state.suggestionsPosition = {}
+
+      const setStateMock = jest.spyOn(instance, 'setState').mockImplementation((update, cb) => {
+        const nextState =
+          typeof update === 'function' ? update(instance.state, instance.props) : update
+        Object.assign(instance.state, nextState)
+        cb?.()
+      })
+
+      act(() => {
+        instance.updateSuggestionsPosition()
+      })
+
+      expect(instance.state.suggestionsPosition.position).toBeUndefined()
+      expect(instance.state.suggestionsPosition.left).toBe(0)
+      expect(instance.state.suggestionsPosition.right).toBeUndefined()
 
       highlighter.remove()
       suggestions.remove()
@@ -1941,6 +2028,21 @@ describe('MentionsInput', () => {
       }
       ;(globalThis as any).ResizeObserver = MockResizeObserver
 
+      const originalAdd = window.addEventListener
+      const originalRemove = window.removeEventListener
+      const handlers: Partial<Record<string, EventListener>> = {}
+      const addListener = jest
+        .spyOn(window, 'addEventListener')
+        .mockImplementation((type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
+          handlers[type] = listener as EventListener
+          return originalAdd.call(window, type, listener, options)
+        })
+      const removeListener = jest
+        .spyOn(window, 'removeEventListener')
+        .mockImplementation((type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) => {
+          return originalRemove.call(window, type, listener, options)
+        })
+
       const bridgeElement = instance.renderMeasurementBridge() as React.ReactElement
       const { unmount: unmountBridge } = render(bridgeElement)
 
@@ -1957,10 +2059,32 @@ describe('MentionsInput', () => {
       expect(syncScroll.mock.calls.length).toBe(syncCalls + 1)
       expect(updatePosition.mock.calls.length).toBe(positionCalls + 1)
 
+      act(() => {
+        window.dispatchEvent(new Event('resize'))
+      })
+
+      expect(syncScroll.mock.calls.length).toBeGreaterThan(syncCalls + 1)
+      expect(updatePosition.mock.calls.length).toBeGreaterThan(positionCalls + 1)
+
+      act(() => {
+        window.dispatchEvent(new Event('orientationchange'))
+      })
+
+      expect(syncScroll.mock.calls.length).toBeGreaterThan(syncCalls + 2)
+      expect(updatePosition.mock.calls.length).toBeGreaterThan(positionCalls + 2)
+
       unmountBridge()
       for (const observer of observers) {
         expect(observer.disconnect).toHaveBeenCalled()
       }
+      expect(handlers.resize).toBeDefined()
+      expect(handlers.orientationchange).toBeDefined()
+      expect(addListener).toHaveBeenCalledWith('resize', handlers.resize)
+      expect(addListener).toHaveBeenCalledWith('orientationchange', handlers.orientationchange)
+      expect(removeListener).toHaveBeenCalledWith('resize', handlers.resize)
+      expect(removeListener).toHaveBeenCalledWith('orientationchange', handlers.orientationchange)
+      addListener.mockRestore()
+      removeListener.mockRestore()
       ;(globalThis as any).ResizeObserver = originalResizeObserver
       unmount()
     })

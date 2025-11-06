@@ -171,6 +171,8 @@ export interface CaretCoordinates {
   left: number
 }
 
+export type MentionsInputAnchorMode = 'caret' | 'left'
+
 export interface SuggestionsPosition {
   position?: 'absolute' | 'fixed'
   left?: number
@@ -194,6 +196,7 @@ export interface MentionsInputProps<Extra extends Record<string, unknown> = Reco
     'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
   > {
   a11ySuggestionsListLabel?: string
+  anchorMode?: MentionsInputAnchorMode
   suggestionsPlacement?: 'auto' | 'above' | 'below'
   customSuggestionsContainer?: (children: ReactElement) => ReactElement
   disabled?: boolean
