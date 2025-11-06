@@ -2087,6 +2087,24 @@ const MeasurementBridge = ({
   )
 
   useLayoutEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const handleViewportChange = () => {
+      updateAll()
+    }
+
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('orientationchange', handleViewportChange)
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('orientationchange', handleViewportChange)
+    }
+  }, [updateAll])
+
+  useLayoutEffect(() => {
     if (!input) {
       return undefined
     }
