@@ -2,7 +2,7 @@
 
 import { spawn } from 'node:child_process'
 
-const child = spawn('vite', ['--config', 'demo/vite.config.ts'], {
+const child = spawn('yarn', ['vite', '--config', 'demo/vite.config.ts'], {
   stdio: 'inherit',
   env: {
     ...process.env,
