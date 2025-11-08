@@ -37,7 +37,7 @@ interface HighlighterProps {
 
 // Note: singleLine intentionally overrides whitespace/break behavior
 const highlighterStyles = cva(
-  'box-border w-full overflow-hidden border border-transparent text-start text-transparent pointer-events-none',
+  'box-border w-full overflow-hidden text-start text-transparent pointer-events-none',
   {
     variants: {
       singleLine: {

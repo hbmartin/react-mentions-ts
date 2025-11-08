@@ -117,8 +117,7 @@ const inlineSuggestionStyles = cva(
   'absolute inline-block pointer-events-none [color:inherit] opacity-80 whitespace-pre z-[2] [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]'
 )
 const inlineSuggestionTextStyles = 'relative inline-block items-baseline text-muted-foreground'
-const inlineSuggestionPrefixStyles =
-  'absolute right-full top-0 whitespace-pre invisible pointer-events-none'
+const inlineSuggestionPrefixStyles = 'sr-only'
 const inlineSuggestionSuffixStyles = 'whitespace-pre text-muted-foreground'
 
 const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {

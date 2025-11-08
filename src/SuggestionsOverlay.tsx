@@ -46,10 +46,10 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
 }
 
 const overlayStyles = cva(
-  'z-[100] mt-3 w-full min-w-[16rem] oborder border-border bg-popover backdrop-blur supports-[backdrop-filter]:bg-popover/95'
+  'z-[100] mt-3 w-full min-w-[16rem] border border-border bg-popover backdrop-blur supports-[backdrop-filter]:bg-popover/95'
 )
 const listStyles =
-  'm-0 max-h-64 list-none divide-y divide-border scroll-py-1 p-0 focus:outline-none'
+  'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
 
 function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
