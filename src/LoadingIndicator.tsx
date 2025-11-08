@@ -12,7 +12,10 @@ const containerStyles = 'flex justify-center py-4'
 const spinnerStyles = 'flex items-center gap-2 text-primary'
 const spinnerDotStyles = 'inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current'
 
-const dotDelays = [0, 1, 2, 3, 4]
+const dotAnimationStyles = [0, 1, 2, 3, 4].map((delay) => ({
+  delay,
+  style: { animationDelay: `${String(delay * 0.1)}s` },
+}))
 
 function LoadingIndicator({
   className,
@@ -30,11 +33,11 @@ function LoadingIndicator({
       onMouseDown={onMouseDown}
     >
       <div className={cn(spinnerStyles, spinnerClassName)}>
-        {dotDelays.map((delay) => (
+        {dotAnimationStyles.map(({ delay, style }) => (
           <span
             key={delay}
             className={cn(spinnerDotStyles, spinnerElementClassName)}
-            style={{ animationDelay: `${String(delay * 0.1)}s` }}
+            style={style}
           />
         ))}
       </div>

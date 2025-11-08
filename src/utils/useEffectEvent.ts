@@ -7,6 +7,7 @@ const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : us
  * Polyfill for the experimental React useEffectEvent hook.
  * Ensures a stable callback reference that always points to the latest handler.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useEffectEvent<T extends (...args: any[]) => any>(handler: T): T {
   const handlerRef = useRef<T | null>(null)
 
@@ -20,6 +21,7 @@ export function useEffectEvent<T extends (...args: any[]) => any>(handler: T): T
       if (current === null) {
         throw new Error('useEffectEvent callback executed before the handler was assigned.')
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return current(...args)
     }) as T,
     []

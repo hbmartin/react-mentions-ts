@@ -95,7 +95,7 @@ describe('#getSubstringIndex', () => {
   })
 
   it('skips characters gracefully when String#codePointAt reports undefined', () => {
-    const haystackWrapper = new String('abc')
+    const haystackWrapper = 'abc'
     const codePointAtMock = jest.fn(function (this: string, pos: number) {
       if (pos === 1) {
         return undefined

@@ -16,6 +16,7 @@ import globals from 'globals'
 import { configs as tsConfigs } from 'typescript-eslint'
 import eslintPluginSecurity from 'eslint-plugin-security'
 import packageJson from 'eslint-plugin-package-json'
+import reactPerfPlugin from 'eslint-plugin-react-perf'
 
 export default defineConfig([
   globalIgnores([
@@ -48,6 +49,7 @@ export default defineConfig([
       jsxA11y.flatConfigs.recommended,
       eslintPluginSecurity.configs.recommended,
       packageJson.configs.recommended,
+      reactPerfPlugin.configs.flat.all,
     ],
     plugins: {
       'code-complete': codeComplete,
@@ -55,6 +57,7 @@ export default defineConfig([
       'unused-imports': unusedImports,
       jest: jestPlugin,
       react: reactPlugin,
+      'react-perf': reactPerfPlugin,
     },
     languageOptions: {
       ecmaVersion: 2023,
@@ -140,6 +143,7 @@ export default defineConfig([
       'unicorn/no-array-reduce': 'off',
       'unicorn/no-null': 'off',
       'unicorn/prefer-string-raw': 'off',
+      'unicorn/consistent-destructuring': 'off',
 
       'sonarjs/no-dead-store': 'error',
       'sonarjs/void-use': 'off',
@@ -209,6 +213,7 @@ export default defineConfig([
       'react/no-unused-prop-types': 'error',
       'react/no-unused-state': 'error',
       'react/prefer-stateless-function': 'warn',
+      'react/jsx-no-constructed-context-values': 'error',
 
       // React consistency
       'react/jsx-boolean-value': ['error', 'never'],
@@ -219,10 +224,12 @@ export default defineConfig([
       // Hooks rules
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
+      'jsx-a11y/no-noninteractive-element-interactions': 'warn',
 
       // === CODE QUALITY ===
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/ban-ts-comment': 'warn',
+      '@typescript-eslint/no-unnecessary-condition': 'warn',
       '@typescript-eslint/no-unnecessary-type-parameters': 'off',
       '@typescript-eslint/no-confusing-void-expression': 'off',
       '@typescript-eslint/restrict-template-expressions': [
@@ -264,6 +271,11 @@ export default defineConfig([
       '@typescript-eslint/no-unsafe-member-access': 'off',
       'code-complete/no-boolean-params': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
+      'unused-imports/no-unused-vars': 'off',
+      '@typescript-eslint/restrict-plus-operands': 'off',
+      'react-perf/jsx-no-new-array-as-prop': 'off',
+      'react-perf/jsx-no-new-function-as-prop': 'off',
+      'react-perf/jsx-no-new-object-as-prop': 'off',
     },
   },
 ])
