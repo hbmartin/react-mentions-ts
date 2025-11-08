@@ -18,8 +18,8 @@ interface SuggestionProps<Extra extends Record<string, unknown> = Record<string,
 }
 
 const suggestionItemBase =
-  'flex w-full cursor-pointer select-none items-center gap-2 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted data-[focused=true]:bg-primary/10 data-[focused=true]:text-primary'
-const suggestionDisplayStyles = 'inline-flex items-center gap-2'
+  'cursor-pointer select-none text-sm text-muted-foreground transition-colors hover:bg-muted data-[focused=true]:bg-primary/10 data-[focused=true]:text-primary'
+const suggestionDisplayStyles = 'inline-block'
 const suggestionHighlightStyles = 'font-semibold text-primary'
 
 function Suggestion<Extra extends Record<string, unknown> = Record<string, unknown>>({
