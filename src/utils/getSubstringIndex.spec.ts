@@ -95,6 +95,7 @@ describe('#getSubstringIndex', () => {
   })
 
   it('skips characters gracefully when String#codePointAt reports undefined', () => {
+    // eslint-disable-next-line sonarjs/no-primitive-wrappers, unicorn/new-for-builtins
     const haystackWrapper = new String('abc')
     const codePointAtMock = jest.fn(function (this: string, pos: number) {
       if (pos === 1) {

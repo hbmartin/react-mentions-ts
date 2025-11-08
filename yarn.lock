@@ -1720,6 +1720,13 @@
     "@types/babel__core" "^7.20.5"
     react-refresh "^0.18.0"
 
+"@welldone-software/why-did-you-render@^10.0.1":
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/@welldone-software/why-did-you-render/-/why-did-you-render-10.0.1.tgz#4513c1883add0496b98bcdcdcd243ff10c0f5ece"
+  integrity sha512-tMgGkt30iVYeLMUKExNmtm019QgyjLtA7lwB0QAizYNEuihlCG2eoAWBBaz/bDeI7LeqAJ9msC6hY3vX+JB97g==
+  dependencies:
+    lodash "^4"
+
 acorn-jsx@^5.3.2:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"
@@ -2850,6 +2857,11 @@ eslint-plugin-react-hooks@^7.0.1:
     hermes-parser "^0.25.1"
     zod "^3.25.0 || ^4.0.0"
     zod-validation-error "^3.5.0 || ^4.0.0"
+
+eslint-plugin-react-perf@^3.3.3:
+  version "3.3.3"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-react-perf/-/eslint-plugin-react-perf-3.3.3.tgz#29f97ab494fff18dc5e6ec34b056d9a21a86ee71"
+  integrity sha512-EzPdxsRJg5IllCAH9ny/3nK7sv9251tvKmi/d3Ouv5KzI8TB3zNhzScxL9wnh9Hvv8GYC5LEtzTauynfOEYiAw==
 
 eslint-plugin-react-refresh@^0.4.24:
   version "0.4.24"
@@ -4468,6 +4480,11 @@ lodash.sortby@^4.7.0:
   version "4.7.0"
   resolved "https://registry.yarnpkg.com/lodash.sortby/-/lodash.sortby-4.7.0.tgz#edd14c824e2cc9c1e0b0a1b42bb5210516a42438"
   integrity sha512-HDWXG8isMntAyRF5vZ7xKuEvOhT4AhlRt/3czTSjvGUxjYCBVRQY48ViDHyfYz9VIoBkW4TMGQNapx+l3RUwdA==
+
+lodash@^4:
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
+  integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
 loose-envify@^1.4.0:
   version "1.4.0"

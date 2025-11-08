@@ -544,7 +544,7 @@ class MentionsInput<
     this.containerElement = el
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
+  // eslint-disable-next-line code-complete/low-function-cohesion, sonarjs/cognitive-complexity
   getInputProps = (): InputComponentProps => {
     const { readOnly, disabled, singleLine } = this.props
 
@@ -662,6 +662,7 @@ class MentionsInput<
     }
   }
 
+  // eslint-disable-next-line code-complete/low-function-cohesion
   private readonly resetTextareaHeight = (): void => {
     const hasTextarea =
       typeof HTMLTextAreaElement !== 'undefined' && this.inputElement instanceof HTMLTextAreaElement
@@ -679,6 +680,7 @@ class MentionsInput<
       return
     }
 
+    // eslint-disable-next-line code-complete/low-function-cohesion
     const measure = () => {
       const element = this.inputElement
       if (
@@ -1602,7 +1604,7 @@ class MentionsInput<
     })
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
+  // eslint-disable-next-line code-complete/low-function-cohesion, sonarjs/cognitive-complexity
   updateSuggestionsPosition = (): void => {
     const { caretPosition } = this.state
     const { suggestionsPlacement = 'below' } = this.props
@@ -2078,13 +2080,10 @@ const MeasurementBridge = ({
     updateAll()
   }, [])
 
-  useLayoutEffect(() => observe(container, updateAll), [container, observe, updateAll])
-  useLayoutEffect(() => observe(highlighter, updateAll), [highlighter, observe, updateAll])
-  useLayoutEffect(() => observe(input, updateAll), [input, observe, updateAll])
-  useLayoutEffect(
-    () => observe(suggestions, updateSuggestions),
-    [observe, suggestions, updateSuggestions]
-  )
+  useLayoutEffect(() => observe(container, updateAll), [container])
+  useLayoutEffect(() => observe(highlighter, updateAll), [highlighter])
+  useLayoutEffect(() => observe(input, updateAll), [input])
+  useLayoutEffect(() => observe(suggestions, updateSuggestions), [suggestions])
 
   useLayoutEffect(() => {
     if (globalThis.window === undefined) {
@@ -2102,7 +2101,7 @@ const MeasurementBridge = ({
       window.removeEventListener('resize', handleViewportChange)
       globalThis.removeEventListener('orientationchange', handleViewportChange)
     }
-  }, [updateAll])
+  }, [])
 
   useLayoutEffect(() => {
     if (!input) {

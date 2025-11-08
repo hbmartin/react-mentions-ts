@@ -21,7 +21,7 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
 
   const childNodes = Children.toArray(children)
 
-  for (const [childIndex, _child] of childNodes.entries()) {
+  for (const [childIndex] of childNodes.entries()) {
     const entry = suggestionsMap[childIndex]
     if (!entry) {
       continue
@@ -37,7 +37,7 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
   const remainingIndices = Object.keys(suggestionsMap)
     .map((key) => Number.parseInt(key, 10))
     .filter((index) => !Number.isNaN(index) && !handledIndices.has(index))
-    .sort((a, b) => a - b)
+    .toSorted((a, b) => a - b)
 
   for (const index of remainingIndices) {
     const entry = suggestionsMap[index]

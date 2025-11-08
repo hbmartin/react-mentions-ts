@@ -51,12 +51,10 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     return String(suggestionId)
   }
 
-  const renderHighlightedDisplay = (display: string): React.ReactNode => {
-    if (suggestion.highlights === undefined || suggestion.highlights.length === 0) {
-      return <span className={displayClassNameResolved}>{display}</span>
-    }
-
-    return (
+  const renderHighlightedDisplay = (display: string) => {
+    return suggestion.highlights === undefined || suggestion.highlights.length === 0 ? (
+      <span className={displayClassNameResolved}>{display}</span>
+    ) : (
       <span className={displayClassNameResolved} key={`highlighted-display-${id}`}>
         {suggestion.highlights.map((highlight, index) => (
           <React.Fragment key={`highlight-${highlight.start}-${highlight.end}`}>
@@ -77,7 +75,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     )
   }
 
-  const renderContent = (): React.ReactNode => {
+  const renderContent = () => {
     const display = getDisplay()
     const highlightedDisplay = renderHighlightedDisplay(display)
 

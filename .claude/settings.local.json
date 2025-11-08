@@ -15,7 +15,9 @@
       "Bash(yarn test:*)",
       "WebFetch(domain:codilime.com)",
       "WebFetch(domain:www.testim.io)",
-      "WebFetch(domain:www.angularminds.com)"
+      "WebFetch(domain:www.angularminds.com)",
+      "Bash(find:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
