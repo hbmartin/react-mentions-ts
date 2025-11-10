@@ -1436,6 +1436,8 @@ class MentionsInput<
     )
 
     this.props.onChange?.(ev)
+
+    this.requestHighlighterScrollSync()
   }
 
   // Handle input element's select event
