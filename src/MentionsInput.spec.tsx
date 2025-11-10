@@ -1950,6 +1950,30 @@ describe('MentionsInput', () => {
       unmount()
     })
 
+    it('processes queued highlighter recompute requests sequentially.', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      await waitFor(() => {
+        expect(ref.current).not.toBeNull()
+      })
+
+      const instance = ref.current as unknown as any
+
+      act(() => {
+        instance.scheduleHighlighterRecompute()
+        instance.scheduleHighlighterRecompute()
+      })
+
+      await waitFor(() => expect(instance.state.highlighterRecomputeVersion).toBe(2))
+
+      unmount()
+    })
+
     it('positions suggestions using computed styles.', async () => {
       const ref = React.createRef<MentionsInput>()
       const { unmount } = render(

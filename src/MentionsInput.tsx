@@ -11,7 +11,6 @@ import React, { Children, useLayoutEffect } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
-import Mention from './Mention'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
@@ -31,6 +30,7 @@ import {
   cn,
 } from './utils'
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
+import { isMentionElement } from './utils/isMentionElement'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import readConfigFromChildren from './utils/readConfigFromChildren'
 import { useEffectEvent } from './utils/useEffectEvent'
@@ -243,6 +243,7 @@ class MentionsInput<
   private readonly defaultSuggestionsPortalHost: HTMLElement | null
   private _isScrolling = false
   private _pendingHighlighterRecompute = false
+  private _queuedHighlighterRecompute = false
   private _didUnmount = false
   private _scrollSyncFrame: number | null = null
   private _autoResizeFrame: number | null = null
@@ -324,17 +325,8 @@ class MentionsInput<
 
     // eslint-disable-next-line code-complete/low-function-cohesion
     React.Children.forEach(this.props.children, (child) => {
-      if (!React.isValidElement(child)) {
-        throw new Error(
-          'MentionsInput only accepts Mention components as children. Found invalid element.'
-        )
-      }
-      if (child.type !== Mention) {
-        throw new Error(
-          `MentionsInput only accepts Mention components as children. Found: ${
-            typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
-          }`
-        )
+      if (!isMentionElement(child)) {
+        return
       }
 
       const trigger =
@@ -522,6 +514,7 @@ class MentionsInput<
     this.cancelScheduledFrame('_scrollSyncFrame')
     this.cancelScheduledFrame('_autoResizeFrame')
     this._pendingHighlighterRecompute = false
+    this._queuedHighlighterRecompute = false
     this._didUnmount = true
   }
 
@@ -936,12 +929,12 @@ class MentionsInput<
   }
 
   scheduleHighlighterRecompute = (): void => {
-    // Each queued setState updater runs in order, so if this fires twice before the first update finishes
-    // we'll end up at highlighterRecomputeVersion + 2, not +1. The _pendingHighlighterRecompute flag stops
-    // that, so the highlighter only recomputes once per render cycle. Paths like handleCaretPositionChange
-    // and updateHighlighterScroll can trigger the scheduler multiple times in rapid succession.
-    // React's batching trims render passes, but it won't deduplicate the updates.
-    if (this._pendingHighlighterRecompute || this._didUnmount) {
+    if (this._didUnmount) {
+      return
+    }
+
+    if (this._pendingHighlighterRecompute) {
+      this._queuedHighlighterRecompute = true
       return
     }
 
@@ -952,6 +945,10 @@ class MentionsInput<
       }),
       () => {
         this._pendingHighlighterRecompute = false
+        if (this._queuedHighlighterRecompute) {
+          this._queuedHighlighterRecompute = false
+          this.scheduleHighlighterRecompute()
+        }
       }
     )
   }
