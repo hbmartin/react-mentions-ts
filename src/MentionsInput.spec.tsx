@@ -63,6 +63,22 @@ describe('MentionsInput', () => {
     expect(textarea).toHaveAttribute('spellcheck', 'false')
   })
 
+  it('aligns whitespace and break handling between the textarea and highlighter layers.', () => {
+    const { container } = render(
+      <MentionsInput value="">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    const highlighter = container.querySelector('[data-slot="highlighter"]')
+    expect(highlighter).not.toBeNull()
+    expect(textarea.className).toEqual(expect.stringContaining('whitespace-pre-wrap'))
+    expect(textarea.className).toEqual(expect.stringContaining('break-words'))
+    expect(highlighter!.className).toEqual(expect.stringContaining('whitespace-pre-wrap'))
+    expect(highlighter!.className).toEqual(expect.stringContaining('break-words'))
+  })
+
   it('should allow enabling spell checking via the spellCheck prop.', () => {
     render(
       <MentionsInput value="" spellCheck>

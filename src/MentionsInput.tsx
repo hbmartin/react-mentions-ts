@@ -11,6 +11,7 @@ import React, { Children, useLayoutEffect } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
+import Mention from './Mention'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
@@ -30,7 +31,6 @@ import {
   cn,
 } from './utils'
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
-import { isMentionElement } from './utils/isMentionElement'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import readConfigFromChildren from './utils/readConfigFromChildren'
 import { useEffectEvent } from './utils/useEffectEvent'
@@ -108,7 +108,7 @@ const inputStyles = cva(
     variants: {
       singleLine: {
         true: '',
-        false: 'h-full overflow-hidden resize-none',
+        false: 'h-full overflow-hidden resize-none whitespace-pre-wrap break-words',
       },
     },
   }
@@ -324,8 +324,17 @@ class MentionsInput<
 
     // eslint-disable-next-line code-complete/low-function-cohesion
     React.Children.forEach(this.props.children, (child) => {
-      if (!isMentionElement(child)) {
-        return
+      if (!React.isValidElement(child)) {
+        throw new Error(
+          'MentionsInput only accepts Mention components as children. Found invalid element.'
+        )
+      }
+      if (child.type !== Mention) {
+        throw new Error(
+          `MentionsInput only accepts Mention components as children. Found: ${
+            typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
+          }`
+        )
       }
 
       const trigger =
