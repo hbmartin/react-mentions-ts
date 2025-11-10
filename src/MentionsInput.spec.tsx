@@ -1442,6 +1442,46 @@ describe('MentionsInput', () => {
       })
     })
 
+    it('keeps the highlighter selection map in sync with the latest value', async () => {
+      const initialValue = '@[First](first) @[Second](second)'
+      const updatedValue =
+        '@[First](first) akjsakshkadjkahsdkahsdkhajakhsdkhajhsdkahand @[Second](second)'
+
+      const { container, rerender } = render(
+        <MentionsInput value={initialValue}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      fireEvent.focus(textarea)
+
+      const moveCaretInside = async (label: string) => {
+        const displayIndex = textarea.value.indexOf(label)
+        expect(displayIndex).toBeGreaterThanOrEqual(0)
+        const caretIndex = displayIndex + Math.min(2, label.length - 1)
+        textarea.setSelectionRange(caretIndex, caretIndex)
+        fireEvent.select(textarea)
+        await waitFor(() => {
+          const highlighted = container.querySelector(
+            '[data-slot="highlighter"] [data-mention-selection]'
+          )
+          expect(highlighted).not.toBeNull()
+          expect(highlighted).toHaveTextContent(label)
+        })
+      }
+
+      await moveCaretInside('Second')
+
+      rerender(
+        <MentionsInput value={updatedValue}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      await moveCaretInside('Second')
+    })
+
     it('refreshes cached mentions when the value prop changes', async () => {
       const onMentionSelectionChange = jest.fn()
       const initialValue = '@[First](first) remainder'
