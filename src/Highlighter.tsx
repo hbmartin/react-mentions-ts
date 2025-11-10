@@ -50,6 +50,12 @@ const highlighterStyles = cva(
 
 const substringStyles = 'text-transparent inline [white-space:inherit]'
 const caretStyles = 'relative inline-block h-0 w-0 align-baseline'
+const singleLineContentWrapperStyle: CSSProperties = {
+  display: 'inline-block',
+  whiteSpace: 'inherit',
+  width: 'max-content',
+  minWidth: '100%',
+}
 
 // eslint-disable-next-line code-complete/low-function-cohesion
 function Highlighter({
@@ -208,16 +214,7 @@ function Highlighter({
     resultComponents.push(renderCaretMarker(), ...components)
   }
   const content = singleLine ? (
-    <div
-      style={{
-        display: 'inline-block',
-        whiteSpace: 'inherit',
-        width: 'max-content',
-        minWidth: '100%',
-      }}
-    >
-      {resultComponents}
-    </div>
+    <div style={singleLineContentWrapperStyle}>{resultComponents}</div>
   ) : (
     resultComponents
   )
