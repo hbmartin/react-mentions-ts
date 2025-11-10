@@ -1749,7 +1749,14 @@ class MentionsInput<
       }
     }
 
-    if (prevScrollLeft !== nextScrollLeft || prevScrollTop !== nextScrollTop || heightChanged) {
+    const typographyUpdated = mirrorInputTypographicStyles(input, highlighter)
+
+    if (
+      prevScrollLeft !== nextScrollLeft ||
+      prevScrollTop !== nextScrollTop ||
+      heightChanged ||
+      typographyUpdated
+    ) {
       this.scheduleHighlighterRecompute()
     }
   }
@@ -2174,7 +2181,7 @@ const mirrorInputTypographicStyles = (
       typeof computed.getPropertyValue === 'function'
         ? computed.getPropertyValue(property)
         : // Older JSDOM mocks may not include getPropertyValue; best-effort fallback
-          ((computed as Record<string, string | undefined>)[property] ?? '')
+          ((computed as unknown as Record<string, string | undefined>)[property] ?? '')
     if (nextValue && highlighter.style.getPropertyValue(property) !== nextValue) {
       highlighter.style.setProperty(property, nextValue)
       didUpdate = true

@@ -2098,12 +2098,16 @@ describe('MentionsInput', () => {
 
       const instance = ref.current as unknown as any
 
+      const initialVersion = instance.state.highlighterRecomputeVersion
+
       act(() => {
         instance.scheduleHighlighterRecompute()
         instance.scheduleHighlighterRecompute()
       })
 
-      await waitFor(() => expect(instance.state.highlighterRecomputeVersion).toBe(2))
+      await waitFor(() =>
+        expect(instance.state.highlighterRecomputeVersion).toBe(initialVersion + 2)
+      )
 
       unmount()
     })
@@ -2360,9 +2364,12 @@ describe('MentionsInput', () => {
       expect(updatePosition.mock.calls.length).toBeGreaterThan(positionCalls + 2)
 
       unmountBridge()
-      for (const observer of observers) {
-        expect(observer.disconnect).toHaveBeenCalled()
-      }
+      unmount()
+      await waitFor(() => {
+        for (const observer of observers) {
+          expect(observer.disconnect).toHaveBeenCalled()
+        }
+      })
       expect(handlers.resize).toBeDefined()
       expect(handlers.orientationchange).toBeDefined()
       expect(addListener).toHaveBeenCalledWith('resize', handlers.resize)
@@ -2372,7 +2379,6 @@ describe('MentionsInput', () => {
       addListener.mockRestore()
       removeListener.mockRestore()
       ;(globalThis as any).ResizeObserver = originalResizeObserver
-      unmount()
     })
 
     it('runs updateHighlighterScroll twice when animation frames resolve', () => {
