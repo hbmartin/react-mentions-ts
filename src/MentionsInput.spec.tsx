@@ -63,6 +63,22 @@ describe('MentionsInput', () => {
     expect(textarea).toHaveAttribute('spellcheck', 'false')
   })
 
+  it('aligns whitespace and break handling between the textarea and highlighter layers.', () => {
+    const { container } = render(
+      <MentionsInput value="">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    const highlighter = container.querySelector('[data-slot="highlighter"]')
+    expect(highlighter).not.toBeNull()
+    expect(textarea.className).toEqual(expect.stringContaining('whitespace-pre-wrap'))
+    expect(textarea.className).toEqual(expect.stringContaining('break-words'))
+    expect(highlighter!.className).toEqual(expect.stringContaining('whitespace-pre-wrap'))
+    expect(highlighter!.className).toEqual(expect.stringContaining('break-words'))
+  })
+
   it('should allow enabling spell checking via the spellCheck prop.', () => {
     render(
       <MentionsInput value="" spellCheck>
@@ -170,7 +186,7 @@ describe('MentionsInput', () => {
 
     it('should throw when children include non-element content.', () => {
       expect(() => render(<MentionsInput value="">text child</MentionsInput>)).toThrow(
-        'MentionsInput only accepts Mention components as children. Found invalid element.'
+        'MentionsInput only accepts Mention components as children. Found: unknown component'
       )
     })
 
@@ -1930,6 +1946,30 @@ describe('MentionsInput', () => {
         instance.handleCompositionEnd()
       })
       expect(instance._isComposing).toBe(false)
+
+      unmount()
+    })
+
+    it('processes queued highlighter recompute requests sequentially.', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      await waitFor(() => {
+        expect(ref.current).not.toBeNull()
+      })
+
+      const instance = ref.current as unknown as any
+
+      act(() => {
+        instance.scheduleHighlighterRecompute()
+        instance.scheduleHighlighterRecompute()
+      })
+
+      await waitFor(() => expect(instance.state.highlighterRecomputeVersion).toBe(2))
 
       unmount()
     })

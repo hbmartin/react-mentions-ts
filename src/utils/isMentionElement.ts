@@ -1,12 +1,11 @@
 import { isValidElement, type ReactElement } from 'react'
-import type { MentionComponentProps } from '../types'
-import Mention from '../Mention'
+import { isDataSource, type MentionComponentProps } from '../types'
 
 export const isMentionElement = <Extra extends Record<string, unknown>>(
   child: unknown
 ): child is ReactElement<MentionComponentProps<Extra>> =>
   isValidElement(child) &&
-  child.type === Mention &&
   typeof child.props === 'object' &&
   child.props !== null &&
-  'data' in child.props
+  'data' in child.props &&
+  isDataSource(child.props.data)
