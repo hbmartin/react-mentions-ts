@@ -573,7 +573,7 @@ class MentionsInput<
       background: 'transparent',
     }
 
-    if (!singleLine && isMobileSafari) {
+    if (!singleLine && isMobileSafari()) {
       inlineStyle.marginTop = 1
       inlineStyle.marginLeft = -3
     }
@@ -1130,15 +1130,6 @@ class MentionsInput<
     }
 
     return { selections, selectionMap }
-  }
-
-  private readonly getCurrentMentionSelectionDetails = (): MentionSelectionComputation<Extra> => {
-    return this.computeMentionSelectionDetails(
-      this.state.cachedMentions,
-      this.state.config,
-      this.state.selectionStart,
-      this.state.selectionEnd
-    )
   }
 
   private readonly getCurrentMentionSelectionMap = (): Record<string, MentionSelectionState> => {
@@ -2051,7 +2042,7 @@ const getComputedStyleLengthProp = (forElement: Element, propertyName: string): 
   return Number.isFinite(length) ? length : 0
 }
 
-const isMobileSafari =
+const isMobileSafari = (): boolean =>
   typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent)
 
 interface MeasurementBridgeProps {
