@@ -2449,5 +2449,32 @@ describe('MentionsInput', () => {
 
       unmount()
     })
+
+    it('mirrors typographic styles from the input onto the highlighter overlay', () => {
+      const styleMap: Record<string, string> = {
+        'line-height': '28px',
+        'letter-spacing': '0.12em',
+      }
+
+      const getComputedStyleSpy = jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
+        getPropertyValue: (prop: string) => styleMap[prop] ?? '',
+      } as unknown as CSSStyleDeclaration)
+
+      const { container, unmount } = render(
+        <MentionsInput value="styled line height">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const input = screen.getByRole('combobox') as HTMLTextAreaElement
+      const highlighter = container.querySelector('[data-slot="highlighter"]') as HTMLDivElement
+
+      expect(getComputedStyleSpy).toHaveBeenCalledWith(input)
+      expect(highlighter.style.lineHeight).toBe('28px')
+      expect(highlighter.style.letterSpacing).toBe('0.12em')
+
+      getComputedStyleSpy.mockRestore()
+      unmount()
+    })
   })
 })

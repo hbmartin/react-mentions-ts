@@ -402,6 +402,10 @@ class MentionsInput<
     this.updateSuggestionsPosition()
 
     this.resetTextareaHeight()
+
+    if (this.inputElement && this.highlighterElement) {
+      mirrorInputTypographicStyles(this.inputElement, this.highlighterElement)
+    }
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -1440,7 +1444,6 @@ class MentionsInput<
     this.requestHighlighterScrollSync()
   }
 
-  // Handle input element's select event
   handleSelect = (ev: SyntheticEvent<InputElement>) => {
     this.syncSelectionFromInput('select')
     this.props.onSelect?.(ev)
@@ -2135,6 +2138,50 @@ const MeasurementBridge = ({
   }, [input])
 
   return null
+}
+
+const TYPOGRAPHIC_STYLE_PROPS = [
+  'font-family',
+  'font-size',
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'font-stretch',
+  'font-feature-settings',
+  'font-variation-settings',
+  'letter-spacing',
+  'line-height',
+  'text-transform',
+  'text-indent',
+  'text-align',
+  'word-spacing',
+] as const
+
+// eslint-disable-next-line code-complete/low-function-cohesion
+const mirrorInputTypographicStyles = (
+  input: InputElement,
+  highlighter: HTMLDivElement
+): boolean => {
+  if (typeof globalThis.getComputedStyle !== 'function') {
+    return false
+  }
+
+  const computed = globalThis.getComputedStyle(input)
+  let didUpdate = false
+
+  for (const property of TYPOGRAPHIC_STYLE_PROPS) {
+    const nextValue =
+      typeof computed.getPropertyValue === 'function'
+        ? computed.getPropertyValue(property)
+        : // Older JSDOM mocks may not include getPropertyValue; best-effort fallback
+          ((computed as Record<string, string | undefined>)[property] ?? '')
+    if (nextValue && highlighter.style.getPropertyValue(property) !== nextValue) {
+      highlighter.style.setProperty(property, nextValue)
+      didUpdate = true
+    }
+  }
+
+  return didUpdate
 }
 
 export default MentionsInput
