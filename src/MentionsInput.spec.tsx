@@ -200,6 +200,28 @@ describe('MentionsInput', () => {
         )
       ).toThrow('MentionsInput does not support Mention children with duplicate triggers: @.')
     })
+
+    it('should support custom Mention components that wrap the base Mention.', () => {
+      const MyMention = (props: React.ComponentProps<typeof Mention>) => (
+        <Mention className="coolStyle" {...props} />
+      )
+
+      const mentionId = data[0].id
+      const mentionDisplay = data[0].value
+      const valueWithMention = `@[${mentionDisplay}](${mentionId})`
+
+      const { container } = render(
+        <MentionsInput value={valueWithMention}>
+          <MyMention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      expect(consoleError).not.toHaveBeenCalled()
+
+      const renderedMention = container.querySelector('[data-slot="highlighter"] .coolStyle')
+      expect(renderedMention).not.toBeNull()
+      expect(renderedMention?.textContent).toContain(mentionDisplay)
+    })
   })
 
   it('should show a list of suggestions once the trigger key has been entered.', async () => {
@@ -914,6 +936,103 @@ describe('MentionsInput', () => {
 
       expect(textarea.style.height).toBe('')
       expect(textarea.style.overflowY).toBe('')
+    })
+
+    it('applies mobile Safari offsets in multiline mode', () => {
+      const originalUA = window.navigator.userAgent
+      Object.defineProperty(window.navigator, 'userAgent', {
+        configurable: true,
+        value: 'iPhone',
+      })
+
+      try {
+        const { container } = render(
+          <MentionsInput autoResize value="draft" onMentionsChange={() => undefined}>
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+
+        const textarea = container.querySelector('[data-slot="input"]') as HTMLTextAreaElement
+        expect(textarea.style.marginTop).toBe('1px')
+        expect(textarea.style.marginLeft).toBe('-3px')
+      } finally {
+        Object.defineProperty(window.navigator, 'userAgent', {
+          configurable: true,
+          value: originalUA,
+        })
+      }
+    })
+
+    it('skips resizing when no textarea element is available', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} autoResize value="draft" onMentionsChange={() => undefined}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      instance.inputElement = null
+      const before = instance._autoResizeFrame
+
+      act(() => {
+        instance.resetTextareaHeight()
+      })
+
+      expect(instance._autoResizeFrame).toBe(before)
+      unmount()
+    })
+
+    it('derives the height even when getComputedStyle is unavailable', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} autoResize value="draft" onMentionsChange={() => undefined}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const textarea = document.createElement('textarea')
+      Object.defineProperty(textarea, 'scrollHeight', { value: 42, configurable: true })
+      instance.inputElement = textarea
+
+      const originalGetComputedStyle = globalThis.getComputedStyle
+      ;(globalThis as any).getComputedStyle = undefined
+
+      act(() => {
+        instance.resetTextareaHeight()
+      })
+
+      expect(textarea.style.height).toBe('42px')
+
+      ;(globalThis as any).getComputedStyle = originalGetComputedStyle
+      unmount()
+    })
+
+    it('retains inline sizing when window is undefined during resize', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} autoResize value="draft" onMentionsChange={() => undefined}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const textarea = document.createElement('textarea')
+      Object.defineProperty(textarea, 'scrollHeight', { value: 24, configurable: true })
+      instance.inputElement = textarea
+
+      const originalWindow = globalThis.window
+      ;(globalThis as any).window = undefined
+
+      act(() => {
+        instance.resetTextareaHeight()
+      })
+
+      expect(textarea.style.height).not.toBe('')
+
+      ;(globalThis as any).window = originalWindow
+      unmount()
     })
   })
 
@@ -2238,6 +2357,83 @@ describe('MentionsInput', () => {
       addListener.mockRestore()
       removeListener.mockRestore()
       ;(globalThis as any).ResizeObserver = originalResizeObserver
+      unmount()
+    })
+
+    it('runs updateHighlighterScroll twice when animation frames resolve', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const updateSpy = jest.spyOn(instance, 'updateHighlighterScroll').mockImplementation(() => {})
+      const raf = jest
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0)
+          return 1
+        })
+      const cancel = jest.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {})
+
+      act(() => {
+        instance.requestHighlighterScrollSync()
+      })
+
+      expect(updateSpy).toHaveBeenCalledTimes(2)
+
+      updateSpy.mockRestore()
+      raf.mockRestore()
+      cancel.mockRestore()
+      unmount()
+    })
+
+    it('cancels a pending scroll sync frame before scheduling a new one', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      instance._scrollSyncFrame = 7
+
+      const cancel = jest.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {})
+      const raf = jest
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation(() => 9)
+
+      act(() => {
+        instance.requestHighlighterScrollSync()
+      })
+
+      expect(cancel).toHaveBeenCalledWith(7)
+      expect(instance._scrollSyncFrame).toBe(9)
+
+      cancel.mockRestore()
+      raf.mockRestore()
+      unmount()
+    })
+
+    it('ignores highlighter sync when input elements are missing', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      instance.inputElement = null
+      instance.highlighterElement = null
+
+      act(() => {
+        instance.updateHighlighterScroll()
+      })
+
       unmount()
     })
   })
