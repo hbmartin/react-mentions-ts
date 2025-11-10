@@ -518,6 +518,23 @@ describe('MentionsInput', () => {
     expect(highlighter!.scrollTop).toBe(23)
   })
 
+  it('mirrors horizontal scroll offsets in single-line mode', () => {
+    const { container } = render(
+      <MentionsInput singleLine value={'@'.repeat(200)}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const input = screen.getByRole('combobox')
+    const highlighter = container.querySelector('[data-slot="highlighter"]') as HTMLElement
+    expect(highlighter).not.toBeNull()
+
+    input.scrollLeft = 45
+    fireEvent.scroll(input, { target: { scrollLeft: 45 } })
+
+    expect(highlighter.scrollLeft).toBe(45)
+  })
+
   it('should place suggestions in suggestionsPortalHost', async () => {
     // Create a portal container
     const portalContainer = document.createElement('div')
@@ -1004,7 +1021,6 @@ describe('MentionsInput', () => {
       })
 
       expect(textarea.style.height).toBe('42px')
-
       ;(globalThis as any).getComputedStyle = originalGetComputedStyle
       unmount()
     })
@@ -1030,7 +1046,6 @@ describe('MentionsInput', () => {
       })
 
       expect(textarea.style.height).not.toBe('')
-
       ;(globalThis as any).window = originalWindow
       unmount()
     })
@@ -2402,9 +2417,7 @@ describe('MentionsInput', () => {
       instance._scrollSyncFrame = 7
 
       const cancel = jest.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {})
-      const raf = jest
-        .spyOn(globalThis, 'requestAnimationFrame')
-        .mockImplementation(() => 9)
+      const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 9)
 
       act(() => {
         instance.requestHighlighterScrollSync()

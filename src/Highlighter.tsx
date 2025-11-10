@@ -37,7 +37,7 @@ interface HighlighterProps {
 
 // Note: singleLine intentionally overrides whitespace/break behavior
 const highlighterStyles = cva(
-  'box-border w-full overflow-hidden text-start text-transparent pointer-events-none',
+  'box-border w-full overflow-hidden text-start text-transparent pointer-events-none [font-family:inherit] [font-size:inherit] [line-height:inherit]',
   {
     variants: {
       singleLine: {
@@ -48,7 +48,7 @@ const highlighterStyles = cva(
   }
 )
 
-const substringStyles = 'text-transparent'
+const substringStyles = 'text-transparent inline [white-space:inherit]'
 const caretStyles = 'relative inline-block h-0 w-0 align-baseline'
 
 // eslint-disable-next-line code-complete/low-function-cohesion
@@ -207,6 +207,21 @@ function Highlighter({
   if (components !== resultComponents) {
     resultComponents.push(renderCaretMarker(), ...components)
   }
+  const content = singleLine ? (
+    <div
+      style={{
+        display: 'inline-block',
+        whiteSpace: 'inherit',
+        width: 'max-content',
+        minWidth: '100%',
+      }}
+    >
+      {resultComponents}
+    </div>
+  ) : (
+    resultComponents
+  )
+
   return (
     <div
       className={rootClassName}
@@ -216,7 +231,7 @@ function Highlighter({
       style={HIGHLIGHTER_OVERLAY_STYLE}
       ref={containerRef}
     >
-      {resultComponents}
+      {content}
     </div>
   )
 }
