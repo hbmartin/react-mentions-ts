@@ -326,7 +326,11 @@ class MentionsInput<
     // eslint-disable-next-line code-complete/low-function-cohesion
     React.Children.forEach(this.props.children, (child) => {
       if (!isMentionElement(child)) {
-        return
+        throw new Error(
+          `MentionsInput only accepts Mention components as children. Found: ${
+            typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
+          }`
+        )
       }
 
       const trigger =
@@ -1868,7 +1872,7 @@ class MentionsInput<
     // Match the trigger patterns of all Mention children on the extracted substring
     // eslint-disable-next-line code-complete/low-function-cohesion
     React.Children.forEach(children, (child, childIndex) => {
-      if (!React.isValidElement<MentionComponentProps<Extra>>(child)) {
+      if (!isMentionElement(child)) {
         return
       }
       const triggerProp = child.props.trigger ?? '@'
@@ -2022,7 +2026,7 @@ class MentionsInput<
   isLoading = (): boolean => {
     let loading = false
     React.Children.forEach(this.props.children, (child) => {
-      if (!React.isValidElement<MentionComponentProps<Extra>>(child)) {
+      if (!isMentionElement(child)) {
         return
       }
       loading = loading || Boolean(child.props.isLoading)

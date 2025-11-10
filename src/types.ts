@@ -41,6 +41,16 @@ export type DataSource<Extra extends Record<string, unknown> = Record<string, un
   | ReadonlyArray<MentionDataItem<Extra>>
   | ((query: string) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
 
+export function isDataSource<Extra extends Record<string, unknown> = Record<string, unknown>>(
+  value: unknown
+): value is DataSource<Extra> {
+  return (
+    typeof value === 'function' ||
+    (Array.isArray(value) &&
+      value.every((item) => typeof item === 'object' && item !== null && 'id' in item))
+  )
+}
+
 export interface QueryInfo {
   childIndex: number
   query: string

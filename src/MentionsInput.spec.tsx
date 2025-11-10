@@ -186,7 +186,7 @@ describe('MentionsInput', () => {
 
     it('should throw when children include non-element content.', () => {
       expect(() => render(<MentionsInput value="">text child</MentionsInput>)).toThrow(
-        'MentionsInput only accepts Mention components as children. Found invalid element.'
+        'MentionsInput only accepts Mention components as children. Found: unknown component'
       )
     })
 
