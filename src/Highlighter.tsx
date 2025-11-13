@@ -95,10 +95,10 @@ function Highlighter({
     const measure = () => {
       const offsetLeft = caretElement.offsetLeft
       const offsetTop =
-        caretElement.previousElementSibling !== null
-          ? (caretElement.previousElementSibling as HTMLSpanElement).offsetTop +
+        caretElement.previousElementSibling === null
+          ? caretElement.offsetTop
+          : (caretElement.previousElementSibling as HTMLSpanElement).offsetTop +
             (caretElement.previousElementSibling as HTMLSpanElement).offsetHeight
-          : caretElement.offsetTop
 
       updatePosition(offsetLeft, offsetTop)
     }

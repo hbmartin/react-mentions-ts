@@ -2170,7 +2170,7 @@ describe('MentionsInput', () => {
 
       expect(instance.state.suggestionsPosition.position).toBe('fixed')
       expect(instance.state.suggestionsPosition.left).toBe(9)
-      expect(typeof instance.state.suggestionsPosition.top).toBe('number')
+      expect(instance.state.suggestionsPosition.top).toBe(8)
 
       act(() => {
         instance.state.suggestionsPosition = {}
@@ -2183,6 +2183,72 @@ describe('MentionsInput', () => {
 
       expect(instance.state.suggestionsPosition.position).toBe('fixed')
       expect(instance.state.suggestionsPosition.left).toBe(4)
+
+      highlighter.remove()
+      suggestions.remove()
+      container.remove()
+      setStateMock.mockRestore()
+      unmount()
+    })
+
+    it('aligns portal suggestions with the caret baseline.', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      await waitFor(() => {
+        expect(ref.current).not.toBeNull()
+      })
+
+      const instance = ref.current as unknown as any
+      const highlighter = document.createElement('div')
+      const suggestions = document.createElement('div')
+      const container = document.createElement('div')
+      highlighter.style.fontSize = '18px'
+      suggestions.style.marginLeft = '0px'
+      suggestions.style.marginTop = '7px'
+      Object.defineProperty(highlighter, 'getBoundingClientRect', {
+        value: () => ({
+          left: 4,
+          top: 6,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+        }),
+      })
+      Object.defineProperty(suggestions, 'offsetHeight', { value: 20, configurable: true })
+      document.body.append(highlighter)
+      document.body.append(suggestions)
+      document.body.append(container)
+
+      instance.highlighterElement = highlighter
+      instance.suggestionsElement = suggestions
+      instance.containerElement = container
+      highlighter.scrollLeft = 5
+      highlighter.scrollTop = 3
+      Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
+      Object.defineProperty(container, 'offsetWidth', { value: 320, configurable: true })
+
+      const setStateMock = jest.spyOn(instance, 'setState').mockImplementation((update, cb) => {
+        const nextState =
+          typeof update === 'function' ? update(instance.state, instance.props) : update
+        Object.assign(instance.state, nextState)
+        cb?.()
+      })
+
+      instance.state.caretPosition = { left: 10, top: 12 }
+      instance.state.suggestionsPosition = {}
+
+      act(() => {
+        instance.updateSuggestionsPosition()
+      })
+
+      expect(instance.state.suggestionsPosition.top).toBe(8)
+      expect(instance.state.suggestionsPosition.left).toBe(9)
 
       highlighter.remove()
       suggestions.remove()
