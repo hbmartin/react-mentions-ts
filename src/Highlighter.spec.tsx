@@ -93,9 +93,9 @@ describe('Highlighter', () => {
         </Highlighter>
       )
 
-      const caret = container.querySelector('[data-mentions-caret]') as HTMLSpanElement | null
+      const caret = container.querySelector('[data-mentions-caret]')!
       expect(caret).not.toBeNull()
-      const previous = caret?.previousElementSibling as HTMLSpanElement | null
+      const previous = caret.previousElementSibling!
       expect(previous).not.toBeNull()
 
       Object.defineProperty(caret as HTMLSpanElement, 'offsetLeft', {
@@ -116,7 +116,9 @@ describe('Highlighter', () => {
       })
 
       const callbacks = rafCallbacks.splice(0)
-      callbacks.forEach((cb) => cb(0))
+      for (const cb of callbacks) {
+        cb(0)
+      }
 
       await waitFor(() => {
         expect(onCaretPositionChange).toHaveBeenCalled()
