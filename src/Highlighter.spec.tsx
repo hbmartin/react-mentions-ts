@@ -142,6 +142,77 @@ describe('Highlighter', () => {
     }
   })
 
+  it('falls back to the caret metrics when no previous substring exists.', async () => {
+    const onCaretPositionChange = jest.fn()
+    const rafCallbacks: FrameRequestCallback[] = []
+    const originalRAF = globalThis.requestAnimationFrame
+    const originalCAF = globalThis.cancelAnimationFrame
+
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb)
+      return rafCallbacks.length
+    }) as typeof globalThis.requestAnimationFrame
+    globalThis.cancelAnimationFrame = (() => undefined) as typeof globalThis.cancelAnimationFrame
+
+    try {
+      const { container } = render(
+        <Highlighter
+          selectionStart={5}
+          selectionEnd={5}
+          value="Hello world"
+          onCaretPositionChange={onCaretPositionChange}
+        >
+          <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+        </Highlighter>
+      )
+
+      const caret = container.querySelector('[data-mentions-caret]')!
+      expect(caret).not.toBeNull()
+      while ((caret as HTMLSpanElement).previousElementSibling) {
+        ;(caret as HTMLSpanElement).previousElementSibling?.remove()
+      }
+      expect((caret as HTMLSpanElement).previousElementSibling).toBeNull()
+
+      Object.defineProperty(caret as HTMLSpanElement, 'offsetLeft', {
+        configurable: true,
+        value: 7,
+      })
+      Object.defineProperty(caret as HTMLSpanElement, 'offsetTop', {
+        configurable: true,
+        value: 11,
+      })
+      Object.defineProperty(caret as HTMLSpanElement, 'previousElementSibling', {
+        configurable: true,
+        value: null,
+      })
+
+      const callbacks = rafCallbacks.splice(0)
+      for (const cb of callbacks) {
+        cb(0)
+      }
+
+      await waitFor(() => {
+        expect(onCaretPositionChange).toHaveBeenCalled()
+      })
+
+      expect(onCaretPositionChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ left: 7, top: 11 })
+      )
+    } finally {
+      if (originalRAF) {
+        globalThis.requestAnimationFrame = originalRAF
+      } else {
+        delete (globalThis as typeof globalThis & Record<string, unknown>).requestAnimationFrame
+      }
+
+      if (originalCAF) {
+        globalThis.cancelAnimationFrame = originalCAF
+      } else {
+        delete (globalThis as typeof globalThis & Record<string, unknown>).cancelAnimationFrame
+      }
+    }
+  })
+
   it('should render the current matched mentions.', () => {
     const { container } = render(
       <Highlighter
