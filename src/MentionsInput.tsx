@@ -1643,7 +1643,7 @@ class MentionsInput<
     const caretHeight = getComputedStyleLengthProp(highlighter, 'font-size')
     const viewportRelative = {
       left: caretOffsetParentRect.left + (anchorToLeft ? 0 : caretPosition.left),
-      top: caretOffsetParentRect.top + caretPosition.top + caretHeight,
+      top: caretOffsetParentRect.top + caretPosition.top,
     }
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
     const desiredWidth = highlighter.offsetWidth

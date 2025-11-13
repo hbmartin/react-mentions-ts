@@ -956,8 +956,8 @@ describe('MentionsInput', () => {
     })
 
     it('applies mobile Safari offsets in multiline mode', () => {
-      const originalUA = window.navigator.userAgent
-      Object.defineProperty(window.navigator, 'userAgent', {
+      const originalUA = globalThis.navigator.userAgent
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
         configurable: true,
         value: 'iPhone',
       })
@@ -973,7 +973,7 @@ describe('MentionsInput', () => {
         expect(textarea.style.marginTop).toBe('1px')
         expect(textarea.style.marginLeft).toBe('-3px')
       } finally {
-        Object.defineProperty(window.navigator, 'userAgent', {
+        Object.defineProperty(globalThis.navigator, 'userAgent', {
           configurable: true,
           value: originalUA,
         })
@@ -2170,7 +2170,7 @@ describe('MentionsInput', () => {
 
       expect(instance.state.suggestionsPosition.position).toBe('fixed')
       expect(instance.state.suggestionsPosition.left).toBe(9)
-      expect(typeof instance.state.suggestionsPosition.top).toBe('number')
+      expect(instance.state.suggestionsPosition.top).toBe(8)
 
       act(() => {
         instance.state.suggestionsPosition = {}
@@ -2472,7 +2472,7 @@ describe('MentionsInput', () => {
         </MentionsInput>
       )
 
-      const input = screen.getByRole('combobox') as HTMLTextAreaElement
+      const input = screen.getByRole('combobox')
       const highlighter = container.querySelector('[data-slot="highlighter"]') as HTMLDivElement
 
       expect(getComputedStyleSpy).toHaveBeenCalledWith(input)

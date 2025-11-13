@@ -2,7 +2,7 @@ import { clsx } from 'clsx'
 import type { MentionsInputClassNames } from '../../../src'
 
 const baseSuggestions =
-  'mt-3 w-full overflow-hidden rounded-2xl border border-slate-200/70 bg-white/95 shadow-2xl shadow-slate-900/5 ring-1 ring-slate-900/5 backdrop-blur'
+  'rounded-2xl border border-slate-200/70 bg-white/95 shadow-2xl shadow-slate-900/5 ring-1 ring-slate-900/5 backdrop-blur'
 const baseSuggestionsList =
   'max-h-64 overflow-y-auto divide-y divide-slate-100 scroll-py-1 focus:outline-none'
 const baseSuggestionItem =

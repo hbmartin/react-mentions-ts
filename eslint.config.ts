@@ -276,6 +276,7 @@ export default defineConfig([
       'react-perf/jsx-no-new-array-as-prop': 'off',
       'react-perf/jsx-no-new-function-as-prop': 'off',
       'react-perf/jsx-no-new-object-as-prop': 'off',
+      'code-complete/low-function-cohesion': 'off',
     },
   },
 ])
