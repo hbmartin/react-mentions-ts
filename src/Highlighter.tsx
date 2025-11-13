@@ -94,7 +94,11 @@ function Highlighter({
 
     const measure = () => {
       const offsetLeft = caretElement.offsetLeft
-      const offsetTop = caretElement.offsetTop
+      const offsetTop =
+        caretElement.previousElementSibling !== null
+          ? (caretElement.previousElementSibling as HTMLSpanElement).offsetTop +
+            (caretElement.previousElementSibling as HTMLSpanElement).offsetHeight
+          : caretElement.offsetTop
 
       updatePosition(offsetLeft, offsetTop)
     }
@@ -165,9 +169,7 @@ function Highlighter({
       ref={setCaretElement}
       key="caret"
       aria-hidden="true"
-    >
-      {'\u200B'}
-    </span>
+    />
   )
 
   const textIteratee = (substr: string, index: number, _substrPlainTextIndex: number) => {
