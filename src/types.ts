@@ -254,24 +254,46 @@ export interface MentionsInputState<
   config: MentionChildConfig<Extra>[]
 }
 
+/**
+ * CSS class names for customizing the appearance of MentionsInput components.
+ * All fields are optional and will be merged with the default styles.
+ */
 export type MentionsInputClassNames = Partial<{
+  /** The outer wrapper div that contains the highlighter, input, and inline suggestions */
   control: string
+  /** The highlighter div that overlays the input to display mentions with custom styling */
   highlighter: string
+  /** The span elements within the highlighter that render plain text substrings */
   highlighterSubstring: string
+  /** The span element that marks the caret position in the highlighter for positioning inline suggestions */
   highlighterCaret: string
+  /** The input or textarea element where the user types */
   input: string
+  /** The wrapper div for inline autocomplete suggestions (when suggestionsDisplay='inline') */
   inlineSuggestion: string
+  /** The span that wraps the inline suggestion text content */
   inlineSuggestionText: string
+  /** The hidden prefix span shown before the visible inline suggestion text (for screen readers) */
   inlineSuggestionPrefix: string
+  /** The visible suffix span containing the remaining suggestion text after the user's input */
   inlineSuggestionSuffix: string
+  /** The outer container div for the suggestions overlay (when suggestionsDisplay='overlay') */
   suggestions: string
+  /** The ul element that contains the list of suggestion items */
   suggestionsList: string
+  /** The li element for each individual suggestion item */
   suggestionItem: string
+  /** Additional class applied to the currently focused/highlighted suggestion item */
   suggestionItemFocused: string
+  /** The span that wraps the display text of a suggestion */
   suggestionDisplay: string
+  /** The b element used to highlight matching text within a suggestion */
   suggestionHighlight: string
+  /** The outer div wrapper for the loading indicator */
   loadingIndicator: string
+  /** The inner div that contains the loading spinner animation elements */
   loadingSpinner: string
+  /** The individual span elements that make up the loading spinner dots */
   loadingSpinnerElement: string
 }>
 
