@@ -125,8 +125,9 @@ export interface MentionOccurrence<
   data?: MentionDataItem<Extra>
 }
 
-export interface MentionSelection<Extra extends Record<string, unknown> = Record<string, unknown>>
-  extends MentionOccurrence<Extra> {
+export interface MentionSelection<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> extends MentionOccurrence<Extra> {
   selection: MentionSelectionState
   plainTextStart: number
   plainTextEnd: number
@@ -200,11 +201,12 @@ export type InputComponent =
       InputComponentProps & React.RefAttributes<HTMLInputElement | HTMLTextAreaElement>
     >
 
-export interface MentionsInputProps<Extra extends Record<string, unknown> = Record<string, unknown>>
-  extends Omit<
-    React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
-  > {
+export interface MentionsInputProps<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> extends Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'children' | 'onChange' | 'value' | 'defaultValue' | 'style' | 'onBlur'
+> {
   a11ySuggestionsListLabel?: string
   anchorMode?: MentionsInputAnchorMode
   suggestionsPlacement?: 'auto' | 'above' | 'below'

@@ -149,7 +149,10 @@
 		"tailwind-merge": ">=3.0.0"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": ">=22"
+	},
+	"resolutions": {
+		"@types/node": "^24"
 	},
 	"publishConfig": {
 		"access": "public"
