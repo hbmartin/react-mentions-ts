@@ -248,6 +248,7 @@ export interface MentionsInputState<
   cachedPlainText: string
   cachedIdValue: string
   suggestions: SuggestionsMap<Extra>
+  isFetchingSuggestions: boolean
   caretPosition: CaretCoordinates | null
   suggestionsPosition: SuggestionsPosition
   scrollFocusedIntoView?: boolean
