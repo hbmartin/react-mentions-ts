@@ -2,8 +2,9 @@ import type { CSSProperties } from 'react'
 import cn from './utils/cn'
 import type { MentionComponentProps } from './types'
 
-export interface MentionProps<Extra extends Record<string, unknown> = Record<string, unknown>>
-  extends MentionComponentProps<Extra> {
+export interface MentionProps<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> extends MentionComponentProps<Extra> {
   readonly display?: string
   readonly className?: string
   readonly style?: CSSProperties
