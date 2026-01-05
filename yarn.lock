@@ -2758,17 +2758,17 @@ eslint-plugin-jsx-a11y@^6.10.2:
     safe-regex-test "^1.0.3"
     string.prototype.includes "^2.0.1"
 
-eslint-plugin-package-json@^0.85.0:
-  version "0.85.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-package-json/-/eslint-plugin-package-json-0.85.0.tgz#acbd53be1eafe9d667a8bf80c4459ab2d9a80a9f"
-  integrity sha512-MrOxFvhbqLuk4FIPG9v3u9Amn0n137J8LKILHvgfxK3rRyAHEVzuZM0CtpXFTx7cx4LzmAzONtlpjbM0UFNuTA==
+eslint-plugin-package-json@^0.88.0:
+  version "0.88.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-package-json/-/eslint-plugin-package-json-0.88.0.tgz#080f6deaeca8427e77776bd0640602201aa47115"
+  integrity sha512-cu3/rvFDKbVSzmtjP4bS4oqyLDLVHXG7clJG3TS/U7g+JUWb1/yQ3l2a6W1aFLQiS9gmD2/qvNCTbIlHC33q2A==
   dependencies:
     "@altano/repository-tools" "^2.0.1"
     change-case "^5.4.4"
     detect-indent "^7.0.2"
     detect-newline "^4.0.1"
     eslint-fix-utils "~0.4.0"
-    package-json-validator "~0.59.0"
+    package-json-validator "~0.59.1"
     semver "^7.7.3"
     sort-object-keys "^2.0.0"
     sort-package-json "^3.4.0"
@@ -4796,10 +4796,10 @@ package-json-from-dist@^1.0.0, package-json-from-dist@^1.0.1:
   resolved "https://registry.yarnpkg.com/package-json-from-dist/-/package-json-from-dist-1.0.1.tgz#4f1471a010827a86f94cfd9b0727e36d267de505"
   integrity sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==
 
-package-json-validator@~0.59.0:
-  version "0.59.0"
-  resolved "https://registry.yarnpkg.com/package-json-validator/-/package-json-validator-0.59.0.tgz#28612014fd76b97836fd56de35828e86d4828a85"
-  integrity sha512-WBTDKtO9pBa9GmA1sPbQHqlWxRdnHNfLFIIA49PPgV7px/rG27gHX57DWy77qyu374fla4veaIHy+gA+qRRuug==
+package-json-validator@~0.59.1:
+  version "0.59.1"
+  resolved "https://registry.yarnpkg.com/package-json-validator/-/package-json-validator-0.59.1.tgz#3ac0c34b120afee138053645fe84e08fe4e58547"
+  integrity sha512-cLk5/c/OJX9nA9rl3d2Gymrxv2lqhOBn3+1+D6ZqPNjL6ZyhcjVDUfKyXh+nDyQjGVEQfPoVIE5kLrZ2zn6nDQ==
   dependencies:
     semver "^7.7.2"
     validate-npm-package-license "^3.0.4"
