@@ -4322,9 +4322,9 @@ keyv@^4.5.4:
     json-buffer "3.0.1"
 
 knip@^5.75.1:
-  version "5.76.2"
-  resolved "https://registry.yarnpkg.com/knip/-/knip-5.76.2.tgz#ca0a6a9200c7e3077e502b0a7002f93afd9e86c4"
-  integrity sha512-UCs2MNe+sUYo5rR/KcoyEqCqwWh1mrHcAkTvW7Hm7DcnaLa1xzHHRbEqmEeocI23bMXPaZtlSALrfjFIU0xNjQ==
+  version "5.79.0"
+  resolved "https://registry.yarnpkg.com/knip/-/knip-5.79.0.tgz#aee9ee4a150615ab04f4d758252e31cacbf6e220"
+  integrity sha512-rcg+mNdqm6UiTuRVyy6UuuHw1n4ABMpNXDtrfGaCeUtJoRBAvAENIebr8YMtOz6XE7iVHZ8+rY7skgEtosczhQ==
   dependencies:
     "@nodelib/fs.walk" "^1.2.3"
     fast-glob "^3.3.3"
