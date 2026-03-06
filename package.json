@@ -38,6 +38,7 @@
 		"clean": "rimraf dist",
 		"build": "yarn clean && tsup --config tsup.config.ts",
 		"build:demo": "vite build --config demo/vite.config.ts",
+		"lighthouse": "yarn build:demo && npx @lhci/cli@0.15.x autorun",
 		"typecheck": "tsc --project tsconfig.json --noEmit",
 		"format": "prettier --write \"{src,test,demo/src}/**/*.{ts,tsx}\"",
 		"lint": "eslint src",

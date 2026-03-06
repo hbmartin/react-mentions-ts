@@ -1,0 +1,76 @@
+name: Lighthouse CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build library
+        run: yarn build
+
+      - name: Build demo
+        run: yarn build:demo --base=/react-mentions-ts/
+
+      - name: Run Lighthouse CI
+        id: lighthouseci
+        run: |
+          set +e
+          DEBUG=lhci: npx @lhci/cli@0.15.x autorun
+          LHCI_EXIT_CODE=$?
+          ls -la .lighthouseci
+          set -e
+          ls -la
+          pwd
+
+          REPORTS_DIR=$(node -p "(() => {
+            const cfg = require('./lighthouserc.cjs')
+            const dir = (cfg && cfg.ci && cfg.ci.upload && cfg.ci.upload.outputDir) || 'lighthouse-reports'
+            return dir.startsWith('./') ? dir.slice(2) : dir
+          })()")
+
+          mkdir -p .lighthouseci
+          mkdir -p "$REPORTS_DIR"
+
+          if [ -f ".lighthouseci/manifest.json" ] && [ -z "$(ls -A "$REPORTS_DIR" 2>/dev/null)" ]; then
+            npx @lhci/cli@0.15.x upload --target=filesystem --outputDir="$REPORTS_DIR" || true
+          fi
+
+          echo "resultsPath=.lighthouseci" >> "$GITHUB_OUTPUT"
+          echo "reportsPath=$REPORTS_DIR" >> "$GITHUB_OUTPUT"
+
+          exit $LHCI_EXIT_CODE
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          if-no-files-found: ignore
+          path: ${{ steps.lighthouseci.outputs.reportsPath }}
+
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-artifacts
+          if-no-files-found: ignore
+          path: .lighthouseci
