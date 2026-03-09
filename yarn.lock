@@ -1115,10 +1115,10 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.2.9.tgz#d229a7b7f9dac167a156992ef23c7f023653f53b"
   integrity sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==
 
-"@publint/pack@^0.1.2":
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/@publint/pack/-/pack-0.1.2.tgz#1b9a9567423262093e4a73e77697b65bf622f8c9"
-  integrity sha512-S+9ANAvUmjutrshV4jZjaiG8XQyuJIZ8a4utWmN/vW1sgQ9IfBnPndwkmQYw53QmouOIytT874u65HEmu6H5jw==
+"@publint/pack@^0.1.4":
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/@publint/pack/-/pack-0.1.4.tgz#866a82a1a8ab52329ae08baec6f3969ed99a30bf"
+  integrity sha512-HDVTWq3H0uTXiU0eeSQntcVUTPP3GamzeXI41+x7uU9J65JgWQh3qWZHblR1i0npXfFtF+mxBiU2nJH8znxWnQ==
 
 "@rolldown/pluginutils@1.0.0-beta.53":
   version "1.0.0-beta.53"
@@ -5022,11 +5022,11 @@ prop-types@^15.8.1:
     react-is "^16.13.1"
 
 publint@^0.3.16:
-  version "0.3.16"
-  resolved "https://registry.yarnpkg.com/publint/-/publint-0.3.16.tgz#f35af34c0a94c284568de65b09de44fbec651d2a"
-  integrity sha512-MFqyfRLAExPVZdTQFwkAQELzA8idyXzROVOytg6nEJ/GEypXBUmMGrVaID8cTuzRS1U5L8yTOdOJtMXgFUJAeA==
+  version "0.3.18"
+  resolved "https://registry.yarnpkg.com/publint/-/publint-0.3.18.tgz#c4b20f20f9cf07c4c60770cce625873e42240295"
+  integrity sha512-JRJFeBTrfx4qLwEuGFPk+haJOJN97KnPuK01yj+4k/Wj5BgoOK5uNsivporiqBjk2JDaslg7qJOhGRnpltGeog==
   dependencies:
-    "@publint/pack" "^0.1.2"
+    "@publint/pack" "^0.1.4"
     package-manager-detector "^1.6.0"
     picocolors "^1.1.1"
     sade "^1.8.1"
