@@ -3,6 +3,7 @@
 /coverage
 /demo/dist
 /demo/build
+.lighthouseci
 
 npm-debug.log*
 
