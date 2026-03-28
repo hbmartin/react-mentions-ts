@@ -248,6 +248,7 @@ class MentionsInput<
   private _scrollSyncFrame: number | null = null
   private _autoResizeFrame: number | null = null
   private _cachedMarkupValue = ''
+  private _pendingAsyncQueries = 0
 
   private cancelScheduledFrame(frameKey: '_scrollSyncFrame' | '_autoResizeFrame'): void {
     const frame = this[frameKey]
@@ -312,6 +313,7 @@ class MentionsInput<
       cachedPlainText: initialPlainText,
       cachedIdValue: initialIdValue,
       suggestions: {},
+      isFetchingSuggestions: false,
       caretPosition: null,
       suggestionsPosition: {},
       pendingSelectionUpdate: false,
@@ -1848,11 +1850,8 @@ class MentionsInput<
 
   updateMentionsQueries = (plainTextValue: string, caretPosition: number): void => {
     // Invalidate previous queries. Async results for previous queries will be neglected.
-    this._queryId++
+    const nextQueryId = ++this._queryId
     this.suggestions = {}
-    this.setState({
-      suggestions: {},
-    })
 
     const value = this.props.value ?? ''
     const { children } = this.props
@@ -1871,6 +1870,14 @@ class MentionsInput<
     )
     const substring = plainTextValue.slice(substringStartIndex, caretPosition)
 
+    const pendingUpdates: Array<{
+      childIndex: number
+      query: string
+      querySequenceStart: number
+      querySequenceEnd: number
+      resultPromise: MentionDataItem<Extra>[] | Promise<MentionDataItem<Extra>[]>
+    }> = []
+
     // Check if suggestions have to be shown:
     // Match the trigger patterns of all Mention children on the extracted substring
     // eslint-disable-next-line code-complete/low-function-cohesion
@@ -1886,24 +1893,57 @@ class MentionsInput<
         const dataSource = child.props.data
         const provideData = getDataProvider<Extra>(dataSource, regex.flags.includes('u'))
         const resultPromise = provideData(match[2])
-        void this.updateSuggestions(
-          this._queryId,
+        pendingUpdates.push({
           childIndex,
-          match[2],
+          query: match[2],
           querySequenceStart,
-          querySequenceStart + match[1].length,
-          resultPromise
-        )
+          querySequenceEnd: querySequenceStart + match[1].length,
+          resultPromise,
+        })
       }
     })
+
+    if (pendingUpdates.length === 0) {
+      this._pendingAsyncQueries = 0
+      this.setState({
+        suggestions: {},
+        isFetchingSuggestions: false,
+        focusIndex: 0,
+      })
+      return
+    }
+
+    this._pendingAsyncQueries = pendingUpdates.length
+    if (!this.state.isFetchingSuggestions) {
+      this.setState({ isFetchingSuggestions: true })
+    }
+
+    for (const {
+      childIndex,
+      query,
+      querySequenceStart,
+      querySequenceEnd,
+      resultPromise,
+    } of pendingUpdates) {
+      void this.updateSuggestions(
+        nextQueryId,
+        childIndex,
+        query,
+        querySequenceStart,
+        querySequenceEnd,
+        resultPromise
+      )
+    }
   }
 
   clearSuggestions = () => {
     // Invalidate previous queries. Async results for previous queries will be neglected.
     this._queryId++
+    this._pendingAsyncQueries = 0
     this.suggestions = {}
     this.setState({
       suggestions: {},
+      isFetchingSuggestions: false,
       focusIndex: 0,
     })
   }
@@ -1920,7 +1960,14 @@ class MentionsInput<
       // neglect async results from previous queries
       return
     }
-    const data: MentionDataItem<Extra>[] = await Promise.resolve(results)
+    let data: MentionDataItem<Extra>[] = []
+    try {
+      data = await Promise.resolve(results)
+    } catch (err) {
+      data = []
+      // eslint-disable-next-line no-console
+      console.error('react-mentions: failed to load suggestions', err)
+    }
     // save in property so that multiple sync state updates from different mentions sources
     // won't overwrite each other
     const queryInfo: QueryInfo = {
@@ -1945,9 +1992,12 @@ class MentionsInput<
       : focusIndex >= suggestionsCount
         ? Math.max(suggestionsCount - 1, 0)
         : focusIndex
+    const remainingQueries = Math.max(0, this._pendingAsyncQueries - 1)
+    this._pendingAsyncQueries = remainingQueries
     this.setState({
       suggestions: this.suggestions,
       focusIndex: nextFocusIndex,
+      isFetchingSuggestions: remainingQueries > 0,
     })
   }
 
@@ -2027,7 +2077,7 @@ class MentionsInput<
   }
 
   isLoading = (): boolean => {
-    let loading = false
+    let loading = this.state.isFetchingSuggestions
     React.Children.forEach(this.props.children, (child) => {
       if (!isMentionElement(child)) {
         return
