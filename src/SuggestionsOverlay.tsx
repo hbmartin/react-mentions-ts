@@ -1,10 +1,11 @@
-import React, { Children, useCallback, useLayoutEffect, useMemo, useState } from 'react'
+import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
 import { cn, flattenSuggestions, getSuggestionHtmlId } from './utils'
+import { useEffectEvent } from './utils/useEffectEvent'
 import type {
   MentionComponentProps,
   MentionRenderSuggestion,
@@ -120,19 +121,15 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   const overlayClassName = cn(overlayStyles(), className)
   const listClassNameResolved = cn(listStyles, listClassName)
 
-  const selectSuggestion = useCallback(
+  const selectSuggestion = useEffectEvent(
     (suggestionItem: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => {
       onSelect?.(suggestionItem, queryInfo)
-    },
-    [onSelect]
+    }
   )
 
-  const handleMouseEnter = useCallback(
-    (index: number) => {
-      onMouseEnter?.(index)
-    },
-    [onMouseEnter]
-  )
+  const handleMouseEnter = useEffectEvent((index: number) => {
+    onMouseEnter?.(index)
+  })
 
   const flattenedSuggestions = useMemo<FlattenedSuggestion<Extra>[]>(() => {
     return flattenSuggestions(children, suggestions)
@@ -156,13 +153,12 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         index,
       }
     })
-  }, [childRenderSuggestions, focusIndex, flattenedSuggestions, handleMouseEnter, selectSuggestion])
+  }, [childRenderSuggestions, focusIndex, flattenedSuggestions])
 
-  const handleListMouseDown: React.MouseEventHandler<HTMLUListElement> = useCallback(
+  const handleListMouseDown = useEffectEvent<React.MouseEventHandler<HTMLUListElement>>(
     (event) => {
       onMouseDown?.(event)
-    },
-    [onMouseDown]
+    }
   )
 
   const renderSuggestions = (): React.ReactElement => {
