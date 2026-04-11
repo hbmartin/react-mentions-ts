@@ -240,6 +240,12 @@ class MentionsInput<
   private _queryId = 0
   private _suggestionsMouseDown = false
   private _isComposing = false
+  private _isAwaitingFinalCompositionEvent = false
+  private _compositionValue: string | null = null
+  private _compositionSelectionStart: number | null = null
+  private _compositionSelectionEnd: number | null = null
+  private _compositionTimeout: ReturnType<typeof setTimeout> | null = null
+  private _expectedPlainText: string | null = null
   private readonly defaultSuggestionsPortalHost: HTMLElement | null
   private _isScrolling = false
   private _pendingHighlighterRecompute = false
@@ -473,6 +479,7 @@ class MentionsInput<
 
     if (valueChanged) {
       this._cachedMarkupValue = currentValue
+      this._expectedPlainText = null // 🚨 Clear the optimistic buffer
     }
 
     if (selectionPositionsChanged || valueChanged) {
@@ -519,6 +526,11 @@ class MentionsInput<
     document.removeEventListener('paste', this.handlePaste)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
     document.removeEventListener('selectionchange', this.handleDocumentSelectionChange)
+
+    if (this._compositionTimeout) {
+      clearTimeout(this._compositionTimeout)
+    }
+
     this.cancelScheduledFrame('_scrollSyncFrame')
     this.cancelScheduledFrame('_autoResizeFrame')
     this._pendingHighlighterRecompute = false
@@ -563,10 +575,19 @@ class MentionsInput<
 
     const baseClassName = this.getSlotClassName('input', inputStyles({ singleLine }))
 
+    // 🚨 OPTIMISTIC IME DISPLAY BUFFER 🚨
+    // Check expected plain text first to prevent React from reverting the DOM
+    // before the parent component has time to pass down the updated value prop.
+    const basePlainText =
+      this._expectedPlainText ?? getPlainText(this.props.value ?? '', this.state.config)
+    const isHoldingBuffer = this._isComposing || this._isAwaitingFinalCompositionEvent
+    const displayValue =
+      isHoldingBuffer && this._compositionValue !== null ? this._compositionValue : basePlainText
+
     const props: Record<string, unknown> = {
       ...restPassthrough,
       className: baseClassName,
-      value: getPlainText(this.props.value ?? '', this.state.config),
+      value: displayValue,
       onScroll: this.updateHighlighterScroll,
       'data-slot': 'input',
       'data-single-line': singleLine ? 'true' : undefined,
@@ -1361,16 +1382,42 @@ class MentionsInput<
     if ('isComposing' in native && typeof native.isComposing === 'boolean') {
       this._isComposing = native.isComposing
     }
-    const value = this.props.value || ''
 
+    // 🚨 IME LOCAL BUFFER TRAP 🚨
+    if (this._isComposing) {
+      this._compositionValue = ev.target.value
+      this.setState({
+        selectionStart: ev.target.selectionStart ?? this.state.selectionStart,
+        selectionEnd: ev.target.selectionEnd ?? this.state.selectionEnd,
+      })
+      return
+    }
+
+    // --- We are past the composition guard! The 'á' has successfully made it. ---
+
+    const value = this.props.value || ''
     let newPlainTextValue = ev.target.value
 
-    let selectionStartBefore = this.state.selectionStart
+    // 🚨 RESTORE THE TRUE 'BEFORE' CURSOR 🚨
+    let selectionStartBefore = this._compositionSelectionStart ?? this.state.selectionStart
+    let selectionEndBefore = this._compositionSelectionEnd ?? this.state.selectionEnd
+
+    // 🚨 CLEAR ALL LOCKS 🚨
+    this._compositionSelectionStart = null
+    this._compositionSelectionEnd = null
+    this._compositionValue = null
+    this._isAwaitingFinalCompositionEvent = false
+
+    // Clear the ghost cancellation trap—we got the event!
+    if (this._compositionTimeout) {
+      clearTimeout(this._compositionTimeout)
+      this._compositionTimeout = null
+    }
+
     if (selectionStartBefore === null) {
       selectionStartBefore = ev.target.selectionStart ?? 0
     }
 
-    let selectionEndBefore = this.state.selectionEnd
     if (selectionEndBefore === null) {
       selectionEndBefore = ev.target.selectionEnd ?? selectionStartBefore
     }
@@ -1395,13 +1442,18 @@ class MentionsInput<
     } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
     newPlainTextValue = recalculatedPlainTextValue
 
+    // 🚨 OPTIMISTIC STATE UPDATE 🚨
+    // Cache the expected string so our immediate setState re-render doesn't wipe the DOM
+    this._expectedPlainText = recalculatedPlainTextValue
+
+    // Save current selection after change to be able to restore caret position after rerendering
+
     // Save current selection after change to be able to restore caret position after rerendering
     let selectionStart = ev.target.selectionStart ?? selectionStartBefore
     let selectionEnd = ev.target.selectionEnd ?? selectionEndBefore
     let shouldRestoreSelection = false
     const nativeEvent = ev.nativeEvent as unknown as CompositionEvent<InputElement> & {
       data?: string | null
-      isComposing?: boolean
     }
 
     // Adjust selection range in case a mention will be deleted by the characters outside of the
@@ -1425,7 +1477,7 @@ class MentionsInput<
       pendingSelectionUpdate: prevState.pendingSelectionUpdate || shouldRestoreSelection,
     }))
 
-    if (nativeEvent.isComposing && selectionStart === selectionEnd && this.inputElement) {
+    if (selectionStart === selectionEnd && this.inputElement) {
       this.updateMentionsQueries(this.inputElement.value, selectionStart)
     }
 
@@ -1454,15 +1506,17 @@ class MentionsInput<
     reason: 'select' | 'selectionchange' = 'selectionchange'
   ): void => {
     const input = this.inputElement
-    if (!input) {
-      return
-    }
+    if (!input) return
 
     if (reason === 'selectionchange') {
       const ownerDocument = input.ownerDocument ?? document
-      if (ownerDocument.activeElement !== input) {
-        return
-      }
+      if (ownerDocument.activeElement !== input) return
+    }
+
+    // 🚨 IME SYNC BAILOUT 🚨
+    // Block state updates if composing OR waiting for the final onChange payload
+    if (this._isComposing || this._isAwaitingFinalCompositionEvent) {
+      return
     }
 
     const selectionStart = input.selectionStart ?? null
@@ -1475,10 +1529,6 @@ class MentionsInput<
         selectionStart,
         selectionEnd,
       })
-    }
-
-    if (this._isComposing) {
-      return
     }
 
     if (selectionStart !== null && selectionStart === selectionEnd) {
@@ -1804,10 +1854,34 @@ class MentionsInput<
 
   handleCompositionStart = (): void => {
     this._isComposing = true
+    this._compositionSelectionStart = this.state.selectionStart
+    this._compositionSelectionEnd = this.state.selectionEnd
   }
 
   handleCompositionEnd = (): void => {
     this._isComposing = false
+    this._isAwaitingFinalCompositionEvent = true
+
+    if (this._compositionTimeout) {
+      clearTimeout(this._compositionTimeout)
+    }
+
+    this._compositionTimeout = setTimeout(() => {
+      if (this._isAwaitingFinalCompositionEvent) {
+        // 🚨 OUT-OF-ORDER EVENT FALLBACK 🚨
+        // On Linux, the final 'input' event often fires BEFORE compositionend and gets trapped.
+        // If 50ms pass and we are still waiting, force a flush of the current native DOM state.
+        // This commits the trapped 'á' (or handles a true cancellation) perfectly!
+        if (this.inputElement) {
+          const syntheticEvent = {
+            target: this.inputElement,
+            nativeEvent: new Event('input', { bubbles: true }),
+          } as unknown as ChangeEvent<InputElement>
+
+          this.handleChange(syntheticEvent)
+        }
+      }
+    }, 50)
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
