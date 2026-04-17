@@ -626,6 +626,44 @@ describe('MentionsInput', () => {
     expect(screen.queryByText('No suggestions found')).not.toBeInTheDocument()
   })
 
+  it('falls back to the built-in empty state when renderEmpty returns undefined.', async () => {
+    type DeferredResult = {
+      resolve: (value: Array<{ id: string; display: string }>) => void
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string) =>
+        new Promise<Array<{ id: string; display: string }>>((resolve) => {
+          requests.set(query, { resolve })
+        })
+    )
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} renderEmpty={() => undefined} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    requests.get('a')?.resolve([])
+
+    await waitFor(() => {
+      expect(screen.getByText('No suggestions found')).toBeInTheDocument()
+    })
+  })
+
   it('allows renderError to suppress the built-in error state.', async () => {
     type DeferredResult = {
       reject: (reason?: unknown) => void
@@ -664,6 +702,44 @@ describe('MentionsInput', () => {
     })
 
     expect(screen.queryByText('Unable to load suggestions')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the built-in error state when renderError returns undefined.', async () => {
+    type DeferredResult = {
+      reject: (reason?: unknown) => void
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string) =>
+        new Promise<Array<{ id: string; display: string }>>((_, reject) => {
+          requests.set(query, { reject })
+        })
+    )
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} renderError={() => undefined} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    requests.get('a')?.reject(new Error('boom'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to load suggestions')).toBeInTheDocument()
+    })
   })
 
   it('keeps the active request abortable after an older request rejects.', async () => {
