@@ -1300,7 +1300,8 @@ class MentionsInput<
       }
 
       return {
-        statusContent,
+        statusContent:
+          statusContent === undefined ? DEFAULT_ERROR_SUGGESTIONS_MESSAGE : statusContent,
         statusType: 'error',
       }
     }
@@ -1319,7 +1320,8 @@ class MentionsInput<
     }
 
     return {
-      statusContent,
+      statusContent:
+        statusContent === undefined ? DEFAULT_EMPTY_SUGGESTIONS_MESSAGE : statusContent,
       statusType: 'empty',
     }
   }

@@ -12,6 +12,11 @@ const child = spawn(pnpmCommand, ['vite', '--config', 'demo/vite.config.ts'], {
   },
 })
 
+child.on('error', (error) => {
+  console.error('Failed to start dev server:', error)
+  process.exit(1)
+})
+
 child.on('close', (code, signal) => {
   if (signal) {
     process.kill(process.pid, signal)
