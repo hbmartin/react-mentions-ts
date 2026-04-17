@@ -8,6 +8,9 @@ const WDYR_IMPORT_SOURCE = '@welldone-software/why-did-you-render'
 
 export default defineConfig({
   root: __dirname,
+  build: {
+    sourcemap: true,
+  },
   plugins: [
     react({
       ...(enableWhyDidYouRender && {
@@ -22,6 +25,7 @@ export default defineConfig({
     },
   }),
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       'react-mentions': path.resolve(__dirname, '../src'),
     },

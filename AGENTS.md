@@ -1,0 +1,3 @@
+- never run publint with pnpm, instead always use `npx publint --pack npm`
+- use `pnpm` for all commands except `pack`
+- always run `pnpm test` after completing the todo list to make sure there are no breaking changes
