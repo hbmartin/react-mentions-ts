@@ -2667,126 +2667,7 @@ describe('MentionsInput', () => {
       unmount()
     })
 
-    it('syncs measurement bridge observers and cleans up.', async () => {
-      const ref = React.createRef<MentionsInput>()
-      const { unmount } = render(
-        <MentionsInput ref={ref} value="">
-          <Mention trigger="@" data={data} />
-        </MentionsInput>
-      )
-
-      await waitFor(() => {
-        expect(ref.current).not.toBeNull()
-      })
-
-      const instance = ref.current as unknown as any
-      const container = document.createElement('div')
-      const highlighter = document.createElement('div')
-      const input = document.createElement('textarea')
-      const suggestions = document.createElement('div')
-      instance.containerElement = container
-      instance.highlighterElement = highlighter
-      instance.inputElement = input
-      instance.suggestionsElement = suggestions
-
-      const syncScroll = jest.fn()
-      const updatePosition = jest.fn()
-      instance.updateHighlighterScroll = syncScroll
-      instance.updateSuggestionsPosition = updatePosition
-
-      const originalResizeObserver = (globalThis as any).ResizeObserver
-      const observers: Array<{ observe: jest.Mock; disconnect: jest.Mock }> = []
-      class MockResizeObserver {
-        private readonly callback: () => void
-        observe: jest.Mock
-        disconnect: jest.Mock
-        constructor(cb: () => void) {
-          this.callback = cb
-          this.observe = jest.fn(() => {
-            this.callback()
-          })
-          this.disconnect = jest.fn()
-          observers.push(this)
-        }
-      }
-      ;(globalThis as any).ResizeObserver = MockResizeObserver
-
-      const originalAdd = window.addEventListener
-      const originalRemove = window.removeEventListener
-      const handlers: Partial<Record<string, EventListener>> = {}
-      const addListener = jest
-        .spyOn(globalThis, 'addEventListener')
-        .mockImplementation(
-          (
-            type: string,
-            listener: EventListenerOrEventListenerObject,
-            options?: boolean | AddEventListenerOptions
-          ) => {
-            handlers[type] = listener as EventListener
-            return originalAdd.call(globalThis, type, listener, options)
-          }
-        )
-      const removeListener = jest
-        .spyOn(globalThis, 'removeEventListener')
-        .mockImplementation(
-          (
-            type: string,
-            listener: EventListenerOrEventListenerObject,
-            options?: boolean | EventListenerOptions
-          ) => {
-            return originalRemove.call(globalThis, type, listener, options)
-          }
-        )
-
-      const bridgeElement = instance.renderMeasurementBridge() as React.ReactElement
-      const { unmount: unmountBridge } = render(bridgeElement)
-
-      expect(syncScroll).toHaveBeenCalled()
-      expect(updatePosition).toHaveBeenCalled()
-
-      const syncCalls = syncScroll.mock.calls.length
-      const positionCalls = updatePosition.mock.calls.length
-
-      act(() => {
-        input.dispatchEvent(new Event('scroll'))
-      })
-
-      expect(syncScroll.mock.calls.length).toBe(syncCalls + 1)
-      expect(updatePosition.mock.calls.length).toBe(positionCalls + 1)
-
-      act(() => {
-        globalThis.dispatchEvent(new Event('resize'))
-      })
-
-      expect(syncScroll.mock.calls.length).toBeGreaterThan(syncCalls + 1)
-      expect(updatePosition.mock.calls.length).toBeGreaterThan(positionCalls + 1)
-
-      act(() => {
-        globalThis.dispatchEvent(new Event('orientationchange'))
-      })
-
-      expect(syncScroll.mock.calls.length).toBeGreaterThan(syncCalls + 2)
-      expect(updatePosition.mock.calls.length).toBeGreaterThan(positionCalls + 2)
-
-      unmountBridge()
-      unmount()
-      await waitFor(() => {
-        for (const observer of observers) {
-          expect(observer.disconnect).toHaveBeenCalled()
-        }
-      })
-      expect(handlers.resize).toBeDefined()
-      expect(handlers.orientationchange).toBeDefined()
-      expect(addListener).toHaveBeenCalledWith('resize', handlers.resize)
-      expect(addListener).toHaveBeenCalledWith('orientationchange', handlers.orientationchange)
-      expect(removeListener).toHaveBeenCalledWith('resize', handlers.resize)
-      expect(removeListener).toHaveBeenCalledWith('orientationchange', handlers.orientationchange)
-      addListener.mockRestore()
-      removeListener.mockRestore()
-      ;(globalThis as any).ResizeObserver = originalResizeObserver
-    })
-
-    it('runs updateHighlighterScroll twice when animation frames resolve', () => {
+    it('flushes a queued scroll sync when the animation frame resolves', () => {
       const ref = React.createRef<MentionsInput>()
       const { unmount } = render(
         <MentionsInput ref={ref} value="">
@@ -2796,27 +2677,28 @@ describe('MentionsInput', () => {
 
       const instance = ref.current as unknown as any
       const updateSpy = jest.spyOn(instance, 'updateHighlighterScroll').mockImplementation(() => {})
+      const flushSpy = jest.spyOn(instance, 'flushPendingViewSync')
       const raf = jest
         .spyOn(globalThis, 'requestAnimationFrame')
         .mockImplementation((cb: FrameRequestCallback) => {
           cb(0)
           return 1
         })
-      const cancel = jest.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {})
 
       act(() => {
         instance.requestHighlighterScrollSync()
       })
 
-      expect(updateSpy).toHaveBeenCalledTimes(2)
+      expect(updateSpy).toHaveBeenCalledTimes(1)
+      expect(flushSpy).toHaveBeenCalledTimes(1)
 
+      flushSpy.mockRestore()
       updateSpy.mockRestore()
       raf.mockRestore()
-      cancel.mockRestore()
       unmount()
     })
 
-    it('cancels a pending scroll sync frame before scheduling a new one', () => {
+    it('coalesces repeated queued view sync requests into one frame', () => {
       const ref = React.createRef<MentionsInput>()
       const { unmount } = render(
         <MentionsInput ref={ref} value="">
@@ -2825,19 +2707,21 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      instance._scrollSyncFrame = 7
-
-      const cancel = jest.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {})
       const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 9)
 
       act(() => {
         instance.requestHighlighterScrollSync()
+        instance.requestViewSync({ measureSuggestions: true })
       })
 
-      expect(cancel).toHaveBeenCalledWith(7)
       expect(instance._scrollSyncFrame).toBe(9)
+      expect(raf).toHaveBeenCalledTimes(1)
+      expect(instance._pendingViewSync).toMatchObject({
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      })
 
-      cancel.mockRestore()
       raf.mockRestore()
       unmount()
     })

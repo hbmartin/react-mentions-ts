@@ -15,3 +15,4 @@ npm-debug.log*
 /attw*
 .npm-cache
 /reviews_triage
+triage_decisions.db
