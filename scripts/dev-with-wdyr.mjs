@@ -2,8 +2,9 @@
 
 import { spawn } from 'node:child_process'
 
-const child = spawn('pnpm', ['vite', '--config', 'demo/vite.config.ts'], {
-  shell: true,
+const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+
+const child = spawn(pnpmCommand, ['vite', '--config', 'demo/vite.config.ts'], {
   stdio: 'inherit',
   env: {
     ...process.env,

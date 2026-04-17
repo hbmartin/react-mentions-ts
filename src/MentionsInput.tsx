@@ -121,19 +121,18 @@ const createGeneratedId = (): string => {
 }
 
 const isAbortError = (error: unknown): boolean =>
-  (typeof DOMException !== 'undefined' && error instanceof DOMException)
+  typeof DOMException !== 'undefined' && error instanceof DOMException
     ? error.name === 'AbortError'
     : typeof error === 'object' &&
-        error !== null &&
-        'name' in error &&
-        (error as { name?: string }).name === 'AbortError'
+      error !== null &&
+      'name' in error &&
+      (error as { name?: string }).name === 'AbortError'
 
 const DEFAULT_EMPTY_SUGGESTIONS_MESSAGE = 'No suggestions found'
 const DEFAULT_ERROR_SUGGESTIONS_MESSAGE = 'Unable to load suggestions'
 
-const getMentionChildren = <Extra extends Record<string, unknown>>(
-  children: React.ReactNode
-) => collectMentionElements<Extra>(children)
+const getMentionChildren = <Extra extends Record<string, unknown>>(children: React.ReactNode) =>
+  collectMentionElements<Extra>(children)
 
 const getMentionChild = <Extra extends Record<string, unknown>>(
   children: React.ReactNode,
@@ -375,7 +374,10 @@ class MentionsInput<
 
   private validateChildTree(children: React.ReactNode, seenChildren: Set<string>): void {
     React.Children.forEach(children, (child) => {
-      if (React.isValidElement<{ children?: React.ReactNode }>(child) && child.type === React.Fragment) {
+      if (
+        React.isValidElement<{ children?: React.ReactNode }>(child) &&
+        child.type === React.Fragment
+      ) {
         this.validateChildTree(child.props.children, seenChildren)
         return
       }
@@ -748,7 +750,9 @@ class MentionsInput<
       'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
       'aria-controls': isOverlayOpen && overlayId ? overlayId : undefined,
       'aria-activedescendant':
-        isOverlayOpen && overlayId ? getSuggestionHtmlId(overlayId, this.state.focusIndex) : undefined,
+        isOverlayOpen && overlayId
+          ? getSuggestionHtmlId(overlayId, this.state.focusIndex)
+          : undefined,
     })
 
     if (isInlineAutocomplete && inlineSuggestion) {
@@ -1094,10 +1098,7 @@ class MentionsInput<
     }
     const previousPosition = this.state.inlineSuggestionPosition
 
-    if (
-      previousPosition?.left === nextPosition.left &&
-      previousPosition.top === nextPosition.top
-    ) {
+    if (previousPosition?.left === nextPosition.left && previousPosition.top === nextPosition.top) {
       return
     }
 
@@ -1283,17 +1284,42 @@ class MentionsInput<
     if (preferredQueryState.status === 'error') {
       const renderError =
         mentionChild.props.renderError ?? DEFAULT_MENTION_PROPS.renderError ?? null
+      if (!renderError) {
+        return {
+          statusContent: DEFAULT_ERROR_SUGGESTIONS_MESSAGE,
+          statusType: 'error',
+        }
+      }
+
+      const statusContent = renderError(
+        preferredQueryState.queryInfo.query,
+        preferredQueryState.error
+      )
+      if (statusContent === null || statusContent === false) {
+        return { statusContent: null, statusType: null }
+      }
+
       return {
-        statusContent:
-          renderError?.(preferredQueryState.queryInfo.query, preferredQueryState.error) ??
-          DEFAULT_ERROR_SUGGESTIONS_MESSAGE,
+        statusContent,
         statusType: 'error',
       }
     }
 
     const renderEmpty = mentionChild.props.renderEmpty ?? DEFAULT_MENTION_PROPS.renderEmpty ?? null
+    if (!renderEmpty) {
+      return {
+        statusContent: DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
+        statusType: 'empty',
+      }
+    }
+
+    const statusContent = renderEmpty(preferredQueryState.queryInfo.query)
+    if (statusContent === null || statusContent === false) {
+      return { statusContent: null, statusType: null }
+    }
+
     return {
-      statusContent: renderEmpty?.(preferredQueryState.queryInfo.query) ?? DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
+      statusContent,
       statusType: 'empty',
     }
   }
@@ -2068,10 +2094,7 @@ class MentionsInput<
     }
   }
 
-  private setQueryState(
-    childIndex: number,
-    queryState: SuggestionQueryState<Extra> | null
-  ): void {
+  private setQueryState(childIndex: number, queryState: SuggestionQueryState<Extra> | null): void {
     this.setState((prevState) => {
       const nextQueryStates: SuggestionQueryStateMap<Extra> = { ...prevState.queryStates }
 
@@ -2095,8 +2118,7 @@ class MentionsInput<
     ignoreAccents: boolean
   ): void {
     const debounceMs = mentionChild.props.debounceMs ?? DEFAULT_MENTION_PROPS.debounceMs
-    const maxSuggestions =
-      mentionChild.props.maxSuggestions ?? DEFAULT_MENTION_PROPS.maxSuggestions
+    const maxSuggestions = mentionChild.props.maxSuggestions ?? DEFAULT_MENTION_PROPS.maxSuggestions
 
     const pendingTimer = this._queryDebounceTimers.get(childIndex)
     if (pendingTimer !== undefined) {
@@ -2124,7 +2146,13 @@ class MentionsInput<
         signal: controller.signal,
       })
 
-      void this.updateSuggestions(queryId, childIndex, queryInfo, provideData(queryInfo.query), controller)
+      void this.updateSuggestions(
+        queryId,
+        childIndex,
+        queryInfo,
+        provideData(queryInfo.query),
+        controller
+      )
     }
 
     if (debounceMs > 0) {
@@ -2216,7 +2244,9 @@ class MentionsInput<
         return
       }
 
-      this._queryAbortControllers.delete(childIndex)
+      if (this._queryAbortControllers.get(childIndex) === controller) {
+        this._queryAbortControllers.delete(childIndex)
+      }
 
       this.suggestions = {
         ...this.suggestions,
@@ -2247,7 +2277,9 @@ class MentionsInput<
         },
       }))
     } catch (error) {
-      this._queryAbortControllers.delete(childIndex)
+      if (this._queryAbortControllers.get(childIndex) === controller) {
+        this._queryAbortControllers.delete(childIndex)
+      }
 
       if (queryId !== this._queryId || controller.signal.aborted || isAbortError(error)) {
         return
