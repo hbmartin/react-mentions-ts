@@ -7,11 +7,41 @@ import type {
   MouseEvent as ReactMouseEvent,
   SyntheticEvent,
 } from 'react'
-import React, { useLayoutEffect } from 'react'
+import React from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
+import MeasurementBridge from './MeasurementBridge'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
+import {
+  applyHighlighterViewPatch,
+  applyTextareaResizePatch,
+  areInlineSuggestionPositionsEqual,
+  areSuggestionsPositionsEqual,
+  calculateInlineSuggestionPosition,
+  calculateSuggestionsPosition,
+  createPendingViewSync,
+  createViewSyncPatch,
+  getHighlighterViewPatch,
+  getInputInlineStyle,
+  getTextareaResizePatch,
+  hasPendingViewSync,
+  mergePendingViewSync,
+} from './MentionsInputLayout'
+import type { PendingViewSync, ViewSyncPatch } from './MentionsInputLayout'
+import {
+  getDataProvider,
+  getFocusedSuggestionEntry,
+  getInlineSuggestionAnnouncement,
+  getInlineSuggestionDetails,
+  getMentionChild,
+  getMentionChildren,
+  getSuggestionData,
+  getSuggestionQueryStateEntries,
+  getSuggestionsStatusContent,
+} from './MentionsInputSelectors'
+import type { InlineSuggestionDetails } from './MentionsInputSelectors'
+import MentionsInputView from './MentionsInputView'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
   applyChangeToValue,
@@ -23,7 +53,6 @@ import {
   getSubstringIndex,
   getSuggestionHtmlId,
   isNumber,
-  flattenSuggestions,
   mapPlainTextIndex,
   omit,
   spliceString,
@@ -32,23 +61,18 @@ import {
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
 import { isMentionElement } from './utils/isMentionElement'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
-import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
-import { useEventCallback } from './utils/useEventCallback'
+import readConfigFromChildren from './utils/readConfigFromChildren'
 import type {
   CaretCoordinates,
-  DataSource,
-  InlineSuggestionPosition,
   InputComponentProps,
   MentionComponentProps,
   MentionDataItem,
   MentionIdentifier,
   MentionOccurrence,
-  MentionSearchContext,
   MentionSelection,
   MentionSelectionState,
   MentionChildConfig,
   MentionsInputProps,
-  MentionsInputAnchorMode,
   MentionsInputState,
   MentionsInputClassNames,
   MentionsInputChangeTrigger,
@@ -57,57 +81,8 @@ import type {
   SuggestionQueryState,
   SuggestionQueryStateMap,
   SuggestionsMap,
-  SuggestionsPosition,
   InputElement,
 } from './types'
-import type { FlattenedSuggestion } from './utils/flattenSuggestions'
-
-const getDataProvider = <Extra extends Record<string, unknown>>(
-  data: DataSource<Extra>,
-  options: {
-    ignoreAccents: boolean
-    maxSuggestions?: number
-    signal: AbortSignal
-  }
-): ((query: string) => Promise<MentionDataItem<Extra>[]>) => {
-  const { ignoreAccents, maxSuggestions, signal } = options
-  const applyMaxSuggestions = (
-    items: ReadonlyArray<MentionDataItem<Extra>>
-  ): MentionDataItem<Extra>[] =>
-    maxSuggestions === undefined ? [...items] : [...items.slice(0, maxSuggestions)]
-
-  if (Array.isArray(data)) {
-    const items = data as ReadonlyArray<MentionDataItem<Extra>>
-    // eslint-disable-next-line @typescript-eslint/require-await
-    return async (query: string) =>
-      applyMaxSuggestions(
-        items.flatMap((item) => {
-          if (signal.aborted) {
-            return []
-          }
-
-          const index = getSubstringIndex(item.display || String(item.id), query, ignoreAccents)
-          return index >= 0
-            ? [
-                {
-                  ...item,
-                  highlights: [{ start: index, end: index + query.length }],
-                },
-              ]
-            : []
-        })
-      )
-  }
-
-  return async (query: string) => {
-    const provider = data as (
-      query: string,
-      context: MentionSearchContext
-    ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>
-    const result = await Promise.resolve(provider(query, { signal }))
-    return applyMaxSuggestions(result)
-  }
-}
 
 let generatedIdCounter = 0
 
@@ -127,26 +102,6 @@ const isAbortError = (error: unknown): boolean =>
       error !== null &&
       'name' in error &&
       (error as { name?: string }).name === 'AbortError'
-
-const DEFAULT_EMPTY_SUGGESTIONS_MESSAGE = 'No suggestions found'
-const DEFAULT_ERROR_SUGGESTIONS_MESSAGE = 'Unable to load suggestions'
-
-const getMentionChildren = <Extra extends Record<string, unknown>>(children: React.ReactNode) =>
-  collectMentionElements<Extra>(children)
-
-const getMentionChild = <Extra extends Record<string, unknown>>(
-  children: React.ReactNode,
-  childIndex: number
-): React.ReactElement<MentionComponentProps<Extra>> | undefined =>
-  getMentionChildren<Extra>(children)[childIndex]
-
-const getSuggestionQueryStateEntries = <Extra extends Record<string, unknown>>(
-  queryStates: SuggestionQueryStateMap<Extra>
-): ReadonlyArray<readonly [number, SuggestionQueryState<Extra>]> =>
-  Object.entries(queryStates)
-    .map(([key, value]) => [Number(key), value] as const)
-    .filter(([key]) => Number.isInteger(key))
-    .toSorted(([left], [right]) => left - right)
 
 const KEY = {
   TAB: 'Tab',
@@ -225,16 +180,6 @@ interface MentionSelectionComputation<Extra extends Record<string, unknown>> {
   selectionMap: Record<string, MentionSelectionState>
 }
 
-interface InlineSuggestionDetails<Extra extends Record<string, unknown> = Record<string, unknown>> {
-  hiddenPrefix: string
-  visibleText: string
-  queryInfo: QueryInfo
-  suggestion: SuggestionDataItem<Extra>
-  announcement: string
-}
-
-const INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT = 'No inline suggestions available'
-
 const visuallyHiddenStyles: CSSProperties = {
   position: 'absolute',
   width: 1,
@@ -305,6 +250,8 @@ class MentionsInput<
   private _scrollSyncFrame: number | null = null
   private _autoResizeFrame: number | null = null
   private _cachedMarkupValue = ''
+  private _pendingViewSync: PendingViewSync = createPendingViewSync()
+  private _isFlushingViewSync = false
   private readonly _queryDebounceTimers = new Map<number, ReturnType<typeof setTimeout>>()
   private readonly _queryAbortControllers = new Map<number, AbortController>()
 
@@ -330,6 +277,38 @@ class MentionsInput<
       controller.abort()
     }
     this._queryAbortControllers.clear()
+  }
+
+  requestViewSync = (
+    flags: Partial<PendingViewSync>,
+    options: {
+      flushNow?: boolean
+    } = {}
+  ): void => {
+    this._pendingViewSync = mergePendingViewSync(this._pendingViewSync, flags)
+
+    if (!hasPendingViewSync(this._pendingViewSync)) {
+      return
+    }
+
+    if (options.flushNow) {
+      this.flushPendingViewSync()
+      return
+    }
+
+    if (globalThis.window === undefined || typeof globalThis.requestAnimationFrame !== 'function') {
+      this.flushPendingViewSync()
+      return
+    }
+
+    if (this._scrollSyncFrame !== null) {
+      return
+    }
+
+    this._scrollSyncFrame = globalThis.requestAnimationFrame(() => {
+      this._scrollSyncFrame = null
+      this.flushPendingViewSync()
+    })
   }
 
   private ensureGeneratedId(): void {
@@ -429,6 +408,52 @@ class MentionsInput<
     return this.defaultSuggestionsPortalHost
   }
 
+  flushPendingViewSync = (): ViewSyncPatch => {
+    if (this._didUnmount || this._isFlushingViewSync || !hasPendingViewSync(this._pendingViewSync)) {
+      return createViewSyncPatch()
+    }
+
+    if (this._scrollSyncFrame !== null) {
+      this.cancelScheduledFrame('_scrollSyncFrame')
+    }
+
+    this._isFlushingViewSync = true
+    const pendingViewSync = this._pendingViewSync
+    this._pendingViewSync = createPendingViewSync()
+    const patch = createViewSyncPatch()
+
+    if (pendingViewSync.restoreSelection && this.state.pendingSelectionUpdate) {
+      this.setState({ pendingSelectionUpdate: false })
+      this.setSelection(this.state.selectionStart, this.state.selectionEnd)
+      patch.restoredSelection = true
+    }
+
+    let layoutDidChange = false
+
+    if (pendingViewSync.syncScroll) {
+      patch.syncedScroll = true
+      layoutDidChange = this.updateHighlighterScroll() || layoutDidChange
+      layoutDidChange = this.resetTextareaHeight() || layoutDidChange
+    }
+
+    if (pendingViewSync.measureSuggestions) {
+      patch.measuredSuggestions = this.updateSuggestionsPosition()
+    }
+
+    if (pendingViewSync.measureInline) {
+      patch.measuredInline = this.updateInlineSuggestionPosition()
+    }
+
+    if (pendingViewSync.recomputeHighlighter || layoutDidChange) {
+      this.scheduleHighlighterRecompute()
+      patch.recomputedHighlighter = true
+    }
+
+    this._isFlushingViewSync = false
+
+    return patch
+  }
+
   constructor(props: MentionsInputProps<Extra>) {
     super(props)
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
@@ -522,14 +547,14 @@ class MentionsInput<
     document.addEventListener('scroll', this.handleDocumentScroll, true)
     document.addEventListener('selectionchange', this.handleDocumentSelectionChange)
 
-    this.updateSuggestionsPosition()
-    this.updateInlineSuggestionPosition()
-
-    this.resetTextareaHeight()
-
-    if (this.inputElement && this.highlighterElement) {
-      mirrorInputTypographicStyles(this.inputElement, this.highlighterElement)
-    }
+    this.requestViewSync(
+      {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      { flushNow: true }
+    )
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -537,32 +562,8 @@ class MentionsInput<
     prevProps: MentionsInputProps<Extra>,
     prevState: MentionsInputState<Extra>
   ): void {
-    // Validate children if they've changed
     if (prevProps.children !== this.props.children) {
       this.validateChildren()
-    }
-
-    // Update position of suggestions unless this componentDidUpdate was
-    // triggered by an update to suggestionsPosition.
-    if (prevState.suggestionsPosition === this.state.suggestionsPosition) {
-      this.updateSuggestionsPosition()
-    }
-
-    if (
-      prevState.inlineSuggestionPosition === this.state.inlineSuggestionPosition &&
-      (this.isInlineAutocomplete() ||
-        prevState.caretPosition !== this.state.caretPosition ||
-        prevProps.value !== this.props.value ||
-        prevState.generatedId !== this.state.generatedId)
-    ) {
-      this.updateInlineSuggestionPosition()
-    }
-
-    // maintain selection in case a mention is added/removed causing
-    // the cursor to jump to the end
-    if (this.state.pendingSelectionUpdate) {
-      this.setState({ pendingSelectionUpdate: false })
-      this.setSelection(this.state.selectionStart, this.state.selectionEnd)
     }
 
     const selectionPositionsChanged =
@@ -574,14 +575,8 @@ class MentionsInput<
     const configChanged = this.state.config !== prevState.config
     const valueChanged = currentValue !== previousValue || configChanged
 
-    if (this.getExplicitId() === null && prevState.generatedId !== this.state.generatedId) {
-      this.updateSuggestionsPosition()
-    } else if (this.getExplicitId() === null && this.state.generatedId === null) {
+    if (this.getExplicitId() === null && this.state.generatedId === null) {
       this.ensureGeneratedId()
-    }
-
-    if (valueChanged || prevProps.autoResize !== this.props.autoResize) {
-      this.resetTextareaHeight()
     }
 
     const recalculatedMentions = valueChanged
@@ -614,6 +609,37 @@ class MentionsInput<
     if (valueChanged) {
       this._cachedMarkupValue = currentValue
     }
+
+    if (this.state.pendingSelectionUpdate) {
+      this.requestViewSync({ restoreSelection: true })
+    }
+
+    if (valueChanged || prevProps.autoResize !== this.props.autoResize) {
+      this.requestViewSync({
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      })
+    }
+
+    if (selectionPositionsChanged) {
+      this.requestViewSync({
+        measureSuggestions: true,
+        measureInline: true,
+      })
+    }
+
+    if (
+      prevState.generatedId !== this.state.generatedId ||
+      prevState.caretPosition !== this.state.caretPosition
+    ) {
+      this.requestViewSync({
+        measureSuggestions: true,
+        measureInline: true,
+      })
+    }
+
+    this.flushPendingViewSync()
 
     if (selectionPositionsChanged || valueChanged) {
       const currentSelection = this.computeMentionSelectionDetails(
@@ -670,20 +696,21 @@ class MentionsInput<
   render(): React.ReactNode {
     const { className, style, singleLine } = this.props
     const rootClassName = cn(rootStyles(), className)
+
     return (
-      <div
-        ref={this.setContainerElement}
-        className={rootClassName}
+      <MentionsInputView
+        rootRef={this.setContainerElement}
+        rootClassName={rootClassName}
         style={style}
-        data-single-line={
-          (singleLine ?? MentionsInput.defaultProps.singleLine) ? 'true' : undefined
-        }
-        data-multi-line={(singleLine ?? MentionsInput.defaultProps.singleLine) ? undefined : 'true'}
-      >
-        {this.renderControl()}
-        {this.renderSuggestionsOverlay()}
-        {this.renderMeasurementBridge()}
-      </div>
+        singleLine={singleLine ?? MentionsInput.defaultProps.singleLine}
+        controlClassName={this.getSlotClassName('control', controlStyles())}
+        highlighter={this.renderHighlighter()}
+        input={this.renderInputControl()}
+        inlineSuggestion={this.renderInlineSuggestion()}
+        inlineSuggestionLiveRegion={this.renderInlineSuggestionLiveRegion()}
+        suggestionsOverlay={this.renderSuggestionsOverlay()}
+        measurementBridge={this.renderMeasurementBridge()}
+      />
     )
   }
 
@@ -708,20 +735,13 @@ class MentionsInput<
       ...restPassthrough,
       className: baseClassName,
       value: getPlainText(this.props.value ?? '', this.state.config),
-      onScroll: this.updateHighlighterScroll,
+      onScroll: this.handleInputScroll,
       'data-slot': 'input',
       'data-single-line': singleLine ? 'true' : undefined,
       'data-multi-line': singleLine ? undefined : 'true',
     }
 
-    const inlineStyle: CSSProperties = {
-      background: 'transparent',
-    }
-
-    if (!singleLine && isMobileSafari()) {
-      inlineStyle.marginTop = 1
-      inlineStyle.marginLeft = -3
-    }
+    const inlineStyle = getInputInlineStyle(singleLine)
 
     if (Object.keys(inlineStyle).length > 0) {
       props.style = inlineStyle
@@ -768,26 +788,16 @@ class MentionsInput<
     return props as InputComponentProps
   }
 
-  renderControl = (): React.ReactElement => {
+  renderInputControl = (): React.ReactElement => {
     const { singleLine, inputComponent: CustomInput } = this.props
     const inputProps = this.getInputProps()
-    const controlClassName = this.getSlotClassName('control', controlStyles())
 
-    const control = CustomInput ? (
+    return CustomInput ? (
       <CustomInput ref={this.setInputRef} {...inputProps} />
     ) : singleLine ? (
       this.renderInput(inputProps)
     ) : (
       this.renderTextarea(inputProps)
-    )
-
-    return (
-      <div className={controlClassName} data-slot="control">
-        {this.renderHighlighter()}
-        {control}
-        {this.renderInlineSuggestion()}
-        {this.renderInlineSuggestionLiveRegion()}
-      </div>
     )
   }
 
@@ -810,57 +820,32 @@ class MentionsInput<
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
-  private readonly resetTextareaHeight = (): void => {
+  private readonly resetTextareaHeight = (): boolean => {
     const hasTextarea =
       typeof HTMLTextAreaElement !== 'undefined' && this.inputElement instanceof HTMLTextAreaElement
 
-    // When disabled or in single-line mode, clear any previously applied inline sizing.
-    if (this.props.singleLine === true || this.props.autoResize !== true) {
-      if (hasTextarea) {
-        this.inputElement!.style.height = ''
-        this.inputElement!.style.overflowY = ''
-      }
+    if (!hasTextarea) {
+      return false
+    }
+
+    const resizePatch = getTextareaResizePatch(this.inputElement, {
+      singleLine: this.props.singleLine,
+      autoResize: this.props.autoResize,
+    })
+    const didUpdate = applyTextareaResizePatch(this.inputElement, resizePatch)
+
+    if (
+      this.props.singleLine === true ||
+      this.props.autoResize !== true ||
+      globalThis.window === undefined ||
+      typeof globalThis.requestAnimationFrame !== 'function'
+    ) {
       if (this._autoResizeFrame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
         globalThis.cancelAnimationFrame(this._autoResizeFrame)
         this._autoResizeFrame = null
       }
-      return
-    }
 
-    // eslint-disable-next-line code-complete/low-function-cohesion
-    const measure = () => {
-      const element = this.inputElement
-      if (
-        !element ||
-        typeof HTMLTextAreaElement === 'undefined' ||
-        !(element instanceof HTMLTextAreaElement)
-      ) {
-        return
-      }
-
-      element.style.height = 'auto'
-      element.style.overflowY = 'hidden'
-
-      let borderAdjustment = 0
-      if (globalThis.window !== undefined && typeof globalThis.getComputedStyle === 'function') {
-        const computed = globalThis.getComputedStyle(element)
-        const parse = (value: string | null | undefined) =>
-          value ? Number.parseFloat(value) || 0 : 0
-        borderAdjustment = parse(computed.borderTopWidth) + parse(computed.borderBottomWidth)
-      }
-
-      const nextHeight = element.scrollHeight + borderAdjustment
-      element.style.height = `${nextHeight}px`
-    }
-
-    measure()
-
-    if (
-      !hasTextarea ||
-      globalThis.window === undefined ||
-      typeof globalThis.requestAnimationFrame !== 'function'
-    ) {
-      return
+      return didUpdate
     }
 
     if (this._autoResizeFrame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
@@ -869,8 +854,16 @@ class MentionsInput<
 
     this._autoResizeFrame = globalThis.requestAnimationFrame(() => {
       this._autoResizeFrame = null
-      measure()
+      applyTextareaResizePatch(
+        this.inputElement,
+        getTextareaResizePatch(this.inputElement, {
+          singleLine: this.props.singleLine,
+          autoResize: this.props.autoResize,
+        })
+      )
     })
+
+    return didUpdate
   }
 
   setSuggestionsElement = (el: HTMLDivElement | null) => {
@@ -990,7 +983,10 @@ class MentionsInput<
     }
 
     const inlineSuggestion = this.getInlineSuggestionDetails()
-    const announcement = this.getInlineSuggestionAnnouncement(inlineSuggestion)
+    const announcement = getInlineSuggestionAnnouncement(
+      inlineSuggestion,
+      this.getSuggestionsStatusContent()
+    )
     const liveRegionId = this.getInlineAutocompleteLiveRegionId()
 
     return (
@@ -1007,21 +1003,6 @@ class MentionsInput<
     )
   }
 
-  private readonly getInlineSuggestionAnnouncement = (
-    inlineSuggestion: InlineSuggestionDetails<Extra> | null
-  ): string => {
-    if (!inlineSuggestion) {
-      const { statusContent, statusType } = this.getSuggestionsStatusContent()
-      if (statusType !== null && typeof statusContent === 'string') {
-        return statusContent
-      }
-
-      return INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT
-    }
-
-    return inlineSuggestion.announcement
-  }
-
   renderMeasurementBridge = (): React.ReactNode => {
     return (
       <MeasurementBridge
@@ -1029,9 +1010,7 @@ class MentionsInput<
         highlighter={this.highlighterElement}
         input={this.inputElement}
         suggestions={this.suggestionsElement}
-        onSyncScroll={this.updateHighlighterScroll}
-        onUpdateInlineSuggestionPosition={this.updateInlineSuggestionPosition}
-        onUpdateSuggestionsPosition={this.updateSuggestionsPosition}
+        requestViewSync={this.requestViewSync}
       />
     )
   }
@@ -1063,56 +1042,34 @@ class MentionsInput<
     this.highlighterElement = el
   }
 
-  updateInlineSuggestionPosition = (): void => {
+  updateInlineSuggestionPosition = (): boolean => {
     if (!this.isInlineAutocomplete()) {
-      if (this.state.inlineSuggestionPosition !== null) {
-        this.setState({ inlineSuggestionPosition: null })
+      if (this.state.inlineSuggestionPosition === null) {
+        return false
       }
-      return
+
+      this.setState({ inlineSuggestionPosition: null })
+      return true
     }
 
-    const inlineSuggestion = this.getInlineSuggestionDetails()
-    const highlighter = this.highlighterElement
-    if (!inlineSuggestion || !highlighter) {
-      if (this.state.inlineSuggestionPosition !== null) {
-        this.setState({ inlineSuggestionPosition: null })
-      }
-      return
-    }
+    const nextPosition = this.getInlineSuggestionDetails()
+      ? calculateInlineSuggestionPosition({ highlighter: this.highlighterElement })
+      : null
 
-    const caretElement = highlighter.querySelector<HTMLSpanElement>('[data-mentions-caret]')
-    const controlElement = highlighter.parentElement
-    const controlRect = controlElement?.getBoundingClientRect()
-    const caretRect = caretElement?.getBoundingClientRect()
-
-    if (!caretRect || !controlRect) {
-      if (this.state.inlineSuggestionPosition !== null) {
-        this.setState({ inlineSuggestionPosition: null })
-      }
-      return
-    }
-
-    const nextPosition: InlineSuggestionPosition = {
-      left: caretRect.left - controlRect.left,
-      top: caretRect.top - controlRect.top,
-    }
-    const previousPosition = this.state.inlineSuggestionPosition
-
-    if (previousPosition?.left === nextPosition.left && previousPosition.top === nextPosition.top) {
-      return
+    if (areInlineSuggestionPositionsEqual(this.state.inlineSuggestionPosition, nextPosition)) {
+      return false
     }
 
     this.setState({ inlineSuggestionPosition: nextPosition })
+    return true
   }
 
   handleCaretPositionChange = (position: CaretCoordinates | null) => {
-    this.setState({ caretPosition: position }, () => {
-      if (position) {
-        this.updateSuggestionsPosition()
-      }
-      this.updateInlineSuggestionPosition()
+    this.setState({ caretPosition: position })
+    this.requestViewSync({
+      measureSuggestions: true,
+      measureInline: true,
     })
-    this.scheduleHighlighterRecompute()
   }
 
   scheduleHighlighterRecompute = (): void => {
@@ -1142,101 +1099,20 @@ class MentionsInput<
 
   isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
 
-  getFlattenedSuggestions = (): FlattenedSuggestion<Extra>[] => {
-    return flattenSuggestions<Extra>(this.getMentionChildren(), this.state.suggestions)
-  }
+  getFocusedSuggestionEntry = () =>
+    getFocusedSuggestionEntry<Extra>(this.props.children, this.state.suggestions, this.state.focusIndex)
 
-  getFocusedSuggestionEntry = (): {
-    result: SuggestionDataItem<Extra>
-    queryInfo: QueryInfo
-  } | null => {
-    const flattened = this.getFlattenedSuggestions()
-    if (flattened.length === 0) {
-      return null
-    }
-    return flattened[this.state.focusIndex] ?? flattened[0]
-  }
+  getSuggestionData = (suggestion: SuggestionDataItem<Extra>) => getSuggestionData(suggestion)
 
-  getSuggestionData = (
-    suggestion: SuggestionDataItem<Extra>
-  ): {
-    id: MentionIdentifier
-    display: string
-  } => {
-    if (typeof suggestion === 'string') {
-      return { id: suggestion, display: suggestion }
-    }
-    return {
-      id: suggestion.id,
-      display: suggestion.display ?? String(suggestion.id),
-    }
-  }
+  getInlineSuggestionDetails = (): InlineSuggestionDetails<Extra> | null =>
+    this.isInlineAutocomplete()
+      ? getInlineSuggestionDetails<Extra>(
+          this.props.children,
+          this.state.suggestions,
+          this.state.focusIndex
+        )
+      : null
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
-  getInlineSuggestionDetails = (): InlineSuggestionDetails<Extra> | null => {
-    if (!this.isInlineAutocomplete()) {
-      return null
-    }
-
-    const entry = this.getFocusedSuggestionEntry()
-    if (!entry) {
-      return null
-    }
-
-    const { queryInfo, result } = entry
-    const mentionChild = getMentionChild<Extra>(this.props.children, queryInfo.childIndex)
-
-    if (!mentionChild) {
-      return null
-    }
-
-    const {
-      displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
-      appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
-    } = mentionChild.props
-
-    const { id, display } = this.getSuggestionData(result)
-    let displayValue = displayTransform(id, display)
-    if (appendSpaceOnAdd) {
-      displayValue += ' '
-    }
-
-    const visibleText = this.getInlineSuggestionRemainder(displayValue, queryInfo)
-
-    if (!visibleText) {
-      return null
-    }
-
-    const hiddenPrefixLength = displayValue.length - visibleText.length
-    const hiddenPrefix = hiddenPrefixLength > 0 ? displayValue.slice(0, hiddenPrefixLength) : ''
-    const announcement = displayValue.trimEnd()
-
-    return {
-      hiddenPrefix,
-      visibleText,
-      queryInfo,
-      suggestion: result,
-      announcement: announcement.length > 0 ? announcement : displayValue,
-    }
-  }
-
-  getInlineSuggestionRemainder = (displayValue: string, queryInfo: QueryInfo): string => {
-    const query = queryInfo.query ?? ''
-    if (query.length === 0) {
-      return displayValue
-    }
-
-    const normalizedDisplay = displayValue.toLocaleLowerCase()
-    const normalizedQuery = query.toLocaleLowerCase()
-
-    if (normalizedDisplay.startsWith(normalizedQuery)) {
-      return displayValue.slice(query.length)
-    }
-
-    return displayValue
-  }
-
-  // eslint-disable-next-line code-complete/low-function-cohesion
   canApplyInlineSuggestion = (): boolean => {
     if (!this.isInlineAutocomplete()) {
       return false
@@ -1260,71 +1136,12 @@ class MentionsInput<
     return entries[0]?.[1] ?? null
   }
 
-  getSuggestionsStatusContent(): {
-    statusContent: React.ReactNode
-    statusType: 'empty' | 'error' | null
-  } {
-    if (countSuggestions(this.state.suggestions) > 0) {
-      return { statusContent: null, statusType: null }
-    }
-
-    const preferredQueryState = this.getPreferredQueryState()
-    if (!preferredQueryState || preferredQueryState.status === 'loading') {
-      return { statusContent: null, statusType: null }
-    }
-
-    const mentionChild = getMentionChild<Extra>(
+  getSuggestionsStatusContent = () =>
+    getSuggestionsStatusContent<Extra>(
       this.props.children,
-      preferredQueryState.queryInfo.childIndex
+      this.state.suggestions,
+      this.state.queryStates
     )
-    if (!mentionChild) {
-      return { statusContent: null, statusType: null }
-    }
-
-    if (preferredQueryState.status === 'error') {
-      const renderError =
-        mentionChild.props.renderError ?? DEFAULT_MENTION_PROPS.renderError ?? null
-      if (!renderError) {
-        return {
-          statusContent: DEFAULT_ERROR_SUGGESTIONS_MESSAGE,
-          statusType: 'error',
-        }
-      }
-
-      const statusContent = renderError(
-        preferredQueryState.queryInfo.query,
-        preferredQueryState.error
-      )
-      if (statusContent === null || statusContent === false) {
-        return { statusContent: null, statusType: null }
-      }
-
-      return {
-        statusContent:
-          statusContent === undefined ? DEFAULT_ERROR_SUGGESTIONS_MESSAGE : statusContent,
-        statusType: 'error',
-      }
-    }
-
-    const renderEmpty = mentionChild.props.renderEmpty ?? DEFAULT_MENTION_PROPS.renderEmpty ?? null
-    if (!renderEmpty) {
-      return {
-        statusContent: DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
-        statusType: 'empty',
-      }
-    }
-
-    const statusContent = renderEmpty(preferredQueryState.queryInfo.query)
-    if (statusContent === null || statusContent === false) {
-      return { statusContent: null, statusType: null }
-    }
-
-    return {
-      statusContent:
-        statusContent === undefined ? DEFAULT_EMPTY_SUGGESTIONS_MESSAGE : statusContent,
-      statusType: 'empty',
-    }
-  }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
   private readonly computeMentionSelectionDetails = (
@@ -1697,6 +1514,17 @@ class MentionsInput<
     this.props.onSelect?.(ev)
   }
 
+  handleInputScroll = (): void => {
+    this.requestViewSync(
+      {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      { flushNow: true }
+    )
+  }
+
   // eslint-disable-next-line code-complete/low-function-cohesion
   private readonly syncSelectionFromInput = (
     reason: 'select' | 'selectionchange' = 'selectionchange'
@@ -1871,179 +1699,55 @@ class MentionsInput<
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion, sonarjs/cognitive-complexity
-  updateSuggestionsPosition = (): void => {
-    const { caretPosition } = this.state
-    const { suggestionsPlacement = 'below' } = this.props
-    const anchorMode: MentionsInputAnchorMode = this.props.anchorMode ?? 'caret'
-    const anchorToLeft = anchorMode === 'left'
-    const resolvedPortalHost = this.resolvePortalHost()
+  updateSuggestionsPosition = (): boolean => {
+    const position =
+      calculateSuggestionsPosition({
+        caretPosition: this.state.caretPosition,
+        suggestionsPlacement: this.props.suggestionsPlacement ?? 'below',
+        anchorMode: this.props.anchorMode ?? 'caret',
+        resolvedPortalHost: this.resolvePortalHost(),
+        suggestions: this.suggestionsElement,
+        highlighter: this.highlighterElement,
+        container: this.containerElement,
+      }) ?? {}
 
-    const suggestions = this.suggestionsElement
-    const highlighter = this.highlighterElement
-    const container = this.containerElement
-
-    if (!caretPosition || !suggestions || !highlighter || !container) {
-      return
+    if (areSuggestionsPositionsEqual(position, this.state.suggestionsPosition)) {
+      return false
     }
 
-    // first get viewport-relative position (highlighter is offsetParent of caret):
-    const caretOffsetParentRect = highlighter.getBoundingClientRect()
-    const caretHeight = getComputedStyleLengthProp(highlighter, 'font-size')
-    const viewportRelative = {
-      left: caretOffsetParentRect.left + (anchorToLeft ? 0 : caretPosition.left),
-      top: caretOffsetParentRect.top + caretPosition.top,
-    }
-    const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
-    const desiredWidth = highlighter.offsetWidth
-
-    const position: SuggestionsPosition = {}
-
-    // if suggestions menu is in a portal, update position to be relative to its portal node
-    if (resolvedPortalHost) {
-      const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
-      const width = Math.min(desiredWidth, viewportWidth)
-      position.width = width
-      position.position = 'fixed'
-      let { left, top } = viewportRelative
-      // absolute/fixed positioned elements are positioned according to their entire box including margins; so we remove margins here:
-      left -= getComputedStyleLengthProp(suggestions, 'margin-left')
-      top -= getComputedStyleLengthProp(suggestions, 'margin-top')
-      // take into account highlighter/textinput scrolling:
-      if (!anchorToLeft) {
-        left -= highlighter.scrollLeft
-      }
-      top -= highlighter.scrollTop
-      // guard for mentions suggestions list clipped by window edges
-      const maxLeft = Math.max(0, viewportWidth - width)
-      position.left = Math.min(maxLeft, Math.max(0, left))
-      const shouldShowAboveCaret =
-        suggestionsPlacement === 'above' ||
-        (suggestionsPlacement === 'auto' &&
-          top + suggestions.offsetHeight > viewportHeight &&
-          suggestions.offsetHeight < top - caretHeight)
-
-      // guard for mentions suggestions list clipped by the bottom edge of the window when using automatic placement.
-      position.top = shouldShowAboveCaret
-        ? Math.max(0, top - suggestions.offsetHeight - caretHeight)
-        : top
-    } else {
-      const containerWidth = container.offsetWidth
-      const width = Math.min(desiredWidth, containerWidth)
-      position.width = width
-      const left = anchorToLeft ? 0 : caretPosition.left - highlighter.scrollLeft
-      const top = caretPosition.top - highlighter.scrollTop
-      // guard for mentions suggestions list clipped by right edge of window
-      if (anchorToLeft) {
-        position.left = 0
-      } else if (left + width > containerWidth) {
-        position.right = 0
-      } else {
-        position.left = left
-      }
-      const shouldShowAboveCaret =
-        suggestionsPlacement === 'above' ||
-        (suggestionsPlacement === 'auto' &&
-          viewportRelative.top - highlighter.scrollTop + suggestions.offsetHeight >
-            viewportHeight &&
-          suggestions.offsetHeight <
-            caretOffsetParentRect.top - caretHeight - highlighter.scrollTop)
-
-      // guard for mentions suggestions list clipped by the bottom edge of the container when using automatic placement.
-      position.top = shouldShowAboveCaret ? top - suggestions.offsetHeight - caretHeight : top
-    }
-
-    if (
-      position.left === this.state.suggestionsPosition.left &&
-      position.top === this.state.suggestionsPosition.top &&
-      position.position === this.state.suggestionsPosition.position &&
-      position.width === this.state.suggestionsPosition.width &&
-      position.right === this.state.suggestionsPosition.right
-    ) {
-      return
-    }
     this.setState({
       suggestionsPosition: position,
     })
+
+    return true
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
-  updateHighlighterScroll = (): void => {
-    const input = this.inputElement
-    const highlighter = this.highlighterElement
-    if (!input || !highlighter) {
-      // since the invocation of this function is deferred,
-      // the whole component may have been unmounted in the meanwhile
-      return
-    }
-
-    const nextScrollLeft = input.scrollLeft
-    const nextScrollTop = input.scrollTop
-    const prevScrollLeft = highlighter.scrollLeft
-    const prevScrollTop = highlighter.scrollTop
-
-    if (prevScrollLeft !== nextScrollLeft) {
-      highlighter.scrollLeft = nextScrollLeft
-    }
-    if (prevScrollTop !== nextScrollTop) {
-      highlighter.scrollTop = nextScrollTop
-    }
-    const inputHeight = input.clientHeight
-    let heightChanged = false
-    if (inputHeight) {
-      const nextHeight = `${inputHeight}px`
-      if (highlighter.style.height !== nextHeight) {
-        highlighter.style.height = nextHeight
-        heightChanged = true
-      }
-    }
-
-    const typographyUpdated = mirrorInputTypographicStyles(input, highlighter)
-
-    if (
-      prevScrollLeft !== nextScrollLeft ||
-      prevScrollTop !== nextScrollTop ||
-      heightChanged ||
-      typographyUpdated
-    ) {
-      this.updateInlineSuggestionPosition()
-      this.scheduleHighlighterRecompute()
-    }
-  }
+  updateHighlighterScroll = (): boolean =>
+    applyHighlighterViewPatch(
+      this.highlighterElement,
+      getHighlighterViewPatch(this.inputElement, this.highlighterElement)
+    )
 
   private readonly requestHighlighterScrollSync = (): void => {
-    // This first updateHighlighterScroll() call keeps the overlay in sync immediately,
-    // so any work done later in the same tick—like scheduleHighlighterRecompute() triggered by
-    // updateHighlighterScroll() or updateSuggestionsPosition() reads the up-to-date scroll and height.
-    this.updateHighlighterScroll()
-
-    if (globalThis.window === undefined) {
-      return
-    }
-
-    if (this._scrollSyncFrame !== null) {
-      globalThis.cancelAnimationFrame(this._scrollSyncFrame)
-      this._scrollSyncFrame = null
-    }
-
-    this._scrollSyncFrame = globalThis.requestAnimationFrame(() => {
-      this._scrollSyncFrame = null
-      // This second updateHighlighterScroll() call picks up any DOM adjustments that happen once
-      // the browser has painted (e.g., layout shifts from the just-updated input).
-      // Dropping either updateHighlighterScroll call introduces a one-frame visual lag (removing the first)
-      // or risks missing a final adjustment after the frame (removing the second)
-      this.updateHighlighterScroll()
+    this.requestViewSync({
+      syncScroll: true,
+      measureSuggestions: true,
+      measureInline: true,
     })
   }
 
   handleDocumentScroll = (): void => {
-    if (this._isScrolling || !this.suggestionsElement) {
+    if (this._isScrolling || (!this.suggestionsElement && !this.isInlineAutocomplete())) {
       return
     }
 
     this._isScrolling = true
     globalThis.requestAnimationFrame(() => {
-      this.updateSuggestionsPosition()
-      this.updateInlineSuggestionPosition()
+      this.requestViewSync({
+        measureSuggestions: true,
+        measureInline: true,
+      })
       this._isScrolling = false
     })
   }
@@ -2146,6 +1850,7 @@ class MentionsInput<
         ignoreAccents,
         maxSuggestions,
         signal: controller.signal,
+        getSubstringIndex,
       })
 
       void this.updateSuggestions(
@@ -2392,163 +2097,6 @@ class MentionsInput<
     (countSuggestions(this.state.suggestions) !== 0 ||
       this.isLoading() ||
       this.getSuggestionsStatusContent().statusType !== null)
-}
-
-/**
- * Returns the computed length property value for the provided element.
- * Note: According to spec and testing, can count on length values coming back in pixels. See https://developer.mozilla.org/en-US/docs/Web/CSS/used_value#Difference_from_computed_value
- */
-const getComputedStyleLengthProp = (forElement: Element, propertyName: string): number => {
-  const view = forElement.ownerDocument.defaultView ?? globalThis
-  const length = Number.parseFloat(
-    view.getComputedStyle(forElement, null).getPropertyValue(propertyName)
-  )
-  return Number.isFinite(length) ? length : 0
-}
-
-const isMobileSafari = (): boolean =>
-  typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent)
-
-interface MeasurementBridgeProps {
-  readonly container: HTMLDivElement | null
-  readonly highlighter: HTMLDivElement | null
-  readonly input: InputElement | null
-  readonly suggestions: HTMLDivElement | null
-  readonly onSyncScroll: () => void
-  readonly onUpdateInlineSuggestionPosition: () => void
-  readonly onUpdateSuggestionsPosition: () => void
-}
-
-const MeasurementBridge = ({
-  container,
-  highlighter,
-  input,
-  suggestions,
-  onSyncScroll,
-  onUpdateInlineSuggestionPosition,
-  onUpdateSuggestionsPosition,
-}: MeasurementBridgeProps) => {
-  const updateSuggestions = useEventCallback(() => {
-    onUpdateSuggestionsPosition()
-  })
-
-  const updateInlineSuggestionPosition = useEventCallback(() => {
-    onUpdateInlineSuggestionPosition()
-  })
-
-  const syncScroll = useEventCallback(() => {
-    onSyncScroll()
-  })
-
-  const updateAll = useEventCallback(() => {
-    updateSuggestions()
-    updateInlineSuggestionPosition()
-    syncScroll()
-  })
-
-  const observe = useEventCallback((element: Element | null, callback: () => void) => {
-    if (!element || typeof ResizeObserver === 'undefined') {
-      return undefined
-    }
-
-    const observer = new ResizeObserver(() => {
-      callback()
-    })
-    observer.observe(element)
-    return () => {
-      observer.disconnect()
-    }
-  })
-
-  useLayoutEffect(() => {
-    updateAll()
-  }, [])
-
-  useLayoutEffect(() => observe(container, updateAll), [container])
-  useLayoutEffect(() => observe(highlighter, updateAll), [highlighter])
-  useLayoutEffect(() => observe(input, updateAll), [input])
-  useLayoutEffect(() => observe(suggestions, updateSuggestions), [suggestions])
-
-  useLayoutEffect(() => {
-    if (globalThis.window === undefined) {
-      return undefined
-    }
-
-    const handleViewportChange = () => {
-      updateAll()
-    }
-
-    window.addEventListener('resize', handleViewportChange)
-    globalThis.addEventListener('orientationchange', handleViewportChange)
-
-    return () => {
-      window.removeEventListener('resize', handleViewportChange)
-      globalThis.removeEventListener('orientationchange', handleViewportChange)
-    }
-  }, [])
-
-  useLayoutEffect(() => {
-    if (!input) {
-      return undefined
-    }
-
-    const handleScroll = () => {
-      syncScroll()
-      updateSuggestions()
-      updateInlineSuggestionPosition()
-    }
-
-    input.addEventListener('scroll', handleScroll, { passive: true })
-    return () => {
-      input.removeEventListener('scroll', handleScroll)
-    }
-  }, [input])
-
-  return null
-}
-
-const TYPOGRAPHIC_STYLE_PROPS = [
-  'font-family',
-  'font-size',
-  'font-style',
-  'font-variant',
-  'font-weight',
-  'font-stretch',
-  'font-feature-settings',
-  'font-variation-settings',
-  'letter-spacing',
-  'line-height',
-  'text-transform',
-  'text-indent',
-  'text-align',
-  'word-spacing',
-] as const
-
-// eslint-disable-next-line code-complete/low-function-cohesion
-const mirrorInputTypographicStyles = (
-  input: InputElement,
-  highlighter: HTMLDivElement
-): boolean => {
-  if (typeof globalThis.getComputedStyle !== 'function') {
-    return false
-  }
-
-  const computed = globalThis.getComputedStyle(input)
-  let didUpdate = false
-
-  for (const property of TYPOGRAPHIC_STYLE_PROPS) {
-    const nextValue =
-      typeof computed.getPropertyValue === 'function'
-        ? computed.getPropertyValue(property)
-        : // Older JSDOM mocks may not include getPropertyValue; best-effort fallback
-          ((computed as unknown as Record<string, string | undefined>)[property] ?? '')
-    if (nextValue && highlighter.style.getPropertyValue(property) !== nextValue) {
-      highlighter.style.setProperty(property, nextValue)
-      didUpdate = true
-    }
-  }
-
-  return didUpdate
 }
 
 export default MentionsInput
