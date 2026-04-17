@@ -55,6 +55,17 @@ const overlayStyles = cva(
 )
 const listStyles =
   'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
+const statusStyles = cva('px-4 py-2.5 text-left text-sm leading-relaxed', {
+  variants: {
+    type: {
+      empty: 'text-muted-foreground',
+      error: 'text-destructive',
+    },
+  },
+  defaultVariants: {
+    type: 'empty',
+  },
+})
 
 function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
@@ -238,9 +249,16 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       return null
     }
 
+    const isPlainTextStatus =
+      typeof statusContent === 'string' || typeof statusContent === 'number'
+    const statusClassNameResolved = cn(
+      isPlainTextStatus ? statusStyles({ type: statusType ?? 'empty' }) : undefined,
+      statusClassName
+    )
+
     return (
       <div
-        className={statusClassName}
+        className={statusClassNameResolved}
         data-slot="suggestions-status"
         data-status-type={statusType ?? undefined}
         role={statusType === 'error' ? 'alert' : 'status'}

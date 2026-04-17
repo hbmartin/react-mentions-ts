@@ -180,6 +180,13 @@ interface MentionSelectionComputation<Extra extends Record<string, unknown>> {
   selectionMap: Record<string, MentionSelectionState>
 }
 
+interface ActiveSuggestionQuery<Extra extends Record<string, unknown>> {
+  childIndex: number
+  queryInfo: QueryInfo
+  mentionChild: React.ReactElement<MentionComponentProps<Extra>>
+  ignoreAccents: boolean
+}
+
 const visuallyHiddenStyles: CSSProperties = {
   position: 'absolute',
   width: 1,
@@ -243,7 +250,6 @@ class MentionsInput<
   private _suggestionsMouseDown = false
   private _isComposing = false
   private readonly defaultSuggestionsPortalHost: HTMLElement | null
-  private _isScrolling = false
   private _pendingHighlighterRecompute = false
   private _queuedHighlighterRecompute = false
   private _didUnmount = false
@@ -1738,17 +1744,13 @@ class MentionsInput<
   }
 
   handleDocumentScroll = (): void => {
-    if (this._isScrolling || (!this.suggestionsElement && !this.isInlineAutocomplete())) {
+    if (!this.suggestionsElement && !this.isInlineAutocomplete()) {
       return
     }
 
-    this._isScrolling = true
-    globalThis.requestAnimationFrame(() => {
-      this.requestViewSync({
-        measureSuggestions: true,
-        measureInline: true,
-      })
-      this._isScrolling = false
+    this.requestViewSync({
+      measureSuggestions: true,
+      measureInline: true,
     })
   }
 
@@ -1800,20 +1802,96 @@ class MentionsInput<
     }
   }
 
-  private setQueryState(childIndex: number, queryState: SuggestionQueryState<Extra> | null): void {
-    this.setState((prevState) => {
-      const nextQueryStates: SuggestionQueryStateMap<Extra> = { ...prevState.queryStates }
+  private replaceSuggestions(
+    nextSuggestions: SuggestionsMap<Extra>,
+    getStatePatch: (
+      prevState: MentionsInputState<Extra>,
+      syncedSuggestions: SuggestionsMap<Extra>
+    ) => Partial<MentionsInputState<Extra>> = () => ({})
+  ): void {
+    this.suggestions = nextSuggestions
+    this.setState((prevState) => ({
+      suggestions: nextSuggestions,
+      ...getStatePatch(prevState, nextSuggestions),
+    }))
+  }
 
-      if (queryState === null) {
-        delete nextQueryStates[childIndex]
-      } else {
-        nextQueryStates[childIndex] = queryState
+  private getActiveSuggestionQueries(
+    plainTextValue: string,
+    caretPosition: number
+  ): ActiveSuggestionQuery<Extra>[] {
+    const value = this.props.value ?? ''
+    const mentionChildren = this.getMentionChildren()
+    const positionInValue = mapPlainTextIndex(value, this.state.config, caretPosition, 'NULL')
+
+    // If caret is inside of mention, do not query
+    if (positionInValue === null || positionInValue === undefined) {
+      return []
+    }
+
+    // Extract substring in between the end of the previous mention and the caret
+    const substringStartIndex = getEndOfLastMention(
+      value.slice(0, Math.max(0, positionInValue)),
+      this.state.config
+    )
+    const substring = plainTextValue.slice(substringStartIndex, caretPosition)
+
+    return mentionChildren.flatMap((mentionChild, childIndex) => {
+      const triggerProp = mentionChild.props.trigger ?? '@'
+      const regex = resolveTriggerRegex(triggerProp)
+      const match = substring.match(regex)
+
+      if (match?.[1] === undefined || match[2] === undefined) {
+        return []
       }
 
-      return {
-        queryStates: nextQueryStates,
-      }
+      const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
+      return [
+        {
+          childIndex,
+          queryInfo: {
+            childIndex,
+            query: match[2],
+            querySequenceStart,
+            querySequenceEnd: querySequenceStart + match[1].length,
+          },
+          mentionChild,
+          ignoreAccents: regex.flags.includes('u'),
+        },
+      ]
     })
+  }
+
+  private getLoadingQueryStates(
+    activeQueries: ReadonlyArray<ActiveSuggestionQuery<Extra>>,
+    nextSuggestions: SuggestionsMap<Extra>
+  ): SuggestionQueryStateMap<Extra> {
+    return activeQueries.reduce<SuggestionQueryStateMap<Extra>>((queryStates, activeQuery) => {
+      queryStates[activeQuery.childIndex] = {
+        queryInfo: activeQuery.queryInfo,
+        results: nextSuggestions[activeQuery.childIndex]?.results ?? [],
+        status: 'loading',
+      }
+      return queryStates
+    }, {})
+  }
+
+  private getPreservedSuggestions(
+    activeQueries: ReadonlyArray<ActiveSuggestionQuery<Extra>>
+  ): SuggestionsMap<Extra> {
+    return activeQueries.reduce<SuggestionsMap<Extra>>((nextSuggestions, activeQuery) => {
+      const previousSuggestion = this.suggestions[activeQuery.childIndex]
+      if (!previousSuggestion || previousSuggestion.results.length === 0) {
+        return nextSuggestions
+      }
+
+      nextSuggestions[activeQuery.childIndex] = {
+        queryInfo: activeQuery.queryInfo,
+        results: previousSuggestion.results,
+      }
+
+      return nextSuggestions
+    }, {})
   }
 
   private scheduleSuggestionQuery(
@@ -1837,11 +1915,6 @@ class MentionsInput<
 
     const controller = new AbortController()
     this._queryAbortControllers.set(childIndex, controller)
-    this.setQueryState(childIndex, {
-      queryInfo,
-      results: [],
-      status: 'loading',
-    })
 
     const executeQuery = () => {
       this._queryDebounceTimers.delete(childIndex)
@@ -1871,54 +1944,31 @@ class MentionsInput<
   }
 
   updateMentionsQueries = (plainTextValue: string, caretPosition: number): void => {
+    const activeQueries = this.getActiveSuggestionQueries(plainTextValue, caretPosition)
+
     // Invalidate previous queries. Async results for previous queries will be neglected.
-    this._queryId++
+    const queryId = this._queryId + 1
+    this._queryId = queryId
     this.clearPendingSuggestionRequests()
-    this.suggestions = {}
-    this.setState({
-      suggestions: {},
-      queryStates: {},
-      focusIndex: 0,
-    })
 
-    const value = this.props.value ?? ''
-    const mentionChildren = this.getMentionChildren()
-
-    const positionInValue = mapPlainTextIndex(value, this.state.config, caretPosition, 'NULL')
-
-    // If caret is inside of mention, do not query
-    if (positionInValue === null || positionInValue === undefined) {
+    if (activeQueries.length === 0) {
+      this.replaceSuggestions({}, () => ({
+        queryStates: {},
+        focusIndex: 0,
+      }))
       return
     }
 
-    // Extract substring in between the end of the previous mention and the caret
-    const substringStartIndex = getEndOfLastMention(
-      value.slice(0, Math.max(0, positionInValue)),
-      this.state.config
-    )
-    const substring = plainTextValue.slice(substringStartIndex, caretPosition)
+    const nextSuggestions = this.getPreservedSuggestions(activeQueries)
+    const nextQueryStates = this.getLoadingQueryStates(activeQueries, nextSuggestions)
 
-    // Check if suggestions have to be shown:
-    // Match the trigger patterns of all Mention children on the extracted substring
-    for (const [childIndex, child] of mentionChildren.entries()) {
-      const triggerProp = child.props.trigger ?? '@'
-      const regex = resolveTriggerRegex(triggerProp)
-      const match = substring.match(regex)
-      if (match?.[1] !== undefined && match[2] !== undefined) {
-        const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
-        this.scheduleSuggestionQuery(
-          this._queryId,
-          childIndex,
-          {
-            childIndex,
-            query: match[2],
-            querySequenceStart,
-            querySequenceEnd: querySequenceStart + match[1].length,
-          },
-          child,
-          regex.flags.includes('u')
-        )
-      }
+    this.replaceSuggestions(nextSuggestions, () => ({
+      queryStates: nextQueryStates,
+      focusIndex: 0,
+    }))
+
+    for (const { childIndex, queryInfo, mentionChild, ignoreAccents } of activeQueries) {
+      this.scheduleSuggestionQuery(queryId, childIndex, queryInfo, mentionChild, ignoreAccents)
     }
   }
 
@@ -1926,12 +1976,10 @@ class MentionsInput<
     // Invalidate previous queries. Async results for previous queries will be neglected.
     this._queryId++
     this.clearPendingSuggestionRequests()
-    this.suggestions = {}
-    this.setState({
-      suggestions: {},
+    this.replaceSuggestions({}, () => ({
       queryStates: {},
       focusIndex: 0,
-    })
+    }))
   }
 
   updateSuggestions = async (
@@ -1955,7 +2003,7 @@ class MentionsInput<
         this._queryAbortControllers.delete(childIndex)
       }
 
-      this.suggestions = {
+      const nextSuggestions = {
         ...this.suggestions,
         [childIndex]: {
           queryInfo,
@@ -1963,26 +2011,26 @@ class MentionsInput<
         },
       }
 
-      const { focusIndex } = this.state
-      const suggestionsCount = countSuggestions(this.suggestions)
-      const nextFocusIndex = this.isInlineAutocomplete()
-        ? 0
-        : focusIndex >= suggestionsCount
-          ? Math.max(suggestionsCount - 1, 0)
-          : focusIndex
+      this.replaceSuggestions(nextSuggestions, (prevState, syncedSuggestions) => {
+        const suggestionsCount = countSuggestions(syncedSuggestions)
+        const nextFocusIndex = this.isInlineAutocomplete()
+          ? 0
+          : prevState.focusIndex >= suggestionsCount
+            ? Math.max(suggestionsCount - 1, 0)
+            : prevState.focusIndex
 
-      this.setState((prevState) => ({
-        suggestions: this.suggestions,
-        focusIndex: nextFocusIndex,
-        queryStates: {
-          ...prevState.queryStates,
-          [childIndex]: {
-            queryInfo,
-            results: data,
-            status: 'success',
+        return {
+          focusIndex: nextFocusIndex,
+          queryStates: {
+            ...prevState.queryStates,
+            [childIndex]: {
+              queryInfo,
+              results: data,
+              status: 'success',
+            },
           },
-        },
-      }))
+        }
+      })
     } catch (error) {
       if (this._queryAbortControllers.get(childIndex) === controller) {
         this._queryAbortControllers.delete(childIndex)
@@ -1992,9 +2040,10 @@ class MentionsInput<
         return
       }
 
-      delete this.suggestions[childIndex]
-      this.setState((prevState) => ({
-        suggestions: { ...this.suggestions },
+      const nextSuggestions = { ...this.suggestions }
+      delete nextSuggestions[childIndex]
+
+      this.replaceSuggestions(nextSuggestions, (prevState) => ({
         queryStates: {
           ...prevState.queryStates,
           [childIndex]: {

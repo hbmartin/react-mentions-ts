@@ -233,6 +233,93 @@ describe('SuggestionsOverlay', () => {
     expect(listItems[1]).toHaveClass('custom-item')
   })
 
+  it('applies built-in styling to plain-text empty status content', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="empty-status-overlay"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        statusContent="No suggestions found"
+        statusType="empty"
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const status = container.querySelector('[data-slot="suggestions-status"]')
+    expect(status).not.toBeNull()
+    expect(status).toHaveTextContent('No suggestions found')
+    expect(status).toHaveAttribute('role', 'status')
+    expect(status).toHaveAttribute('data-status-type', 'empty')
+    expect(status).toHaveClass('px-4', 'py-2.5', 'text-left', 'text-sm', 'text-muted-foreground')
+  })
+
+  it('applies the error variant to plain-text status content', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="error-status-overlay"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        statusContent="Unable to load suggestions"
+        statusType="error"
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const status = container.querySelector('[data-slot="suggestions-status"]')
+    expect(status).not.toBeNull()
+    expect(status).toHaveTextContent('Unable to load suggestions')
+    expect(status).toHaveAttribute('role', 'alert')
+    expect(status).toHaveAttribute('data-status-type', 'error')
+    expect(status).toHaveClass('px-4', 'py-2.5', 'text-left', 'text-sm', 'text-destructive')
+    expect(status).not.toHaveClass('text-muted-foreground')
+  })
+
+  it('merges custom status classes with the built-in plain-text status styling', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="custom-status-overlay"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        statusContent="No suggestions found"
+        statusType="empty"
+        statusClassName="custom-status uppercase"
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const status = container.querySelector('[data-slot="suggestions-status"]')
+    expect(status).not.toBeNull()
+    expect(status).toHaveClass('custom-status', 'uppercase', 'px-4', 'py-2.5', 'text-sm')
+  })
+
+  it('does not force built-in status styling onto custom status nodes', () => {
+    const { container, getByTestId } = render(
+      <SuggestionsOverlay
+        id="custom-node-status-overlay"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        statusContent={<span data-testid="custom-status-node">Nothing here</span>}
+        statusType="empty"
+        statusClassName="custom-status"
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const status = container.querySelector('[data-slot="suggestions-status"]')
+    expect(status).not.toBeNull()
+    expect(getByTestId('custom-status-node')).toBeInTheDocument()
+    expect(status).toHaveClass('custom-status')
+    expect(status).not.toHaveClass('px-4', 'py-2.5', 'text-sm', 'text-muted-foreground')
+  })
+
   it('should notify when the user clicks on a suggestion.', () => {
     const suggestions = [
       { id: '1', display: 'First' },

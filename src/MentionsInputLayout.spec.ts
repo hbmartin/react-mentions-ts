@@ -4,6 +4,7 @@ import {
   calculateInlineSuggestionPosition,
   calculateSuggestionsPosition,
   createPendingViewSync,
+  getHighlighterViewPatch,
   mergePendingViewSync,
 } from './MentionsInputLayout'
 
@@ -93,6 +94,62 @@ describe('MentionsInputLayout', () => {
     })
   })
 
+  it('places non-portal suggestions above the caret when its offset creates enough viewport space', () => {
+    const highlighter = document.createElement('div')
+    const suggestions = document.createElement('div')
+    const container = document.createElement('div')
+    const originalInnerHeight = window.innerHeight
+    const originalClientHeight = document.documentElement.clientHeight
+
+    highlighter.style.fontSize = '16px'
+
+    Object.defineProperty(window, 'innerHeight', { value: 180, configurable: true })
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      value: 180,
+      configurable: true,
+    })
+    Object.defineProperty(highlighter, 'getBoundingClientRect', {
+      value: () => ({
+        left: 10,
+        top: 40,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(highlighter, 'offsetWidth', { value: 180, configurable: true })
+    Object.defineProperty(container, 'offsetWidth', { value: 220, configurable: true })
+    Object.defineProperty(suggestions, 'offsetHeight', { value: 80, configurable: true })
+
+    try {
+      const position = calculateSuggestionsPosition({
+        caretPosition: { left: 32, top: 100 },
+        suggestionsPlacement: 'auto',
+        anchorMode: 'caret',
+        resolvedPortalHost: null,
+        suggestions,
+        highlighter,
+        container,
+      })
+
+      expect(position).toEqual({
+        left: 32,
+        top: 4,
+        width: 180,
+      })
+    } finally {
+      Object.defineProperty(window, 'innerHeight', {
+        value: originalInnerHeight,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientHeight', {
+        value: originalClientHeight,
+        configurable: true,
+      })
+    }
+  })
+
   it('calculates inline suggestion offsets from the caret marker', () => {
     const control = document.createElement('div')
     const highlighter = document.createElement('div')
@@ -157,5 +214,33 @@ describe('MentionsInputLayout', () => {
         { left: 1, top: 2, width: 3 }
       )
     ).toBe(true)
+  })
+
+  it('reads highlighter typography from a single computed style snapshot', () => {
+    const input = document.createElement('textarea')
+    const highlighter = document.createElement('div')
+    const getComputedStyleSpy = jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
+      getPropertyValue: (property: string) =>
+        property === 'line-height'
+          ? '24px'
+          : property === 'letter-spacing'
+            ? '0.08em'
+            : '',
+    } as unknown as CSSStyleDeclaration)
+
+    try {
+      const patch = getHighlighterViewPatch(input, highlighter)
+
+      expect(getComputedStyleSpy).toHaveBeenCalledTimes(1)
+      expect(patch?.typography).toHaveLength(2)
+      expect(patch?.typography).toEqual(
+        expect.arrayContaining([
+          { property: 'line-height', value: '24px' },
+          { property: 'letter-spacing', value: '0.08em' },
+        ])
+      )
+    } finally {
+      getComputedStyleSpy.mockRestore()
+    }
   })
 })
