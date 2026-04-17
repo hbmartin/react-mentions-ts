@@ -285,7 +285,6 @@ export interface MentionsInputState<
   scrollFocusedIntoView?: boolean
   pendingSelectionUpdate: boolean
   highlighterRecomputeVersion: number
-  config: MentionChildConfig<Extra>[]
   generatedId: string | null
 }
 

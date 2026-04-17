@@ -2248,7 +2248,7 @@ describe('MentionsInput', () => {
         fireEvent.focus(textarea)
 
         await waitFor(() => {
-          expect(collectMentionElementsSpy.mock.calls.length).toBeGreaterThanOrEqual(2)
+          expect(collectMentionElementsSpy).toHaveBeenCalled()
         })
 
         collectMentionElementsSpy.mockClear()
@@ -2300,6 +2300,117 @@ describe('MentionsInput', () => {
       } finally {
         getMentionsAndPlainTextSpy.mockRestore()
       }
+    })
+
+    it('merges async suggestion results from multiple matching children', async () => {
+      type DeferredResult = {
+        resolve: (value: Array<{ id: string; display: string }>) => void
+      }
+
+      const requests = new Map<string, DeferredResult>()
+      const firstAsyncData = jest.fn(
+        () =>
+          new Promise<Array<{ id: string; display: string }>>((resolve) => {
+            requests.set('first', { resolve })
+          })
+      )
+      const secondAsyncData = jest.fn(
+        () =>
+          new Promise<Array<{ id: string; display: string }>>((resolve) => {
+            requests.set('second', { resolve })
+          })
+      )
+
+      render(
+        <MentionsInput value="@a">
+          <Mention trigger={/(@([a-z]*))$/} data={firstAsyncData} />
+          <Mention trigger={/(@([a-z0-9]*))$/} data={secondAsyncData} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      fireEvent.focus(textarea)
+      textarea.setSelectionRange(2, 2)
+      fireEvent.select(textarea)
+
+      await waitFor(() => {
+        expect(firstAsyncData).toHaveBeenCalledWith(
+          'a',
+          expect.objectContaining({ signal: expect.any(Object) })
+        )
+        expect(secondAsyncData).toHaveBeenCalledWith(
+          'a',
+          expect.objectContaining({ signal: expect.any(Object) })
+        )
+      })
+
+      await act(async () => {
+        requests.get('first')?.resolve([{ id: 'alpha', display: 'Alpha' }])
+        requests.get('second')?.resolve([{ id: 'beta', display: 'Beta' }])
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha')).toBeInTheDocument()
+        expect(screen.getByText('Beta')).toBeInTheDocument()
+      })
+    })
+
+    it('preserves successful async suggestions when a sibling query rejects', async () => {
+      type DeferredResult = {
+        resolve: (value: Array<{ id: string; display: string }>) => void
+        reject: (reason?: unknown) => void
+      }
+
+      const requests = new Map<string, DeferredResult>()
+      const firstAsyncData = jest.fn(
+        () =>
+          new Promise<Array<{ id: string; display: string }>>((resolve, reject) => {
+            requests.set('first', { resolve, reject })
+          })
+      )
+      const secondAsyncData = jest.fn(
+        () =>
+          new Promise<Array<{ id: string; display: string }>>((resolve, reject) => {
+            requests.set('second', { resolve, reject })
+          })
+      )
+
+      render(
+        <MentionsInput value="@a">
+          <Mention trigger={/(@([a-z]*))$/} data={firstAsyncData} />
+          <Mention trigger={/(@([a-z0-9]*))$/} data={secondAsyncData} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      fireEvent.focus(textarea)
+      textarea.setSelectionRange(2, 2)
+      fireEvent.select(textarea)
+
+      await waitFor(() => {
+        expect(firstAsyncData).toHaveBeenCalledWith(
+          'a',
+          expect.objectContaining({ signal: expect.any(Object) })
+        )
+        expect(secondAsyncData).toHaveBeenCalledWith(
+          'a',
+          expect.objectContaining({ signal: expect.any(Object) })
+        )
+      })
+
+      await act(async () => {
+        requests.get('first')?.resolve([{ id: 'alpha', display: 'Alpha' }])
+        requests.get('second')?.reject(new Error('load failed'))
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha')).toBeInTheDocument()
+      })
+      expect(screen.queryByText('Unable to load suggestions')).not.toBeInTheDocument()
     })
 
     it('returns multiple selections when a range overlaps several mentions', async () => {

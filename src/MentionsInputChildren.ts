@@ -11,6 +11,28 @@ export interface PreparedMentionsInputChildren<
   config: MentionChildConfig<Extra>[]
 }
 
+const getTriggerIdentity = (trigger: string | RegExp | undefined): string => {
+  if (trigger === undefined) {
+    return `str:${DEFAULT_MENTION_PROPS.trigger}`
+  }
+
+  if (typeof trigger === 'string') {
+    return `str:${trigger}`
+  }
+
+  return `re:${trigger.source}/${trigger.flags.replaceAll('g', '')}`
+}
+
+const getTriggerLabel = (trigger: string | RegExp | undefined): string => {
+  if (trigger === undefined) {
+    return DEFAULT_MENTION_PROPS.trigger
+  }
+
+  return typeof trigger === 'string'
+    ? trigger
+    : `/${trigger.source}/${trigger.flags.replaceAll('g', '')}`
+}
+
 const getInvalidChildLabel = (child: React.ReactNode): string => {
   if (React.isValidElement(child)) {
     return typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
@@ -38,16 +60,11 @@ export const validateMentionChildTree = <Extra extends Record<string, unknown>>(
       )
     }
 
-    const trigger =
-      child.props.trigger === undefined
-        ? DEFAULT_MENTION_PROPS.trigger
-        : typeof child.props.trigger === 'string'
-          ? child.props.trigger
-          : child.props.trigger.source
+    const trigger = getTriggerIdentity(child.props.trigger)
 
     if (seenChildren.has(trigger)) {
       throw new Error(
-        `MentionsInput does not support Mention children with duplicate triggers: ${trigger}.`
+        `MentionsInput does not support Mention children with duplicate triggers: ${getTriggerLabel(child.props.trigger)}.`
       )
     }
 
@@ -79,12 +96,7 @@ export const areMentionConfigsEqual = <Extra extends Record<string, unknown>>(
     const cfg2 = config2[index]
 
     return (
-      ((typeof cfg1.trigger === 'string' &&
-        typeof cfg2.trigger === 'string' &&
-        cfg1.trigger === cfg2.trigger) ||
-        (cfg1.trigger instanceof RegExp &&
-          cfg2.trigger instanceof RegExp &&
-          cfg1.trigger.source === cfg2.trigger.source)) &&
+      getTriggerIdentity(cfg1.trigger) === getTriggerIdentity(cfg2.trigger) &&
       cfg1.serializer.id === cfg2.serializer.id
     )
   })

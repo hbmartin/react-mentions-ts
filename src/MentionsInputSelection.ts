@@ -29,6 +29,7 @@ export const areMentionOccurrencesEqual = <Extra extends Record<string, unknown>
     return (
       mention.id === other.id &&
       mention.childIndex === other.childIndex &&
+      mention.index === other.index &&
       mention.plainTextIndex === other.plainTextIndex &&
       mention.display === other.display
     )

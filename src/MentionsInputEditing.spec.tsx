@@ -28,6 +28,15 @@ describe('MentionsInputEditing', () => {
     expect(result.nextSelectionStart).toBe('Walter White'.length)
   })
 
+  it('normalizes only the pasted payload when removing carriage returns', () => {
+    const value = 'Keep\r\nline'
+    const result = applyPasteToMentionsValue(value, config, value.length, value.length, '\r\nnext')
+
+    expect(result.value).toBe('Keep\r\nline\nnext')
+    expect(result.snapshot.plainText).toBe('Keep\r\nline\nnext')
+    expect(result.nextSelectionStart).toBe('Keep\r\nline\nnext'.length)
+  })
+
   it('cuts mention markup while restoring the caret to the selection start', () => {
     const result = applyCutToMentionsValue('Hello @[Walter White](user:walter)', config, 6, 18)
 

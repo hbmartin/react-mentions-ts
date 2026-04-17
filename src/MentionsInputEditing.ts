@@ -65,10 +65,8 @@ export const applyPasteToMentionsValue = <Extra extends Record<string, unknown>>
     selectionStart,
     selectionEnd
   )
-  const nextValue = spliceString(value, markupStartIndex, markupEndIndex, pastedText).replaceAll(
-    '\r',
-    ''
-  )
+  const normalizedPastedText = pastedText.replaceAll('\r', '')
+  const nextValue = spliceString(value, markupStartIndex, markupEndIndex, normalizedPastedText)
   const snapshot = deriveMentionValueSnapshot<Extra>(nextValue, config)
   const startOfMention =
     selectionStart === null
@@ -79,7 +77,7 @@ export const applyPasteToMentionsValue = <Extra extends Record<string, unknown>>
     value: nextValue,
     snapshot,
     nextSelectionStart:
-      (startOfMention ?? safeSelectionStart) + getPlainText(pastedText, config).length,
+      (startOfMention ?? safeSelectionStart) + getPlainText(normalizedPastedText, config).length,
   }
 }
 
