@@ -10,12 +10,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: 'yarn'
-          cache-dependency-path: yarn.lock
-      - run: yarn --frozen-lockfile
-      - run: yarn audit --groups dependencies
-      - run: yarn run prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
-      - run: yarn test --coverage
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod
+      - run: pnpm exec prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
+      - run: pnpm test --coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -24,6 +25,6 @@ jobs:
           flags: unit-tests
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
-      - run: yarn build
+      - run: pnpm build
       - run: npx publint --pack npm
       - run: npx attw --pack . --profile node16

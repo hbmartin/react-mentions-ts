@@ -5,8 +5,8 @@ This project is made possible by contributors like you, and we welcome any contr
 
 ## Environment
 
-- Ensure you have the latest version of Node and Yarn.
-- Run `yarn` to install all needed dev dependencies.
+- Ensure you have the latest version of Node and pnpm.
+- Run `pnpm install` to install all needed dev dependencies.
 
 ## Making Changes
 
@@ -16,6 +16,6 @@ Pull requests are encouraged. If you want to add a feature or fix a bug:
 2. [Create a separate branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches) for your changes
 3. Make your changes, and ensure that it is formatted by [Prettier](https://prettier.io)
 4. Write tests that validate your change and/or fix.
-5. Run `yarn build` and then run tests with `yarn test`
+5. Run `pnpm build` and then run tests with `pnpm test`
 6. If coding a new feature, please add the examples to the example app (`/demo/src/examples`) and add the docs to the `README.md` file.
 7. Push your branch and open a PR 🚀
