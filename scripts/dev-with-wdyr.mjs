@@ -3,6 +3,7 @@
 import { spawn } from 'node:child_process'
 
 const child = spawn('pnpm', ['vite', '--config', 'demo/vite.config.ts'], {
+  shell: true,
   stdio: 'inherit',
   env: {
     ...process.env,

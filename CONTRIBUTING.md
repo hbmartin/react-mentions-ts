@@ -5,7 +5,8 @@ This project is made possible by contributors like you, and we welcome any contr
 
 ## Environment
 
-- Ensure you have the latest version of Node and pnpm.
+- Ensure you have Node 22 or later.
+- Enable [Corepack](https://nodejs.org/api/corepack.html) and activate the pnpm version pinned by this repository with `corepack enable && corepack install`.
 - Run `pnpm install` to install all needed dev dependencies.
 
 ## Making Changes
