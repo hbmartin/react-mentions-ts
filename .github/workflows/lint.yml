@@ -12,9 +12,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: 'yarn'
-          cache-dependency-path: yarn.lock
-      - run: yarn --frozen-lockfile
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Determine ESLint scope
         id: lint_scope
         run: |
@@ -41,7 +42,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
       - name: Run ESLint on entire project
         if: steps.lint_scope.outputs.mode == 'all'
-        run: yarn lint
+        run: pnpm lint
       - name: Run ESLint on changed files
         if: steps.lint_scope.outputs.mode == 'files'
         shell: bash
@@ -52,7 +53,7 @@ jobs:
           echo "Running ESLint on changed files:"
           mapfile -t FILES <<<"$ESLINT_FILES"
           printf '%s\n' "${FILES[@]}"
-          yarn run eslint "${FILES[@]}"
+          pnpm exec eslint "${FILES[@]}"
       - name: Skip ESLint (no relevant changes)
         if: steps.lint_scope.outputs.mode == 'skip'
         run: echo "No matching files changed; skipping ESLint."
