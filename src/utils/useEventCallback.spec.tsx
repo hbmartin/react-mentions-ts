@@ -1,22 +1,8 @@
 import React, { useEffect, useRef } from 'react'
 import { act, render } from '@testing-library/react'
-import { useEffectEvent } from './useEffectEvent'
+import { useEventCallback } from './useEventCallback'
 
-describe('useEffectEvent', () => {
-  it('throws when the callback is invoked before the handler is assigned', () => {
-    const ImmediateInvoker = ({ handler }: { handler: () => void }) => {
-      const cb = useEffectEvent(handler)
-      cb()
-      return null
-    }
-
-    expect(() =>
-      render(<ImmediateInvoker handler={() => undefined} />)
-    ).toThrowErrorMatchingInlineSnapshot(
-      '"useEffectEvent callback executed before the handler was assigned."'
-    )
-  })
-
+describe('useEventCallback', () => {
   it('always calls the latest handler without changing the callback identity', () => {
     const calls: string[] = []
     const callbackRef: { current: (() => void) | null } = { current: null }
@@ -25,8 +11,8 @@ describe('useEffectEvent', () => {
       const handlerRef = useRef(label)
       handlerRef.current = label
 
-      const callback = useEffectEvent(() => {
-        calls.push(handlerRef.current!)
+      const callback = useEventCallback(() => {
+        calls.push(handlerRef.current)
       })
 
       useEffect(() => {

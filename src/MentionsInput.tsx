@@ -7,7 +7,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   SyntheticEvent,
 } from 'react'
-import React, { Children, useLayoutEffect } from 'react'
+import React, { useLayoutEffect } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
@@ -32,16 +32,18 @@ import {
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
 import { isMentionElement } from './utils/isMentionElement'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
-import readConfigFromChildren from './utils/readConfigFromChildren'
-import { useEffectEvent } from './utils/useEffectEvent'
+import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
+import { useEventCallback } from './utils/useEventCallback'
 import type {
   CaretCoordinates,
   DataSource,
+  InlineSuggestionPosition,
   InputComponentProps,
   MentionComponentProps,
   MentionDataItem,
   MentionIdentifier,
   MentionOccurrence,
+  MentionSearchContext,
   MentionSelection,
   MentionSelectionState,
   MentionChildConfig,
@@ -52,6 +54,8 @@ import type {
   MentionsInputChangeTrigger,
   QueryInfo,
   SuggestionDataItem,
+  SuggestionQueryState,
+  SuggestionQueryStateMap,
   SuggestionsMap,
   SuggestionsPosition,
   InputElement,
@@ -60,33 +64,90 @@ import type { FlattenedSuggestion } from './utils/flattenSuggestions'
 
 const getDataProvider = <Extra extends Record<string, unknown>>(
   data: DataSource<Extra>,
-  ignoreAccents: boolean
+  options: {
+    ignoreAccents: boolean
+    maxSuggestions?: number
+    signal: AbortSignal
+  }
 ): ((query: string) => Promise<MentionDataItem<Extra>[]>) => {
+  const { ignoreAccents, maxSuggestions, signal } = options
+  const applyMaxSuggestions = (
+    items: ReadonlyArray<MentionDataItem<Extra>>
+  ): MentionDataItem<Extra>[] =>
+    maxSuggestions === undefined ? [...items] : [...items.slice(0, maxSuggestions)]
+
   if (Array.isArray(data)) {
     const items = data as ReadonlyArray<MentionDataItem<Extra>>
     // eslint-disable-next-line @typescript-eslint/require-await
     return async (query: string) =>
-      items.flatMap((item) => {
-        const index = getSubstringIndex(item.display || String(item.id), query, ignoreAccents)
-        return index >= 0
-          ? [
-              {
-                ...item,
-                highlights: [{ start: index, end: index + query.length }],
-              },
-            ]
-          : []
-      })
+      applyMaxSuggestions(
+        items.flatMap((item) => {
+          if (signal.aborted) {
+            return []
+          }
+
+          const index = getSubstringIndex(item.display || String(item.id), query, ignoreAccents)
+          return index >= 0
+            ? [
+                {
+                  ...item,
+                  highlights: [{ start: index, end: index + query.length }],
+                },
+              ]
+            : []
+        })
+      )
   }
 
   return async (query: string) => {
     const provider = data as (
-      query: string
+      query: string,
+      context: MentionSearchContext
     ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>
-    const result = await Promise.resolve(provider(query))
-    return [...result]
+    const result = await Promise.resolve(provider(query, { signal }))
+    return applyMaxSuggestions(result)
   }
 }
+
+let generatedIdCounter = 0
+
+const createGeneratedId = (): string => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return `mentions-${globalThis.crypto.randomUUID()}`
+  }
+
+  generatedIdCounter += 1
+  return `mentions-${generatedIdCounter.toString()}`
+}
+
+const isAbortError = (error: unknown): boolean =>
+  (typeof DOMException !== 'undefined' && error instanceof DOMException)
+    ? error.name === 'AbortError'
+    : typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        (error as { name?: string }).name === 'AbortError'
+
+const DEFAULT_EMPTY_SUGGESTIONS_MESSAGE = 'No suggestions found'
+const DEFAULT_ERROR_SUGGESTIONS_MESSAGE = 'Unable to load suggestions'
+
+const getMentionChildren = <Extra extends Record<string, unknown>>(
+  children: React.ReactNode
+) => collectMentionElements<Extra>(children)
+
+const getMentionChild = <Extra extends Record<string, unknown>>(
+  children: React.ReactNode,
+  childIndex: number
+): React.ReactElement<MentionComponentProps<Extra>> | undefined =>
+  getMentionChildren<Extra>(children)[childIndex]
+
+const getSuggestionQueryStateEntries = <Extra extends Record<string, unknown>>(
+  queryStates: SuggestionQueryStateMap<Extra>
+): ReadonlyArray<readonly [number, SuggestionQueryState<Extra>]> =>
+  Object.entries(queryStates)
+    .map(([key, value]) => [Number(key), value] as const)
+    .filter(([key]) => Number.isInteger(key))
+    .toSorted(([left], [right]) => left - right)
 
 const KEY = {
   TAB: 'Tab',
@@ -188,7 +249,7 @@ const visuallyHiddenStyles: CSSProperties = {
   whiteSpace: 'nowrap',
 }
 
-const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
+const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'singleLine',
   'anchorMode',
   'suggestionsPlacement',
@@ -216,8 +277,7 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps<any>> = [
 class MentionsInput<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > extends React.Component<MentionsInputProps<Extra>, MentionsInputState<Extra>> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static readonly defaultProps: Partial<MentionsInputProps<any>> & {
+  static readonly defaultProps: Partial<MentionsInputProps> & {
     singleLine: boolean
   } = {
     singleLine: false,
@@ -231,8 +291,6 @@ class MentionsInput<
   }
 
   private suggestions: SuggestionsMap<Extra> = {}
-  private readonly uuidSuggestionsOverlay: string
-  private readonly inlineAutocompleteLiveRegionId: string
   private containerElement: HTMLDivElement | null = null
   private inputElement: HTMLInputElement | HTMLTextAreaElement | null = null
   private highlighterElement: HTMLDivElement | null = null
@@ -248,6 +306,8 @@ class MentionsInput<
   private _scrollSyncFrame: number | null = null
   private _autoResizeFrame: number | null = null
   private _cachedMarkupValue = ''
+  private readonly _queryDebounceTimers = new Map<number, ReturnType<typeof setTimeout>>()
+  private readonly _queryAbortControllers = new Map<number, AbortController>()
 
   private cancelScheduledFrame(frameKey: '_scrollSyncFrame' | '_autoResizeFrame'): void {
     const frame = this[frameKey]
@@ -259,6 +319,88 @@ class MentionsInput<
       globalThis.cancelAnimationFrame(frame)
       this[frameKey] = null
     }
+  }
+
+  private clearPendingSuggestionRequests(): void {
+    for (const timeoutId of this._queryDebounceTimers.values()) {
+      clearTimeout(timeoutId)
+    }
+    this._queryDebounceTimers.clear()
+
+    for (const controller of this._queryAbortControllers.values()) {
+      controller.abort()
+    }
+    this._queryAbortControllers.clear()
+  }
+
+  private ensureGeneratedId(): void {
+    const explicitId = this.getExplicitId()
+    if (explicitId !== null || this.state.generatedId !== null) {
+      return
+    }
+
+    this.setState({ generatedId: createGeneratedId() })
+  }
+
+  private getExplicitId(): string | null {
+    const { id } = this.props
+    return typeof id === 'string' && id.trim().length > 0 ? id.trim() : null
+  }
+
+  private getBaseId(): string | null {
+    return this.getExplicitId() ?? this.state.generatedId
+  }
+
+  private getSuggestionsOverlayId(): string | undefined {
+    const baseId = this.getBaseId()
+    return baseId === null ? undefined : `${baseId}-suggestions`
+  }
+
+  private getInlineAutocompleteLiveRegionId(): string | undefined {
+    const baseId = this.getBaseId()
+    return baseId === null ? undefined : `${baseId}-inline-live`
+  }
+
+  private getMentionChildren() {
+    return getMentionChildren<Extra>(this.props.children)
+  }
+
+  private getInvalidChildLabel(child: React.ReactNode): string {
+    if (React.isValidElement(child)) {
+      return typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
+    }
+
+    return 'unknown component'
+  }
+
+  private validateChildTree(children: React.ReactNode, seenChildren: Set<string>): void {
+    React.Children.forEach(children, (child) => {
+      if (React.isValidElement<{ children?: React.ReactNode }>(child) && child.type === React.Fragment) {
+        this.validateChildTree(child.props.children, seenChildren)
+        return
+      }
+
+      if (!isMentionElement(child)) {
+        throw new Error(
+          `MentionsInput only accepts Mention components as children. Found: ${this.getInvalidChildLabel(child)}`
+        )
+      }
+
+      const trigger =
+        child.props.trigger === undefined
+          ? DEFAULT_MENTION_PROPS.trigger
+          : typeof child.props.trigger === 'string'
+            ? child.props.trigger
+            : child.props.trigger.source
+
+      if (seenChildren.has(trigger)) {
+        throw new Error(
+          `MentionsInput does not support Mention children with duplicate triggers: ${trigger}.`
+        )
+      }
+
+      seenChildren.add(trigger)
+    })
   }
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
@@ -287,8 +429,6 @@ class MentionsInput<
 
   constructor(props: MentionsInputProps<Extra>) {
     super(props)
-    this.uuidSuggestionsOverlay = Math.random().toString(16).slice(2)
-    this.inlineAutocompleteLiveRegionId = `${this.uuidSuggestionsOverlay}-inline-live`
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
     const initialConfig = readConfigFromChildren<Extra>(props.children)
     const initialValue = props.value ?? ''
@@ -312,40 +452,20 @@ class MentionsInput<
       cachedPlainText: initialPlainText,
       cachedIdValue: initialIdValue,
       suggestions: {},
+      queryStates: {},
       caretPosition: null,
       suggestionsPosition: {},
+      inlineSuggestionPosition: null,
       pendingSelectionUpdate: false,
       highlighterRecomputeVersion: 0,
       config: initialConfig,
+      generatedId: null,
     } satisfies MentionsInputState<Extra>
   }
 
   private validateChildren(): void {
     const seenChildren = new Set<string>()
-
-    // eslint-disable-next-line code-complete/low-function-cohesion
-    React.Children.forEach(this.props.children, (child) => {
-      if (!isMentionElement(child)) {
-        throw new Error(
-          `MentionsInput only accepts Mention components as children. Found: ${
-            typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
-          }`
-        )
-      }
-
-      const trigger =
-        child.props.trigger === undefined
-          ? DEFAULT_MENTION_PROPS.trigger
-          : typeof child.props.trigger === 'string'
-            ? child.props.trigger
-            : child.props.trigger.source
-      if (seenChildren.has(trigger)) {
-        throw new Error(
-          `MentionsInput does not support Mention children with duplicate triggers: ${trigger}.`
-        )
-      }
-      seenChildren.add(trigger)
-    })
+    this.validateChildTree(this.props.children, seenChildren)
 
     // Compute new config and update state if changed
     const newConfig = readConfigFromChildren<Extra>(this.props.children)
@@ -392,6 +512,7 @@ class MentionsInput<
 
   componentDidMount(): void {
     this.validateChildren()
+    this.ensureGeneratedId()
 
     document.addEventListener('copy', this.handleCopy)
     document.addEventListener('cut', this.handleCut)
@@ -400,6 +521,7 @@ class MentionsInput<
     document.addEventListener('selectionchange', this.handleDocumentSelectionChange)
 
     this.updateSuggestionsPosition()
+    this.updateInlineSuggestionPosition()
 
     this.resetTextareaHeight()
 
@@ -424,6 +546,16 @@ class MentionsInput<
       this.updateSuggestionsPosition()
     }
 
+    if (
+      prevState.inlineSuggestionPosition === this.state.inlineSuggestionPosition &&
+      (this.isInlineAutocomplete() ||
+        prevState.caretPosition !== this.state.caretPosition ||
+        prevProps.value !== this.props.value ||
+        prevState.generatedId !== this.state.generatedId)
+    ) {
+      this.updateInlineSuggestionPosition()
+    }
+
     // maintain selection in case a mention is added/removed causing
     // the cursor to jump to the end
     if (this.state.pendingSelectionUpdate) {
@@ -439,6 +571,12 @@ class MentionsInput<
     const currentValue = this.props.value ?? ''
     const configChanged = this.state.config !== prevState.config
     const valueChanged = currentValue !== previousValue || configChanged
+
+    if (this.getExplicitId() === null && prevState.generatedId !== this.state.generatedId) {
+      this.updateSuggestionsPosition()
+    } else if (this.getExplicitId() === null && this.state.generatedId === null) {
+      this.ensureGeneratedId()
+    }
 
     if (valueChanged || prevProps.autoResize !== this.props.autoResize) {
       this.resetTextareaHeight()
@@ -519,6 +657,7 @@ class MentionsInput<
     document.removeEventListener('paste', this.handlePaste)
     document.removeEventListener('scroll', this.handleDocumentScroll, true)
     document.removeEventListener('selectionchange', this.handleDocumentSelectionChange)
+    this.clearPendingSuggestionRequests()
     this.cancelScheduledFrame('_scrollSyncFrame')
     this.cancelScheduledFrame('_autoResizeFrame')
     this._pendingHighlighterRecompute = false
@@ -556,7 +695,7 @@ class MentionsInput<
 
     const passthroughProps = omit(
       this.props,
-      HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps<any>>
+      HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps>
     ) as Partial<InputComponentProps>
 
     const { ...restPassthrough } = passthroughProps
@@ -600,21 +739,23 @@ class MentionsInput<
     const isInlineAutocomplete = this.isInlineAutocomplete()
     const inlineSuggestion = isInlineAutocomplete ? this.getInlineSuggestionDetails() : null
     const isOverlayOpen = !isInlineAutocomplete && this.isOpened()
+    const overlayId = this.getSuggestionsOverlayId()
 
     Object.assign(props, {
       role: 'combobox',
       'aria-autocomplete': isInlineAutocomplete ? 'inline' : 'list',
       'aria-expanded': isInlineAutocomplete ? 'false' : this.isOpened() ? 'true' : 'false',
       'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
-      'aria-activedescendant': isOverlayOpen
-        ? getSuggestionHtmlId(this.uuidSuggestionsOverlay, this.state.focusIndex)
-        : undefined,
+      'aria-controls': isOverlayOpen && overlayId ? overlayId : undefined,
+      'aria-activedescendant':
+        isOverlayOpen && overlayId ? getSuggestionHtmlId(overlayId, this.state.focusIndex) : undefined,
     })
 
     if (isInlineAutocomplete && inlineSuggestion) {
+      const liveRegionId = this.getInlineAutocompleteLiveRegionId()
       const existingDescribedBy =
         typeof props['aria-describedby'] === 'string' ? props['aria-describedby'] : undefined
-      const describedBy = [existingDescribedBy, this.inlineAutocompleteLiveRegionId]
+      const describedBy = [existingDescribedBy, liveRegionId]
         .filter((value): value is string => Boolean(value && value.trim().length > 0))
         .join(' ')
       props['aria-describedby'] = describedBy || undefined
@@ -628,17 +769,13 @@ class MentionsInput<
     const inputProps = this.getInputProps()
     const controlClassName = this.getSlotClassName('control', controlStyles())
 
-    const control = CustomInput
-      ? React.createElement(
-          CustomInput as React.ComponentType<any>,
-          {
-            ref: this.setInputRef,
-            ...inputProps,
-          } as any
-        )
-      : singleLine
-        ? this.renderInput(inputProps)
-        : this.renderTextarea(inputProps)
+    const control = CustomInput ? (
+      <CustomInput ref={this.setInputRef} {...inputProps} />
+    ) : singleLine ? (
+      this.renderInput(inputProps)
+    ) : (
+      this.renderTextarea(inputProps)
+    )
 
     return (
       <div className={controlClassName} data-slot="control">
@@ -749,11 +886,16 @@ class MentionsInput<
 
     const { position, left, top, right, width } = this.state.suggestionsPosition
     const portalTarget = this.resolvePortalHost()
+    const overlayId = this.getSuggestionsOverlayId()
+    const { statusContent, statusType } = this.getSuggestionsStatusContent()
 
     const suggestionsNode = (
       <SuggestionsOverlay<Extra>
-        id={this.uuidSuggestionsOverlay}
+        id={overlayId}
         className={this.props.classNames?.suggestions}
+        statusClassName={this.props.classNames?.suggestionsStatus}
+        statusContent={statusContent}
+        statusType={statusType}
         listClassName={this.props.classNames?.suggestionsList}
         itemClassName={this.props.classNames?.suggestionItem}
         focusedItemClassName={this.props.classNames?.suggestionItemFocused}
@@ -799,30 +941,13 @@ class MentionsInput<
     }
 
     const inlineSuggestion = this.getInlineSuggestionDetails()
-    if (!inlineSuggestion) {
+    const inlineSuggestionPosition = this.state.inlineSuggestionPosition
+    if (!inlineSuggestion || !inlineSuggestionPosition) {
       return null
     }
-
-    const { caretPosition } = this.state
-    const highlighter = this.highlighterElement
-    if (!caretPosition || !highlighter) {
-      return null
-    }
-
-    const caretElement = highlighter.querySelector<HTMLSpanElement>('[data-mentions-caret]')
-    const controlElement = highlighter.parentElement
-    const controlRect = controlElement?.getBoundingClientRect()
-    const caretRect = caretElement?.getBoundingClientRect()
-
-    if (!caretRect || !controlRect) {
-      return null
-    }
-
-    const left = caretRect.left - controlRect.left
-    const top = caretRect.top - controlRect.top
 
     const wrapperClassName = this.getSlotClassName('inlineSuggestion', inlineSuggestionStyles())
-    const wrapperStyle: CSSProperties = { left, top }
+    const wrapperStyle: CSSProperties = inlineSuggestionPosition
     const textWrapperClassName = this.getSlotClassName(
       'inlineSuggestionText',
       inlineSuggestionTextStyles
@@ -862,10 +987,11 @@ class MentionsInput<
 
     const inlineSuggestion = this.getInlineSuggestionDetails()
     const announcement = this.getInlineSuggestionAnnouncement(inlineSuggestion)
+    const liveRegionId = this.getInlineAutocompleteLiveRegionId()
 
     return (
       <div
-        id={this.inlineAutocompleteLiveRegionId}
+        id={liveRegionId}
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -881,6 +1007,11 @@ class MentionsInput<
     inlineSuggestion: InlineSuggestionDetails<Extra> | null
   ): string => {
     if (!inlineSuggestion) {
+      const { statusContent, statusType } = this.getSuggestionsStatusContent()
+      if (statusType !== null && typeof statusContent === 'string') {
+        return statusContent
+      }
+
       return INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT
     }
 
@@ -895,6 +1026,7 @@ class MentionsInput<
         input={this.inputElement}
         suggestions={this.suggestionsElement}
         onSyncScroll={this.updateHighlighterScroll}
+        onUpdateInlineSuggestionPosition={this.updateInlineSuggestionPosition}
         onUpdateSuggestionsPosition={this.updateSuggestionsPosition}
       />
     )
@@ -927,11 +1059,57 @@ class MentionsInput<
     this.highlighterElement = el
   }
 
+  updateInlineSuggestionPosition = (): void => {
+    if (!this.isInlineAutocomplete()) {
+      if (this.state.inlineSuggestionPosition !== null) {
+        this.setState({ inlineSuggestionPosition: null })
+      }
+      return
+    }
+
+    const inlineSuggestion = this.getInlineSuggestionDetails()
+    const highlighter = this.highlighterElement
+    if (!inlineSuggestion || !highlighter) {
+      if (this.state.inlineSuggestionPosition !== null) {
+        this.setState({ inlineSuggestionPosition: null })
+      }
+      return
+    }
+
+    const caretElement = highlighter.querySelector<HTMLSpanElement>('[data-mentions-caret]')
+    const controlElement = highlighter.parentElement
+    const controlRect = controlElement?.getBoundingClientRect()
+    const caretRect = caretElement?.getBoundingClientRect()
+
+    if (!caretRect || !controlRect) {
+      if (this.state.inlineSuggestionPosition !== null) {
+        this.setState({ inlineSuggestionPosition: null })
+      }
+      return
+    }
+
+    const nextPosition: InlineSuggestionPosition = {
+      left: caretRect.left - controlRect.left,
+      top: caretRect.top - controlRect.top,
+    }
+    const previousPosition = this.state.inlineSuggestionPosition
+
+    if (
+      previousPosition?.left === nextPosition.left &&
+      previousPosition.top === nextPosition.top
+    ) {
+      return
+    }
+
+    this.setState({ inlineSuggestionPosition: nextPosition })
+  }
+
   handleCaretPositionChange = (position: CaretCoordinates | null) => {
     this.setState({ caretPosition: position }, () => {
       if (position) {
         this.updateSuggestionsPosition()
       }
+      this.updateInlineSuggestionPosition()
     })
     this.scheduleHighlighterRecompute()
   }
@@ -964,7 +1142,7 @@ class MentionsInput<
   isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
 
   getFlattenedSuggestions = (): FlattenedSuggestion<Extra>[] => {
-    return flattenSuggestions<Extra>(this.props.children, this.state.suggestions)
+    return flattenSuggestions<Extra>(this.getMentionChildren(), this.state.suggestions)
   }
 
   getFocusedSuggestionEntry = (): {
@@ -1005,9 +1183,7 @@ class MentionsInput<
     }
 
     const { queryInfo, result } = entry
-    const mentionChild = Children.toArray(this.props.children)[queryInfo.childIndex] as
-      | React.ReactElement<MentionComponentProps<Extra>>
-      | undefined
+    const mentionChild = getMentionChild<Extra>(this.props.children, queryInfo.childIndex)
 
     if (!mentionChild) {
       return null
@@ -1076,6 +1252,50 @@ class MentionsInput<
     }
 
     return selectionEnd === inlineSuggestion.queryInfo.querySequenceEnd
+  }
+
+  getPreferredQueryState = (): SuggestionQueryState<Extra> | null => {
+    const entries = getSuggestionQueryStateEntries(this.state.queryStates)
+    return entries[0]?.[1] ?? null
+  }
+
+  getSuggestionsStatusContent(): {
+    statusContent: React.ReactNode
+    statusType: 'empty' | 'error' | null
+  } {
+    if (countSuggestions(this.state.suggestions) > 0) {
+      return { statusContent: null, statusType: null }
+    }
+
+    const preferredQueryState = this.getPreferredQueryState()
+    if (!preferredQueryState || preferredQueryState.status === 'loading') {
+      return { statusContent: null, statusType: null }
+    }
+
+    const mentionChild = getMentionChild<Extra>(
+      this.props.children,
+      preferredQueryState.queryInfo.childIndex
+    )
+    if (!mentionChild) {
+      return { statusContent: null, statusType: null }
+    }
+
+    if (preferredQueryState.status === 'error') {
+      const renderError =
+        mentionChild.props.renderError ?? DEFAULT_MENTION_PROPS.renderError ?? null
+      return {
+        statusContent:
+          renderError?.(preferredQueryState.queryInfo.query, preferredQueryState.error) ??
+          DEFAULT_ERROR_SUGGESTIONS_MESSAGE,
+        statusType: 'error',
+      }
+    }
+
+    const renderEmpty = mentionChild.props.renderEmpty ?? DEFAULT_MENTION_PROPS.renderEmpty ?? null
+    return {
+      statusContent: renderEmpty?.(preferredQueryState.queryInfo.query) ?? DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
+      statusType: 'empty',
+    }
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -1757,6 +1977,7 @@ class MentionsInput<
       heightChanged ||
       typographyUpdated
     ) {
+      this.updateInlineSuggestionPosition()
       this.scheduleHighlighterRecompute()
     }
   }
@@ -1794,6 +2015,7 @@ class MentionsInput<
     this._isScrolling = true
     globalThis.requestAnimationFrame(() => {
       this.updateSuggestionsPosition()
+      this.updateInlineSuggestionPosition()
       this._isScrolling = false
     })
   }
@@ -1846,16 +2068,86 @@ class MentionsInput<
     }
   }
 
+  private setQueryState(
+    childIndex: number,
+    queryState: SuggestionQueryState<Extra> | null
+  ): void {
+    this.setState((prevState) => {
+      const nextQueryStates: SuggestionQueryStateMap<Extra> = { ...prevState.queryStates }
+
+      if (queryState === null) {
+        delete nextQueryStates[childIndex]
+      } else {
+        nextQueryStates[childIndex] = queryState
+      }
+
+      return {
+        queryStates: nextQueryStates,
+      }
+    })
+  }
+
+  private scheduleSuggestionQuery(
+    queryId: number,
+    childIndex: number,
+    queryInfo: QueryInfo,
+    mentionChild: React.ReactElement<MentionComponentProps<Extra>>,
+    ignoreAccents: boolean
+  ): void {
+    const debounceMs = mentionChild.props.debounceMs ?? DEFAULT_MENTION_PROPS.debounceMs
+    const maxSuggestions =
+      mentionChild.props.maxSuggestions ?? DEFAULT_MENTION_PROPS.maxSuggestions
+
+    const pendingTimer = this._queryDebounceTimers.get(childIndex)
+    if (pendingTimer !== undefined) {
+      clearTimeout(pendingTimer)
+      this._queryDebounceTimers.delete(childIndex)
+    }
+
+    const previousController = this._queryAbortControllers.get(childIndex)
+    previousController?.abort()
+
+    const controller = new AbortController()
+    this._queryAbortControllers.set(childIndex, controller)
+    this.setQueryState(childIndex, {
+      queryInfo,
+      results: [],
+      status: 'loading',
+    })
+
+    const executeQuery = () => {
+      this._queryDebounceTimers.delete(childIndex)
+
+      const provideData = getDataProvider<Extra>(mentionChild.props.data, {
+        ignoreAccents,
+        maxSuggestions,
+        signal: controller.signal,
+      })
+
+      void this.updateSuggestions(queryId, childIndex, queryInfo, provideData(queryInfo.query), controller)
+    }
+
+    if (debounceMs > 0) {
+      this._queryDebounceTimers.set(childIndex, setTimeout(executeQuery, debounceMs))
+      return
+    }
+
+    executeQuery()
+  }
+
   updateMentionsQueries = (plainTextValue: string, caretPosition: number): void => {
     // Invalidate previous queries. Async results for previous queries will be neglected.
     this._queryId++
+    this.clearPendingSuggestionRequests()
     this.suggestions = {}
     this.setState({
       suggestions: {},
+      queryStates: {},
+      focusIndex: 0,
     })
 
     const value = this.props.value ?? ''
-    const { children } = this.props
+    const mentionChildren = this.getMentionChildren()
 
     const positionInValue = mapPlainTextIndex(value, this.state.config, caretPosition, 'NULL')
 
@@ -1873,37 +2165,36 @@ class MentionsInput<
 
     // Check if suggestions have to be shown:
     // Match the trigger patterns of all Mention children on the extracted substring
-    // eslint-disable-next-line code-complete/low-function-cohesion
-    React.Children.forEach(children, (child, childIndex) => {
-      if (!isMentionElement(child)) {
-        return
-      }
+    for (const [childIndex, child] of mentionChildren.entries()) {
       const triggerProp = child.props.trigger ?? '@'
       const regex = resolveTriggerRegex(triggerProp)
       const match = substring.match(regex)
       if (match?.[1] !== undefined && match[2] !== undefined) {
         const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
-        const dataSource = child.props.data
-        const provideData = getDataProvider<Extra>(dataSource, regex.flags.includes('u'))
-        const resultPromise = provideData(match[2])
-        void this.updateSuggestions(
+        this.scheduleSuggestionQuery(
           this._queryId,
           childIndex,
-          match[2],
-          querySequenceStart,
-          querySequenceStart + match[1].length,
-          resultPromise
+          {
+            childIndex,
+            query: match[2],
+            querySequenceStart,
+            querySequenceEnd: querySequenceStart + match[1].length,
+          },
+          child,
+          regex.flags.includes('u')
         )
       }
-    })
+    }
   }
 
   clearSuggestions = () => {
     // Invalidate previous queries. Async results for previous queries will be neglected.
     this._queryId++
+    this.clearPendingSuggestionRequests()
     this.suggestions = {}
     this.setState({
       suggestions: {},
+      queryStates: {},
       focusIndex: 0,
     })
   }
@@ -1911,44 +2202,71 @@ class MentionsInput<
   updateSuggestions = async (
     queryId: number,
     childIndex: number,
-    query: string,
-    querySequenceStart: number,
-    querySequenceEnd: number,
-    results: MentionDataItem<Extra>[] | Promise<MentionDataItem<Extra>[]>
+    queryInfo: QueryInfo,
+    results: MentionDataItem<Extra>[] | Promise<MentionDataItem<Extra>[]>,
+    controller: AbortController
   ): Promise<void> => {
     if (queryId !== this._queryId) {
       // neglect async results from previous queries
       return
     }
-    const data: MentionDataItem<Extra>[] = await Promise.resolve(results)
-    // save in property so that multiple sync state updates from different mentions sources
-    // won't overwrite each other
-    const queryInfo: QueryInfo = {
-      childIndex,
-      query,
-      querySequenceStart,
-      querySequenceEnd,
-    }
+    try {
+      const data: MentionDataItem<Extra>[] = await Promise.resolve(results)
+      if (queryId !== this._queryId || controller.signal.aborted) {
+        return
+      }
 
-    this.suggestions = {
-      ...this.suggestions,
-      [childIndex]: {
-        queryInfo,
-        results: data,
-      },
-    }
+      this._queryAbortControllers.delete(childIndex)
 
-    const { focusIndex } = this.state
-    const suggestionsCount = countSuggestions(this.suggestions)
-    const nextFocusIndex = this.isInlineAutocomplete()
-      ? 0
-      : focusIndex >= suggestionsCount
-        ? Math.max(suggestionsCount - 1, 0)
-        : focusIndex
-    this.setState({
-      suggestions: this.suggestions,
-      focusIndex: nextFocusIndex,
-    })
+      this.suggestions = {
+        ...this.suggestions,
+        [childIndex]: {
+          queryInfo,
+          results: data,
+        },
+      }
+
+      const { focusIndex } = this.state
+      const suggestionsCount = countSuggestions(this.suggestions)
+      const nextFocusIndex = this.isInlineAutocomplete()
+        ? 0
+        : focusIndex >= suggestionsCount
+          ? Math.max(suggestionsCount - 1, 0)
+          : focusIndex
+
+      this.setState((prevState) => ({
+        suggestions: this.suggestions,
+        focusIndex: nextFocusIndex,
+        queryStates: {
+          ...prevState.queryStates,
+          [childIndex]: {
+            queryInfo,
+            results: data,
+            status: 'success',
+          },
+        },
+      }))
+    } catch (error) {
+      this._queryAbortControllers.delete(childIndex)
+
+      if (queryId !== this._queryId || controller.signal.aborted || isAbortError(error)) {
+        return
+      }
+
+      delete this.suggestions[childIndex]
+      this.setState((prevState) => ({
+        suggestions: { ...this.suggestions },
+        queryStates: {
+          ...prevState.queryStates,
+          [childIndex]: {
+            queryInfo,
+            results: [],
+            status: 'error',
+            error,
+          },
+        },
+      }))
+    }
   }
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -1959,8 +2277,8 @@ class MentionsInput<
     const { id, display } = this.getSuggestionData(suggestion)
     // Insert mention in the marked up value at the correct position
     const value = this.props.value || ''
-    const mentionsChild = Children.toArray(this.props.children)[childIndex]
-    if (!React.isValidElement<MentionComponentProps<Extra>>(mentionsChild)) {
+    const mentionsChild = getMentionChild<Extra>(this.props.children, childIndex)
+    if (!mentionsChild) {
       return
     }
     const {
@@ -2027,19 +2345,19 @@ class MentionsInput<
   }
 
   isLoading = (): boolean => {
-    let loading = false
-    React.Children.forEach(this.props.children, (child) => {
-      if (!isMentionElement(child)) {
-        return
-      }
-      loading = loading || Boolean(child.props.isLoading)
-    })
-    return loading
+    return (
+      this.getMentionChildren().some((child) => child.props.isLoading === true) ||
+      getSuggestionQueryStateEntries(this.state.queryStates).some(
+        ([, queryState]) => queryState.status === 'loading'
+      )
+    )
   }
 
   isOpened = (): boolean =>
     isNumber(this.state.selectionStart) &&
-    (countSuggestions(this.state.suggestions) !== 0 || this.isLoading())
+    (countSuggestions(this.state.suggestions) !== 0 ||
+      this.isLoading() ||
+      this.getSuggestionsStatusContent().statusType !== null)
 }
 
 /**
@@ -2063,6 +2381,7 @@ interface MeasurementBridgeProps {
   readonly input: InputElement | null
   readonly suggestions: HTMLDivElement | null
   readonly onSyncScroll: () => void
+  readonly onUpdateInlineSuggestionPosition: () => void
   readonly onUpdateSuggestionsPosition: () => void
 }
 
@@ -2072,22 +2391,28 @@ const MeasurementBridge = ({
   input,
   suggestions,
   onSyncScroll,
+  onUpdateInlineSuggestionPosition,
   onUpdateSuggestionsPosition,
 }: MeasurementBridgeProps) => {
-  const updateSuggestions = useEffectEvent(() => {
+  const updateSuggestions = useEventCallback(() => {
     onUpdateSuggestionsPosition()
   })
 
-  const syncScroll = useEffectEvent(() => {
+  const updateInlineSuggestionPosition = useEventCallback(() => {
+    onUpdateInlineSuggestionPosition()
+  })
+
+  const syncScroll = useEventCallback(() => {
     onSyncScroll()
   })
 
-  const updateAll = useEffectEvent(() => {
+  const updateAll = useEventCallback(() => {
     updateSuggestions()
+    updateInlineSuggestionPosition()
     syncScroll()
   })
 
-  const observe = useEffectEvent((element: Element | null, callback: () => void) => {
+  const observe = useEventCallback((element: Element | null, callback: () => void) => {
     if (!element || typeof ResizeObserver === 'undefined') {
       return undefined
     }
@@ -2136,6 +2461,7 @@ const MeasurementBridge = ({
     const handleScroll = () => {
       syncScroll()
       updateSuggestions()
+      updateInlineSuggestionPosition()
     }
 
     input.addEventListener('scroll', handleScroll, { passive: true })

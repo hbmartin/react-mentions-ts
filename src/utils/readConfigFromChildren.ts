@@ -30,7 +30,7 @@ const generateMarkupForTrigger = (trigger: string | RegExp | undefined): string 
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
 
-const collectMentionElements = <Extra extends Record<string, unknown>>(
+export const collectMentionElements = <Extra extends Record<string, unknown>>(
   children: ReactNode
 ): ReactElement<MentionComponentProps<Extra>>[] =>
   Children.toArray(children).flatMap((child) => {

@@ -1,5 +1,5 @@
-import { areMentionSelectionsEqual } from './areMentionSelectionsEqual'
 import type { MentionSelection } from '../types'
+import { areMentionSelectionsEqual } from './areMentionSelectionsEqual'
 
 const baseSelection = (overrides: Partial<MentionSelection> = {}): MentionSelection => ({
   id: 'alpha',

@@ -1,11 +1,11 @@
-import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
+import React, { useLayoutEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
 import { cn, flattenSuggestions, getSuggestionHtmlId } from './utils'
-import { useEffectEvent } from './utils/useEffectEvent'
+import { useEventCallback } from './utils/useEventCallback'
 import type {
   MentionComponentProps,
   MentionRenderSuggestion,
@@ -14,9 +14,10 @@ import type {
   SuggestionsMap,
 } from './types'
 import type { FlattenedSuggestion } from './utils/flattenSuggestions'
+import { collectMentionElements } from './utils/readConfigFromChildren'
 
 interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
-  readonly id: string
+  readonly id?: string
   readonly suggestions?: SuggestionsMap<Extra>
   readonly a11ySuggestionsListLabel?: string
   readonly focusIndex: number
@@ -44,6 +45,9 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
   readonly onMouseDown?: React.MouseEventHandler
   readonly onMouseEnter?: (index: number) => void
+  readonly statusContent?: React.ReactNode
+  readonly statusClassName?: string
+  readonly statusType?: 'empty' | 'error' | null
 }
 
 const overlayStyles = cva(
@@ -81,17 +85,21 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   customSuggestionsContainer,
   onMouseDown,
   onMouseEnter,
+  statusContent,
+  statusClassName,
+  statusType,
 }: SuggestionsOverlayProps<Extra>) {
   const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null)
+  const mentionChildren = useMemo(() => collectMentionElements(children), [children])
   const childRenderSuggestions: (MentionRenderSuggestion<Extra> | null)[] = useMemo(
     () =>
-      Children.toArray(children).map((child) =>
+      mentionChildren.map((child) =>
         React.isValidElement<MentionComponentProps<Extra>>(child) &&
         typeof child.props.renderSuggestion === 'function'
           ? child.props.renderSuggestion
           : null
       ),
-    [children]
+    [mentionChildren]
   )
 
   // eslint-disable-next-line code-complete/low-function-cohesion
@@ -121,19 +129,19 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   const overlayClassName = cn(overlayStyles(), className)
   const listClassNameResolved = cn(listStyles, listClassName)
 
-  const selectSuggestion = useEffectEvent(
+  const selectSuggestion = useEventCallback(
     (suggestionItem: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => {
       onSelect?.(suggestionItem, queryInfo)
     }
   )
 
-  const handleMouseEnter = useEffectEvent((index: number) => {
+  const handleMouseEnter = useEventCallback((index: number) => {
     onMouseEnter?.(index)
   })
 
   const flattenedSuggestions = useMemo<FlattenedSuggestion<Extra>[]>(() => {
-    return flattenSuggestions(children, suggestions)
-  }, [children, suggestions])
+    return flattenSuggestions(mentionChildren, suggestions)
+  }, [mentionChildren, suggestions])
 
   const suggestionEntries = useMemo(() => {
     return flattenedSuggestions.map(({ result: suggestionItem, queryInfo }, index) => {
@@ -155,7 +163,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     })
   }, [childRenderSuggestions, focusIndex, flattenedSuggestions])
 
-  const handleListMouseDown = useEffectEvent<React.MouseEventHandler<HTMLUListElement>>(
+  const handleListMouseDown = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(
     (event) => {
       onMouseDown?.(event)
     }
@@ -189,7 +197,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
               displayClassName={displayClassName}
               highlightClassName={highlightClassName}
               key={key}
-              id={getSuggestionHtmlId(id, index)}
+              id={id ? getSuggestionHtmlId(id, index) : `suggestion-${index.toString()}`}
               query={query}
               index={index}
               renderSuggestion={renderSuggestionFromChild}
@@ -225,6 +233,23 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     )
   }
 
+  const renderStatus = (): React.ReactNode => {
+    if (!statusContent) {
+      return null
+    }
+
+    return (
+      <div
+        className={statusClassName}
+        data-slot="suggestions-status"
+        data-status-type={statusType ?? undefined}
+        role={statusType === 'error' ? 'alert' : 'status'}
+      >
+        {statusContent}
+      </div>
+    )
+  }
+
   if (!isOpened) {
     return null
   }
@@ -249,7 +274,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       ref={containerRef}
       style={mergedStyle}
     >
-      {renderSuggestions()}
+      {flattenedSuggestions.length > 0 ? renderSuggestions() : renderStatus()}
       {renderLoadingIndicator()}
     </div>
   )
