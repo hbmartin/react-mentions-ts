@@ -4,8 +4,5 @@ export function useEventCallback<T extends (...args: never[]) => unknown>(handle
   const handlerRef = useRef(handler)
   handlerRef.current = handler
 
-  return useCallback(
-    ((...args: Parameters<T>) => handlerRef.current(...args)) as T,
-    []
-  )
+  return useCallback(((...args: Parameters<T>) => handlerRef.current(...args)) as T, [])
 }

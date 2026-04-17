@@ -2,11 +2,7 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { MentionsInput, Mention } from '../../../src'
-import type {
-  MentionDataItem,
-  MentionSearchContext,
-  MentionsInputChangeEvent,
-} from '../../../src'
+import type { MentionDataItem, MentionSearchContext, MentionsInputChangeEvent } from '../../../src'
 import ExampleCard from './ExampleCard'
 import {
   mentionPillClass,
@@ -23,8 +19,12 @@ async function fetchUsers(
   }
 
   const response = await fetch(`https://api.github.com/search/users?q=${query}`, { signal })
-  const data = await response.json()
-  return data.items.map((user: { login: string }) => ({ display: user.login, id: user.login }))
+  if (!response.ok) {
+    throw new Error(`GitHub user search failed (${response.status.toString()})`)
+  }
+
+  const data = (await response.json()) as { items?: Array<{ login: string }> }
+  return (data.items ?? []).map((user) => ({ display: user.login, id: user.login }))
 }
 
 const githubSuggestions = mergeClassNames(multilineMentionsClassNames, {

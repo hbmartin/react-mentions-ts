@@ -490,7 +490,10 @@ describe('MentionsInput', () => {
     fireEvent.select(textarea)
 
     await waitFor(() => {
-      expect(asyncData).toHaveBeenCalledWith('a', expect.objectContaining({ signal: expect.any(Object) }))
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
     })
 
     await waitFor(() => {
@@ -524,7 +527,10 @@ describe('MentionsInput', () => {
     fireEvent.select(textarea)
 
     await waitFor(() => {
-      expect(asyncData).toHaveBeenCalledWith('a', expect.objectContaining({ signal: expect.any(Object) }))
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
     })
 
     rerender(
@@ -537,7 +543,10 @@ describe('MentionsInput', () => {
     fireEvent.select(textarea)
 
     await waitFor(() => {
-      expect(asyncData).toHaveBeenCalledWith('ab', expect.objectContaining({ signal: expect.any(Object) }))
+      expect(asyncData).toHaveBeenCalledWith(
+        'ab',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
     })
 
     requests.get('ab')?.resolve([{ id: 'fresh', display: 'Fresh Result' }])
@@ -577,6 +586,171 @@ describe('MentionsInput', () => {
     })
   })
 
+  it('allows renderEmpty to suppress the built-in empty state.', async () => {
+    type DeferredResult = {
+      resolve: (value: Array<{ id: string; display: string }>) => void
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string) =>
+        new Promise<Array<{ id: string; display: string }>>((resolve) => {
+          requests.set(query, { resolve })
+        })
+    )
+
+    const { container } = render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} renderEmpty={() => null} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    requests.get('a')?.resolve([])
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-slot="suggestions"]')).toBeNull()
+    })
+
+    expect(screen.queryByText('No suggestions found')).not.toBeInTheDocument()
+  })
+
+  it('allows renderError to suppress the built-in error state.', async () => {
+    type DeferredResult = {
+      reject: (reason?: unknown) => void
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string) =>
+        new Promise<Array<{ id: string; display: string }>>((_, reject) => {
+          requests.set(query, { reject })
+        })
+    )
+
+    const { container } = render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} renderError={() => false} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    requests.get('a')?.reject(new Error('boom'))
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-slot="suggestions"]')).toBeNull()
+    })
+
+    expect(screen.queryByText('Unable to load suggestions')).not.toBeInTheDocument()
+  })
+
+  it('keeps the active request abortable after an older request rejects.', async () => {
+    type DeferredResult = {
+      resolve: (value: Array<{ id: string; display: string }>) => void
+      reject: (reason?: unknown) => void
+      signal: AbortSignal
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string, { signal }: { signal: AbortSignal }) =>
+        new Promise<Array<{ id: string; display: string }>>((resolve, reject) => {
+          requests.set(query, { resolve, reject, signal })
+        })
+    )
+
+    const { rerender } = render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    rerender(
+      <MentionsInput value="@ab">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    textarea.setSelectionRange(3, 3)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'ab',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    const firstRequest = requests.get('a')
+    const secondRequest = requests.get('ab')
+    expect(firstRequest?.signal.aborted).toBe(true)
+    expect(secondRequest?.signal.aborted).toBe(false)
+
+    firstRequest?.reject(new Error('stale request aborted'))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    rerender(
+      <MentionsInput value="@abc">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    textarea.setSelectionRange(4, 4)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'abc',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    expect(secondRequest?.signal.aborted).toBe(true)
+
+    requests.get('abc')?.resolve([])
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+  })
+
   it('supports debounced async providers and maxSuggestions.', async () => {
     jest.useFakeTimers()
 
@@ -606,7 +780,10 @@ describe('MentionsInput', () => {
       })
 
       await waitFor(() => {
-        expect(asyncData).toHaveBeenCalledWith('a', expect.objectContaining({ signal: expect.any(Object) }))
+        expect(asyncData).toHaveBeenCalledWith(
+          'a',
+          expect.objectContaining({ signal: expect.any(Object) })
+        )
       })
 
       await waitFor(() => {
