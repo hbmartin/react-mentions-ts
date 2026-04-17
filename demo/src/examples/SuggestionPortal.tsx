@@ -8,6 +8,8 @@ import {
   mentionPillClass,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import RenderTraceBadge from './profiling/RenderTraceBadge'
+import { useRenderTrace } from './profiling/useRenderTrace'
 
 const portalClassNames = mergeClassNames(multilineMentionsClassNames, {
   suggestions:
@@ -23,11 +25,13 @@ export default function SuggestionPortal({
 }) {
   const [value, setValue] = useState('')
   const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null)
+  const renderCount = useRenderTrace('SuggestionPortal')
 
   return (
     <ExampleCard
       title="Suggestions via portal"
       description="Pop suggestion menus anywhere in the DOM. Perfect for modals, drawers, or fixed toolbars."
+      actions={<RenderTraceBadge count={renderCount} label="Card renders" />}
     >
       <div className="relative h-72">
         <div

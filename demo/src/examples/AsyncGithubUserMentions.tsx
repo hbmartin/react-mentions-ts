@@ -9,6 +9,8 @@ import {
   mergeClassNames,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import RenderTraceBadge from './profiling/RenderTraceBadge'
+import { useRenderTrace } from './profiling/useRenderTrace'
 
 async function fetchUsers(
   query: string,
@@ -34,12 +36,14 @@ const githubSuggestions = mergeClassNames(multilineMentionsClassNames, {
 
 export default function AsyncGithubUserMentions() {
   const [value, setValue] = useState('')
+  const renderCount = useRenderTrace('AsyncGithubUserMentions')
   const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard
       title="Async GitHub mentions"
-      description="Hit the public GitHub API as you type — the component handles debouncing and focus management."
+      description="Hit the public GitHub API as you type — the component handles debouncing, cancellation, and stale-result suppression."
+      actions={<RenderTraceBadge count={renderCount} label="Card renders" />}
     >
       <MentionsInput
         value={value}

@@ -20,13 +20,15 @@ const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {
   return `${id}_${usedKeys[id].toString()}`
 }
 
-interface HighlighterProps {
+interface HighlighterProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
   readonly selectionStart: number | null
   readonly selectionEnd: number | null
   readonly value?: string
   readonly onCaretPositionChange: (position: CaretCoordinates) => void
   readonly containerRef?: (node: HTMLDivElement | null) => void
   readonly children: React.ReactNode
+  readonly mentionChildren?: React.ReactElement<MentionComponentProps<Extra>>[]
+  readonly config?: MentionChildConfig<Extra>[]
   readonly singleLine: boolean
   readonly className?: string
   readonly substringClassName?: string
@@ -58,20 +60,22 @@ const singleLineContentWrapperStyle: CSSProperties = {
 }
 
 // eslint-disable-next-line code-complete/low-function-cohesion
-function Highlighter({
+function Highlighter<Extra extends Record<string, unknown> = Record<string, unknown>>({
   selectionStart,
   selectionEnd,
   value = '',
   onCaretPositionChange,
   containerRef,
   children,
+  mentionChildren: mentionChildrenProp,
+  config: configProp,
   singleLine,
   className,
   substringClassName,
   caretClassName,
   recomputeVersion,
   mentionSelectionMap,
-}: HighlighterProps) {
+}: HighlighterProps<Extra>) {
   const [position, setPosition] = useState<CaretCoordinates | null>(null)
   const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
 
@@ -120,10 +124,13 @@ function Highlighter({
     // value/selection/singleLine impact layout/position
   }, [caretElement, value, selectionStart, selectionEnd, singleLine, recomputeVersion])
 
-  const mentionChildren = useMemo(() => collectMentionElements(children), [children])
-  const config: MentionChildConfig[] = useMemo(
-    () => readConfigFromChildren(mentionChildren),
-    [mentionChildren]
+  const mentionChildren = useMemo(
+    () => mentionChildrenProp ?? collectMentionElements(children),
+    [children, mentionChildrenProp]
+  )
+  const config: MentionChildConfig<Extra>[] = useMemo(
+    () => configProp ?? readConfigFromChildren<Extra>(mentionChildren),
+    [configProp, mentionChildren]
   )
   let caretPositionInMarkup: number | null | undefined
 

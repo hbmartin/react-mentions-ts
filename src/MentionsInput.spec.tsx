@@ -3,6 +3,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import * as utils from './utils'
+import * as readConfigFromChildrenModule from './utils/readConfigFromChildren'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
 import type { MentionsInputChangeEvent, MentionSerializer } from './types'
@@ -2232,6 +2233,37 @@ describe('MentionsInput', () => {
       }
     })
 
+    it('does not reparse stable mention children on selection-only updates', async () => {
+      const collectMentionElementsSpy = jest.spyOn(
+        readConfigFromChildrenModule,
+        'collectMentionElements'
+      )
+
+      try {
+        const stableChildren = [<Mention key="mention" trigger="@" data={data} />]
+
+        render(<MentionsInput value="@a">{stableChildren}</MentionsInput>)
+
+        const textarea = screen.getByRole('combobox')
+        fireEvent.focus(textarea)
+
+        await waitFor(() => {
+          expect(collectMentionElementsSpy.mock.calls.length).toBeGreaterThanOrEqual(2)
+        })
+
+        collectMentionElementsSpy.mockClear()
+
+        act(() => {
+          textarea.setSelectionRange(1, 1)
+          fireEvent.select(textarea)
+        })
+
+        expect(collectMentionElementsSpy).not.toHaveBeenCalled()
+      } finally {
+        collectMentionElementsSpy.mockRestore()
+      }
+    })
+
     it('clears cached mentions when the mention config changes', async () => {
       const getMentionsAndPlainTextSpy = jest.spyOn(utils, 'getMentionsAndPlainText')
       try {
@@ -2678,6 +2710,29 @@ describe('MentionsInput', () => {
       unmount()
     })
 
+    it('skips document scroll sync for inline autocomplete when there is no active selection.', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@a" suggestionsDisplay="inline">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const requestViewSyncSpy = jest
+        .spyOn(instance, 'requestViewSync')
+        .mockImplementation(() => undefined)
+
+      act(() => {
+        instance.handleDocumentScroll()
+      })
+
+      expect(requestViewSyncSpy).not.toHaveBeenCalled()
+
+      requestViewSyncSpy.mockRestore()
+      unmount()
+    })
+
     it('falls back to immediate document scroll sync when requestAnimationFrame is unavailable.', () => {
       const ref = React.createRef<MentionsInput>()
       const { unmount } = render(
@@ -2707,9 +2762,11 @@ describe('MentionsInput', () => {
           delete (globalThis as typeof globalThis & { requestAnimationFrame?: unknown })
             .requestAnimationFrame
         } else {
-          ;(globalThis as typeof globalThis & {
-            requestAnimationFrame?: typeof globalThis.requestAnimationFrame
-          }).requestAnimationFrame = originalRAF
+          ;(
+            globalThis as typeof globalThis & {
+              requestAnimationFrame?: typeof globalThis.requestAnimationFrame
+            }
+          ).requestAnimationFrame = originalRAF
         }
 
         updateSpy.mockRestore()
@@ -2927,7 +2984,9 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      const updateSpy = jest.spyOn(instance, 'updateHighlighterScroll').mockImplementation(() => false)
+      const updateSpy = jest
+        .spyOn(instance, 'updateHighlighterScroll')
+        .mockImplementation(() => false)
       const flushSpy = jest.spyOn(instance, 'flushPendingViewSync')
       const raf = jest
         .spyOn(globalThis, 'requestAnimationFrame')

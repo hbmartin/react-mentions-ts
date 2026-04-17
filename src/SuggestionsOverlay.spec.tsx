@@ -255,6 +255,27 @@ describe('SuggestionsOverlay', () => {
     expect(status).toHaveClass('px-4', 'py-2.5', 'text-left', 'text-sm', 'text-muted-foreground')
   })
 
+  it('renders numeric zero status content', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="zero-status-overlay"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        statusContent={0}
+        statusType="empty"
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const status = container.querySelector('[data-slot="suggestions-status"]')
+    expect(status).not.toBeNull()
+    expect(status).toHaveTextContent('0')
+    expect(status).toHaveAttribute('role', 'status')
+    expect(status).toHaveClass('px-4', 'py-2.5', 'text-sm', 'text-muted-foreground')
+  })
+
   it('applies the error variant to plain-text status content', () => {
     const { container } = render(
       <SuggestionsOverlay

@@ -32,6 +32,7 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly onSelect?: (suggestion: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => void
   readonly containerRef?: (node: HTMLDivElement | null) => void
   readonly children: React.ReactNode
+  readonly mentionChildren?: React.ReactElement<MentionComponentProps<Extra>>[]
   readonly className?: string
   readonly listClassName?: string
   readonly itemClassName?: string
@@ -83,6 +84,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   onSelect,
   containerRef,
   children,
+  mentionChildren: mentionChildrenProp,
   className,
   listClassName,
   itemClassName,
@@ -101,7 +103,10 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   statusType,
 }: SuggestionsOverlayProps<Extra>) {
   const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null)
-  const mentionChildren = useMemo(() => collectMentionElements(children), [children])
+  const mentionChildren = useMemo(
+    () => mentionChildrenProp ?? collectMentionElements(children),
+    [children, mentionChildrenProp]
+  )
   const childRenderSuggestions: (MentionRenderSuggestion<Extra> | null)[] = useMemo(
     () =>
       mentionChildren.map((child) =>
@@ -245,12 +250,11 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   }
 
   const renderStatus = (): React.ReactNode => {
-    if (!statusContent) {
+    if (statusContent == null) {
       return null
     }
 
-    const isPlainTextStatus =
-      typeof statusContent === 'string' || typeof statusContent === 'number'
+    const isPlainTextStatus = typeof statusContent === 'string' || typeof statusContent === 'number'
     const statusClassNameResolved = cn(
       isPlainTextStatus ? statusStyles({ type: statusType ?? 'empty' }) : undefined,
       statusClassName

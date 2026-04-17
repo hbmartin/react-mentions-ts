@@ -7,6 +7,8 @@ import {
   mergeClassNames,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import RenderTraceBadge from './profiling/RenderTraceBadge'
+import { useRenderTrace } from './profiling/useRenderTrace'
 
 const autoResizeClasses = mergeClassNames(multilineMentionsClassNames, {
   control: 'min-h-[4.5rem]',
@@ -24,6 +26,7 @@ export default function AutoResize({
   const [value, setValue] = useState(
     'Start typing to watch the composer grow. Try mentioning @[Walter White](user:walter)!'
   )
+  const renderCount = useRenderTrace('AutoResize')
 
   const handleMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) =>
     setValue(nextValue)
@@ -31,7 +34,8 @@ export default function AutoResize({
   return (
     <ExampleCard
       title="Auto-resizing composer"
-      description="Enable `autoResize` to mirror the textarea height to its scroll height after every change."
+      description="Enable `autoResize` to mirror the textarea height to its scroll height after every change and keep measurement work near the composer."
+      actions={<RenderTraceBadge count={renderCount} label="Card renders" />}
     >
       <MentionsInput
         autoResize

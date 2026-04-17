@@ -9,6 +9,8 @@ import {
   mergeClassNames,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import RenderTraceBadge from './profiling/RenderTraceBadge'
+import { useRenderTrace } from './profiling/useRenderTrace'
 
 const scrollableClasses = mergeClassNames(multilineMentionsClassNames, {
   input: 'h-40 overflow-y-auto',
@@ -25,12 +27,14 @@ export default function Scrollable({
   const [value, setValue] = useState(
     "Hi @[John Doe](user:johndoe), \n\n\nlet's add \n\n@[John Doe](user:johndoe) to this conversation... "
   )
+  const renderCount = useRenderTrace('Scrollable')
   const onMentionsChange = ({ value: nextValue }: MentionsInputChangeEvent) => setValue(nextValue)
 
   return (
     <ExampleCard
       title="Scrollable composer"
-      description="Textarea and highlighter stay perfectly in sync, even while scrolling long drafts."
+      description="Textarea and highlighter stay perfectly in sync, even while scrolling long drafts and recomputing overlay placement."
+      actions={<RenderTraceBadge count={renderCount} label="Card renders" />}
     >
       <MentionsInput
         value={value}

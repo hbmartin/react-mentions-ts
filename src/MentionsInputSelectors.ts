@@ -34,6 +34,11 @@ export const DEFAULT_EMPTY_SUGGESTIONS_MESSAGE = 'No suggestions found'
 export const DEFAULT_ERROR_SUGGESTIONS_MESSAGE = 'Unable to load suggestions'
 export const INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT = 'No inline suggestions available'
 
+export const getMentionChildFromArray = <Extra extends Record<string, unknown>>(
+  mentionChildren: ReadonlyArray<React.ReactElement<MentionComponentProps<Extra>>>,
+  childIndex: number
+): React.ReactElement<MentionComponentProps<Extra>> | undefined => mentionChildren[childIndex]
+
 export const getMentionChildren = <Extra extends Record<string, unknown>>(
   children: React.ReactNode
 ) => collectMentionElements<Extra>(children)
@@ -71,7 +76,13 @@ export const getSuggestionData = <Extra extends Record<string, unknown>>(
 export const getFlattenedSuggestions = <Extra extends Record<string, unknown>>(
   children: React.ReactNode,
   suggestions: SuggestionsMap<Extra>
-): FlattenedSuggestion<Extra>[] => flattenSuggestions<Extra>(getMentionChildren(children), suggestions)
+): FlattenedSuggestion<Extra>[] =>
+  flattenSuggestions<Extra>(getMentionChildren(children), suggestions)
+
+export const getFlattenedSuggestionsForMentionChildren = <Extra extends Record<string, unknown>>(
+  mentionChildren: ReadonlyArray<React.ReactElement<MentionComponentProps<Extra>>>,
+  suggestions: SuggestionsMap<Extra>
+): FlattenedSuggestion<Extra>[] => flattenSuggestions<Extra>(mentionChildren, suggestions)
 
 export const getFocusedSuggestionEntry = <Extra extends Record<string, unknown>>(
   children: React.ReactNode,
@@ -89,7 +100,26 @@ export const getFocusedSuggestionEntry = <Extra extends Record<string, unknown>>
   return flattened[focusIndex] ?? flattened[0]
 }
 
-export const getInlineSuggestionRemainder = (displayValue: string, queryInfo: QueryInfo): string => {
+export const getFocusedSuggestionEntryForMentionChildren = <Extra extends Record<string, unknown>>(
+  mentionChildren: ReadonlyArray<React.ReactElement<MentionComponentProps<Extra>>>,
+  suggestions: SuggestionsMap<Extra>,
+  focusIndex: number
+): {
+  result: SuggestionDataItem<Extra>
+  queryInfo: QueryInfo
+} | null => {
+  const flattened = getFlattenedSuggestionsForMentionChildren(mentionChildren, suggestions)
+  if (flattened.length === 0) {
+    return null
+  }
+
+  return flattened[focusIndex] ?? flattened[0]
+}
+
+export const getInlineSuggestionRemainder = (
+  displayValue: string,
+  queryInfo: QueryInfo
+): string => {
   const query = queryInfo.query ?? ''
   if (query.length === 0) {
     return displayValue
@@ -105,18 +135,22 @@ export const getInlineSuggestionRemainder = (displayValue: string, queryInfo: Qu
   return displayValue
 }
 
-export const getInlineSuggestionDetails = <Extra extends Record<string, unknown>>(
-  children: React.ReactNode,
+export const getInlineSuggestionDetailsForMentionChildren = <Extra extends Record<string, unknown>>(
+  mentionChildren: ReadonlyArray<React.ReactElement<MentionComponentProps<Extra>>>,
   suggestions: SuggestionsMap<Extra>,
   focusIndex: number
 ): InlineSuggestionDetails<Extra> | null => {
-  const entry = getFocusedSuggestionEntry(children, suggestions, focusIndex)
+  const entry = getFocusedSuggestionEntryForMentionChildren(
+    mentionChildren,
+    suggestions,
+    focusIndex
+  )
   if (!entry) {
     return null
   }
 
   const { queryInfo, result } = entry
-  const mentionChild = getMentionChild<Extra>(children, queryInfo.childIndex)
+  const mentionChild = getMentionChildFromArray<Extra>(mentionChildren, queryInfo.childIndex)
   if (!mentionChild) {
     return null
   }
@@ -151,12 +185,38 @@ export const getInlineSuggestionDetails = <Extra extends Record<string, unknown>
   }
 }
 
+export const getInlineSuggestionDetails = <Extra extends Record<string, unknown>>(
+  children: React.ReactNode,
+  suggestions: SuggestionsMap<Extra>,
+  focusIndex: number
+): InlineSuggestionDetails<Extra> | null => {
+  return getInlineSuggestionDetailsForMentionChildren(
+    getMentionChildren(children),
+    suggestions,
+    focusIndex
+  )
+}
+
 export const getPreferredQueryState = <Extra extends Record<string, unknown>>(
   queryStates: SuggestionQueryStateMap<Extra>
 ): SuggestionQueryState<Extra> | null => getSuggestionQueryStateEntries(queryStates)[0]?.[1] ?? null
 
 export const getSuggestionsStatusContent = <Extra extends Record<string, unknown>>(
   children: React.ReactNode,
+  suggestions: SuggestionsMap<Extra>,
+  queryStates: SuggestionQueryStateMap<Extra>
+): SuggestionsStatusContent => {
+  return getSuggestionsStatusContentForMentionChildren(
+    getMentionChildren(children),
+    suggestions,
+    queryStates
+  )
+}
+
+export const getSuggestionsStatusContentForMentionChildren = <
+  Extra extends Record<string, unknown>,
+>(
+  mentionChildren: ReadonlyArray<React.ReactElement<MentionComponentProps<Extra>>>,
   suggestions: SuggestionsMap<Extra>,
   queryStates: SuggestionQueryStateMap<Extra>
 ): SuggestionsStatusContent => {
@@ -169,14 +229,16 @@ export const getSuggestionsStatusContent = <Extra extends Record<string, unknown
     return { statusContent: null, statusType: null }
   }
 
-  const mentionChild = getMentionChild<Extra>(children, preferredQueryState.queryInfo.childIndex)
+  const mentionChild = getMentionChildFromArray<Extra>(
+    mentionChildren,
+    preferredQueryState.queryInfo.childIndex
+  )
   if (!mentionChild) {
     return { statusContent: null, statusType: null }
   }
 
   if (preferredQueryState.status === 'error') {
-    const renderError =
-      mentionChild.props.renderError ?? DEFAULT_MENTION_PROPS.renderError ?? null
+    const renderError = mentionChild.props.renderError ?? DEFAULT_MENTION_PROPS.renderError ?? null
 
     if (!renderError) {
       return {
@@ -238,19 +300,17 @@ export const getInlineSuggestionAnnouncement = <Extra extends Record<string, unk
 }
 
 export const getDataProvider = <Extra extends Record<string, unknown>>(
-  data: ReadonlyArray<MentionDataItem<Extra>> | ((
-    query: string,
-    context: MentionSearchContext
-  ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>),
+  data:
+    | ReadonlyArray<MentionDataItem<Extra>>
+    | ((
+        query: string,
+        context: MentionSearchContext
+      ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>),
   options: {
     ignoreAccents: boolean
     maxSuggestions?: number
     signal: AbortSignal
-    getSubstringIndex: (
-      string: string,
-      substring: string,
-      ignoreAccents: boolean
-    ) => number
+    getSubstringIndex: (string: string, substring: string, ignoreAccents: boolean) => number
   }
 ): ((query: string) => Promise<MentionDataItem<Extra>[]>) => {
   const { ignoreAccents, maxSuggestions, signal, getSubstringIndex } = options
