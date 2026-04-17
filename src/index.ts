@@ -5,6 +5,9 @@ export type {
   MentionsInputClassNames,
   MentionComponentProps,
   MentionDataItem,
+  MentionRenderEmpty,
+  MentionRenderError,
+  MentionSearchContext,
   MentionsInputChangeEvent,
   MentionsInputChangeHandler,
   MentionsInputChangeTrigger,
@@ -13,6 +16,7 @@ export type {
   MentionSerializerMatch,
   MentionSelection,
   MentionSelectionState,
+  SuggestionQueryState,
 } from './types'
 export { default as createMarkupSerializer } from './utils/createMarkupSerializer'
 export { makeTriggerRegex } from './utils/makeTriggerRegex'

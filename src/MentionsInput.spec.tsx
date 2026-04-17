@@ -1,6 +1,7 @@
 /* eslint-disable sonarjs/no-nested-functions */
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { renderToString } from 'react-dom/server'
 import * as utils from './utils'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
@@ -489,13 +490,131 @@ describe('MentionsInput', () => {
     fireEvent.select(textarea)
 
     await waitFor(() => {
-      expect(asyncData).toHaveBeenCalledWith('a')
+      expect(asyncData).toHaveBeenCalledWith('a', expect.objectContaining({ signal: expect.any(Object) }))
     })
 
     await waitFor(() => {
       const suggestions = screen.getAllByRole('option', { hidden: true })
       expect(suggestions).toHaveLength(2)
     })
+  })
+
+  it('ignores stale async suggestions when a newer query resolves first.', async () => {
+    type DeferredResult = {
+      resolve: (value: Array<{ id: string; display: string }>) => void
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string) =>
+        new Promise<Array<{ id: string; display: string }>>((resolve) => {
+          requests.set(query, { resolve })
+        })
+    )
+
+    const { rerender } = render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith('a', expect.objectContaining({ signal: expect.any(Object) }))
+    })
+
+    rerender(
+      <MentionsInput value="@ab">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    textarea.setSelectionRange(3, 3)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith('ab', expect.objectContaining({ signal: expect.any(Object) }))
+    })
+
+    requests.get('ab')?.resolve([{ id: 'fresh', display: 'Fresh Result' }])
+
+    await waitFor(() => {
+      expect(screen.getByText('Fresh Result')).toBeInTheDocument()
+    })
+
+    requests.get('a')?.resolve([{ id: 'stale', display: 'Stale Result' }])
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByText('Stale Result')).not.toBeInTheDocument()
+    expect(screen.getByText('Fresh Result')).toBeInTheDocument()
+  })
+
+  it('renders an error state when an async provider rejects.', async () => {
+    const asyncData = jest.fn(async () => {
+      throw new Error('boom')
+    })
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to load suggestions')).toBeInTheDocument()
+    })
+  })
+
+  it('supports debounced async providers and maxSuggestions.', async () => {
+    jest.useFakeTimers()
+
+    try {
+      const asyncData = jest.fn(async () => [
+        { id: 'one', display: 'One' },
+        { id: 'two', display: 'Two' },
+        { id: 'three', display: 'Three' },
+      ])
+
+      render(
+        <MentionsInput value="@a">
+          <Mention trigger="@" data={asyncData} debounceMs={200} maxSuggestions={2} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      fireEvent.focus(textarea)
+      textarea.setSelectionRange(2, 2)
+      fireEvent.select(textarea)
+
+      expect(asyncData).not.toHaveBeenCalled()
+
+      await act(async () => {
+        jest.advanceTimersByTime(200)
+        await Promise.resolve()
+      })
+
+      await waitFor(() => {
+        expect(asyncData).toHaveBeenCalledWith('a', expect.objectContaining({ signal: expect.any(Object) }))
+      })
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(2)
+      })
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it('should scroll the highlighter in sync with the textarea', () => {
@@ -580,6 +699,24 @@ describe('MentionsInput', () => {
       const suggestionsNode = container.querySelector('[data-slot="suggestions"]')
       expect(suggestionsNode).toBeTruthy()
       expect(container.contains(suggestionsNode)).toBe(true)
+    })
+  })
+
+  it('wires aria-controls to the active suggestions listbox when open.', async () => {
+    render(
+      <MentionsInput id="people" value="@">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const listbox = screen.getByRole('listbox', { hidden: true })
+      expect(textarea).toHaveAttribute('aria-controls', listbox.id)
     })
   })
 
@@ -1859,6 +1996,21 @@ describe('MentionsInput', () => {
       expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
       expect(payload.mentionId).toBe('alice')
       expect(payload.trigger.type).toBe('mention-add')
+    })
+
+    it('renders stable SSR markup for inline autocomplete without generated ids.', () => {
+      const firstRender = renderToString(
+        <MentionsInput value="@ali" suggestionsDisplay="inline">
+          <Mention trigger="@" data={inlineData} />
+        </MentionsInput>
+      )
+      const secondRender = renderToString(
+        <MentionsInput value="@ali" suggestionsDisplay="inline">
+          <Mention trigger="@" data={inlineData} />
+        </MentionsInput>
+      )
+
+      expect(firstRender).toBe(secondRender)
     })
   })
 

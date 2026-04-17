@@ -10,7 +10,8 @@ interface LoadingIndicatorProps {
 
 const containerStyles = 'flex justify-center py-4'
 const spinnerStyles = 'flex items-center gap-2 text-primary'
-const spinnerDotStyles = 'inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-current'
+const spinnerDotStyles =
+  'inline-block h-1.5 w-1.5 animate-bounce motion-reduce:animate-none rounded-full bg-current'
 
 const dotAnimationStyles = [0, 1, 2, 3, 4].map((delay) => ({
   delay,
@@ -38,6 +39,7 @@ function LoadingIndicator({
             key={delay}
             className={cn(spinnerDotStyles, spinnerElementClassName)}
             style={style}
+            aria-hidden="true"
           />
         ))}
       </div>

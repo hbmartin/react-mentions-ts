@@ -3,6 +3,17 @@ import { getByText, render, waitFor } from '@testing-library/react'
 import Highlighter from './Highlighter'
 import { Mention } from './index'
 
+const setFrameApi = (
+  property: 'requestAnimationFrame' | 'cancelAnimationFrame',
+  value: typeof globalThis.requestAnimationFrame | typeof globalThis.cancelAnimationFrame
+) => {
+  Object.defineProperty(globalThis, property, {
+    configurable: true,
+    writable: true,
+    value,
+  })
+}
+
 describe('Highlighter', () => {
   it('should notify about the current caret position when mounted.', async () => {
     const onCaretPositionChange = jest.fn()
@@ -75,11 +86,11 @@ describe('Highlighter', () => {
     const originalRAF = globalThis.requestAnimationFrame
     const originalCAF = globalThis.cancelAnimationFrame
 
-    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+    setFrameApi('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
       return rafCallbacks.length
-    }) as typeof globalThis.requestAnimationFrame
-    globalThis.cancelAnimationFrame = (() => undefined) as typeof globalThis.cancelAnimationFrame
+    })
+    setFrameApi('cancelAnimationFrame', () => undefined)
 
     try {
       const { container } = render(
@@ -129,13 +140,13 @@ describe('Highlighter', () => {
       )
     } finally {
       if (originalRAF) {
-        globalThis.requestAnimationFrame = originalRAF
+        setFrameApi('requestAnimationFrame', originalRAF)
       } else {
         delete (globalThis as typeof globalThis & Record<string, unknown>).requestAnimationFrame
       }
 
       if (originalCAF) {
-        globalThis.cancelAnimationFrame = originalCAF
+        setFrameApi('cancelAnimationFrame', originalCAF)
       } else {
         delete (globalThis as typeof globalThis & Record<string, unknown>).cancelAnimationFrame
       }
@@ -148,11 +159,11 @@ describe('Highlighter', () => {
     const originalRAF = globalThis.requestAnimationFrame
     const originalCAF = globalThis.cancelAnimationFrame
 
-    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+    setFrameApi('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
       return rafCallbacks.length
-    }) as typeof globalThis.requestAnimationFrame
-    globalThis.cancelAnimationFrame = (() => undefined) as typeof globalThis.cancelAnimationFrame
+    })
+    setFrameApi('cancelAnimationFrame', () => undefined)
 
     try {
       const { container } = render(
@@ -200,13 +211,13 @@ describe('Highlighter', () => {
       )
     } finally {
       if (originalRAF) {
-        globalThis.requestAnimationFrame = originalRAF
+        setFrameApi('requestAnimationFrame', originalRAF)
       } else {
         delete (globalThis as typeof globalThis & Record<string, unknown>).requestAnimationFrame
       }
 
       if (originalCAF) {
-        globalThis.cancelAnimationFrame = originalCAF
+        setFrameApi('cancelAnimationFrame', originalCAF)
       } else {
         delete (globalThis as typeof globalThis & Record<string, unknown>).cancelAnimationFrame
       }

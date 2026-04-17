@@ -10,12 +10,20 @@ export const DEFAULT_MENTION_PROPS = {
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   displayTransform: (id: string | number, display?: string | null) => display || String(id),
   renderSuggestion: null,
+  renderEmpty: null,
+  renderError: null,
   isLoading: false,
   appendSpaceOnAdd: false,
-} satisfies Partial<MentionComponentProps<any>> & {
-  onRemove: NonNullable<MentionComponentProps<any>['onRemove']>
-  displayTransform: NonNullable<MentionComponentProps<any>['displayTransform']>
-  renderSuggestion: MentionComponentProps<any>['renderSuggestion']
+  debounceMs: 0,
+  maxSuggestions: undefined,
+} satisfies Partial<MentionComponentProps> & {
+  onRemove: NonNullable<MentionComponentProps['onRemove']>
+  displayTransform: NonNullable<MentionComponentProps['displayTransform']>
+  renderSuggestion: MentionComponentProps['renderSuggestion']
+  renderEmpty: MentionComponentProps['renderEmpty']
+  renderError: MentionComponentProps['renderError']
   isLoading: boolean
   appendSpaceOnAdd: boolean
+  debounceMs: number
+  maxSuggestions: number | undefined
 }

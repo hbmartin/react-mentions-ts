@@ -2,7 +2,11 @@ import React, { useState } from 'react'
 import { clsx } from 'clsx'
 
 import { MentionsInput, Mention } from '../../../src'
-import type { MentionDataItem, MentionsInputChangeEvent } from '../../../src'
+import type {
+  MentionDataItem,
+  MentionSearchContext,
+  MentionsInputChangeEvent,
+} from '../../../src'
 import ExampleCard from './ExampleCard'
 import {
   mentionPillClass,
@@ -10,9 +14,15 @@ import {
   multilineMentionsClassNames,
 } from './mentionsClassNames'
 
-async function fetchUsers(query: string): Promise<MentionDataItem[]> {
-  if (!query) return Promise.resolve([])
-  const response = await fetch(`https://api.github.com/search/users?q=${query}`)
+async function fetchUsers(
+  query: string,
+  { signal }: MentionSearchContext
+): Promise<MentionDataItem[]> {
+  if (!query) {
+    return Promise.resolve([])
+  }
+
+  const response = await fetch(`https://api.github.com/search/users?q=${query}`, { signal })
   const data = await response.json()
   return data.items.map((user: { login: string }) => ({ display: user.login, id: user.login }))
 }
@@ -43,6 +53,8 @@ export default function AsyncGithubUserMentions() {
           displayTransform={(login) => `@${login}`}
           trigger="@"
           data={fetchUsers}
+          debounceMs={200}
+          maxSuggestions={6}
           renderSuggestion={(suggestion, _search, highlightedDisplay, _index, focused) => (
             <div
               className={clsx(

@@ -271,10 +271,12 @@ describe('SuggestionsOverlay', () => {
   })
 
   it('should be possible to show a loading indicator.', () => {
+    const suggestions = [{ id: '1', display: 'First' }]
+
     const { container, rerender } = render(
       <SuggestionsOverlay
         id="test-suggestions"
-        suggestions={{}}
+        suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
         isOpened
         isLoading={false}
@@ -294,7 +296,7 @@ describe('SuggestionsOverlay', () => {
     rerender(
       <SuggestionsOverlay
         id="test-suggestions"
-        suggestions={{}}
+        suggestions={createSuggestionsMap(suggestions)}
         focusIndex={0}
         isOpened
         // eslint-disable-next-line react/jsx-boolean-value

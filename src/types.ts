@@ -37,9 +37,13 @@ export type SuggestionDataItem<Extra extends Record<string, unknown> = Record<st
 
 type MaybePromise<T> = T | Promise<T>
 
+export interface MentionSearchContext {
+  signal: AbortSignal
+}
+
 export type DataSource<Extra extends Record<string, unknown> = Record<string, unknown>> =
   | ReadonlyArray<MentionDataItem<Extra>>
-  | ((query: string) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
+  | ((query: string, context: MentionSearchContext) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
 
 export function isDataSource<Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: unknown
@@ -57,6 +61,19 @@ export interface QueryInfo {
   querySequenceStart: number
   querySequenceEnd: number
 }
+
+export interface SuggestionQueryState<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> {
+  queryInfo: QueryInfo
+  results: SuggestionDataItem<Extra>[]
+  status: 'loading' | 'success' | 'error'
+  error?: unknown
+}
+
+export type SuggestionQueryStateMap<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> = Record<number, SuggestionQueryState<Extra>>
 
 export type SuggestionsMap<Extra extends Record<string, unknown> = Record<string, unknown>> =
   Record<
@@ -77,6 +94,10 @@ export type MentionRenderSuggestion<
   focused: boolean
 ) => ReactNode
 
+export type MentionRenderEmpty = (query: string) => ReactNode
+
+export type MentionRenderError = (query: string, error: unknown) => ReactNode
+
 export type DisplayTransform = (id: MentionIdentifier, display?: string | null) => string
 
 export type MentionSelectionState = 'inside' | 'boundary' | 'partial' | 'full'
@@ -88,6 +109,8 @@ export interface MentionComponentProps<
   markup?: string | MentionSerializer
   displayTransform?: DisplayTransform
   renderSuggestion?: MentionRenderSuggestion<Extra> | null
+  renderEmpty?: MentionRenderEmpty | null
+  renderError?: MentionRenderError | null
   data: DataSource<Extra>
   onAdd?: (params: {
     id: MentionIdentifier
@@ -99,6 +122,8 @@ export interface MentionComponentProps<
   onRemove?: (id: MentionIdentifier) => void
   isLoading?: boolean
   appendSpaceOnAdd?: boolean
+  debounceMs?: number
+  maxSuggestions?: number
   selectionState?: MentionSelectionState
 }
 
@@ -192,6 +217,11 @@ export interface SuggestionsPosition {
   width?: number
 }
 
+export interface InlineSuggestionPosition {
+  left: number
+  top: number
+}
+
 export type InputComponentProps = React.ComponentPropsWithoutRef<'input'> &
   React.ComponentPropsWithoutRef<'textarea'>
 
@@ -248,12 +278,15 @@ export interface MentionsInputState<
   cachedPlainText: string
   cachedIdValue: string
   suggestions: SuggestionsMap<Extra>
+  queryStates: SuggestionQueryStateMap<Extra>
   caretPosition: CaretCoordinates | null
   suggestionsPosition: SuggestionsPosition
+  inlineSuggestionPosition: InlineSuggestionPosition | null
   scrollFocusedIntoView?: boolean
   pendingSelectionUpdate: boolean
   highlighterRecomputeVersion: number
   config: MentionChildConfig<Extra>[]
+  generatedId: string | null
 }
 
 /**
@@ -281,6 +314,8 @@ export type MentionsInputClassNames = Partial<{
   inlineSuggestionSuffix: string
   /** The outer container div for the suggestions overlay (when suggestionsDisplay='overlay') */
   suggestions: string
+  /** Status content rendered when async results are empty or fail */
+  suggestionsStatus: string
   /** The ul element that contains the list of suggestion items */
   suggestionsList: string
   /** The li element for each individual suggestion item */

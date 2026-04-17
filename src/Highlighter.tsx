@@ -1,9 +1,9 @@
-import React, { Children, useLayoutEffect, useMemo, useState } from 'react'
+import React, { useLayoutEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import { iterateMentionsMarkup, mapPlainTextIndex, isNumber, cn } from './utils'
-import readConfigFromChildren from './utils/readConfigFromChildren'
-import { useEffectEvent } from './utils/useEffectEvent'
+import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
+import { useEventCallback } from './utils/useEventCallback'
 import type {
   CaretCoordinates,
   MentionChildConfig,
@@ -75,7 +75,7 @@ function Highlighter({
   const [position, setPosition] = useState<CaretCoordinates | null>(null)
   const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
 
-  const updatePosition = useEffectEvent((offsetLeft: number, offsetTop: number) => {
+  const updatePosition = useEventCallback((offsetLeft: number, offsetTop: number) => {
     if (position?.left === offsetLeft && position.top === offsetTop) {
       return
     }
@@ -120,7 +120,11 @@ function Highlighter({
     // value/selection/singleLine impact layout/position
   }, [caretElement, value, selectionStart, selectionEnd, singleLine, recomputeVersion])
 
-  const config: MentionChildConfig[] = useMemo(() => readConfigFromChildren(children), [children])
+  const mentionChildren = useMemo(() => collectMentionElements(children), [children])
+  const config: MentionChildConfig[] = useMemo(
+    () => readConfigFromChildren(mentionChildren),
+    [mentionChildren]
+  )
   let caretPositionInMarkup: number | null | undefined
 
   const rootClassName = cn(highlighterStyles({ singleLine }), className)
@@ -156,9 +160,7 @@ function Highlighter({
     const selectionKey = `${mentionChildIndex}:${plainTextIndex}`
     const selectionState = selectionMap[selectionKey]
     const props = { id, display, key, selectionState }
-    const child = Children.toArray(children)[
-      mentionChildIndex
-    ] as React.ReactElement<MentionComponentProps>
+    const child = mentionChildren[mentionChildIndex] as React.ReactElement<MentionComponentProps>
     return React.cloneElement(child, props)
   }
 

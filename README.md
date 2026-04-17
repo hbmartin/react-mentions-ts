@@ -160,12 +160,16 @@ Each data source is configured using a `Mention` component, which has the follow
 | Prop name        | Type                                                         | Default value              | Description                                                                                                                                            |
 | ---------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | trigger          | RegExp or string                                             | `'@'`                      | Defines the char sequence upon which to trigger querying the data source                                                                               |
-| data             | array or function (search, callback)                         | `null`                     | An array of the mentionable data entries (objects with `id` & `display` keys, or a filtering function that returns an array based on a query parameter |
+| data             | array or function `(query, { signal })`                     | `null`                     | An array of mentionable entries, or a filtering function that returns matching entries for the current query. Async providers receive an `AbortSignal` so stale requests can be cancelled safely |
 | renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                     | Allows customizing how mention suggestions are rendered (optional)                                                                                     |
+| renderEmpty      | function `(query) => ReactNode`                             | `null`                     | Renders custom empty-state content when a query completes without any suggestions                                                                      |
+| renderError      | function `(query, error) => ReactNode`                      | `null`                     | Renders custom error-state content when an async data provider rejects                                                                                 |
 | markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'` | Template string for stored markup, or pass a `MentionSerializer` instance for full control                                                             |
 | displayTransform | function (id, display)                                       | returns `display`          | Accepts a function for customizing the string that is displayed for a mention                                                                          |
 | onAdd            | function ({id, display, startPos, endPos, serializerId})     | empty function             | Callback invoked when a suggestion has been added (optional)                                                                                           |
 | appendSpaceOnAdd | boolean                                                      | `false`                    | Append a space when a suggestion has been added (optional)                                                                                             |
+| debounceMs       | number                                                       | `0`                        | Debounces async provider calls to reduce network chatter while typing                                                                                  |
+| maxSuggestions   | number                                                       | unlimited                  | Caps the number of suggestions rendered from a given provider result                                                                                   |
 
 > Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `markup={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
 
@@ -175,17 +179,20 @@ Each data source is configured using a `Mention` component, which has the follow
 
 ### 🔄 Async Data Loading
 
-If a function is passed as the `data` prop, it receives the current search query and should return a promise that resolves with the list of suggestions.
+If a function is passed as the `data` prop, it receives the current search query plus an `AbortSignal` and should return a promise that resolves with the list of suggestions. When the user keeps typing, the previous request is aborted and its results are ignored automatically.
 
 ```tsx
 type User = { id: string; display: string }
 
-const fetchUsers = async (query: string): Promise<User[]> => {
-  const response = await fetch(`/api/users?search=${query}`)
+const fetchUsers = async (
+  query: string,
+  { signal }: MentionSearchContext
+): Promise<User[]> => {
+  const response = await fetch(`/api/users?search=${query}`, { signal })
   return response.json()
 }
 
-<Mention trigger="@" data={fetchUsers} />
+<Mention trigger="@" data={fetchUsers} debounceMs={150} maxSuggestions={8} />
 ```
 
 ## 🎨 Styling

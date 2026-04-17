@@ -51,7 +51,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     return String(suggestionId)
   }
 
-  const renderHighlightedDisplay = (display: string) => {
+  const renderHighlightedDisplay = (display: string): React.ReactNode => {
     return suggestion.highlights === undefined || suggestion.highlights.length === 0 ? (
       <span className={displayClassNameResolved}>{display}</span>
     ) : (
@@ -75,7 +75,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     )
   }
 
-  const renderContent = () => {
+  const renderContent = (): React.ReactNode => {
     const display = getDisplay()
     const highlightedDisplay = renderHighlightedDisplay(display)
 

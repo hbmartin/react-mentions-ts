@@ -20,7 +20,7 @@ export default function Mention<Extra extends Record<string, unknown> = Record<s
   className,
   style,
   selectionState,
-}: MentionProps<Extra>) {
+}: Readonly<MentionProps<Extra>>) {
   return (
     <span
       className={cn(mentionBaseClass, className, mentionsRequiredClass)}
