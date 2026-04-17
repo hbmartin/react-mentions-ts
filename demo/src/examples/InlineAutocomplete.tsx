@@ -4,6 +4,8 @@ import { Mention, MentionsInput } from '../../../src'
 import type { MentionDataItem } from '../../../src'
 import ExampleCard from './ExampleCard'
 import { inlineMentionsClassNames, mentionPillClass, mergeClassNames } from './mentionsClassNames'
+import RenderTraceBadge from './profiling/RenderTraceBadge'
+import { useRenderTrace } from './profiling/useRenderTrace'
 import styles from './example.module.css'
 
 const inlineItalicClasses = mergeClassNames(inlineMentionsClassNames, {
@@ -15,11 +17,13 @@ const inlineItalicClasses = mergeClassNames(inlineMentionsClassNames, {
 
 export default function InlineAutocomplete({ data }: { data: MentionDataItem[] }) {
   const [value, setValue] = useState('')
+  const renderCount = useRenderTrace('InlineAutocomplete')
 
   return (
     <ExampleCard
       title="Inline autocomplete"
-      description="Guide users with subtle, inline completions that respond to Tab, Enter, or →."
+      description="Guide users with subtle, inline completions that respond to Tab, Enter, or → while keeping the overlay branch asleep."
+      actions={<RenderTraceBadge count={renderCount} label="Card renders" />}
     >
       <MentionsInput
         value={value}

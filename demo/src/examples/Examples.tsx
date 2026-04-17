@@ -3,9 +3,11 @@ import AsyncGithubUserMentions from './AsyncGithubUserMentions'
 import Emojis from './Emojis'
 import CutCopyPaste from './CutCopyPaste'
 import MultipleTriggers from './MultipleTriggers'
+import ProfilingHarness from './ProfilingHarness'
 import Scrollable from './Scrollable'
 import SingleLine from './SingleLine'
 import SingleLineIgnoringAccents from './SingleLineIgnoringAccents'
+import StateLocalityLab from './StateLocalityLab'
 import SuggestionPortal from './SuggestionPortal'
 import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import InlineAutocomplete from './InlineAutocomplete'
@@ -77,6 +79,8 @@ const users = [
 export default function Examples() {
   return (
     <div className="grid gap-8">
+      <ProfilingHarness />
+      <StateLocalityLab />
       <MultipleTriggers data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SingleLine data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <AllowSpaceInQuery data={users} />

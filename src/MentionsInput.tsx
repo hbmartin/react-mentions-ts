@@ -31,22 +31,25 @@ import {
 import type { PendingViewSync, ViewSyncPatch } from './MentionsInputLayout'
 import {
   getDataProvider,
-  getFocusedSuggestionEntry,
   getInlineSuggestionAnnouncement,
-  getInlineSuggestionDetails,
-  getMentionChild,
-  getMentionChildren,
+  getFocusedSuggestionEntryForMentionChildren,
+  getInlineSuggestionDetailsForMentionChildren,
+  getMentionChildFromArray,
   getSuggestionData,
   getSuggestionQueryStateEntries,
-  getSuggestionsStatusContent,
+  getSuggestionsStatusContentForMentionChildren,
 } from './MentionsInputSelectors'
 import type { InlineSuggestionDetails } from './MentionsInputSelectors'
 import MentionsInputView from './MentionsInputView'
 import SuggestionsOverlay from './SuggestionsOverlay'
 import {
-  applyChangeToValue,
+  applyCutToMentionsValue,
+  applyInputChangeToMentionsValue,
+  applyPasteToMentionsValue,
+  getMarkupSelectionRange,
+} from './MentionsInputEditing'
+import {
   countSuggestions,
-  findStartOfMentionInPlainText,
   getEndOfLastMention,
   getPlainText,
   getMentionsAndPlainText,
@@ -59,9 +62,21 @@ import {
   cn,
 } from './utils'
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
-import { isMentionElement } from './utils/isMentionElement'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
-import readConfigFromChildren from './utils/readConfigFromChildren'
+import { areMentionConfigsEqual, prepareMentionsInputChildren } from './MentionsInputChildren'
+import { createMentionSelectionContext, deriveMentionValueSnapshot } from './MentionsInputDerived'
+import {
+  applyErroredQueryResult,
+  applySuccessfulQueryResult,
+  createClearedSuggestionsState,
+  createLoadingQueryState,
+  isAbortError,
+} from './MentionsInputQueryState'
+import {
+  areMentionOccurrencesEqual,
+  computeMentionSelectionDetails,
+  getMentionSelectionMap,
+} from './MentionsInputSelection'
 import type {
   CaretCoordinates,
   InputComponentProps,
@@ -69,9 +84,7 @@ import type {
   MentionDataItem,
   MentionIdentifier,
   MentionOccurrence,
-  MentionSelection,
   MentionSelectionState,
-  MentionChildConfig,
   MentionsInputProps,
   MentionsInputState,
   MentionsInputClassNames,
@@ -94,14 +107,6 @@ const createGeneratedId = (): string => {
   generatedIdCounter += 1
   return `mentions-${generatedIdCounter.toString()}`
 }
-
-const isAbortError = (error: unknown): boolean =>
-  typeof DOMException !== 'undefined' && error instanceof DOMException
-    ? error.name === 'AbortError'
-    : typeof error === 'object' &&
-      error !== null &&
-      'name' in error &&
-      (error as { name?: string }).name === 'AbortError'
 
 const KEY = {
   TAB: 'Tab',
@@ -145,39 +150,6 @@ const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
   // Reconstruct provided RegExp without global flag; whitelist flags to avoid surprises.
   /* eslint-disable-next-line security/detect-non-literal-regexp -- reconstructing a vetted RegExp to strip 'g' */
   return new RegExp(trigger.source, flags)
-}
-
-const getMentionSelectionKey = (childIndex: number, plainTextIndex: number): string =>
-  `${childIndex}:${plainTextIndex}`
-
-// Separate from areMentionSelectionsEqual because here we are deduping the raw mentions
-// produced by getMentions. At this point we only care about the immutable identity of the
-// mention in the document (childIndex + plainText location + id/display). Selection-derived
-// metadata (serializerId, selection state) is computed later when we emit the payload, so
-// comparing the lighter-weight occurrences lets us skip work before we build those objects.
-const areMentionOccurrencesEqual = <Extra extends Record<string, unknown>>(
-  prevMentions: ReadonlyArray<MentionOccurrence<Extra>>,
-  nextMentions: ReadonlyArray<MentionOccurrence<Extra>>
-): boolean => {
-  if (prevMentions.length !== nextMentions.length) {
-    return false
-  }
-
-  return prevMentions.every((mention, index) => {
-    const other = nextMentions[index]
-
-    return (
-      mention.id === other.id &&
-      mention.childIndex === other.childIndex &&
-      mention.plainTextIndex === other.plainTextIndex &&
-      mention.display === other.display
-    )
-  })
-}
-
-interface MentionSelectionComputation<Extra extends Record<string, unknown>> {
-  selections: MentionSelection<Extra>[]
-  selectionMap: Record<string, MentionSelectionState>
 }
 
 interface ActiveSuggestionQuery<Extra extends Record<string, unknown>> {
@@ -246,6 +218,7 @@ class MentionsInput<
   private inputElement: HTMLInputElement | HTMLTextAreaElement | null = null
   private highlighterElement: HTMLDivElement | null = null
   private suggestionsElement: HTMLDivElement | null = null
+  private mentionChildren: React.ReactElement<MentionComponentProps<Extra>>[] = []
   private _queryId = 0
   private _suggestionsMouseDown = false
   private _isComposing = false
@@ -346,48 +319,7 @@ class MentionsInput<
   }
 
   private getMentionChildren() {
-    return getMentionChildren<Extra>(this.props.children)
-  }
-
-  private getInvalidChildLabel(child: React.ReactNode): string {
-    if (React.isValidElement(child)) {
-      return typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
-    }
-
-    return 'unknown component'
-  }
-
-  private validateChildTree(children: React.ReactNode, seenChildren: Set<string>): void {
-    React.Children.forEach(children, (child) => {
-      if (
-        React.isValidElement<{ children?: React.ReactNode }>(child) &&
-        child.type === React.Fragment
-      ) {
-        this.validateChildTree(child.props.children, seenChildren)
-        return
-      }
-
-      if (!isMentionElement(child)) {
-        throw new Error(
-          `MentionsInput only accepts Mention components as children. Found: ${this.getInvalidChildLabel(child)}`
-        )
-      }
-
-      const trigger =
-        child.props.trigger === undefined
-          ? DEFAULT_MENTION_PROPS.trigger
-          : typeof child.props.trigger === 'string'
-            ? child.props.trigger
-            : child.props.trigger.source
-
-      if (seenChildren.has(trigger)) {
-        throw new Error(
-          `MentionsInput does not support Mention children with duplicate triggers: ${trigger}.`
-        )
-      }
-
-      seenChildren.add(trigger)
-    })
+    return this.mentionChildren
   }
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
@@ -415,7 +347,11 @@ class MentionsInput<
   }
 
   flushPendingViewSync = (): ViewSyncPatch => {
-    if (this._didUnmount || this._isFlushingViewSync || !hasPendingViewSync(this._pendingViewSync)) {
+    if (
+      this._didUnmount ||
+      this._isFlushingViewSync ||
+      !hasPendingViewSync(this._pendingViewSync)
+    ) {
       return createViewSyncPatch()
     }
 
@@ -463,13 +399,12 @@ class MentionsInput<
   constructor(props: MentionsInputProps<Extra>) {
     super(props)
     this.defaultSuggestionsPortalHost = typeof document === 'undefined' ? null : document.body
-    const initialConfig = readConfigFromChildren<Extra>(props.children)
+    const { mentionChildren, config: initialConfig } = prepareMentionsInputChildren<Extra>(
+      props.children
+    )
+    this.mentionChildren = mentionChildren
     const initialValue = props.value ?? ''
-    const {
-      mentions: initialMentions,
-      plainText: initialPlainText,
-      idValue: initialIdValue,
-    } = getMentionsAndPlainText<Extra>(initialValue, initialConfig)
+    const initialSnapshot = deriveMentionValueSnapshot<Extra>(initialValue, initialConfig)
     this._cachedMarkupValue = initialValue
 
     this.handleCopy = this.handleCopy.bind(this)
@@ -481,9 +416,9 @@ class MentionsInput<
       focusIndex: 0,
       selectionStart: null,
       selectionEnd: null,
-      cachedMentions: initialMentions,
-      cachedPlainText: initialPlainText,
-      cachedIdValue: initialIdValue,
+      cachedMentions: initialSnapshot.mentions,
+      cachedPlainText: initialSnapshot.plainText,
+      cachedIdValue: initialSnapshot.idValue,
       suggestions: {},
       queryStates: {},
       caretPosition: null,
@@ -497,50 +432,22 @@ class MentionsInput<
   }
 
   private validateChildren(): void {
-    const seenChildren = new Set<string>()
-    this.validateChildTree(this.props.children, seenChildren)
+    const { mentionChildren, config: newConfig } = prepareMentionsInputChildren<Extra>(
+      this.props.children
+    )
+    this.mentionChildren = mentionChildren
 
-    // Compute new config and update state if changed
-    const newConfig = readConfigFromChildren<Extra>(this.props.children)
-    if (!this.configsEqual(this.state.config, newConfig)) {
+    if (!areMentionConfigsEqual(this.state.config, newConfig)) {
       const currentValue = this.props.value ?? ''
-      const { mentions: nextMentions, plainText: nextPlainText } = getMentionsAndPlainText<Extra>(
-        currentValue,
-        newConfig
-      )
+      const nextSnapshot = deriveMentionValueSnapshot<Extra>(currentValue, newConfig)
       this.setState({
         config: newConfig,
-        cachedMentions: nextMentions,
-        cachedPlainText: nextPlainText,
+        cachedMentions: nextSnapshot.mentions,
+        cachedPlainText: nextSnapshot.plainText,
+        cachedIdValue: nextSnapshot.idValue,
       })
       this._cachedMarkupValue = currentValue
     }
-  }
-
-  private configsEqual(
-    config1: ReadonlyArray<MentionChildConfig<Extra>>,
-    config2: ReadonlyArray<MentionChildConfig<Extra>>
-  ): boolean {
-    if (config1.length !== config2.length) {
-      return false
-    }
-
-    // eslint-disable-next-line code-complete/enforce-meaningful-names
-    return config1.every((cfg1, index) => {
-      // eslint-disable-next-line code-complete/enforce-meaningful-names
-      const cfg2 = config2[index]
-
-      // Compare key properties that determine config identity
-      return (
-        ((typeof cfg1.trigger === 'string' &&
-          typeof cfg2.trigger === 'string' &&
-          cfg1.trigger === cfg2.trigger) ||
-          (cfg1.trigger instanceof RegExp &&
-            cfg2.trigger instanceof RegExp &&
-            cfg1.trigger.source === cfg2.trigger.source)) &&
-        cfg1.serializer.id === cfg2.serializer.id
-      )
-    })
   }
 
   componentDidMount(): void {
@@ -585,19 +492,21 @@ class MentionsInput<
       this.ensureGeneratedId()
     }
 
-    const recalculatedMentions = valueChanged
-      ? getMentionsAndPlainText<Extra>(currentValue, this.state.config)
+    const recalculatedSnapshot = valueChanged
+      ? deriveMentionValueSnapshot<Extra>(currentValue, this.state.config)
       : null
-    const mentionsForSelection = recalculatedMentions?.mentions ?? this.state.cachedMentions
-    const plainTextForSelection = recalculatedMentions?.plainText ?? this.state.cachedPlainText
-    const idValueForSelection = recalculatedMentions?.idValue ?? this.state.cachedIdValue
+    const snapshotForSelection = recalculatedSnapshot ?? {
+      mentions: this.state.cachedMentions,
+      plainText: this.state.cachedPlainText,
+      idValue: this.state.cachedIdValue,
+    }
 
-    if (recalculatedMentions) {
+    if (recalculatedSnapshot) {
       const {
         mentions: nextMentions,
         plainText: nextPlainText,
         idValue: nextIdValue,
-      } = recalculatedMentions
+      } = recalculatedSnapshot
 
       if (
         !areMentionOccurrencesEqual(nextMentions, this.state.cachedMentions) ||
@@ -648,8 +557,8 @@ class MentionsInput<
     this.flushPendingViewSync()
 
     if (selectionPositionsChanged || valueChanged) {
-      const currentSelection = this.computeMentionSelectionDetails(
-        mentionsForSelection,
+      const currentSelection = computeMentionSelectionDetails(
+        snapshotForSelection.mentions,
         this.state.config,
         this.state.selectionStart,
         this.state.selectionEnd
@@ -657,7 +566,7 @@ class MentionsInput<
       let shouldEmit = selectionPositionsChanged
 
       if (!shouldEmit && valueChanged) {
-        const previousSelection = this.computeMentionSelectionDetails(
+        const previousSelection = computeMentionSelectionDetails(
           prevState.cachedMentions,
           prevState.config,
           prevState.selectionStart,
@@ -671,14 +580,11 @@ class MentionsInput<
 
       if (shouldEmit && this.props.onMentionSelectionChange) {
         const selectionMentionIds = currentSelection.selections.map((selection) => selection.id)
-        const selectionContext = {
-          value: currentValue,
-          plainTextValue: plainTextForSelection,
-          idValue: idValueForSelection,
-          mentions: mentionsForSelection,
-          mentionIds: selectionMentionIds,
-          mentionId: selectionMentionIds.length === 1 ? selectionMentionIds[0] : undefined,
-        }
+        const selectionContext = createMentionSelectionContext(
+          currentValue,
+          snapshotForSelection,
+          selectionMentionIds
+        )
 
         this.props.onMentionSelectionChange(currentSelection.selections, selectionContext)
       }
@@ -895,6 +801,7 @@ class MentionsInput<
     const suggestionsNode = (
       <SuggestionsOverlay<Extra>
         id={overlayId}
+        mentionChildren={this.mentionChildren}
         className={this.props.classNames?.suggestions}
         statusClassName={this.props.classNames?.suggestionsStatus}
         statusContent={statusContent}
@@ -1031,6 +938,8 @@ class MentionsInput<
         className={classNames?.highlighter}
         substringClassName={classNames?.highlighterSubstring}
         caretClassName={classNames?.highlighterCaret}
+        mentionChildren={this.mentionChildren}
+        config={this.state.config}
         value={value}
         singleLine={singleLine ?? MentionsInput.defaultProps.singleLine}
         selectionStart={selectionStart}
@@ -1106,14 +1015,18 @@ class MentionsInput<
   isInlineAutocomplete = (): boolean => this.props.suggestionsDisplay === 'inline'
 
   getFocusedSuggestionEntry = () =>
-    getFocusedSuggestionEntry<Extra>(this.props.children, this.state.suggestions, this.state.focusIndex)
+    getFocusedSuggestionEntryForMentionChildren<Extra>(
+      this.mentionChildren,
+      this.state.suggestions,
+      this.state.focusIndex
+    )
 
   getSuggestionData = (suggestion: SuggestionDataItem<Extra>) => getSuggestionData(suggestion)
 
   getInlineSuggestionDetails = (): InlineSuggestionDetails<Extra> | null =>
     this.isInlineAutocomplete()
-      ? getInlineSuggestionDetails<Extra>(
-          this.props.children,
+      ? getInlineSuggestionDetailsForMentionChildren<Extra>(
+          this.mentionChildren,
           this.state.suggestions,
           this.state.focusIndex
         )
@@ -1143,69 +1056,11 @@ class MentionsInput<
   }
 
   getSuggestionsStatusContent = () =>
-    getSuggestionsStatusContent<Extra>(
-      this.props.children,
+    getSuggestionsStatusContentForMentionChildren<Extra>(
+      this.mentionChildren,
       this.state.suggestions,
       this.state.queryStates
     )
-
-  // eslint-disable-next-line code-complete/low-function-cohesion
-  private readonly computeMentionSelectionDetails = (
-    mentions: ReadonlyArray<MentionOccurrence<Extra>>,
-    config: ReadonlyArray<MentionChildConfig<Extra>>,
-    selectionStart: number | null,
-    selectionEnd: number | null
-  ): MentionSelectionComputation<Extra> => {
-    if (selectionStart === null || selectionEnd === null) {
-      return { selections: [], selectionMap: {} }
-    }
-
-    const start = Math.min(selectionStart, selectionEnd)
-    const end = Math.max(selectionStart, selectionEnd)
-    const isCollapsed = start === end
-
-    if (mentions.length === 0) {
-      return { selections: [], selectionMap: {} }
-    }
-
-    const selections: MentionSelection<Extra>[] = []
-    const selectionMap: Record<string, MentionSelectionState> = {}
-
-    for (const mention of mentions) {
-      const mentionStart = mention.plainTextIndex
-      const mentionEnd = mentionStart + mention.display.length
-      let selectionState: MentionSelectionState | null = null
-
-      if (isCollapsed) {
-        if (start > mentionStart && start < mentionEnd) {
-          selectionState = 'inside'
-        } else if (start === mentionStart || start === mentionEnd) {
-          selectionState = 'boundary'
-        }
-      } else if (start < mentionEnd && end > mentionStart) {
-        selectionState = start <= mentionStart && end >= mentionEnd ? 'full' : 'partial'
-      }
-
-      if (selectionState === null) {
-        continue
-      }
-
-      const serializerId = config[mention.childIndex]?.serializer.id ?? ''
-      const entry: MentionSelection<Extra> = {
-        ...mention,
-        selection: selectionState,
-        plainTextStart: mentionStart,
-        plainTextEnd: mentionEnd,
-        serializerId,
-      }
-
-      selections.push(entry)
-      selectionMap[getMentionSelectionKey(mention.childIndex, mention.plainTextIndex)] =
-        selectionState
-    }
-
-    return { selections, selectionMap }
-  }
 
   private readonly getCurrentMentionSelectionMap = (): Record<string, MentionSelectionState> => {
     const { selectionStart, selectionEnd } = this.state
@@ -1217,15 +1072,9 @@ class MentionsInput<
     const mentions =
       currentValue === this._cachedMarkupValue
         ? this.state.cachedMentions
-        : getMentionsAndPlainText<Extra>(currentValue, this.state.config).mentions
+        : deriveMentionValueSnapshot<Extra>(currentValue, this.state.config).mentions
 
-    const { selectionMap } = this.computeMentionSelectionDetails(
-      mentions,
-      this.state.config,
-      selectionStart,
-      selectionEnd
-    )
-    return selectionMap
+    return getMentionSelectionMap(mentions, this.state.config, selectionStart, selectionEnd)
   }
 
   executeOnChange = (
@@ -1264,59 +1113,28 @@ class MentionsInput<
     const { value } = this.props
     const valueText = value ?? ''
 
-    const safeSelectionStart = selectionStart ?? 0
-    const safeSelectionEnd = selectionEnd ?? safeSelectionStart
-
-    const markupStartIndex = mapPlainTextIndex(
-      valueText,
-      this.state.config,
-      safeSelectionStart,
-      'START'
-    ) as number
-    const markupEndIndex = mapPlainTextIndex(
-      valueText,
-      this.state.config,
-      safeSelectionEnd,
-      'END'
-    ) as number
-
     const clipboardData = event.clipboardData
     const pastedMentions = clipboardData.getData('text/react-mentions')
     const pastedData = clipboardData.getData('text/plain')
-
-    const newValue = spliceString(
+    const pasteResult = applyPasteToMentionsValue<Extra>(
       valueText,
-      markupStartIndex,
-      markupEndIndex,
+      this.state.config,
+      selectionStart,
+      selectionEnd,
       pastedMentions || pastedData
-    ).replaceAll('\r', '')
-
-    const {
-      mentions,
-      plainText: newPlainTextValue,
-      idValue: newIdValue,
-    } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
+    )
 
     this.executeOnChange(
       { type: 'paste', nativeEvent: event },
-      newValue,
-      newPlainTextValue,
-      newIdValue,
-      mentions,
+      pasteResult.value,
+      pasteResult.snapshot.plainText,
+      pasteResult.snapshot.idValue,
+      pasteResult.snapshot.mentions,
       valueText
     )
-
-    // Move the cursor position to the end of the pasted data
-    const startOfMention =
-      selectionStart === null
-        ? undefined
-        : findStartOfMentionInPlainText(valueText, this.state.config, selectionStart)
-    const nextPos =
-      (startOfMention ?? safeSelectionStart) +
-      getPlainText(pastedMentions || pastedData, this.state.config).length
     this.setState({
-      selectionStart: nextPos,
-      selectionEnd: nextPos,
+      selectionStart: pasteResult.nextSelectionStart,
+      selectionEnd: pasteResult.nextSelectionStart,
       pendingSelectionUpdate: true,
     })
   }
@@ -1334,18 +1152,12 @@ class MentionsInput<
     const valueText = value ?? ''
     const clipboardData = event.clipboardData
 
-    const markupStartIndex = mapPlainTextIndex(
+    const { markupStartIndex, markupEndIndex } = getMarkupSelectionRange(
       valueText,
       this.state.config,
       selectionStart,
-      'START'
-    ) as number
-    const markupEndIndex = mapPlainTextIndex(
-      valueText,
-      this.state.config,
-      selectionEnd,
-      'END'
-    ) as number
+      selectionEnd
+    )
 
     clipboardData.setData('text/plain', input.value.slice(selectionStart, selectionEnd))
     clipboardData.setData('text/react-mentions', valueText.slice(markupStartIndex, markupEndIndex))
@@ -1383,44 +1195,25 @@ class MentionsInput<
     const { selectionStart, selectionEnd } = this.state
     const { value } = this.props
     const valueText = value ?? ''
-
-    const safeSelectionStart = selectionStart ?? 0
-    const safeSelectionEnd = selectionEnd ?? safeSelectionStart
-
-    const markupStartIndex = mapPlainTextIndex(
+    const cutResult = applyCutToMentionsValue<Extra>(
       valueText,
       this.state.config,
-      safeSelectionStart,
-      'START'
-    ) as number
-    const markupEndIndex = mapPlainTextIndex(
-      valueText,
-      this.state.config,
-      safeSelectionEnd,
-      'END'
-    ) as number
-
-    const newValue = [valueText.slice(0, markupStartIndex), valueText.slice(markupEndIndex)].join(
-      ''
+      selectionStart,
+      selectionEnd
     )
-    const {
-      mentions,
-      plainText: newPlainTextValue,
-      idValue: newIdValue,
-    } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
 
     this.setState({
-      selectionStart: safeSelectionStart,
-      selectionEnd: safeSelectionStart,
+      selectionStart: cutResult.nextSelectionStart,
+      selectionEnd: cutResult.nextSelectionStart,
       pendingSelectionUpdate: true,
     })
 
     this.executeOnChange(
       { type: 'cut', nativeEvent: event },
-      newValue,
-      newPlainTextValue,
-      newIdValue,
-      mentions,
+      cutResult.value,
+      cutResult.snapshot.plainText,
+      cutResult.snapshot.idValue,
+      cutResult.snapshot.mentions,
       valueText
     )
   }
@@ -1446,67 +1239,44 @@ class MentionsInput<
       selectionEndBefore = ev.target.selectionEnd ?? selectionStartBefore
     }
 
-    // Derive the new value to set by applying the local change in the textarea's plain text
-    const newValue = applyChangeToValue(
-      value,
-      newPlainTextValue,
-      {
-        selectionStartBefore,
-        selectionEndBefore,
-        selectionEndAfter: ev.target.selectionEnd ?? selectionEndBefore,
-      },
-      this.state.config
-    )
-
-    // Recalculate derived representations against the updated markup
-    const {
-      mentions,
-      plainText: recalculatedPlainTextValue,
-      idValue: newIdValue,
-    } = getMentionsAndPlainText<Extra>(newValue, this.state.config)
-    newPlainTextValue = recalculatedPlainTextValue
-
-    // Save current selection after change to be able to restore caret position after rerendering
-    let selectionStart = ev.target.selectionStart ?? selectionStartBefore
-    let selectionEnd = ev.target.selectionEnd ?? selectionEndBefore
-    let shouldRestoreSelection = false
     const nativeEvent = ev.nativeEvent as unknown as CompositionEvent<InputElement> & {
       data?: string | null
       isComposing?: boolean
     }
-
-    // Adjust selection range in case a mention will be deleted by the characters outside of the
-    // selection range that are automatically deleted
-    const startOfMention = findStartOfMentionInPlainText(value, this.state.config, selectionStart)
-
-    if (
-      startOfMention !== undefined &&
-      this.state.selectionEnd !== null &&
-      this.state.selectionEnd > startOfMention
-    ) {
-      // only if a deletion has taken place
-      selectionStart = startOfMention + (nativeEvent.data ? nativeEvent.data.length : 0)
-      selectionEnd = selectionStart
-      shouldRestoreSelection = true
-    }
+    const inputChangeResult = applyInputChangeToMentionsValue<Extra>(
+      value,
+      newPlainTextValue,
+      this.state.config,
+      selectionStartBefore,
+      selectionEndBefore,
+      ev.target.selectionEnd ?? selectionEndBefore,
+      this.state.selectionEnd,
+      nativeEvent.data
+    )
+    newPlainTextValue = inputChangeResult.snapshot.plainText
 
     this.setState((prevState) => ({
-      selectionStart,
-      selectionEnd,
-      pendingSelectionUpdate: prevState.pendingSelectionUpdate || shouldRestoreSelection,
+      selectionStart: inputChangeResult.nextSelectionStart,
+      selectionEnd: inputChangeResult.nextSelectionEnd,
+      pendingSelectionUpdate:
+        prevState.pendingSelectionUpdate || inputChangeResult.shouldRestoreSelection,
     }))
 
-    if (nativeEvent.isComposing && selectionStart === selectionEnd && this.inputElement) {
-      this.updateMentionsQueries(this.inputElement.value, selectionStart)
+    if (
+      nativeEvent.isComposing &&
+      inputChangeResult.nextSelectionStart === inputChangeResult.nextSelectionEnd &&
+      this.inputElement
+    ) {
+      this.updateMentionsQueries(this.inputElement.value, inputChangeResult.nextSelectionStart)
     }
 
     // Propagate change
     this.executeOnChange(
       { type: 'input', nativeEvent: ev.nativeEvent },
-      newValue,
+      inputChangeResult.value,
       newPlainTextValue,
-      newIdValue,
-      mentions,
+      inputChangeResult.snapshot.idValue,
+      inputChangeResult.snapshot.mentions,
       value
     )
 
@@ -1744,7 +1514,10 @@ class MentionsInput<
   }
 
   handleDocumentScroll = (): void => {
-    if (!this.suggestionsElement && !this.isInlineAutocomplete()) {
+    const shouldMeasureInline =
+      this.isInlineAutocomplete() && isNumber(this.state.selectionStart)
+
+    if (!this.suggestionsElement && !shouldMeasureInline) {
       return
     }
 
@@ -1810,10 +1583,14 @@ class MentionsInput<
     ) => Partial<MentionsInputState<Extra>> = () => ({})
   ): void {
     this.suggestions = nextSuggestions
-    this.setState((prevState) => ({
-      suggestions: nextSuggestions,
-      ...getStatePatch(prevState, nextSuggestions),
-    }))
+    this.setState((prevState) => {
+      const statePatch = getStatePatch(prevState, nextSuggestions)
+
+      return {
+        ...statePatch,
+        suggestions: nextSuggestions,
+      } as Pick<MentionsInputState<Extra>, keyof MentionsInputState<Extra>>
+    })
   }
 
   private getActiveSuggestionQueries(
@@ -1868,9 +1645,8 @@ class MentionsInput<
   ): SuggestionQueryStateMap<Extra> {
     return activeQueries.reduce<SuggestionQueryStateMap<Extra>>((queryStates, activeQuery) => {
       queryStates[activeQuery.childIndex] = {
-        queryInfo: activeQuery.queryInfo,
+        ...createLoadingQueryState<Extra>(activeQuery.queryInfo),
         results: nextSuggestions[activeQuery.childIndex]?.results ?? [],
-        status: 'loading',
       }
       return queryStates
     }, {})
@@ -1976,9 +1752,10 @@ class MentionsInput<
     // Invalidate previous queries. Async results for previous queries will be neglected.
     this._queryId++
     this.clearPendingSuggestionRequests()
-    this.replaceSuggestions({}, () => ({
-      queryStates: {},
-      focusIndex: 0,
+    const clearedState = createClearedSuggestionsState<Extra>()
+    this.replaceSuggestions(clearedState.suggestions, () => ({
+      queryStates: clearedState.queryStates,
+      focusIndex: clearedState.focusIndex,
     }))
   }
 
@@ -2003,34 +1780,19 @@ class MentionsInput<
         this._queryAbortControllers.delete(childIndex)
       }
 
-      const nextSuggestions = {
-        ...this.suggestions,
-        [childIndex]: {
-          queryInfo,
-          results: data,
-        },
-      }
-
-      this.replaceSuggestions(nextSuggestions, (prevState, syncedSuggestions) => {
-        const suggestionsCount = countSuggestions(syncedSuggestions)
-        const nextFocusIndex = this.isInlineAutocomplete()
-          ? 0
-          : prevState.focusIndex >= suggestionsCount
-            ? Math.max(suggestionsCount - 1, 0)
-            : prevState.focusIndex
-
-        return {
-          focusIndex: nextFocusIndex,
-          queryStates: {
-            ...prevState.queryStates,
-            [childIndex]: {
-              queryInfo,
-              results: data,
-              status: 'success',
-            },
-          },
-        }
-      })
+      const nextState = applySuccessfulQueryResult(
+        this.suggestions,
+        this.state.queryStates,
+        childIndex,
+        queryInfo,
+        data,
+        this.state.focusIndex,
+        this.isInlineAutocomplete()
+      )
+      this.replaceSuggestions(nextState.suggestions, () => ({
+        focusIndex: nextState.focusIndex,
+        queryStates: nextState.queryStates,
+      }))
     } catch (error) {
       if (this._queryAbortControllers.get(childIndex) === controller) {
         this._queryAbortControllers.delete(childIndex)
@@ -2040,19 +1802,17 @@ class MentionsInput<
         return
       }
 
-      const nextSuggestions = { ...this.suggestions }
-      delete nextSuggestions[childIndex]
-
-      this.replaceSuggestions(nextSuggestions, (prevState) => ({
-        queryStates: {
-          ...prevState.queryStates,
-          [childIndex]: {
-            queryInfo,
-            results: [],
-            status: 'error',
-            error,
-          },
-        },
+      const nextState = applyErroredQueryResult(
+        this.suggestions,
+        this.state.queryStates,
+        childIndex,
+        queryInfo,
+        error,
+        this.state.focusIndex
+      )
+      this.replaceSuggestions(nextState.suggestions, () => ({
+        focusIndex: nextState.focusIndex,
+        queryStates: nextState.queryStates,
       }))
     }
   }
@@ -2065,7 +1825,7 @@ class MentionsInput<
     const { id, display } = this.getSuggestionData(suggestion)
     // Insert mention in the marked up value at the correct position
     const value = this.props.value || ''
-    const mentionsChild = getMentionChild<Extra>(this.props.children, childIndex)
+    const mentionsChild = getMentionChildFromArray<Extra>(this.mentionChildren, childIndex)
     if (!mentionsChild) {
       return
     }
