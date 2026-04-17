@@ -19,7 +19,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --prod
       - run: pnpm exec prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
-      - run: pnpm test --coverage
+      - run: pnpm test -- --coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
