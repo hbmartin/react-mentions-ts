@@ -109,3 +109,43 @@
   border-radius: 9999px;
   font-weight: 600;
 }
+
+.inlineSuggestion {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  white-space: pre;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: italic;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  color: #94a3b8;
+}
+
+.inlineSuggestionText {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.inlineSuggestionPrefix {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.inlineSuggestionSuffix {
+  white-space: pre;
+  color: inherit;
+  font-style: inherit;
+}

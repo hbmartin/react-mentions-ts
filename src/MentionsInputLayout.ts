@@ -121,6 +121,7 @@ export const getInputInlineStyle = (singleLine?: boolean): CSSProperties => {
   }
 
   if (!singleLine && isMobileSafari()) {
+    // iOS Safari shifts multiline textarea content relative to the mirrored overlay.
     style.marginTop = 1
     style.marginLeft = -3
   }
@@ -216,8 +217,7 @@ export const calculateSuggestionsPosition = ({
     suggestionsPlacement === 'above' ||
     (suggestionsPlacement === 'auto' &&
       viewportRelative.top - highlighter.scrollTop + suggestions.offsetHeight > viewportHeight &&
-      suggestions.offsetHeight <
-        caretOffsetParentRect.top - caretHeight - highlighter.scrollTop)
+      suggestions.offsetHeight < viewportRelative.top - highlighter.scrollTop - caretHeight)
 
   position.top = shouldShowAboveCaret ? top - suggestions.offsetHeight - caretHeight : top
 
@@ -270,18 +270,18 @@ export const getHighlighterViewPatch = (
   }
 
   const height = input.clientHeight ? `${input.clientHeight}px` : null
-  const typography =
-    typeof globalThis.getComputedStyle !== 'function'
-      ? []
-      : TYPOGRAPHIC_STYLE_PROPS.flatMap((property) => {
-          const computed = globalThis.getComputedStyle(input)
-          const value =
-            typeof computed.getPropertyValue === 'function'
-              ? computed.getPropertyValue(property)
-              : ((computed as unknown as Record<string, string | undefined>)[property] ?? '')
+  let typography: Array<{ property: string; value: string }> = []
+  if (typeof globalThis.getComputedStyle === 'function') {
+    const computed = globalThis.getComputedStyle(input)
+    typography = TYPOGRAPHIC_STYLE_PROPS.flatMap((property) => {
+      const value =
+        typeof computed.getPropertyValue === 'function'
+          ? computed.getPropertyValue(property)
+          : ((computed as unknown as Record<string, string | undefined>)[property] ?? '')
 
-          return value ? [{ property, value }] : []
-        })
+      return value ? [{ property, value }] : []
+    })
+  }
 
   return {
     scrollLeft: input.scrollLeft,

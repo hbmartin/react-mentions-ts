@@ -565,6 +565,149 @@ describe('MentionsInput', () => {
     expect(screen.getByText('Fresh Result')).toBeInTheDocument()
   })
 
+  it('keeps the previous overlay suggestions visible while the next async query loads.', async () => {
+    type DeferredResult = {
+      resolve: (value: Array<{ id: string; display: string }>) => void
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string) =>
+        new Promise<Array<{ id: string; display: string }>>((resolve) => {
+          requests.set(query, { resolve })
+        })
+    )
+
+    const { rerender } = render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    requests.get('a')?.resolve([{ id: 'alpha', display: 'Alpha' }])
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument()
+    })
+
+    const initialOverlay = document.querySelector('[data-slot="suggestions"]')
+    expect(initialOverlay).not.toBeNull()
+    expect(initialOverlay).toHaveAttribute('aria-busy', 'false')
+
+    rerender(
+      <MentionsInput value="@ab">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    textarea.setSelectionRange(3, 3)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'ab',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    const loadingOverlay = document.querySelector('[data-slot="suggestions"]')
+    expect(loadingOverlay).not.toBeNull()
+    expect(loadingOverlay).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(1)
+
+    requests.get('ab')?.resolve([{ id: 'albert', display: 'Albert' }])
+
+    await waitFor(() => {
+      expect(screen.getByText('Albert')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText('Alpha')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-slot="suggestions"]')).not.toBeNull()
+  })
+
+  it('replaces the latest query range when selecting a preserved async suggestion.', async () => {
+    type DeferredResult = {
+      resolve: (value: Array<{ id: string; display: string }>) => void
+    }
+
+    const requests = new Map<string, DeferredResult>()
+    const asyncData = jest.fn(
+      (query: string) =>
+        new Promise<Array<{ id: string; display: string }>>((resolve) => {
+          requests.set(query, { resolve })
+        })
+    )
+    const onMentionsChange = jest.fn()
+
+    const { rerender } = render(
+      <MentionsInput value="@a" onMentionsChange={onMentionsChange}>
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    requests.get('a')?.resolve([{ id: 'alpha', display: 'Alpha' }])
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument()
+    })
+
+    rerender(
+      <MentionsInput value="@ab" onMentionsChange={onMentionsChange}>
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    textarea.setSelectionRange(3, 3)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'ab',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+    })
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+
+    fireEvent.keyDown(textarea, { key: 'Enter', keyCode: 13 })
+
+    await waitFor(() => {
+      expect(onMentionsChange).toHaveBeenCalled()
+    })
+
+    const payload = getLastMentionsChange(onMentionsChange)
+    expect(payload.value).toBe('@[Alpha](alpha)')
+    expect(payload.plainTextValue).toBe('Alpha')
+    expect(payload.idValue).toBe('alpha')
+    expect(payload.mentionId).toBe('alpha')
+    expect(payload.trigger.type).toBe('mention-add')
+  })
+
   it('renders an error state when an async provider rejects.', async () => {
     const asyncData = jest.fn(async () => {
       throw new Error('boom')
@@ -662,6 +805,11 @@ describe('MentionsInput', () => {
     await waitFor(() => {
       expect(screen.getByText('No suggestions found')).toBeInTheDocument()
     })
+
+    const status = document.querySelector('[data-slot="suggestions-status"]')
+    expect(status).not.toBeNull()
+    expect(status).toHaveAttribute('role', 'status')
+    expect(status).toHaveAttribute('data-status-type', 'empty')
   })
 
   it('allows renderError to suppress the built-in error state.', async () => {
@@ -2227,6 +2375,71 @@ describe('MentionsInput', () => {
       expect(combobox).not.toHaveAttribute('aria-describedby')
     })
 
+    it('keeps inline completion visible while the next async query loads.', async () => {
+      type DeferredResult = {
+        resolve: (value: Array<{ id: string; display: string }>) => void
+      }
+
+      const requests = new Map<string, DeferredResult>()
+      const asyncData = jest.fn(
+        (query: string) =>
+          new Promise<Array<{ id: string; display: string }>>((resolve) => {
+            requests.set(query, { resolve })
+          })
+      )
+
+      const { rerender } = render(
+        <MentionsInput value="@a" suggestionsDisplay="inline">
+          <Mention trigger="@" data={asyncData} />
+        </MentionsInput>
+      )
+
+      const combobox = screen.getByRole('combobox')
+      fireEvent.focus(combobox)
+      combobox.setSelectionRange(2, 2)
+      fireEvent.select(combobox)
+
+      await waitFor(() => {
+        expect(asyncData).toHaveBeenCalledWith(
+          'a',
+          expect.objectContaining({ signal: expect.any(Object) })
+        )
+      })
+
+      requests.get('a')?.resolve([{ id: 'alpha', display: 'Alpha' }])
+
+      await waitFor(() => {
+        expect(screen.getByText('lpha')).toBeInTheDocument()
+      })
+
+      rerender(
+        <MentionsInput value="@al" suggestionsDisplay="inline">
+          <Mention trigger="@" data={asyncData} />
+        </MentionsInput>
+      )
+
+      combobox.setSelectionRange(3, 3)
+      fireEvent.select(combobox)
+
+      await waitFor(() => {
+        expect(asyncData).toHaveBeenCalledWith(
+          'al',
+          expect.objectContaining({ signal: expect.any(Object) })
+        )
+      })
+
+      expect(screen.getByText('pha')).toBeInTheDocument()
+      expect(screen.queryByText('lpha')).not.toBeInTheDocument()
+
+      requests.get('al')?.resolve([{ id: 'alfred', display: 'Alfred' }])
+
+      await waitFor(() => {
+        expect(screen.getByText('fred')).toBeInTheDocument()
+      })
+
+      expect(screen.queryByText('pha')).not.toBeInTheDocument()
+    })
+
     it('can accept the inline suggestion with Tab', async () => {
       const onMentionsChange = jest.fn()
       const textbox = renderInlineMentionsInput({ onMentionsChange })
@@ -2459,11 +2672,49 @@ describe('MentionsInput', () => {
       })
 
       expect(updateSpy).toHaveBeenCalled()
-      expect(instance._isScrolling).toBe(false)
 
       raf.mockRestore()
       updateSpy.mockRestore()
       unmount()
+    })
+
+    it('falls back to immediate document scroll sync when requestAnimationFrame is unavailable.', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      instance.suggestionsElement = document.createElement('div')
+      const updateSpy = jest
+        .spyOn(instance, 'updateSuggestionsPosition')
+        .mockImplementation(() => undefined)
+      const originalRAF = globalThis.requestAnimationFrame
+
+      delete (globalThis as typeof globalThis & { requestAnimationFrame?: unknown })
+        .requestAnimationFrame
+
+      try {
+        act(() => {
+          instance.handleDocumentScroll()
+        })
+
+        expect(updateSpy).toHaveBeenCalled()
+      } finally {
+        if (originalRAF === undefined) {
+          delete (globalThis as typeof globalThis & { requestAnimationFrame?: unknown })
+            .requestAnimationFrame
+        } else {
+          ;(globalThis as typeof globalThis & {
+            requestAnimationFrame?: typeof globalThis.requestAnimationFrame
+          }).requestAnimationFrame = originalRAF
+        }
+
+        updateSpy.mockRestore()
+        unmount()
+      }
     })
 
     it('tracks composition state transitions.', () => {
@@ -2676,7 +2927,7 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      const updateSpy = jest.spyOn(instance, 'updateHighlighterScroll').mockImplementation(() => {})
+      const updateSpy = jest.spyOn(instance, 'updateHighlighterScroll').mockImplementation(() => false)
       const flushSpy = jest.spyOn(instance, 'flushPendingViewSync')
       const raf = jest
         .spyOn(globalThis, 'requestAnimationFrame')

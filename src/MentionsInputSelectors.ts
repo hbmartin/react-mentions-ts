@@ -269,7 +269,7 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
             return []
           }
 
-          const index = getSubstringIndex(item.display || String(item.id), query, ignoreAccents)
+          const index = getSubstringIndex(item.display ?? String(item.id), query, ignoreAccents)
 
           return index >= 0
             ? [

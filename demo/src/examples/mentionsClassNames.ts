@@ -25,6 +25,8 @@ export const multilineMentionsClassNames: MentionsInputClassNames = {
   inlineSuggestionPrefix: 'sr-only',
   inlineSuggestionSuffix: 'whitespace-pre text-slate-400',
   suggestions: baseSuggestions,
+  suggestionsStatus:
+    'px-4 py-2.5 text-left text-sm data-[status-type=empty]:text-slate-600 data-[status-type=error]:text-rose-600',
   suggestionsList: baseSuggestionsList,
   suggestionItem: baseSuggestionItem,
   suggestionItemFocused: baseSuggestionItemFocused,
