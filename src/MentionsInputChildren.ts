@@ -1,4 +1,5 @@
 import React from 'react'
+import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import type { MentionChildConfig, MentionComponentProps } from './types'
 import { isMentionElement } from './utils/isMentionElement'
 import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
@@ -11,13 +12,11 @@ export interface PreparedMentionsInputChildren<
 }
 
 const getTriggerIdentity = (trigger: string | RegExp | undefined): string => {
-  if (trigger === undefined) {
-    return 'default:@'
-  }
+  const normalizedTrigger = trigger ?? DEFAULT_MENTION_PROPS.trigger
 
-  return typeof trigger === 'string'
-    ? `str:${trigger}`
-    : `re:${trigger.source}/${trigger.flags.replaceAll('g', '')}`
+  return typeof normalizedTrigger === 'string'
+    ? `str:${normalizedTrigger}`
+    : `re:${normalizedTrigger.source}/${normalizedTrigger.flags.replaceAll('g', '')}`
 }
 
 const getInvalidChildLabel = (child: React.ReactNode): string => {
@@ -97,7 +96,8 @@ export const areMentionConfigsEqual = <Extra extends Record<string, unknown>>(
 
     return (
       getTriggerIdentity(leftConfig.trigger) === getTriggerIdentity(rightConfig.trigger) &&
-      leftConfig.serializer.id === rightConfig.serializer.id
+      leftConfig.serializer.id === rightConfig.serializer.id &&
+      leftConfig.displayTransform === rightConfig.displayTransform
     )
   })
 }

@@ -70,6 +70,25 @@ describe('#applyChangeToValue', () => {
     )
   })
 
+  it('recovers full IME hint insertions when the caret stays inside the inserted text', () => {
+    const changed = "Hi John Doe, \n\nlet's M[mid]add joe@smoe.com to this conversation..."
+
+    const result = applyChangeToValue(
+      value,
+      changed,
+      {
+        selectionStartBefore: 21,
+        selectionEndBefore: 21,
+        selectionEndAfter: 22,
+      },
+      config
+    )
+
+    expect(result).toEqual(
+      "Hi @[John Doe](user:johndoe), \n\nlet's M[mid]add @[joe@smoe.com](email:joe@smoe.com) to this conversation..."
+    )
+  })
+
   it('should correctly delete single characters and ranges of selected text', () => {
     // delete "i"
     let changed = "H John Doe, \n\nlet's add joe@smoe.com to this conversation..."
@@ -132,6 +151,23 @@ describe('#applyChangeToValue', () => {
       config
     )
     expect(result).toEqual(value.replace('add', 'remove'))
+  })
+
+  it('recovers replacement text when selectionEndAfter reflects the caret instead of the full replacement', () => {
+    const changed = plainText.replace('add', 'remove[remove]')
+
+    const result = applyChangeToValue(
+      value,
+      changed,
+      {
+        selectionStartBefore: plainText.indexOf('add'),
+        selectionEndBefore: plainText.indexOf('add') + 'add'.length,
+        selectionEndAfter: plainText.indexOf('add') + 'remove'.length,
+      },
+      config
+    )
+
+    expect(result).toEqual(value.replace('add', 'remove[remove]'))
   })
 
   it('should remove mentions markup contained in deleted text ranges', () => {
@@ -287,7 +323,7 @@ describe('#applyChangeToValue', () => {
   })
 
   it('should correctly handle text auto-correction', () => {
-    const result = applyChangeToValue(
+    let result = applyChangeToValue(
       'ill',
       "I'll",
       {
@@ -298,6 +334,73 @@ describe('#applyChangeToValue', () => {
       config
     )
     expect(result).toEqual("I'll")
+
+    result = applyChangeToValue(
+      "s'a[sa'a]",
+      'sad[sad]',
+      {
+        selectionStartBefore: 2,
+        selectionEndBefore: 2,
+        selectionEndAfter: 3,
+      },
+      config
+    )
+    expect(result).toEqual('sad[sad]')
+  })
+
+  it('preserves decomposed dead-key input during mismatch recovery', () => {
+    const baseValue = 'Cafe'
+    const changed = 'Cafe\u0301[dead]'
+
+    const result = applyChangeToValue(
+      baseValue,
+      changed,
+      {
+        selectionStartBefore: baseValue.length,
+        selectionEndBefore: baseValue.length,
+        selectionEndAfter: 'Cafe\u0301'.length,
+      },
+      config
+    )
+
+    expect(result).toEqual(changed)
+  })
+
+  it('preserves composed accented characters during mismatch recovery', () => {
+    const baseValue = 'Caf'
+    const changed = 'Café[end]'
+
+    const result = applyChangeToValue(
+      baseValue,
+      changed,
+      {
+        selectionStartBefore: baseValue.length,
+        selectionEndBefore: baseValue.length,
+        selectionEndAfter: 'Café'.length,
+      },
+      config
+    )
+
+    expect(result).toEqual(changed)
+  })
+
+  it('preserves mention markup when dead-key recovery appends text next to a mention', () => {
+    const valueWithMention = 'Hi @[John Doe](user:johndoe) cafe'
+    const changed = 'Hi John Doe cafe\u0301[dead]'
+    const caretPosition = 'Hi John Doe cafe\u0301'.length
+
+    const result = applyChangeToValue(
+      valueWithMention,
+      changed,
+      {
+        selectionStartBefore: 'Hi John Doe cafe'.length,
+        selectionEndBefore: 'Hi John Doe cafe'.length,
+        selectionEndAfter: caretPosition,
+      },
+      config
+    )
+
+    expect(result).toEqual('Hi @[John Doe](user:johndoe) cafe\u0301[dead]')
   })
 
   it('re-runs splice logic when the reconstructed plain text differs from the target plain text', () => {

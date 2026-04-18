@@ -98,17 +98,17 @@ describe('readConfigFromChildren', () => {
 
       const config = readConfigFromChildren(children)
 
-      expect(config[0].serializer.id).toBe('@[__display__](__id__|0)')
-      expect(config[1].serializer.id).toBe('@[__display__](__id__|1)')
+      expect(config[0].serializer.id).toBe('@[__display__](__id__)|0')
+      expect(config[1].serializer.id).toBe('@[__display__](__id__)|1')
       expect(config[0].serializer.insert({ id: 'first', display: 'First' })).toBe(
-        '@[First](first|0)'
+        '@[First](first)|0'
       )
       expect(config[1].serializer.insert({ id: 'second', display: 'Second' })).toBe(
-        '@[Second](second|1)'
+        '@[Second](second)|1'
       )
     })
 
-    it('should parse duplicate-trigger markup with the correct serializer', () => {
+    it('should parse duplicate-trigger markup with the correct serializer when ids contain pipes', () => {
       const children = [
         <Mention key="1" trigger="@" displayTransform={(id) => `user:${id}`} data={[]} />,
         <Mention key="2" trigger="@" displayTransform={(id) => `team:${id}`} data={[]} />,
@@ -116,11 +116,11 @@ describe('readConfigFromChildren', () => {
 
       const config = readConfigFromChildren(children)
       const value = [
-        config[0].serializer.insert({ id: 'alice', display: 'Alice' }),
-        config[1].serializer.insert({ id: 'eng', display: 'Engineering' }),
+        config[0].serializer.insert({ id: 'alice|ops', display: 'Alice' }),
+        config[1].serializer.insert({ id: 'eng|platform', display: 'Engineering' }),
       ].join(' ')
 
-      expect(getPlainText(value, config)).toBe('user:alice team:eng')
+      expect(getPlainText(value, config)).toBe('user:alice|ops team:eng|platform')
     })
 
     it('should maintain existing behavior when custom markup is provided', () => {

@@ -1134,6 +1134,46 @@ describe('MentionsInput', () => {
     })
   })
 
+  it('falls back to counter-based generated ids when crypto.randomUUID is unavailable', async () => {
+    const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto')
+
+    Object.defineProperty(globalThis, 'crypto', {
+      value: undefined,
+      configurable: true,
+    })
+
+    try {
+      render(
+        <MentionsInput value="@f" suggestionsDisplay="inline">
+          <Mention
+            trigger="@"
+            data={[
+              { id: 'first', display: 'First' },
+              { id: 'second', display: 'Second' },
+            ]}
+          />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      fireEvent.focus(textarea)
+      textarea.setSelectionRange(2, 2)
+      fireEvent.select(textarea)
+
+      await waitFor(() => {
+        const status = screen.getByRole('status')
+        expect(status.id).toMatch(/^mentions-\d+-inline-live$/)
+        expect(textarea).toHaveAttribute('aria-describedby', status.id)
+      })
+    } finally {
+      if (cryptoDescriptor) {
+        Object.defineProperty(globalThis, 'crypto', cryptoDescriptor)
+      } else {
+        delete (globalThis as { crypto?: unknown }).crypto
+      }
+    }
+  })
+
   it('should accept a Document instance as the suggestionsPortalHost.', async () => {
     render(
       <MentionsInput value="@" suggestionsPortalHost={document}>
@@ -1205,6 +1245,32 @@ describe('MentionsInput', () => {
     expect(textarea.value).toEqual('@A and @B and :invalidId')
   })
 
+  it('updates the rendered plain text when displayTransform changes', () => {
+    const mentionData = [{ id: 'user', display: 'User' }]
+    const atDisplayTransform = (id: string | number, display?: string | null) =>
+      `@${display ?? String(id)}`
+    const hashDisplayTransform = (id: string | number) => `#${String(id)}`
+    const value = '@[User](user)'
+
+    const { rerender } = render(
+      <MentionsInput value={value}>
+        <Mention trigger="@" data={mentionData} displayTransform={atDisplayTransform} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    expect(textarea).toHaveValue('@User')
+
+    rerender(
+      <MentionsInput value={value}>
+        <Mention trigger="@" data={mentionData} displayTransform={hashDisplayTransform} />
+      </MentionsInput>
+    )
+
+    expect(textarea).toHaveValue('#user')
+  })
+
   it('should forward the `inputRef` prop to become the `ref` of the input', () => {
     const inputRef = React.createRef()
 
@@ -1230,6 +1296,19 @@ describe('MentionsInput', () => {
 
     const textarea = screen.getByRole('combobox')
     expect(inputRef).toHaveBeenCalledWith(textarea)
+  })
+
+  it('should ignore a null inputRef object without throwing', () => {
+    render(
+      <MentionsInput
+        value="test"
+        inputRef={null as unknown as React.RefObject<HTMLInputElement | HTMLTextAreaElement>}
+      >
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
   it('should render a custom input when supplied.', () => {
@@ -1295,6 +1374,28 @@ describe('MentionsInput', () => {
       const suggestions = screen.getAllByRole('option', { hidden: true })
       expect(suggestions.length).toBeGreaterThan(0)
     })
+  })
+
+  it('ignores custom regular expression matches without a replacement range capture', async () => {
+    const mentionData = vi.fn(() => [{ id: 'first', display: 'First' }])
+
+    render(
+      <MentionsInput value="hello">
+        <Mention trigger={/(#)?(\S*)$/} data={mentionData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(5, 5)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(textarea.selectionStart).toBe(5)
+    })
+
+    expect(mentionData).not.toHaveBeenCalled()
+    expect(screen.queryByRole('option', { hidden: true })).toBeNull()
   })
 
   describe('autoResize', () => {
@@ -1950,6 +2051,46 @@ describe('MentionsInput', () => {
       expect(payload.trigger.type).toBe('mention-remove')
       expect(payload.mentionId).toBe('first')
       expect(onRemove).toHaveBeenCalledWith('first')
+    })
+
+    it('emits mention-remove when replacement mentions would collide under colon-joined keys.', () => {
+      const onMentionsChange = vi.fn()
+      const onRemove = vi.fn()
+
+      render(
+        <MentionsInput value="@[c](a:b)" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} onRemove={onRemove} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      textarea.setSelectionRange(0, 1)
+      fireEvent.select(textarea, {
+        target: { selectionStart: 0, selectionEnd: 1 },
+      })
+
+      const event = new Event('paste', { bubbles: true })
+      event.clipboardData = {
+        getData: vi.fn((type) => {
+          if (type === 'text/react-mentions') {
+            return '@[b:c](a)'
+          }
+
+          if (type === 'text/plain') {
+            return 'b:c'
+          }
+
+          return ''
+        }),
+      }
+
+      fireEvent(textarea, event)
+
+      const payload = getLastMentionsChange(onMentionsChange)
+      expect(payload.trigger.type).toBe('mention-remove')
+      expect(payload.mentionId).toBe('a:b')
+      expect(payload.value).toBe('@[b:c](a)')
+      expect(onRemove).toHaveBeenCalledWith('a:b')
     })
 
     it('should remove carriage returns from pasted values', () => {
@@ -2995,6 +3136,84 @@ describe('MentionsInput', () => {
       expect(instance._isComposing).toBe(false)
 
       unmount()
+    })
+
+    it('preserves composing diacritics when controlled reconciliation re-runs mismatch recovery', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const onMentionsChange = vi.fn()
+
+      function ControlledInput() {
+        const [value, setValue] = React.useState('Cafe')
+
+        return (
+          <MentionsInput
+            ref={ref}
+            value={value}
+            onMentionsChange={(change) => {
+              setValue(change.value)
+              onMentionsChange(change)
+            }}
+          >
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+      }
+
+      const { unmount } = render(<ControlledInput />)
+
+      try {
+        await waitFor(() => {
+          expect(ref.current).not.toBeNull()
+        })
+
+        const instance = ref.current as unknown as any
+        const combobox = screen.getByRole('combobox') as HTMLTextAreaElement
+
+        act(() => {
+          instance.setState({ selectionStart: 4, selectionEnd: 4 })
+        })
+
+        const actualGetPlainText = utils.getPlainText
+        const getPlainTextSpy = vi
+          .spyOn(utils, 'getPlainText')
+          .mockImplementationOnce((inputValue, inputConfig) =>
+            actualGetPlainText(inputValue, inputConfig)
+          )
+          .mockImplementationOnce(() => 'intermediate mismatch')
+          .mockImplementation((inputValue, inputConfig) =>
+            actualGetPlainText(inputValue, inputConfig)
+          )
+
+        try {
+          combobox.value = 'Cafe\u0301'
+          combobox.setSelectionRange('Cafe\u0301'.length, 'Cafe\u0301'.length)
+
+          act(() => {
+            instance.handleChange({
+              target: combobox,
+              currentTarget: combobox,
+              nativeEvent: {
+                isComposing: true,
+                data: '\u0301',
+              },
+            } as React.ChangeEvent<HTMLTextAreaElement>)
+          })
+
+          await waitFor(() => {
+            expect(onMentionsChange).toHaveBeenCalled()
+            expect(combobox).toHaveValue('Cafe\u0301')
+          })
+
+          const payload = getLastMentionsChange(onMentionsChange)
+          expect(payload.value).toBe('Cafe\u0301')
+          expect(payload.plainTextValue).toBe('Cafe\u0301')
+          expect(payload.trigger.type).toBe('input')
+        } finally {
+          getPlainTextSpy.mockRestore()
+        }
+      } finally {
+        unmount()
+      }
     })
 
     it('processes queued highlighter recompute requests sequentially.', async () => {

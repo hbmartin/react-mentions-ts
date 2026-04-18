@@ -125,6 +125,10 @@ describe('MentionsInput performance', () => {
       expect(combobox.selectionStart).toBe(2)
     })
 
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Alice')
+    })
+
     fireEvent.keyDown(combobox, { key: 'ArrowRight' })
 
     await waitFor(() => {

@@ -28,7 +28,7 @@ const generateMarkupForTrigger = (trigger: string | RegExp | undefined): string 
 }
 
 const appendSerializerMarker = (markup: string, occurrenceIndex: number): string => {
-  return markup.replace(PLACEHOLDERS.id, `${PLACEHOLDERS.id}|${occurrenceIndex.toString()}`)
+  return `${markup}|${occurrenceIndex.toString()}`
 }
 
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
@@ -93,6 +93,7 @@ const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<s
     return {
       ...DEFAULT_MENTION_PROPS,
       ...props,
+      trigger,
       displayTransform,
       serializer,
     } satisfies MentionChildConfig<Extra>
