@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/react-mentions-ts.svg)](https://www.npmjs.com/package/react-mentions-ts)
 [![codecov](https://codecov.io/gh/hbmartin/react-mentions-ts/graph/badge.svg?token=Po1nDYEr5f)](https://codecov.io/gh/hbmartin/react-mentions-ts)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-mentions-ts)](https://bundlephobia.com/package/react-mentions-ts)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
 [![Context7](https://img.shields.io/badge/[]-Context7-059669)](https://context7.com/hbmartin/react-mentions-ts)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hbmartin/react-mentions-ts)
@@ -61,13 +61,19 @@ Check `package.json` for the latest peer dependency version ranges.
 import { useState } from 'react'
 import { MentionsInput, Mention } from 'react-mentions-ts'
 
+const users = [
+  { id: 'walter', display: 'Walter White' },
+  { id: 'jesse', display: 'Jesse Pinkman' },
+  { id: 'gus', display: 'Gustavo "Gus" Fring' },
+  { id: 'saul', display: 'Saul Goodman' },
+]
+
 function MyComponent() {
   const [value, setValue] = useState('')
 
   return (
     <MentionsInput value={value} onMentionsChange={({ value: nextValue }) => setValue(nextValue)}>
-      <Mention trigger="@" data={users} renderSuggestion={(entry) => <div>{entry.display}</div>} />
-      <Mention trigger="#" data={tags} />
+      <Mention trigger="@" data={users} />
     </MentionsInput>
   )
 }
@@ -195,6 +201,133 @@ const fetchUsers = async (
 <Mention trigger="@" data={fetchUsers} debounceMs={150} maxSuggestions={8} />
 ```
 
+## 📚 More Examples
+
+The [live demo](https://hbmartin.github.io/react-mentions-ts/) includes many ready-to-use patterns. Each demo's source is in [`demo/src/examples/`](https://github.com/hbmartin/react-mentions-ts/tree/master/demo/src/examples):
+
+| Demo | Description |
+| ---- | ----------- |
+| **Multiple Triggers** | Mention teammates with `@` or type an email address — styling switches based on the trigger |
+| **Single Line** | Compact single-line input for chat composer bars |
+| **Multi-Word Queries** | Use `makeTriggerRegex('@', { allowSpaceInQuery: true })` for multi-word searches |
+| **Regex Trigger** | Fire suggestions on any alphabetical word with no prefix character required |
+| **Accent-Insensitive** | Normalises diacritics before matching so `Lydia` finds `Lydìã` |
+| **Scrollable Composer** | Textarea and highlighter stay in sync while scrolling long drafts |
+| **Auto-Resize** | Textarea grows to match its content with `autoResize` |
+| **Copy & Paste** | Mentions survive clipboard round-trips, even into plain-text fields |
+| **Caret Mention States** | Style mentions based on caret overlap via `data-mention-selection` attributes |
+| **Inline Autocomplete** | Ghost-text completions accepted with Tab, Enter, or arrow keys |
+| **Async GitHub Mentions** | Live GitHub API search with debouncing, cancellation, and stale-result suppression |
+| **Emoji Support** | Mix people mentions with emoji search powered by a JSON data source |
+| **Suggestions Portal** | Render suggestions anywhere in the DOM for modals, drawers, or fixed toolbars |
+| **Custom Container** | Wrap suggestions in bespoke UI chrome — badges, headlines, or analytics |
+| **Left Anchored** | Pin the overlay to the input's leading edge instead of following the caret |
+| **Advanced Formatting** | Custom markup, programmatic focus, and flipped suggestion lists |
+
+## 🔧 Advanced Usage
+
+### Markup Format and Controlled State
+
+`MentionsInput` is a **controlled component** — you must provide a `value` prop and handle updates via `onMentionsChange`. The `value` string uses a markup format to encode mentions inline with plain text.
+
+The default markup template is `@[__display__](__id__)`, so a value containing a mention looks like:
+
+```
+Hey @[Walter White](walter), are you there?
+```
+
+The `__display__` placeholder stores the visible text and `__id__` stores the mention identifier. When rendered, the user sees plain text (`Hey @Walter White, are you there?`) while the underlying value preserves the structured mention data.
+
+You can customize the template via the `markup` prop on `Mention`, or pass a `MentionSerializer` for full control (see below).
+
+### `makeTriggerRegex`
+
+A utility that builds a properly anchored regex from a trigger string. Useful when you need spaces in queries or accent-insensitive matching without hand-rolling a regex.
+
+```ts
+import { makeTriggerRegex } from 'react-mentions-ts'
+
+makeTriggerRegex('@')
+// default — matches @query at end of string
+
+makeTriggerRegex('@', { allowSpaceInQuery: true })
+// allows "@ John Doe" style multi-word queries
+
+makeTriggerRegex('@', { ignoreAccents: true })
+// Unicode-aware matching for accented characters
+```
+
+**Signature:**
+
+```ts
+makeTriggerRegex(
+  trigger?: string | RegExp,  // default: '@'
+  options?: {
+    allowSpaceInQuery?: boolean
+    ignoreAccents?: boolean   // enables the Unicode `u` flag
+  }
+): RegExp
+```
+
+When `trigger` is already a `RegExp`, it is returned as-is.
+
+### `createMarkupSerializer`
+
+Converts a markup template string into a `MentionSerializer` object. Use this when you want custom markup formats without manually wiring up insertion and parsing logic.
+
+```ts
+import { createMarkupSerializer } from 'react-mentions-ts'
+
+const serializer = createMarkupSerializer(':__id__')
+// serializer.insert({ id: 'wave', display: 'Wave' })  → ':wave'
+// serializer.findAll('Hello :wave and :smile')         → [{ id: 'wave', ... }, { id: 'smile', ... }]
+```
+
+Pass the result as the `markup` prop on `Mention`:
+
+```tsx
+<Mention trigger=":" data={emojis} markup={createMarkupSerializer(':__id__')} />
+```
+
+### `MentionSerializer` Interface
+
+For cases where `createMarkupSerializer` is not flexible enough, you can implement the `MentionSerializer` interface directly:
+
+```ts
+import type { MentionSerializer, MentionIdentifier } from 'react-mentions-ts'
+
+interface MentionSerializer {
+  id: string
+  insert: (input: { id: MentionIdentifier; display: string }) => string
+  findAll: (value: string) => MentionSerializerMatch[]
+}
+
+interface MentionSerializerMatch {
+  markup: string   // the full matched substring
+  index: number    // position in the value string
+  id: string       // extracted mention identifier
+  display?: string | null  // extracted display text
+}
+```
+
+- **`id`** — a unique string identifying this serializer (used internally to distinguish multiple `Mention` children)
+- **`insert`** — given a mention's `id` and `display`, returns the markup string to splice into the value
+- **`findAll`** — scans a value string and returns every mention match with its position and extracted fields
+
+### SSR and Next.js
+
+The component is SSR-compatible out of the box. It guards against missing browser globals (`document`) during server rendering, so it works with Next.js, Remix, and other SSR frameworks without extra configuration.
+
+In Next.js App Router, add the `'use client'` directive to any file that renders `MentionsInput`:
+
+```tsx
+'use client'
+
+import { MentionsInput, Mention } from 'react-mentions-ts'
+```
+
+No dynamic imports or `next/dynamic` wrappers are needed.
+
 ## 🎨 Styling
 
 React Mentions ships its markup with **Tailwind utility classes**. Consumers should have Tailwind configured in their application build so these classes compile to real CSS. If you do not use Tailwind you can still provide your own styles via `className`, CSS modules, or inline styles.
@@ -218,9 +351,19 @@ module.exports = {
 @import 'react-mentions-ts/styles/tailwind.css';
 ```
 
-The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source "../dist";` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
+The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source “../dist”;` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
 
 If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*.{js,jsx,ts,tsx}` to the `content` array instead of importing the helper file.
+
+### CSS Class Names
+
+Assign a `className` prop to `MentionsInput`. All DOM nodes will receive derived class names:
+
+```tsx
+<MentionsInput className=”mentions”>
+  <Mention className=”mentions__mention” />
+</MentionsInput>
+```
 
 ### Inline Styles
 
@@ -230,37 +373,48 @@ If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*
 </MentionsInput>
 ```
 
-### Caret-driven styling hooks
+### Caret-Driven Styling Hooks
 
-Every rendered mention (both in the hidden highlighter and the user-editable input) now exposes a `data-mention-selection` attribute whenever the caret or selection overlaps it. The attribute reflects the current coverage (`inside`, `boundary`, `partial`, or `full`), so you can target focus states without extra bookkeeping:
+Every rendered mention exposes a `data-mention-selection` attribute whenever the caret or selection overlaps it. The attribute reflects the current coverage (`inside`, `boundary`, `partial`, or `full`), so you can target focus states purely in CSS without extra bookkeeping:
 
 ```tsx
 <Mention
-  trigger="@"
+  trigger=”@”
   data={users}
-  className="rounded-full bg-indigo-500/25 px-2 py-0.5 text-sm font-semibold text-indigo-100 transition
+  className=”rounded-full bg-indigo-500/25 px-2 py-0.5 text-sm font-semibold text-indigo-100 transition
              data-[mention-selection=inside]:bg-emerald-500/35 data-[mention-selection=inside]:text-emerald-50
              data-[mention-selection=boundary]:ring-2 data-[mention-selection=boundary]:ring-indigo-300
              data-[mention-selection=partial]:bg-amber-500/35 data-[mention-selection=partial]:text-amber-50
-             data-[mention-selection=full]:bg-indigo-500 data-[mention-selection=full]:text-white"
+             data-[mention-selection=full]:bg-indigo-500 data-[mention-selection=full]:text-white”
 />
 ```
 
 See the “Caret mention states” demo (`demo/src/examples/MentionSelection.tsx`) for a complete example that combines styling with the `onMentionSelectionChange` callback.
 
-When `suggestionsDisplay="inline"`, override the `inlineSuggestion` style slot to customize the inline hint (the default demo style lives in `demo/src/examples/defaultStyle.ts`).
+### Inline Autocomplete Styling
 
-See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for examples.
-
-### CSS
-
-Simply assign a `className` prop to `MentionsInput`. All DOM nodes will receive derived class names:
+When `suggestionsDisplay=”inline”` is set, the component renders a ghost-text hint next to the caret instead of a dropdown overlay. The user accepts the suggestion with Tab, Enter, or the right arrow key.
 
 ```tsx
-<MentionsInput className="mentions">
-  <Mention className="mentions__mention" />
+<MentionsInput
+  value={value}
+  onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+  suggestionsDisplay=”inline”
+>
+  <Mention trigger=”@” data={users} />
 </MentionsInput>
 ```
+
+Customize the inline hint appearance via the `classNames` prop:
+
+| Class name slot            | What it targets                                      |
+| -------------------------- | ---------------------------------------------------- |
+| `inlineSuggestion`         | The absolutely-positioned wrapper around the hint    |
+| `inlineSuggestionText`     | The visible completion text                          |
+| `inlineSuggestionPrefix`   | The already-typed portion (hidden with `sr-only`)    |
+| `inlineSuggestionSuffix`   | The remaining suggestion shown after the caret       |
+
+See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for a full styling example.
 
 ## 🧪 Testing
 
@@ -278,6 +432,77 @@ test('mentions work correctly', async () => {
   // assertions...
 })
 ```
+
+## 🔀 Migrating from react-mentions
+
+This library is a TypeScript rewrite of [react-mentions](https://github.com/signavio/react-mentions). The API has been modernized — most changes are mechanical renames, but a few features work differently.
+
+### Package & Imports
+
+```diff
+- npm install react-mentions
++ npm install react-mentions-ts
+
+- import { MentionsInput, Mention } from 'react-mentions'
++ import { MentionsInput, Mention } from 'react-mentions-ts'
+```
+
+### Renamed Props
+
+| react-mentions | react-mentions-ts | Notes |
+| -------------- | ----------------- | ----- |
+| `onChange(event, newValue, newPlainTextValue, mentions)` | `onMentionsChange({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue })` | Receives a single object instead of positional arguments. See [onMentionsChange payload](#onmentionschange-payload) for details |
+| `onBlur(event, clickedSuggestion)` | `onMentionBlur(event, clickedSuggestion)` | Renamed to avoid shadowing the native `onBlur` (which is also available) |
+| `allowSuggestionsAboveCursor` | `suggestionsPlacement="auto"` | Use `'auto'`, `'above'`, or `'below'` instead of two separate booleans |
+| `forceSuggestionsAboveCursor` | `suggestionsPlacement="above"` | |
+| `allowSpaceInQuery` (on `MentionsInput`) | `trigger={makeTriggerRegex('@', { allowSpaceInQuery: true })}` (on `Mention`) | Moved from a top-level boolean to a per-trigger option via the `makeTriggerRegex` utility |
+| `onAdd(id, display, startPos, endPos)` | `onAdd({ id, display, startPos, endPos, serializerId })` | Receives a single object; adds `serializerId` |
+
+### Replaced Props
+
+| react-mentions | react-mentions-ts | Notes |
+| -------------- | ----------------- | ----- |
+| `markup` (string) + `regex` | `markup` (string \| `MentionSerializer`) | The separate `regex` prop is removed. Pass a `MentionSerializer` for custom parsing, or use `createMarkupSerializer(template)` to convert a legacy template string. See [MentionSerializer Interface](#mentionserializer-interface) |
+
+### New Features (no react-mentions equivalent)
+
+| Feature | Prop / API |
+| ------- | ---------- |
+| Async data via Promises with `AbortSignal` | `data` accepts `(query, { signal }) => Promise<...>` |
+| Debounced async queries | `debounceMs` on `Mention` |
+| Cap suggestion count | `maxSuggestions` on `Mention` |
+| Caret-aware mention styling | `onMentionSelectionChange`, `data-mention-selection` attribute |
+| Inline ghost-text autocomplete | `suggestionsDisplay="inline"` |
+| Auto-resizing textarea | `autoResize` |
+| Left-anchored overlay | `anchorMode="left"` |
+| Empty/error state rendering | `renderEmpty`, `renderError` on `Mention` |
+| Tailwind v4 styling out of the box | Built-in utility classes |
+
+### Styling
+
+react-mentions shipped no CSS and relied entirely on inline styles or manual class names. react-mentions-ts ships with Tailwind utility classes baked in. If you were using inline `style` props, they still work. If you were using `className` / `classNames`, those work too. See the [Styling](#-styling) section for setup.
+
+### Minimal Migration Example
+
+```diff
+  <MentionsInput
+    value={value}
+-   onChange={(e, newValue) => setValue(newValue)}
++   onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+-   allowSuggestionsAboveCursor
++   suggestionsPlacement="auto"
+  >
+    <Mention
+      trigger="@"
+      data={users}
+-     markup="@[__display__](__id__)"
+-     regex={/@\[(.+?)]\((.+?)\)/}
++     markup={createMarkupSerializer('@[__display__](__id__)')}
+    />
+  </MentionsInput>
+```
+
+> The default markup template `@[__display__](__id__)` is unchanged, so if you were using the default you can omit the `markup` prop entirely — no `createMarkupSerializer` call needed.
 
 ## 🙏 Acknowledgments
 
