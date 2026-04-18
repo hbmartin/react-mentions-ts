@@ -30,6 +30,7 @@ function StaticReferencePanel() {
 function LocalStateController() {
   const renderCount = useRenderTrace('StateLocalityLab.LocalStateController')
   const [isExpanded, setIsExpanded] = useState(false)
+  const detailsId = 'state-locality-details'
 
   return (
     <section className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4">
@@ -45,13 +46,20 @@ function LocalStateController() {
       </p>
       <button
         type="button"
+        aria-expanded={isExpanded}
+        aria-controls={detailsId}
         className="mt-4 inline-flex items-center rounded-full bg-emerald-300/90 px-4 py-2 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-200"
         onClick={() => setIsExpanded((value) => !value)}
       >
         {isExpanded ? 'Collapse localized state' : 'Expand localized state'}
       </button>
       {isExpanded ? (
-        <div className="mt-4 rounded-2xl border border-emerald-200/20 bg-emerald-950/30 p-4 text-sm leading-relaxed text-emerald-50">
+        <div
+          id={detailsId}
+          role="region"
+          aria-label="Localized state details"
+          className="mt-4 rounded-2xl border border-emerald-200/20 bg-emerald-950/30 p-4 text-sm leading-relaxed text-emerald-50"
+        >
           Only this controller should rerender as the state flips. The sibling panel next to it
           should keep its render count flat.
         </div>

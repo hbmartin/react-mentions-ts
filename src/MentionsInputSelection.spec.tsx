@@ -1,6 +1,10 @@
 import React from 'react'
 import { Mention } from './index'
-import { computeMentionSelectionDetails, getMentionSelectionKey } from './MentionsInputSelection'
+import {
+  areMentionOccurrencesEqual,
+  computeMentionSelectionDetails,
+  getMentionSelectionKey,
+} from './MentionsInputSelection'
 import readConfigFromChildren from './utils/readConfigFromChildren'
 
 const config = readConfigFromChildren([<Mention key="mention" trigger="@" data={[]} />])
@@ -30,5 +34,16 @@ describe('MentionsInputSelection', () => {
 
     expect(partial.selections[0]?.selection).toBe('partial')
     expect(full.selections[0]?.selection).toBe('full')
+  })
+
+  it('treats markup index changes as a mention snapshot change', () => {
+    expect(
+      areMentionOccurrencesEqual(mentions, [
+        {
+          ...mentions[0],
+          index: 7,
+        },
+      ])
+    ).toBe(false)
   })
 })
