@@ -90,7 +90,7 @@ describe('readConfigFromChildren', () => {
   })
 
   describe('backward compatibility', () => {
-    it('should use the shared DEFAULT_SERIALIZER when trigger is @ and no markup is provided', () => {
+    it('should generate distinct default serializers for duplicate triggers', () => {
       const children = [
         <Mention key="1" trigger="@" data={[]} />,
         <Mention key="2" trigger="@" data={[]} />,
@@ -98,9 +98,29 @@ describe('readConfigFromChildren', () => {
 
       const config = readConfigFromChildren(children)
 
-      // Both should use the same serializer instance for efficiency
-      expect(config[0].serializer.id).toBe('@[__display__](__id__)')
-      expect(config[1].serializer.id).toBe('@[__display__](__id__)')
+      expect(config[0].serializer.id).toBe('@[__display__](__id__|0)')
+      expect(config[1].serializer.id).toBe('@[__display__](__id__|1)')
+      expect(config[0].serializer.insert({ id: 'first', display: 'First' })).toBe(
+        '@[First](first|0)'
+      )
+      expect(config[1].serializer.insert({ id: 'second', display: 'Second' })).toBe(
+        '@[Second](second|1)'
+      )
+    })
+
+    it('should parse duplicate-trigger markup with the correct serializer', () => {
+      const children = [
+        <Mention key="1" trigger="@" displayTransform={(id) => `user:${id}`} data={[]} />,
+        <Mention key="2" trigger="@" displayTransform={(id) => `team:${id}`} data={[]} />,
+      ]
+
+      const config = readConfigFromChildren(children)
+      const value = [
+        config[0].serializer.insert({ id: 'alice', display: 'Alice' }),
+        config[1].serializer.insert({ id: 'eng', display: 'Engineering' }),
+      ].join(' ')
+
+      expect(getPlainText(value, config)).toBe('user:alice team:eng')
     })
 
     it('should maintain existing behavior when custom markup is provided', () => {

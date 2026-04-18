@@ -34,7 +34,6 @@ import {
   getInlineSuggestionAnnouncement,
   getFocusedSuggestionEntryForMentionChildren,
   getInlineSuggestionDetailsForMentionChildren,
-  getMentionChildFromArray,
   getSuggestionData,
   getSuggestionQueryStateEntries,
   getSuggestionsStatusContentForMentionChildren,
@@ -51,7 +50,6 @@ import {
 import {
   countSuggestions,
   getEndOfLastMention,
-  getPlainText,
   getMentionsAndPlainText,
   getSubstringIndex,
   getSuggestionHtmlId,
@@ -65,6 +63,7 @@ import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import type { PreparedMentionsInputChildren } from './MentionsInputChildren'
 import { areMentionConfigsEqual, prepareMentionsInputChildren } from './MentionsInputChildren'
+import type { MentionValueSnapshot } from './MentionsInputDerived'
 import { createMentionSelectionContext, deriveMentionValueSnapshot } from './MentionsInputDerived'
 import {
   applyErroredQueryResult,
@@ -73,11 +72,7 @@ import {
   createLoadingQueryState,
   isAbortError,
 } from './MentionsInputQueryState'
-import {
-  areMentionOccurrencesEqual,
-  computeMentionSelectionDetails,
-  getMentionSelectionMap,
-} from './MentionsInputSelection'
+import { computeMentionSelectionDetails, getMentionSelectionMap } from './MentionsInputSelection'
 import type {
   CaretCoordinates,
   InputComponentProps,
@@ -102,7 +97,7 @@ import type {
 let generatedIdCounter = 0
 
 const createGeneratedId = (): string => {
-  if (typeof globalThis.crypto?.randomUUID === 'function') {
+  if (typeof globalThis.crypto.randomUUID === 'function') {
     return `mentions-${globalThis.crypto.randomUUID()}`
   }
 
@@ -159,6 +154,40 @@ interface ActiveSuggestionQuery<Extra extends Record<string, unknown>> {
   queryInfo: QueryInfo
   mentionChild: React.ReactElement<MentionComponentProps<Extra>>
   ignoreAccents: boolean
+}
+
+const getMentionDiffKey = <Extra extends Record<string, unknown>>(
+  mention: MentionOccurrence<Extra>
+): string => {
+  return `${mention.childIndex}:${String(mention.id)}:${mention.display}`
+}
+
+const getRemovedMentions = <Extra extends Record<string, unknown>>(
+  previousMentions: ReadonlyArray<MentionOccurrence<Extra>>,
+  nextMentions: ReadonlyArray<MentionOccurrence<Extra>>
+): MentionOccurrence<Extra>[] => {
+  const nextMentionCounts = new Map<string, number>()
+
+  for (const mention of nextMentions) {
+    const key = getMentionDiffKey(mention)
+    nextMentionCounts.set(key, (nextMentionCounts.get(key) ?? 0) + 1)
+  }
+
+  const removedMentions: MentionOccurrence<Extra>[] = []
+
+  for (const mention of previousMentions) {
+    const key = getMentionDiffKey(mention)
+    const count = nextMentionCounts.get(key) ?? 0
+
+    if (count === 0) {
+      removedMentions.push(mention)
+      continue
+    }
+
+    nextMentionCounts.set(key, count - 1)
+  }
+
+  return removedMentions
 }
 
 const visuallyHiddenStyles: CSSProperties = {
@@ -234,6 +263,12 @@ class MentionsInput<
   private _autoResizeFrame: number | null = null
   private _cachedMarkupValue = ''
   private _cachedConfig: ReadonlyArray<MentionChildConfig<Extra>> = []
+  private _lastCommittedConfig: ReadonlyArray<MentionChildConfig<Extra>> = []
+  private _cachedSnapshot: MentionValueSnapshot<Extra> = {
+    mentions: [],
+    plainText: '',
+    idValue: '',
+  }
   private _pendingViewSync: PendingViewSync = createPendingViewSync()
   private _isFlushingViewSync = false
   private readonly _queryDebounceTimers = new Map<number, ReturnType<typeof setTimeout>>()
@@ -241,11 +276,7 @@ class MentionsInput<
 
   private cancelScheduledFrame(frameKey: '_scrollSyncFrame' | '_autoResizeFrame'): void {
     const frame = this[frameKey]
-    if (
-      frame !== null &&
-      globalThis.window !== undefined &&
-      typeof globalThis.cancelAnimationFrame === 'function'
-    ) {
+    if (frame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
       globalThis.cancelAnimationFrame(frame)
       this[frameKey] = null
     }
@@ -263,24 +294,77 @@ class MentionsInput<
     this._queryAbortControllers.clear()
   }
 
+  private cacheSnapshot(
+    value: string,
+    config: ReadonlyArray<MentionChildConfig<Extra>>,
+    snapshot: MentionValueSnapshot<Extra>
+  ): MentionValueSnapshot<Extra> {
+    this._cachedMarkupValue = value
+    this._cachedConfig = [...config]
+    this._cachedSnapshot = snapshot
+    return snapshot
+  }
+
+  private getCurrentSnapshot(
+    value: string = this.props.value ?? '',
+    config: ReadonlyArray<MentionChildConfig<Extra>> = this.getCurrentConfig()
+  ): MentionValueSnapshot<Extra> {
+    if (value === this._cachedMarkupValue && areMentionConfigsEqual(config, this._cachedConfig)) {
+      return this._cachedSnapshot
+    }
+
+    return this.cacheSnapshot(value, config, deriveMentionValueSnapshot<Extra>(value, config))
+  }
+
+  private shouldMeasureSuggestions(): boolean {
+    return !this.isInlineAutocomplete() && isNumber(this.state.selectionStart)
+  }
+
+  private shouldMeasureInline(): boolean {
+    return this.isInlineAutocomplete() && isNumber(this.state.selectionStart)
+  }
+
+  private resolveViewSyncFlags(flags: Partial<PendingViewSync>): Partial<PendingViewSync> {
+    const nextFlags: Partial<PendingViewSync> = {}
+
+    if (flags.restoreSelection === true) {
+      nextFlags.restoreSelection = true
+    }
+    if (flags.syncScroll === true) {
+      nextFlags.syncScroll = true
+    }
+    if (flags.recomputeHighlighter === true) {
+      nextFlags.recomputeHighlighter = true
+    }
+    if (flags.measureSuggestions === true && this.shouldMeasureSuggestions()) {
+      nextFlags.measureSuggestions = true
+    }
+    if (flags.measureInline === true && this.shouldMeasureInline()) {
+      nextFlags.measureInline = true
+    }
+
+    return nextFlags
+  }
+
   requestViewSync = (
     flags: Partial<PendingViewSync>,
     options: {
       flushNow?: boolean
     } = {}
   ): void => {
-    this._pendingViewSync = mergePendingViewSync(this._pendingViewSync, flags)
+    const filteredFlags = this.resolveViewSyncFlags(flags)
+    this._pendingViewSync = mergePendingViewSync(this._pendingViewSync, filteredFlags)
 
     if (!hasPendingViewSync(this._pendingViewSync)) {
       return
     }
 
-    if (options.flushNow) {
+    if (options.flushNow === true) {
       this.flushPendingViewSync()
       return
     }
 
-    if (globalThis.window === undefined || typeof globalThis.requestAnimationFrame !== 'function') {
+    if (typeof globalThis.requestAnimationFrame !== 'function') {
       this.flushPendingViewSync()
       return
     }
@@ -435,8 +519,8 @@ class MentionsInput<
     const initialConfig = preparedChildren.config
     const initialValue = props.value ?? ''
     const initialSnapshot = deriveMentionValueSnapshot<Extra>(initialValue, initialConfig)
-    this._cachedMarkupValue = initialValue
-    this._cachedConfig = initialConfig
+    this.cacheSnapshot(initialValue, initialConfig, initialSnapshot)
+    this._lastCommittedConfig = [...initialConfig]
 
     this.handleCopy = this.handleCopy.bind(this)
     this.handleCut = this.handleCut.bind(this)
@@ -447,9 +531,6 @@ class MentionsInput<
       focusIndex: 0,
       selectionStart: null,
       selectionEnd: null,
-      cachedMentions: initialSnapshot.mentions,
-      cachedPlainText: initialSnapshot.plainText,
-      cachedIdValue: initialSnapshot.idValue,
       suggestions: {},
       queryStates: {},
       caretPosition: null,
@@ -480,60 +561,18 @@ class MentionsInput<
     )
   }
 
-  // eslint-disable-next-line sonarjs/cognitive-complexity
-  componentDidUpdate(
-    prevProps: MentionsInputProps<Extra>,
-    prevState: MentionsInputState<Extra>
-  ): void {
-    const selectionPositionsChanged =
-      this.state.selectionStart !== prevState.selectionStart ||
-      this.state.selectionEnd !== prevState.selectionEnd
-
-    const previousValue = prevProps.value ?? ''
-    const currentValue = this.props.value ?? ''
-    const currentConfig = this.getCurrentConfig()
-    const previousConfig = this._cachedConfig
-    const configChanged = !areMentionConfigsEqual(previousConfig, currentConfig)
-    const valueChanged = currentValue !== previousValue || configChanged
-
+  private ensureGeneratedIdIfNeeded(): void {
     if (this.getExplicitId() === null && this.state.generatedId === null) {
       this.ensureGeneratedId()
     }
+  }
 
-    const recalculatedSnapshot = valueChanged
-      ? deriveMentionValueSnapshot<Extra>(currentValue, currentConfig)
-      : null
-    const snapshotForSelection = recalculatedSnapshot ?? {
-      mentions: this.state.cachedMentions,
-      plainText: this.state.cachedPlainText,
-      idValue: this.state.cachedIdValue,
-    }
-
-    if (recalculatedSnapshot) {
-      const {
-        mentions: nextMentions,
-        plainText: nextPlainText,
-        idValue: nextIdValue,
-      } = recalculatedSnapshot
-
-      if (
-        !areMentionOccurrencesEqual(nextMentions, this.state.cachedMentions) ||
-        nextPlainText !== this.state.cachedPlainText ||
-        nextIdValue !== this.state.cachedIdValue
-      ) {
-        this.setState({
-          cachedMentions: nextMentions,
-          cachedPlainText: nextPlainText,
-          cachedIdValue: nextIdValue,
-        })
-      }
-    }
-
-    if (valueChanged) {
-      this._cachedMarkupValue = currentValue
-      this._cachedConfig = currentConfig
-    }
-
+  private scheduleViewSyncAfterUpdate(
+    prevProps: MentionsInputProps<Extra>,
+    prevState: MentionsInputState<Extra>,
+    valueChanged: boolean,
+    selectionPositionsChanged: boolean
+  ): void {
     if (this.state.pendingSelectionUpdate) {
       this.requestViewSync({ restoreSelection: true })
     }
@@ -564,40 +603,87 @@ class MentionsInput<
     }
 
     this.flushPendingViewSync()
+  }
 
-    if (selectionPositionsChanged || valueChanged) {
-      const currentSelection = computeMentionSelectionDetails<Extra>(
-        snapshotForSelection.mentions,
-        currentConfig,
-        this.state.selectionStart,
-        this.state.selectionEnd
-      )
-      let shouldEmit = selectionPositionsChanged
-
-      if (!shouldEmit && valueChanged) {
-        const previousSelection = computeMentionSelectionDetails<Extra>(
-          prevState.cachedMentions,
-          previousConfig,
-          prevState.selectionStart,
-          prevState.selectionEnd
-        )
-        shouldEmit = !areMentionSelectionsEqual(
-          previousSelection.selections,
-          currentSelection.selections
-        )
-      }
-
-      if (shouldEmit && this.props.onMentionSelectionChange) {
-        const selectionMentionIds = currentSelection.selections.map((selection) => selection.id)
-        const selectionContext = createMentionSelectionContext(
-          currentValue,
-          snapshotForSelection,
-          selectionMentionIds
-        )
-
-        this.props.onMentionSelectionChange(currentSelection.selections, selectionContext)
-      }
+  private emitMentionSelectionChangeIfNeeded(
+    currentValue: string,
+    currentConfig: ReadonlyArray<MentionChildConfig<Extra>>,
+    currentSnapshot: MentionValueSnapshot<Extra>,
+    previousValue: string,
+    previousConfig: ReadonlyArray<MentionChildConfig<Extra>>,
+    prevState: MentionsInputState<Extra>,
+    valueChanged: boolean,
+    selectionPositionsChanged: boolean
+  ): void {
+    if ((!selectionPositionsChanged && !valueChanged) || !this.props.onMentionSelectionChange) {
+      return
     }
+
+    const currentSelection = computeMentionSelectionDetails<Extra>(
+      currentSnapshot.mentions,
+      currentConfig,
+      this.state.selectionStart,
+      this.state.selectionEnd
+    )
+    let shouldEmit = selectionPositionsChanged
+
+    if (!shouldEmit && valueChanged) {
+      const previousSnapshot = deriveMentionValueSnapshot<Extra>(previousValue, previousConfig)
+      const previousSelection = computeMentionSelectionDetails<Extra>(
+        previousSnapshot.mentions,
+        previousConfig,
+        prevState.selectionStart,
+        prevState.selectionEnd
+      )
+      shouldEmit = !areMentionSelectionsEqual(
+        previousSelection.selections,
+        currentSelection.selections
+      )
+    }
+
+    if (!shouldEmit) {
+      return
+    }
+
+    const selectionMentionIds = currentSelection.selections.map((selection) => selection.id)
+    const selectionContext = createMentionSelectionContext(
+      currentValue,
+      currentSnapshot,
+      selectionMentionIds
+    )
+
+    this.props.onMentionSelectionChange(currentSelection.selections, selectionContext)
+  }
+
+  componentDidUpdate(
+    prevProps: MentionsInputProps<Extra>,
+    prevState: MentionsInputState<Extra>
+  ): void {
+    const selectionPositionsChanged =
+      this.state.selectionStart !== prevState.selectionStart ||
+      this.state.selectionEnd !== prevState.selectionEnd
+
+    const previousValue = prevProps.value ?? ''
+    const currentValue = this.props.value ?? ''
+    const previousConfig = this._lastCommittedConfig
+    const currentConfig = this.getCurrentConfig()
+    const configChanged = !areMentionConfigsEqual(previousConfig, currentConfig)
+    const valueChanged = currentValue !== previousValue || configChanged
+    const currentSnapshot = this.getCurrentSnapshot(currentValue, currentConfig)
+
+    this.ensureGeneratedIdIfNeeded()
+    this.scheduleViewSyncAfterUpdate(prevProps, prevState, valueChanged, selectionPositionsChanged)
+    this.emitMentionSelectionChangeIfNeeded(
+      currentValue,
+      currentConfig,
+      currentSnapshot,
+      previousValue,
+      previousConfig,
+      prevState,
+      valueChanged,
+      selectionPositionsChanged
+    )
+    this._lastCommittedConfig = [...currentConfig]
   }
 
   componentWillUnmount(): void {
@@ -642,6 +728,7 @@ class MentionsInput<
   // eslint-disable-next-line sonarjs/cognitive-complexity
   getInputProps = (): InputComponentProps => {
     const { readOnly, disabled, singleLine } = this.props
+    const currentSnapshot = this.getCurrentSnapshot()
 
     const passthroughProps = omit(
       this.props,
@@ -655,11 +742,11 @@ class MentionsInput<
     const props: Record<string, unknown> = {
       ...restPassthrough,
       className: baseClassName,
-      value: getPlainText(this.props.value ?? '', this.getCurrentConfig()),
+      value: currentSnapshot.plainText,
       onScroll: this.handleInputScroll,
       'data-slot': 'input',
-      'data-single-line': singleLine ? 'true' : undefined,
-      'data-multi-line': singleLine ? undefined : 'true',
+      'data-single-line': singleLine === true ? 'true' : undefined,
+      'data-multi-line': singleLine === true ? undefined : 'true',
     }
 
     const inlineStyle = getInputInlineStyle(singleLine)
@@ -668,7 +755,7 @@ class MentionsInput<
       props.style = inlineStyle
     }
 
-    if (!readOnly && !disabled) {
+    if (readOnly !== true && disabled !== true) {
       Object.assign(props, {
         onChange: this.handleChange,
         onSelect: this.handleSelect,
@@ -683,15 +770,16 @@ class MentionsInput<
     const inlineSuggestion = isInlineAutocomplete ? this.getInlineSuggestionDetails() : null
     const isOverlayOpen = !isInlineAutocomplete && this.isOpened()
     const overlayId = this.getSuggestionsOverlayId()
+    const hasOverlayId = overlayId !== undefined
 
     Object.assign(props, {
       role: 'combobox',
       'aria-autocomplete': isInlineAutocomplete ? 'inline' : 'list',
       'aria-expanded': isInlineAutocomplete ? 'false' : this.isOpened() ? 'true' : 'false',
       'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
-      'aria-controls': isOverlayOpen && overlayId ? overlayId : undefined,
+      'aria-controls': isOverlayOpen && hasOverlayId ? overlayId : undefined,
       'aria-activedescendant':
-        isOverlayOpen && overlayId
+        isOverlayOpen && hasOverlayId
           ? getSuggestionHtmlId(overlayId, this.state.focusIndex)
           : undefined,
     })
@@ -701,9 +789,9 @@ class MentionsInput<
       const existingDescribedBy =
         typeof props['aria-describedby'] === 'string' ? props['aria-describedby'] : undefined
       const describedBy = [existingDescribedBy, liveRegionId]
-        .filter((value): value is string => Boolean(value && value.trim().length > 0))
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
         .join(' ')
-      props['aria-describedby'] = describedBy || undefined
+      props['aria-describedby'] = describedBy.length > 0 ? describedBy : undefined
     }
 
     return props as InputComponentProps
@@ -713,13 +801,11 @@ class MentionsInput<
     const { singleLine, inputComponent: CustomInput } = this.props
     const inputProps = this.getInputProps()
 
-    return CustomInput ? (
-      <CustomInput ref={this.setInputRef} {...inputProps} />
-    ) : singleLine ? (
-      this.renderInput(inputProps)
-    ) : (
-      this.renderTextarea(inputProps)
-    )
+    if (CustomInput === undefined) {
+      return singleLine === true ? this.renderInput(inputProps) : this.renderTextarea(inputProps)
+    }
+
+    return <CustomInput ref={this.setInputRef} {...inputProps} />
   }
 
   renderInput = (props: InputComponentProps): React.ReactElement => {
@@ -735,16 +821,13 @@ class MentionsInput<
     const { inputRef } = this.props
     if (typeof inputRef === 'function') {
       inputRef(el)
-    } else if (inputRef) {
+    } else if (inputRef !== undefined) {
       ;(inputRef as React.RefObject<InputElement | null>).current = el
     }
   }
 
   private readonly resetTextareaHeight = (): boolean => {
-    const hasTextarea =
-      typeof HTMLTextAreaElement !== 'undefined' && this.inputElement instanceof HTMLTextAreaElement
-
-    if (!hasTextarea) {
+    if (!(this.inputElement instanceof HTMLTextAreaElement)) {
       return false
     }
 
@@ -757,7 +840,6 @@ class MentionsInput<
     if (
       this.props.singleLine === true ||
       this.props.autoResize !== true ||
-      globalThis.window === undefined ||
       typeof globalThis.requestAnimationFrame !== 'function'
     ) {
       if (this._autoResizeFrame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
@@ -1077,35 +1159,59 @@ class MentionsInput<
       return {}
     }
 
-    const currentValue = this.props.value ?? ''
     const currentConfig = this.getCurrentConfig()
-    const mentions =
-      currentValue === this._cachedMarkupValue &&
-      areMentionConfigsEqual(currentConfig, this._cachedConfig)
-        ? this.state.cachedMentions
-        : deriveMentionValueSnapshot<Extra>(currentValue, currentConfig).mentions
+    const { mentions } = this.getCurrentSnapshot(this.props.value ?? '', currentConfig)
 
     return getMentionSelectionMap(mentions, currentConfig, selectionStart, selectionEnd)
   }
 
+  private emitOnRemoveCallbacks(
+    previousSnapshot: MentionValueSnapshot<Extra>,
+    nextSnapshot: MentionValueSnapshot<Extra>,
+    config: ReadonlyArray<MentionChildConfig<Extra>>
+  ): MentionOccurrence<Extra>[] {
+    const removedMentions = getRemovedMentions(previousSnapshot.mentions, nextSnapshot.mentions)
+
+    for (const mention of removedMentions) {
+      const onRemove = config[mention.childIndex]?.onRemove ?? DEFAULT_MENTION_PROPS.onRemove
+      onRemove(mention.id)
+    }
+
+    return removedMentions
+  }
+
   executeOnChange = (
-    trigger: MentionsInputChangeTrigger,
+    baseTrigger: MentionsInputChangeTrigger,
     newValue: string,
-    newPlainTextValue: string,
-    newIdValue: string,
-    mentions: MentionOccurrence<Extra>[],
+    nextSnapshot: MentionValueSnapshot<Extra>,
     previousValue: string,
+    previousSnapshot: MentionValueSnapshot<Extra>,
+    config: ReadonlyArray<MentionChildConfig<Extra>>,
     mentionId?: MentionIdentifier
   ): void => {
+    const removedMentions =
+      baseTrigger.type === 'mention-add'
+        ? []
+        : this.emitOnRemoveCallbacks(previousSnapshot, nextSnapshot, config)
+    const trigger =
+      removedMentions.length > 0
+        ? {
+            type: 'mention-remove' as const,
+            nativeEvent: baseTrigger.nativeEvent,
+          }
+        : baseTrigger
+    const resolvedMentionId =
+      mentionId ?? (removedMentions.length === 1 ? removedMentions[0]?.id : undefined)
+
     if (this.props.onMentionsChange) {
       this.props.onMentionsChange({
         trigger,
         value: newValue,
-        plainTextValue: newPlainTextValue,
-        idValue: newIdValue,
-        mentions,
+        plainTextValue: nextSnapshot.plainText,
+        idValue: nextSnapshot.idValue,
+        mentions: nextSnapshot.mentions,
         previousValue,
-        mentionId,
+        mentionId: resolvedMentionId,
       })
     }
   }
@@ -1128,6 +1234,7 @@ class MentionsInput<
     const pastedMentions = clipboardData.getData('text/react-mentions')
     const pastedData = clipboardData.getData('text/plain')
     const config = this.getCurrentConfig()
+    const previousSnapshot = this.getCurrentSnapshot(valueText, config)
     const pasteResult = applyPasteToMentionsValue<Extra>(
       valueText,
       config,
@@ -1135,14 +1242,15 @@ class MentionsInput<
       selectionEnd,
       pastedMentions || pastedData
     )
+    this.cacheSnapshot(pasteResult.value, config, pasteResult.snapshot)
 
     this.executeOnChange(
       { type: 'paste', nativeEvent: event },
       pasteResult.value,
-      pasteResult.snapshot.plainText,
-      pasteResult.snapshot.idValue,
-      pasteResult.snapshot.mentions,
-      valueText
+      pasteResult.snapshot,
+      valueText,
+      previousSnapshot,
+      config
     )
     this.setState({
       selectionStart: pasteResult.nextSelectionStart,
@@ -1209,12 +1317,14 @@ class MentionsInput<
     const { value } = this.props
     const valueText = value ?? ''
     const config = this.getCurrentConfig()
+    const previousSnapshot = this.getCurrentSnapshot(valueText, config)
     const cutResult = applyCutToMentionsValue<Extra>(
       valueText,
       config,
       selectionStart,
       selectionEnd
     )
+    this.cacheSnapshot(cutResult.value, config, cutResult.snapshot)
 
     this.setState({
       selectionStart: cutResult.nextSelectionStart,
@@ -1225,10 +1335,10 @@ class MentionsInput<
     this.executeOnChange(
       { type: 'cut', nativeEvent: event },
       cutResult.value,
-      cutResult.snapshot.plainText,
-      cutResult.snapshot.idValue,
-      cutResult.snapshot.mentions,
-      valueText
+      cutResult.snapshot,
+      valueText,
+      previousSnapshot,
+      config
     )
   }
 
@@ -1238,9 +1348,9 @@ class MentionsInput<
     if ('isComposing' in native && typeof native.isComposing === 'boolean') {
       this._isComposing = native.isComposing
     }
-    const value = this.props.value || ''
+    const value = this.props.value ?? ''
 
-    let newPlainTextValue = ev.target.value
+    const newPlainTextValue = ev.target.value
 
     let selectionStartBefore = this.state.selectionStart
     if (selectionStartBefore === null) {
@@ -1257,6 +1367,7 @@ class MentionsInput<
       isComposing?: boolean
     }
     const config = this.getCurrentConfig()
+    const previousSnapshot = this.getCurrentSnapshot(value, config)
     const inputChangeResult = applyInputChangeToMentionsValue<Extra>(
       value,
       newPlainTextValue,
@@ -1267,7 +1378,7 @@ class MentionsInput<
       this.state.selectionEnd,
       nativeEvent.data
     )
-    newPlainTextValue = inputChangeResult.snapshot.plainText
+    this.cacheSnapshot(inputChangeResult.value, config, inputChangeResult.snapshot)
 
     this.setState((prevState) => ({
       selectionStart: inputChangeResult.nextSelectionStart,
@@ -1277,9 +1388,9 @@ class MentionsInput<
     }))
 
     if (
-      nativeEvent.isComposing &&
+      nativeEvent.isComposing === true &&
       inputChangeResult.nextSelectionStart === inputChangeResult.nextSelectionEnd &&
-      this.inputElement
+      this.inputElement !== null
     ) {
       this.updateMentionsQueries(this.inputElement.value, inputChangeResult.nextSelectionStart)
     }
@@ -1288,10 +1399,10 @@ class MentionsInput<
     this.executeOnChange(
       { type: 'input', nativeEvent: ev.nativeEvent },
       inputChangeResult.value,
-      newPlainTextValue,
-      inputChangeResult.snapshot.idValue,
-      inputChangeResult.snapshot.mentions,
-      value
+      inputChangeResult.snapshot,
+      value,
+      previousSnapshot,
+      config
     )
 
     this.props.onChange?.(ev)
@@ -1324,7 +1435,7 @@ class MentionsInput<
     }
 
     if (reason === 'selectionchange') {
-      const ownerDocument = input.ownerDocument ?? document
+      const ownerDocument = input.ownerDocument
       if (ownerDocument.activeElement !== input) {
         return
       }
@@ -1524,15 +1635,13 @@ class MentionsInput<
   }
 
   handleDocumentScroll = (): void => {
-    const shouldMeasureInline = this.isInlineAutocomplete() && isNumber(this.state.selectionStart)
-
-    if (!this.suggestionsElement && !shouldMeasureInline) {
+    if (!this.shouldMeasureSuggestions() && !this.shouldMeasureInline()) {
       return
     }
 
     this.requestViewSync({
       measureSuggestions: true,
-      measureInline: shouldMeasureInline,
+      measureInline: true,
     })
   }
 
@@ -1558,7 +1667,7 @@ class MentionsInput<
       return
     }
     let selectionApplied = false
-    if (el.setSelectionRange) {
+    if (typeof el.setSelectionRange === 'function') {
       el.setSelectionRange(selectionStart, selectionEnd)
       selectionApplied = true
     } else if ('createTextRange' in el) {
@@ -1619,20 +1728,23 @@ class MentionsInput<
       const regex = resolveTriggerRegex(triggerProp)
       const match = substring.match(regex)
 
-      if (match?.[1] === undefined || match[2] === undefined) {
+      if (match === null || match.length < 3) {
         return []
       }
+      const replacementRange = match[1]
+      const query = match[2]
 
       const matchIndex = match.index ?? 0
-      const querySequenceStart = substringStartIndex + substring.indexOf(match[1], matchIndex)
+      const querySequenceStart =
+        substringStartIndex + substring.indexOf(replacementRange, matchIndex)
       return [
         {
           childIndex,
           queryInfo: {
             childIndex,
-            query: match[2],
+            query,
             querySequenceStart,
-            querySequenceEnd: querySequenceStart + match[1].length,
+            querySequenceEnd: querySequenceStart + replacementRange.length,
           },
           mentionChild,
           ignoreAccents: regex.flags.includes('u'),
@@ -1646,9 +1758,12 @@ class MentionsInput<
     nextSuggestions: SuggestionsMap<Extra>
   ): SuggestionQueryStateMap<Extra> {
     return activeQueries.reduce<SuggestionQueryStateMap<Extra>>((queryStates, activeQuery) => {
+      const previousResults = Object.hasOwn(nextSuggestions, activeQuery.childIndex)
+        ? nextSuggestions[activeQuery.childIndex].results
+        : []
       queryStates[activeQuery.childIndex] = {
         ...createLoadingQueryState<Extra>(activeQuery.queryInfo),
-        results: nextSuggestions[activeQuery.childIndex]?.results ?? [],
+        results: previousResults,
       }
       return queryStates
     }, {})
@@ -1659,8 +1774,12 @@ class MentionsInput<
     currentSuggestions: SuggestionsMap<Extra>
   ): SuggestionsMap<Extra> {
     return activeQueries.reduce<SuggestionsMap<Extra>>((nextSuggestions, activeQuery) => {
+      if (!Object.hasOwn(currentSuggestions, activeQuery.childIndex)) {
+        return nextSuggestions
+      }
       const previousSuggestion = currentSuggestions[activeQuery.childIndex]
-      if (!previousSuggestion || previousSuggestion.results.length === 0) {
+
+      if (previousSuggestion.results.length === 0) {
         return nextSuggestions
       }
 
@@ -1826,18 +1945,18 @@ class MentionsInput<
   ): void => {
     const { id, display } = this.getSuggestionData(suggestion)
     // Insert mention in the marked up value at the correct position
-    const value = this.props.value || ''
-    const mentionChildren = this.getMentionChildren()
+    const value = this.props.value ?? ''
     const config = this.getCurrentConfig()
-    const mentionsChild = getMentionChildFromArray<Extra>(mentionChildren, childIndex)
-    if (!mentionsChild) {
+    const previousSnapshot = this.getCurrentSnapshot(value, config)
+    if (childIndex < 0 || childIndex >= config.length) {
       return
     }
+    const childConfig = config[childIndex]
     const {
       serializer,
       appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
       onAdd = DEFAULT_MENTION_PROPS.onAdd,
-    } = config[childIndex]
+    } = childConfig
 
     const start = mapPlainTextIndex(value, config, querySequenceStart, 'START') as number
     const end = start + querySequenceEnd - querySequenceStart
@@ -1853,7 +1972,7 @@ class MentionsInput<
     // Refocus input and set caret position to end of mention
     this.inputElement?.focus()
 
-    let displayValue = config[childIndex].displayTransform(id, mentionDisplay)
+    let displayValue = childConfig.displayTransform(id, mentionDisplay)
     if (appendSpaceOnAdd) {
       displayValue += ' '
     }
@@ -1870,14 +1989,19 @@ class MentionsInput<
       plainText: newPlainTextValue,
       idValue: newIdValue,
     } = getMentionsAndPlainText<Extra>(newValue, config)
+    const nextSnapshot = this.cacheSnapshot(newValue, config, {
+      mentions,
+      plainText: newPlainTextValue,
+      idValue: newIdValue,
+    })
 
     this.executeOnChange(
       { type: 'mention-add' },
       newValue,
-      newPlainTextValue,
-      newIdValue,
-      mentions,
+      nextSnapshot,
       value,
+      previousSnapshot,
+      config,
       id
     )
 

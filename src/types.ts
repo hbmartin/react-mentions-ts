@@ -277,9 +277,6 @@ export interface MentionsInputState<
   focusIndex: number
   selectionStart: number | null
   selectionEnd: number | null
-  cachedMentions: MentionOccurrence<Extra>[]
-  cachedPlainText: string
-  cachedIdValue: string
   suggestions: SuggestionsMap<Extra>
   queryStates: SuggestionQueryStateMap<Extra>
   caretPosition: CaretCoordinates | null

@@ -197,15 +197,23 @@ describe('MentionsInput', () => {
       )
     })
 
-    it('should throw when multiple Mention children share the same trigger.', () => {
-      expect(() =>
-        render(
-          <MentionsInput value="">
-            <Mention trigger="@" data={data} />
-            <Mention trigger="@" data={data} />
-          </MentionsInput>
-        )
-      ).toThrow('MentionsInput does not support Mention children with duplicate triggers: @.')
+    it('should allow multiple Mention children to share the same trigger.', async () => {
+      render(
+        <MentionsInput value="@a">
+          <Mention trigger="@" data={[{ id: 'alice', display: 'Alice' }]} />
+          <Mention trigger="@" data={[{ id: 'acme', display: 'Acme Team' }]} />
+        </MentionsInput>
+      )
+
+      const combobox = screen.getByRole('combobox')
+      fireEvent.focus(combobox)
+      combobox.setSelectionRange(2, 2)
+      fireEvent.select(combobox)
+
+      await waitFor(() => {
+        const options = screen.getAllByRole('option', { hidden: true })
+        expect(options).toHaveLength(2)
+      })
     })
 
     it('should support custom Mention components that wrap the base Mention.', () => {
@@ -1713,10 +1721,11 @@ describe('MentionsInput', () => {
 
     it('should remove a leading mention from the value when the text is cut.', () => {
       const onMentionsChange = vi.fn()
+      const onRemove = vi.fn()
 
       render(
         <MentionsInput value={value} onMentionsChange={onMentionsChange}>
-          <Mention trigger="@[__display__](__id__)" data={data} />
+          <Mention trigger="@[__display__](__id__)" data={data} onRemove={onRemove} />
         </MentionsInput>
       )
 
@@ -1744,19 +1753,24 @@ describe('MentionsInput', () => {
         plainTextValue: newPlainTextValue,
         trigger,
         previousValue,
+        mentionId,
       } = getLastMentionsChange(onMentionsChange)
-      expect(trigger.type).toBe('cut')
+      expect(trigger.type).toBe('mention-remove')
       expect(previousValue).toBe(value)
+      expect(mentionId).toBe('first')
+      expect(onRemove).toHaveBeenCalledTimes(1)
+      expect(onRemove).toHaveBeenCalledWith('first')
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
     })
 
     it('should remove a trailing mention from the value when the text is cut.', () => {
       const onMentionsChange = vi.fn()
+      const onRemove = vi.fn()
 
       render(
         <MentionsInput value={value} onMentionsChange={onMentionsChange}>
-          <Mention trigger="@[__display__](__id__)" data={data} />
+          <Mention trigger="@[__display__](__id__)" data={data} onRemove={onRemove} />
         </MentionsInput>
       )
 
@@ -1784,9 +1798,13 @@ describe('MentionsInput', () => {
         plainTextValue: newPlainTextValue,
         trigger,
         previousValue,
+        mentionId,
       } = getLastMentionsChange(onMentionsChange)
-      expect(trigger.type).toBe('cut')
+      expect(trigger.type).toBe('mention-remove')
       expect(previousValue).toBe(value)
+      expect(mentionId).toBe('second')
+      expect(onRemove).toHaveBeenCalledTimes(1)
+      expect(onRemove).toHaveBeenCalledWith('second')
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
     })
@@ -1900,6 +1918,38 @@ describe('MentionsInput', () => {
       expect(previousValue).toBe(value)
       expect(newValue).toMatchSnapshot()
       expect(newPlainTextValue).toMatchSnapshot()
+    })
+
+    it('emits mention-remove when paste replaces an existing mention.', () => {
+      const onMentionsChange = vi.fn()
+      const onRemove = vi.fn()
+
+      render(
+        <MentionsInput value={value} onMentionsChange={onMentionsChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} onRemove={onRemove} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      const selectionStart = plainTextValue.indexOf('First')
+      const selectionEnd = selectionStart + 'First'.length
+
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+      fireEvent.select(textarea, {
+        target: { selectionStart, selectionEnd },
+      })
+
+      const event = new Event('paste', { bubbles: true })
+      event.clipboardData = {
+        getData: vi.fn((type) => (type === 'text/plain' ? 'Replacement' : '')),
+      }
+
+      fireEvent(textarea, event)
+
+      const payload = getLastMentionsChange(onMentionsChange)
+      expect(payload.trigger.type).toBe('mention-remove')
+      expect(payload.mentionId).toBe('first')
+      expect(onRemove).toHaveBeenCalledWith('first')
     })
 
     it('should remove carriage returns from pasted values', () => {
@@ -2833,6 +2883,9 @@ describe('MentionsInput', () => {
 
       const instance = ref.current as unknown as any
       instance.suggestionsElement = document.createElement('div')
+      act(() => {
+        instance.setState({ selectionStart: 0, selectionEnd: 0 })
+      })
       const updateSpy = vi
         .spyOn(instance, 'updateSuggestionsPosition')
         .mockImplementation(() => undefined)
@@ -2887,6 +2940,9 @@ describe('MentionsInput', () => {
 
       const instance = ref.current as unknown as any
       instance.suggestionsElement = document.createElement('div')
+      act(() => {
+        instance.setState({ selectionStart: 0, selectionEnd: 0 })
+      })
       const updateSpy = vi
         .spyOn(instance, 'updateSuggestionsPosition')
         .mockImplementation(() => undefined)
@@ -3162,6 +3218,10 @@ describe('MentionsInput', () => {
 
       const instance = ref.current as unknown as any
       const raf = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 9)
+      act(() => {
+        instance.setState({ selectionStart: 0, selectionEnd: 0 })
+      })
+      raf.mockClear()
 
       act(() => {
         instance.requestHighlighterScrollSync()
@@ -3173,7 +3233,7 @@ describe('MentionsInput', () => {
       expect(instance._pendingViewSync).toMatchObject({
         syncScroll: true,
         measureSuggestions: true,
-        measureInline: true,
+        measureInline: false,
       })
 
       raf.mockRestore()

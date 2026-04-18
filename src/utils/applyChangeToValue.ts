@@ -122,7 +122,6 @@ const applyChangeToValue = <Extra extends Record<string, unknown> = Record<strin
         value.length
       )
       newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
-      getPlainText<Extra>(newValue, config)
     }
   }
 

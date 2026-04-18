@@ -56,6 +56,9 @@ interface TextareaResizePatch {
   overflowY: string
 }
 
+const parseCssNumericValue = (value: string | null | undefined): number =>
+  value === null || value === undefined || value.length === 0 ? 0 : Number.parseFloat(value) || 0
+
 const TYPOGRAPHIC_STYLE_PROPS = [
   'font-family',
   'font-size',
@@ -135,8 +138,16 @@ export const getInputInlineStyle = (singleLine?: boolean): CSSProperties => {
  */
 export const getComputedStyleLengthProp = (forElement: Element, propertyName: string): number => {
   const view = forElement.ownerDocument.defaultView ?? globalThis
+  const getComputedStyle = view.getComputedStyle as
+    | ((element: Element, pseudoElement?: string | null) => CSSStyleDeclaration)
+    | undefined
+
+  if (typeof getComputedStyle !== 'function') {
+    return 0
+  }
+
   const length = Number.parseFloat(
-    view.getComputedStyle(forElement, null).getPropertyValue(propertyName)
+    getComputedStyle(forElement, null).getPropertyValue(propertyName)
   )
   return Number.isFinite(length) ? length : 0
 }
@@ -349,16 +360,15 @@ export const getTextareaResizePatch = (
   const previousOverflowY = element.style.overflowY
   element.style.height = 'auto'
   element.style.overflowY = 'hidden'
-  let borderAdjustment = 0
-
-  if (globalThis.getComputedStyle !== undefined) {
-    const computed = globalThis.getComputedStyle(element)
-    const parse = (value: string | null | undefined) =>
-      value === null || value === undefined || value.length === 0
-        ? 0
-        : Number.parseFloat(value) || 0
-    borderAdjustment = parse(computed.borderTopWidth) + parse(computed.borderBottomWidth)
-  }
+  const getComputedStyle = globalThis.getComputedStyle as
+    | ((inputElement: Element) => CSSStyleDeclaration)
+    | undefined
+  const computed = typeof getComputedStyle === 'function' ? getComputedStyle(element) : null
+  const borderAdjustment =
+    computed === null
+      ? 0
+      : parseCssNumericValue(computed.borderTopWidth) +
+        parseCssNumericValue(computed.borderBottomWidth)
 
   const nextHeight = element.scrollHeight + borderAdjustment
   element.style.height = previousHeight
@@ -374,10 +384,12 @@ export const applyTextareaResizePatch = (
   input: InputElement | null,
   patch: TextareaResizePatch | null
 ): boolean => {
-  const textAreaElementConstructor = globalThis.HTMLTextAreaElement
+  const textAreaElementConstructor = globalThis.HTMLTextAreaElement as
+    | typeof HTMLTextAreaElement
+    | undefined
 
   if (
-    !patch ||
+    patch === null ||
     textAreaElementConstructor === undefined ||
     !(input instanceof textAreaElementConstructor)
   ) {

@@ -34,6 +34,38 @@ export const DEFAULT_EMPTY_SUGGESTIONS_MESSAGE = 'No suggestions found'
 export const DEFAULT_ERROR_SUGGESTIONS_MESSAGE = 'Unable to load suggestions'
 export const INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT = 'No inline suggestions available'
 
+interface SearchableSuggestionItem<Extra extends Record<string, unknown>> {
+  item: MentionDataItem<Extra>
+  searchableDisplay: string
+}
+
+type CachedMentionDataItems = ReadonlyArray<MentionDataItem>
+type CachedSearchableSuggestionItems = Array<SearchableSuggestionItem<Record<string, unknown>>>
+
+const plainSearchCache = new WeakMap<CachedMentionDataItems, CachedSearchableSuggestionItems>()
+const accentSearchCache = new WeakMap<CachedMentionDataItems, CachedSearchableSuggestionItems>()
+
+const getCachedSearchableItems = <Extra extends Record<string, unknown>>(
+  items: ReadonlyArray<MentionDataItem<Extra>>,
+  ignoreAccents: boolean
+): Array<SearchableSuggestionItem<Extra>> => {
+  const cache = ignoreAccents ? accentSearchCache : plainSearchCache
+  const cacheKey = items as CachedMentionDataItems
+  const cached = cache.get(cacheKey) as Array<SearchableSuggestionItem<Extra>> | undefined
+
+  if (cached) {
+    return cached
+  }
+
+  const searchableItems = items.map((item) => ({
+    item,
+    searchableDisplay: item.display ?? String(item.id),
+  }))
+  cache.set(cacheKey, searchableItems as CachedSearchableSuggestionItems)
+
+  return searchableItems
+}
+
 export const getMentionChildFromArray = <Extra extends Record<string, unknown>>(
   mentionChildren: ReadonlyArray<React.ReactElement<MentionComponentProps<Extra>>>,
   childIndex: number
@@ -321,28 +353,35 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
 
   if (Array.isArray(data)) {
     const items = data as ReadonlyArray<MentionDataItem<Extra>>
+    const searchableItems = getCachedSearchableItems(items, ignoreAccents)
 
-    return (query: string) =>
-      Promise.resolve().then(() =>
-        applyMaxSuggestions(
-          items.flatMap((item) => {
-            if (signal.aborted) {
-              return []
-            }
+    return (query: string) => {
+      return Promise.resolve().then(() => {
+        const results: MentionDataItem<Extra>[] = []
 
-            const index = getSubstringIndex(item.display ?? String(item.id), query, ignoreAccents)
+        for (const { item, searchableDisplay } of searchableItems) {
+          if (signal.aborted) {
+            return []
+          }
 
-            return index >= 0
-              ? [
-                  {
-                    ...item,
-                    highlights: [{ start: index, end: index + query.length }],
-                  },
-                ]
-              : []
+          const index = getSubstringIndex(searchableDisplay, query, ignoreAccents)
+          if (index < 0) {
+            continue
+          }
+
+          results.push({
+            ...item,
+            highlights: [{ start: index, end: index + query.length }],
           })
-        )
-      )
+
+          if (maxSuggestions !== undefined && results.length >= maxSuggestions) {
+            break
+          }
+        }
+
+        return applyMaxSuggestions(results)
+      })
+    }
   }
 
   return async (query: string) => {
