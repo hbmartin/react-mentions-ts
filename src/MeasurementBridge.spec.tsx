@@ -120,4 +120,81 @@ describe('MeasurementBridge', () => {
         originalResizeObserver
     }
   })
+
+  it('skips optional element observers when ResizeObserver is unavailable', () => {
+    const requestViewSync = vi.fn()
+    const originalResizeObserver = (globalThis as typeof globalThis & { ResizeObserver?: unknown })
+      .ResizeObserver
+
+    ;(globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver = undefined
+
+    try {
+      render(
+        <MeasurementBridge
+          container={document.createElement('div')}
+          highlighter={document.createElement('div')}
+          input={null}
+          suggestions={document.createElement('div')}
+          requestViewSync={requestViewSync}
+        />
+      )
+
+      expect(requestViewSync).toHaveBeenCalledTimes(1)
+      expect(requestViewSync).toHaveBeenCalledWith({
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      })
+    } finally {
+      ;(globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver =
+        originalResizeObserver
+    }
+  })
+
+  it('skips viewport listener registration when window lookup is unavailable', () => {
+    const requestViewSync = vi.fn()
+    const container = document.createElement('div')
+    const highlighter = document.createElement('div')
+    const suggestions = document.createElement('div')
+    const addListener = vi.spyOn(globalThis, 'addEventListener')
+    const originalReflectGet = Reflect.get
+    const reflectGetSpy = vi
+      .spyOn(Reflect, 'get')
+      .mockImplementation((target: object, propertyKey: PropertyKey, receiver?: unknown) => {
+        if (target === globalThis && propertyKey === 'window') {
+          return undefined
+        }
+
+        if (target == null) {
+          return undefined
+        }
+
+        return receiver === undefined
+          ? originalReflectGet(target, propertyKey)
+          : originalReflectGet(target, propertyKey, receiver)
+      })
+
+    try {
+      render(
+        <MeasurementBridge
+          container={container}
+          highlighter={highlighter}
+          input={null}
+          suggestions={suggestions}
+          requestViewSync={requestViewSync}
+        />
+      )
+
+      expect(requestViewSync).toHaveBeenCalledWith({
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      })
+      expect(addListener).not.toHaveBeenCalledWith('resize', expect.any(Function))
+      expect(addListener).not.toHaveBeenCalledWith('orientationchange', expect.any(Function))
+    } finally {
+      addListener.mockRestore()
+      reflectGetSpy.mockRestore()
+    }
+  })
 })

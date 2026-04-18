@@ -295,22 +295,26 @@ describe('Highlighter', () => {
   it('measures immediately when requestAnimationFrame is unavailable', async () => {
     const onCaretPositionChange = vi.fn()
     const originalRAF = globalThis.requestAnimationFrame
-    const offsetLeftDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetLeft')
+    const offsetLeftDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'offsetLeft'
+    )
     const offsetTopDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop')
 
     Object.defineProperty(HTMLElement.prototype, 'offsetLeft', {
       configurable: true,
       get() {
-        return this instanceof HTMLSpanElement && this.hasAttribute('data-mentions-caret') ? 5 : 0
+        return this instanceof HTMLSpanElement && this.dataset.mentionsCaret !== undefined ? 5 : 0
       },
     })
     Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
       configurable: true,
       get() {
-        return this instanceof HTMLSpanElement && this.hasAttribute('data-mentions-caret') ? 9 : 0
+        return this instanceof HTMLSpanElement && this.dataset.mentionsCaret !== undefined ? 9 : 0
       },
     })
-    delete (globalThis as typeof globalThis & { requestAnimationFrame?: unknown }).requestAnimationFrame
+    delete (globalThis as typeof globalThis & { requestAnimationFrame?: unknown })
+      .requestAnimationFrame
 
     try {
       render(
@@ -358,7 +362,7 @@ describe('Highlighter', () => {
       </Highlighter>
     )
 
-    const renderedMentions = Array.from(container.querySelectorAll('span')).filter(
+    const renderedMentions = [...container.querySelectorAll('span')].filter(
       (element) => element.textContent === 'John'
     )
     expect(renderedMentions).toHaveLength(2)

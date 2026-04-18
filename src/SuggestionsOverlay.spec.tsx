@@ -275,7 +275,7 @@ describe('SuggestionsOverlay', () => {
       <SuggestionsOverlay
         id="test-suggestions"
         suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
-        focusIndex={4}
+        focusIndex={0}
         isOpened
         scrollFocusedIntoView
       >
@@ -689,6 +689,18 @@ describe('SuggestionsOverlay', () => {
     expect(container.querySelector('[data-slot="suggestions-status"]')).toBeNull()
   })
 
+  it('defaults missing suggestions to an empty map', () => {
+    const { container } = render(
+      <SuggestionsOverlay focusIndex={0} isOpened statusContent="Nothing here">
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(container.querySelector('[data-slot="suggestions-status"]')).toHaveTextContent(
+      'Nothing here'
+    )
+  })
+
   it('defaults the empty status type when the caller omits it', () => {
     const { container } = render(
       <SuggestionsOverlay
@@ -704,7 +716,7 @@ describe('SuggestionsOverlay', () => {
 
     const status = container.querySelector('[data-slot="suggestions-status"]')
     expect(status).not.toBeNull()
-    expect(status).toHaveAttribute('data-status-type')
+    expect(status).not.toHaveAttribute('data-status-type')
     expect(status).toHaveClass('text-muted-foreground')
   })
 

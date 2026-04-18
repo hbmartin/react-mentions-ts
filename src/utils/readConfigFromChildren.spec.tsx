@@ -1,7 +1,7 @@
 import React from 'react'
 import Mention from '../Mention'
 import getPlainText from './getPlainText'
-import readConfigFromChildren from './readConfigFromChildren'
+import readConfigFromChildren, { collectMentionElements } from './readConfigFromChildren'
 
 describe('readConfigFromChildren', () => {
   describe('trigger-specific markup generation', () => {
@@ -59,6 +59,13 @@ describe('readConfigFromChildren', () => {
       const children = [<Mention key="1" trigger={/@/} data={[]} />]
 
       const config = readConfigFromChildren(children)
+
+      expect(config).toHaveLength(1)
+      expect(config[0].serializer.id).toBe('@[__display__](__id__)')
+    })
+
+    it('should use the default markup when the trigger is omitted', () => {
+      const config = readConfigFromChildren([<Mention key="1" data={[]} />])
 
       expect(config).toHaveLength(1)
       expect(config[0].serializer.id).toBe('@[__display__](__id__)')
@@ -143,5 +150,18 @@ describe('readConfigFromChildren', () => {
 
       expect(config[0].serializer.id).toBe(customMarkup)
     })
+  })
+
+  it('collects only Mention elements and ignores unrelated children', () => {
+    const mentions = collectMentionElements(
+      <>
+        <span>ignore me</span>
+        Plain text
+        <Mention key="1" trigger="@" data={[]} />
+      </>
+    )
+
+    expect(mentions).toHaveLength(1)
+    expect(mentions[0].props.trigger).toBe('@')
   })
 })

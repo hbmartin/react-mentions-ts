@@ -66,6 +66,26 @@ describe('Suggestion', () => {
     expect(container3.textContent).toContain('fallback-id')
   })
 
+  it('falls back to the suggestion id for empty display strings and applies focused classes', () => {
+    const { container } = render(
+      <Suggestion
+        id="suggestion-focused"
+        index={0}
+        query="focus"
+        suggestion={{ id: 'fallback-id', display: '' }}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
+        focused
+        focusedClassName="ring-2"
+      />
+    )
+
+    const suggestionItem = container.querySelector('li')
+    expect(suggestionItem).toHaveClass('ring-2')
+    expect(suggestionItem).toHaveAttribute('aria-selected', 'true')
+    expect(container.textContent).toContain('fallback-id')
+  })
+
   it('should highlight the part of the display that is matched by the current query.', () => {
     const { container } = render(
       <Suggestion

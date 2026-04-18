@@ -5,6 +5,7 @@ import {
   prepareMentionsInputChildren,
   validateMentionChildTree,
 } from './MentionsInputChildren'
+import createMarkupSerializer from './utils/createMarkupSerializer'
 
 describe('MentionsInputChildren', () => {
   it('prepares mention children and config from fragments once the tree is validated', () => {
@@ -198,5 +199,29 @@ describe('MentionsInputChildren', () => {
     ).config
 
     expect(areMentionConfigsEqual(globalConfig, nonGlobalConfig)).toBe(true)
+  })
+
+  it('treats raw undefined triggers as the default trigger identity', () => {
+    const serializer = createMarkupSerializer('@[__display__](__id__)')
+    const displayTransform = (id: string | number, display: string | null) => display ?? String(id)
+
+    expect(
+      areMentionConfigsEqual(
+        [
+          {
+            trigger: undefined,
+            serializer,
+            displayTransform,
+          } as never,
+        ],
+        [
+          {
+            trigger: '@',
+            serializer,
+            displayTransform,
+          } as never,
+        ]
+      )
+    ).toBe(true)
   })
 })

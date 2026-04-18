@@ -127,7 +127,7 @@ const addRawPerfNote = (
 
 const createPerfCommand = (output: string): string => {
   const code = `process.stdout.write(${JSON.stringify(output)})`
-  return `${process.execPath} -e ${JSON.stringify(code)}`
+  return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(code)}`
 }
 
 const createPerfCommandScript = (repositoryRoot: string, output = SAMPLE_PERF_OUTPUT): string => {
@@ -141,7 +141,7 @@ const createPerfCommandScript = (repositoryRoot: string, output = SAMPLE_PERF_OU
 
 const createFailingPerfCommand = (stderr = 'perf failed'): string => {
   const code = `process.stderr.write(${JSON.stringify(stderr)}); process.exit(2)`
-  return `${process.execPath} -e ${JSON.stringify(code)}`
+  return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(code)}`
 }
 
 const createMemoryWriteStream = () => {
@@ -485,6 +485,15 @@ describe('perfNotes', () => {
       payload: JSON.stringify({
         ...parsePerfOutput(SAMPLE_PERF_OUTPUT),
         metrics: [],
+      }),
+    },
+    {
+      message: 'metrics.invalid must be an object',
+      payload: JSON.stringify({
+        ...parsePerfOutput(SAMPLE_PERF_OUTPUT),
+        metrics: {
+          invalid: [],
+        },
       }),
     },
     {

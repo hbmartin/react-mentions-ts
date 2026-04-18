@@ -294,8 +294,6 @@ Pass the result as the `markup` prop on `Mention`:
 For cases where `createMarkupSerializer` is not flexible enough, you can implement the `MentionSerializer` interface directly:
 
 ```ts
-import type { MentionSerializer } from 'react-mentions-ts'
-
 interface MentionSerializer {
   id: string
   insert: (input: { id: string | number; display: string }) => string

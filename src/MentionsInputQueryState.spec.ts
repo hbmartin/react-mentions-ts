@@ -3,6 +3,7 @@ import {
   applySuccessfulQueryResult,
   createClearedSuggestionsState,
   createLoadingQueryState,
+  isAbortError,
 } from './MentionsInputQueryState'
 
 const queryInfo = {
@@ -98,5 +99,11 @@ describe('MentionsInputQueryState', () => {
     expect(nextState.suggestions[1]).toBeUndefined()
     expect(nextState.focusIndex).toBe(1)
     expect(nextState.queryStates[1]?.status).toBe('error')
+  })
+
+  it('recognizes abort errors from DOMException instances and plain objects', () => {
+    expect(isAbortError(new DOMException('cancelled', 'AbortError'))).toBe(true)
+    expect(isAbortError({ name: 'AbortError' })).toBe(true)
+    expect(isAbortError(new Error('boom'))).toBe(false)
   })
 })

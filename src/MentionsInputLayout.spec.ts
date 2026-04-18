@@ -229,6 +229,80 @@ describe('MentionsInputLayout', () => {
     }
   })
 
+  it('supports explicit above placement in a portal and prefers window dimensions when larger', () => {
+    const highlighter = document.createElement('div')
+    const suggestions = document.createElement('div')
+    const container = document.createElement('div')
+    const originalInnerHeight = globalThis.innerHeight
+    const originalInnerWidth = globalThis.innerWidth
+    const originalClientHeight = document.documentElement.clientHeight
+    const originalClientWidth = document.documentElement.clientWidth
+
+    highlighter.style.fontSize = '16px'
+    suggestions.style.marginLeft = '0px'
+    suggestions.style.marginTop = '0px'
+
+    Object.defineProperty(globalThis, 'innerHeight', { value: 220, configurable: true })
+    Object.defineProperty(globalThis, 'innerWidth', { value: 260, configurable: true })
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      value: 120,
+      configurable: true,
+    })
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 140,
+      configurable: true,
+    })
+    Object.defineProperty(highlighter, 'getBoundingClientRect', {
+      value: () => ({
+        left: 30,
+        top: 80,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(suggestions, 'offsetHeight', { value: 40, configurable: true })
+    Object.defineProperty(container, 'offsetWidth', { value: 220, configurable: true })
+
+    try {
+      const position = calculateSuggestionsPosition({
+        caretPosition: { left: 24, top: 30 },
+        suggestionsPlacement: 'above',
+        anchorMode: 'left',
+        resolvedPortalHost: document.body,
+        suggestions,
+        highlighter,
+        container,
+      })
+
+      expect(position).toEqual({
+        left: 30,
+        position: 'fixed',
+        top: 54,
+        width: 200,
+      })
+    } finally {
+      Object.defineProperty(globalThis, 'innerHeight', {
+        value: originalInnerHeight,
+        configurable: true,
+      })
+      Object.defineProperty(globalThis, 'innerWidth', {
+        value: originalInnerWidth,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientHeight', {
+        value: originalClientHeight,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        value: originalClientWidth,
+        configurable: true,
+      })
+    }
+  })
+
   it('calculates inline suggestion offsets from the caret marker', () => {
     const control = document.createElement('div')
     const highlighter = document.createElement('div')
@@ -379,6 +453,35 @@ describe('MentionsInputLayout', () => {
     expect(getComputedStyleLengthProp(detachedElement, 'font-size')).toBe(0)
   })
 
+  it('falls back to the global computed-style API when a detached document has no view', () => {
+    const detachedDocument = document.implementation.createHTMLDocument('detached')
+    const detachedElement = detachedDocument.createElement('div')
+    const originalGetComputedStyle = globalThis.getComputedStyle
+
+    Object.defineProperty(detachedDocument, 'defaultView', {
+      configurable: true,
+      value: null,
+    })
+    Object.defineProperty(globalThis, 'getComputedStyle', {
+      configurable: true,
+      writable: true,
+      value: () =>
+        ({
+          getPropertyValue: () => '18px',
+        }) as CSSStyleDeclaration,
+    })
+
+    try {
+      expect(getComputedStyleLengthProp(detachedElement, 'font-size')).toBe(18)
+    } finally {
+      Object.defineProperty(globalThis, 'getComputedStyle', {
+        configurable: true,
+        writable: true,
+        value: originalGetComputedStyle,
+      })
+    }
+  })
+
   it('returns zero for non-finite computed style lengths', () => {
     const element = document.createElement('div')
     const originalGetComputedStyle = globalThis.getComputedStyle
@@ -453,6 +556,105 @@ describe('MentionsInputLayout', () => {
       height: '',
       overflowY: '',
     })
+  })
+
+  it('returns the empty textarea resize patch for single-line inputs and ignores blank border widths', () => {
+    const textarea = document.createElement('textarea')
+    const originalGetComputedStyle = globalThis.getComputedStyle
+
+    Object.defineProperty(textarea, 'scrollHeight', { value: 30, configurable: true })
+    Object.defineProperty(globalThis, 'getComputedStyle', {
+      configurable: true,
+      writable: true,
+      value: () =>
+        ({
+          borderTopWidth: '',
+          borderBottomWidth: undefined,
+        }) as unknown as CSSStyleDeclaration,
+    })
+
+    try {
+      expect(
+        getTextareaResizePatch(textarea, {
+          autoResize: true,
+          singleLine: true,
+        })
+      ).toEqual({
+        height: '',
+        overflowY: '',
+      })
+
+      expect(
+        getTextareaResizePatch(textarea, {
+          autoResize: true,
+          singleLine: false,
+        })
+      ).toEqual({
+        height: '30px',
+        overflowY: 'hidden',
+      })
+    } finally {
+      Object.defineProperty(globalThis, 'getComputedStyle', {
+        configurable: true,
+        writable: true,
+        value: originalGetComputedStyle,
+      })
+    }
+  })
+
+  it('adds numeric border widths and treats invalid border widths as zero during auto-resize', () => {
+    const textarea = document.createElement('textarea')
+    const originalGetComputedStyle = globalThis.getComputedStyle
+
+    Object.defineProperty(textarea, 'scrollHeight', { value: 30, configurable: true })
+
+    try {
+      Object.defineProperty(globalThis, 'getComputedStyle', {
+        configurable: true,
+        writable: true,
+        value: () =>
+          ({
+            borderTopWidth: '1px',
+            borderBottomWidth: '2px',
+          }) as unknown as CSSStyleDeclaration,
+      })
+
+      expect(
+        getTextareaResizePatch(textarea, {
+          autoResize: true,
+          singleLine: false,
+        })
+      ).toEqual({
+        height: '33px',
+        overflowY: 'hidden',
+      })
+
+      Object.defineProperty(globalThis, 'getComputedStyle', {
+        configurable: true,
+        writable: true,
+        value: () =>
+          ({
+            borderTopWidth: null,
+            borderBottomWidth: 'not-a-number',
+          }) as unknown as CSSStyleDeclaration,
+      })
+
+      expect(
+        getTextareaResizePatch(textarea, {
+          autoResize: true,
+          singleLine: false,
+        })
+      ).toEqual({
+        height: '30px',
+        overflowY: 'hidden',
+      })
+    } finally {
+      Object.defineProperty(globalThis, 'getComputedStyle', {
+        configurable: true,
+        writable: true,
+        value: originalGetComputedStyle,
+      })
+    }
   })
 
   it('returns a null inline position when the caret marker or control is missing', () => {
