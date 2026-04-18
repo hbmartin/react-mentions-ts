@@ -1,10 +1,11 @@
 import React from 'react'
 import { act, render, waitFor } from '@testing-library/react'
+import type { Mock } from 'vitest'
 import MeasurementBridge from './MeasurementBridge'
 
 describe('MeasurementBridge', () => {
   it('requests view sync from mount, observers, scroll, and viewport listeners, then cleans up', async () => {
-    const requestViewSync = jest.fn()
+    const requestViewSync = vi.fn()
     const container = document.createElement('div')
     const highlighter = document.createElement('div')
     const input = document.createElement('textarea')
@@ -14,19 +15,19 @@ describe('MeasurementBridge', () => {
       .ResizeObserver
     const observers: Array<{
       callback: () => void
-      observe: jest.Mock
-      disconnect: jest.Mock
+      observe: Mock
+      disconnect: Mock
     }> = []
 
     class MockResizeObserver {
       readonly callback: () => void
-      readonly observe: jest.Mock
-      readonly disconnect: jest.Mock
+      readonly observe: Mock
+      readonly disconnect: Mock
 
       constructor(callback: () => void) {
         this.callback = callback
-        this.observe = jest.fn()
-        this.disconnect = jest.fn()
+        this.observe = vi.fn()
+        this.disconnect = vi.fn()
         observers.push(this)
       }
     }
@@ -38,7 +39,7 @@ describe('MeasurementBridge', () => {
     const originalRemove = globalThis.removeEventListener
     const handlers: Partial<Record<string, EventListener>> = {}
 
-    const addListener = jest
+    const addListener = vi
       .spyOn(globalThis, 'addEventListener')
       .mockImplementation(
         (
@@ -51,7 +52,7 @@ describe('MeasurementBridge', () => {
         }
       )
 
-    const removeListener = jest
+    const removeListener = vi
       .spyOn(globalThis, 'removeEventListener')
       .mockImplementation(
         (

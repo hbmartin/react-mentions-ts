@@ -3,7 +3,6 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import { createTypeScriptImportResolver } from "eslint-import-resolver-typescript";
 import codeComplete from "eslint-plugin-code-complete";
 import { createNodeResolver, importX } from "eslint-plugin-import-x";
-import jestPlugin from "eslint-plugin-jest";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import packageJson from "eslint-plugin-package-json";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
@@ -18,6 +17,7 @@ import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import unusedImports from "eslint-plugin-unused-imports";
 import globals from "globals";
 import { configs as tsConfigs } from "typescript-eslint";
+import vitest from "@vitest/eslint-plugin";
 
 export default defineConfig([
 	globalIgnores([
@@ -46,7 +46,6 @@ export default defineConfig([
 			importX.flatConfigs.typescript,
 			sonarjs.configs.recommended,
 			pluginPromise.configs["flat/recommended"],
-			jestPlugin.configs["flat/recommended"],
 			jsxA11y.flatConfigs.recommended,
 			eslintPluginSecurity.configs.recommended,
 			packageJson.configs.recommended,
@@ -56,7 +55,6 @@ export default defineConfig([
 			"code-complete": codeComplete,
 			"react-hooks": reactHooks,
 			"unused-imports": unusedImports,
-			jest: jestPlugin,
 			react: reactPlugin,
 			"react-perf": reactPerfPlugin,
 		},
@@ -228,13 +226,20 @@ export default defineConfig([
 	{
 		// Test files - more relaxed rules
 		files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
+		plugins: {
+			vitest,
+		},
 		languageOptions: {
+			globals: {
+				...vitest.environments.env.globals,
+			},
 			parserOptions: {
 				project: ["./tsconfig.test.json"],
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
 		rules: {
+			...vitest.configs.recommended.rules,
 			"@typescript-eslint/no-explicit-any": "off",
 			"no-console": "off",
 			"unicorn/consistent-function-scoping": "off",

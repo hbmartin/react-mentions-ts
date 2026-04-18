@@ -350,16 +350,6 @@ class MentionsInput<
     return this.getPreparedChildren().config
   }
 
-  private getPreviousConfig(
-    previousChildren: MentionsInputProps<Extra>['children']
-  ): ReadonlyArray<MentionChildConfig<Extra>> {
-    if (previousChildren === this.props.children) {
-      return this._cachedConfig
-    }
-
-    return this.getPreparedChildren(previousChildren).config
-  }
-
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
     const { classNames } = this.props
     const extra = classNames?.[slot]
@@ -502,7 +492,7 @@ class MentionsInput<
     const previousValue = prevProps.value ?? ''
     const currentValue = this.props.value ?? ''
     const currentConfig = this.getCurrentConfig()
-    const previousConfig = this.getPreviousConfig(prevProps.children)
+    const previousConfig = this._cachedConfig
     const configChanged = !areMentionConfigsEqual(previousConfig, currentConfig)
     const valueChanged = currentValue !== previousValue || configChanged
 

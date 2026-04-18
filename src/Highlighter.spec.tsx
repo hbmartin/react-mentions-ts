@@ -16,7 +16,7 @@ const setFrameApi = (
 
 describe('Highlighter', () => {
   it('should notify about the current caret position when mounted.', async () => {
-    const onCaretPositionChange = jest.fn()
+    const onCaretPositionChange = vi.fn()
 
     render(
       <Highlighter
@@ -42,7 +42,7 @@ describe('Highlighter', () => {
   })
 
   it('should notify about the current caret position whenever it changes.', async () => {
-    const onCaretPositionChange = jest.fn()
+    const onCaretPositionChange = vi.fn()
 
     const { rerender } = render(
       <Highlighter
@@ -81,7 +81,7 @@ describe('Highlighter', () => {
   })
 
   it('aligns the caret measurement with the previous substring baseline.', async () => {
-    const onCaretPositionChange = jest.fn()
+    const onCaretPositionChange = vi.fn()
     const rafCallbacks: FrameRequestCallback[] = []
     const originalRAF = globalThis.requestAnimationFrame
     const originalCAF = globalThis.cancelAnimationFrame
@@ -154,7 +154,7 @@ describe('Highlighter', () => {
   })
 
   it('falls back to the caret metrics when no previous substring exists.', async () => {
-    const onCaretPositionChange = jest.fn()
+    const onCaretPositionChange = vi.fn()
     const rafCallbacks: FrameRequestCallback[] = []
     const originalRAF = globalThis.requestAnimationFrame
     const originalCAF = globalThis.cancelAnimationFrame
@@ -230,7 +230,7 @@ describe('Highlighter', () => {
         selectionStart={0}
         selectionEnd={0}
         value="Hello @[John](user1) and @[Jane](user2)!"
-        onCaretPositionChange={jest.fn()}
+        onCaretPositionChange={vi.fn()}
       >
         <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
       </Highlighter>
@@ -249,7 +249,7 @@ describe('Highlighter', () => {
         selectionStart={0}
         selectionEnd={0}
         value="Text @[John](user1) more text"
-        onCaretPositionChange={jest.fn()}
+        onCaretPositionChange={vi.fn()}
       >
         <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
       </Highlighter>
@@ -272,7 +272,7 @@ describe('Highlighter', () => {
         selectionStart={0}
         selectionEnd={0}
         value="Hello @[John](user1)"
-        onCaretPositionChange={jest.fn()}
+        onCaretPositionChange={vi.fn()}
       >
         <Mention
           trigger="@"

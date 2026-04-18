@@ -213,7 +213,7 @@ describe('MentionsInputLayout', () => {
   it('reads highlighter typography from a single computed style snapshot', () => {
     const input = document.createElement('textarea')
     const highlighter = document.createElement('div')
-    const getComputedStyleSpy = jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
+    const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
       getPropertyValue: (property: string) =>
         property === 'line-height' ? '24px' : property === 'letter-spacing' ? '0.08em' : '',
     } as unknown as CSSStyleDeclaration)

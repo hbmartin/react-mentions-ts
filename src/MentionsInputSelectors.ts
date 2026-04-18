@@ -323,7 +323,7 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
     const items = data as ReadonlyArray<MentionDataItem<Extra>>
 
     return (query: string) =>
-      Promise.resolve(
+      Promise.resolve().then(() =>
         applyMaxSuggestions(
           items.flatMap((item) => {
             if (signal.aborted) {

@@ -10,8 +10,8 @@ describe('Suggestion', () => {
         index={0}
         query="test"
         suggestion={{ id: '1', display: 'Test Suggestion' }}
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
         focused={false}
         className="unfocused-class"
       />
@@ -27,8 +27,8 @@ describe('Suggestion', () => {
         index={0}
         query="test"
         suggestion={{ id: '1', display: 'Test Suggestion' }}
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
         focused
         className="focused-class"
       />
@@ -44,8 +44,8 @@ describe('Suggestion', () => {
         index={0}
         query="test"
         suggestion={{ id: '1', display: 'Test Suggestion' }}
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
       />
     )
 
@@ -58,8 +58,8 @@ describe('Suggestion', () => {
         index={2}
         query="bar"
         suggestion={{ id: 'fallback-id' }}
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
       />
     )
 
@@ -73,8 +73,8 @@ describe('Suggestion', () => {
         index={0}
         query="Test"
         suggestion={{ id: '1', display: 'Test Suggestion', highlights: [{ start: 0, end: 4 }] }}
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
       />
     )
 
@@ -89,8 +89,8 @@ describe('Suggestion', () => {
         index={1}
         query="Sugg"
         suggestion={{ id: '2', display: 'Test Suggestion', highlights: [{ start: 5, end: 9 }] }}
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
       />
     )
 
@@ -105,8 +105,8 @@ describe('Suggestion', () => {
         index={2}
         query="xyz"
         suggestion={{ id: '3', display: 'Test Suggestion' }}
-        onClick={jest.fn()}
-        onMouseEnter={jest.fn()}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
       />
     )
 
