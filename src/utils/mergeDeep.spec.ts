@@ -54,4 +54,15 @@ describe('mergeDeep', () => {
     const result = mergeDeep(target, source)
     expect(result.meta).toEqual({ nested: true })
   })
+
+  it('returns a shallow copy when the source is not a plain object', () => {
+    const target = {
+      stable: true,
+    }
+
+    const result = mergeDeep(target, null as unknown as Record<string, unknown>)
+
+    expect(result).toEqual(target)
+    expect(result).not.toBe(target)
+  })
 })

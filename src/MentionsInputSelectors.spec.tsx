@@ -58,9 +58,7 @@ describe('MentionsInputSelectors', () => {
     const children = (
       <>
         {mentionChildren[0]}
-        <>
-          {mentionChildren[1]}
-        </>
+        <>{mentionChildren[1]}</>
       </>
     )
 
@@ -104,9 +102,14 @@ describe('MentionsInputSelectors', () => {
       queryInfo: suggestions[0].queryInfo,
       result: suggestions[0].results[0],
     })
+    expect(getFocusedSuggestionEntryForMentionChildren(mentionChildren, suggestions, 99)).toEqual({
+      queryInfo: suggestions[0].queryInfo,
+      result: suggestions[0].results[0],
+    })
     expect(getFocusedSuggestionEntry(<>{mentionChildren}</>, {}, 0)).toBeNull()
     expect(getFocusedSuggestionEntryForMentionChildren(mentionChildren, {}, 0)).toBeNull()
     expect(getFlattenedSuggestions(<>{mentionChildren}</>, suggestions)).toHaveLength(1)
+    expect(getPreferredQueryState({} as never)).toBeNull()
   })
 
   it('computes inline suggestion remainders and details', () => {
@@ -154,7 +157,13 @@ describe('MentionsInputSelectors', () => {
     expect(
       getInlineSuggestionDetailsForMentionChildren(
         [
-          <Mention key="blank" trigger="@" data={[]} displayTransform={() => ''} appendSpaceOnAdd />,
+          <Mention
+            key="blank"
+            trigger="@"
+            data={[]}
+            displayTransform={() => ''}
+            appendSpaceOnAdd
+          />,
         ],
         {
           0: {
@@ -184,11 +193,7 @@ describe('MentionsInputSelectors', () => {
     expect(
       getInlineSuggestionDetails(
         <>
-          <Mention
-            trigger="@"
-            data={[]}
-            displayTransform={() => 'Al'}
-          />
+          <Mention trigger="@" data={[]} displayTransform={() => 'Al'} />
         </>,
         {
           0: {
@@ -201,12 +206,12 @@ describe('MentionsInputSelectors', () => {
     ).toBeNull()
   })
 
-  it('resolves status content for empty and error states', () => {
+  it('resolves status content for empty states', () => {
     const children = (
       <>
         <Mention trigger="@" data={[]} />
-        <Mention trigger="#" data={[]} renderEmpty={() => undefined} renderError={() => undefined} />
-        <Mention trigger="$" data={[]} renderEmpty={() => false} renderError={() => null} />
+        <Mention trigger="#" data={[]} renderEmpty={() => undefined} />
+        <Mention trigger="$" data={[]} renderEmpty={() => false} />
       </>
     )
     const resolvedChildren = getMentionChildren(children)
@@ -232,120 +237,141 @@ describe('MentionsInputSelectors', () => {
     })
 
     expect(
-      getSuggestionsStatusContentForMentionChildren(
-        resolvedChildren,
-        {},
-        {
-          0: { status: 'success', results: [], queryInfo: suggestions[0].queryInfo },
-        } as never
-      )
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        0: { status: 'success', results: [], queryInfo: suggestions[0].queryInfo },
+      } as never)
     ).toEqual({
       statusContent: DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
       statusType: 'empty',
     })
 
     expect(
-      getSuggestionsStatusContentForMentionChildren(
-        resolvedChildren,
-        {},
-        {
-          1: {
-            status: 'success',
-            results: [],
-            queryInfo: { ...suggestions[0].queryInfo, childIndex: 1 },
-          },
-        } as never
-      )
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        1: {
+          status: 'success',
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 1 },
+        },
+      } as never)
     ).toEqual({
       statusContent: DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
       statusType: 'empty',
     })
 
     expect(
-      getSuggestionsStatusContentForMentionChildren(
-        resolvedChildren,
-        {},
-        {
-          2: {
-            status: 'success',
-            results: [],
-            queryInfo: { ...suggestions[0].queryInfo, childIndex: 2 },
-          },
-        } as never
-      )
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        2: {
+          status: 'success',
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 2 },
+        },
+      } as never)
     ).toEqual({
       statusContent: null,
       statusType: null,
     })
+  })
+
+  it('resolves status content for error states', () => {
+    const children = (
+      <>
+        <Mention trigger="@" data={[]} />
+        <Mention trigger="#" data={[]} renderError={() => undefined} />
+        <Mention trigger="$" data={[]} renderError={() => 'Broken'} />
+        <Mention trigger="%" data={[]} renderError={() => null} />
+      </>
+    )
+    const resolvedChildren = getMentionChildren(children)
 
     expect(
-      getSuggestionsStatusContentForMentionChildren(
-        resolvedChildren,
-        {},
-        {
-          1: {
-            status: 'error',
-            error: new Error('boom'),
-            results: [],
-            queryInfo: { ...suggestions[0].queryInfo, childIndex: 1 },
-          },
-        } as never
-      )
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        1: {
+          status: 'error',
+          error: new Error('boom'),
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 1 },
+        },
+      } as never)
     ).toEqual({
       statusContent: DEFAULT_ERROR_SUGGESTIONS_MESSAGE,
       statusType: 'error',
     })
 
     expect(
-      getSuggestionsStatusContentForMentionChildren(
-        resolvedChildren,
-        {},
-        {
-          1: {
-            status: 'error',
-            error: new Error('boom'),
-            results: [],
-            queryInfo: { ...suggestions[0].queryInfo, childIndex: 1 },
-          },
-        } as never
-      )
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        2: {
+          status: 'error',
+          error: new Error('boom'),
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 2 },
+        },
+      } as never)
     ).toEqual({
       statusContent: 'Broken',
       statusType: 'error',
     })
 
     expect(
-      getSuggestionsStatusContentForMentionChildren(
-        resolvedChildren,
-        {},
-        {
-          2: {
-            status: 'error',
-            error: new Error('boom'),
-            results: [],
-            queryInfo: { ...suggestions[0].queryInfo, childIndex: 2 },
-          },
-        } as never
-      )
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        3: {
+          status: 'error',
+          error: new Error('boom'),
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 3 },
+        },
+      } as never)
     ).toEqual({
       statusContent: null,
       statusType: null,
     })
 
     expect(
-      getSuggestionsStatusContentForMentionChildren(
-        resolvedChildren,
-        {},
-        {
-          1: {
-            status: 'success',
-            results: [],
-            queryInfo: { ...suggestions[0].queryInfo, childIndex: 1 },
-          },
-        } as never
-      )
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        99: {
+          status: 'error',
+          error: new Error('boom'),
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 99 },
+        },
+      } as never)
+    ).toEqual({
+      statusContent: null,
+      statusType: null,
+    })
+  })
+
+  it('uses custom empty render output and falls back for undefined empty content', () => {
+    const children = (
+      <>
+        <Mention trigger="@" data={[]} renderEmpty={() => 'Nothing here'} />
+        <Mention trigger="#" data={[]} renderEmpty={() => undefined} />
+      </>
+    )
+    const resolvedChildren = getMentionChildren(children)
+
+    expect(
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        0: {
+          status: 'success',
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 0 },
+        },
+      } as never)
     ).toEqual({
       statusContent: 'Nothing here',
+      statusType: 'empty',
+    })
+
+    expect(
+      getSuggestionsStatusContentForMentionChildren(resolvedChildren, {}, {
+        1: {
+          status: 'success',
+          results: [],
+          queryInfo: { ...suggestions[0].queryInfo, childIndex: 1 },
+        },
+      } as never)
+    ).toEqual({
+      statusContent: DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
       statusType: 'empty',
     })
   })

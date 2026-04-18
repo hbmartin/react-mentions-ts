@@ -48,6 +48,42 @@ describe('MentionsInputSelection', () => {
     ).toBe(false)
   })
 
+  it('compares mention snapshots across id, child, plain-text, and display fields', () => {
+    expect(areMentionOccurrencesEqual(mentions, [{ ...mentions[0] }])).toBe(true)
+    expect(
+      areMentionOccurrencesEqual(mentions, [
+        {
+          ...mentions[0],
+          id: 'heisenberg',
+        },
+      ])
+    ).toBe(false)
+    expect(
+      areMentionOccurrencesEqual(mentions, [
+        {
+          ...mentions[0],
+          childIndex: 1,
+        },
+      ])
+    ).toBe(false)
+    expect(
+      areMentionOccurrencesEqual(mentions, [
+        {
+          ...mentions[0],
+          plainTextIndex: 7,
+        },
+      ])
+    ).toBe(false)
+    expect(
+      areMentionOccurrencesEqual(mentions, [
+        {
+          ...mentions[0],
+          display: 'Heisenberg',
+        },
+      ])
+    ).toBe(false)
+  })
+
   it('treats length changes as mention snapshot changes', () => {
     expect(areMentionOccurrencesEqual(mentions, [])).toBe(false)
   })

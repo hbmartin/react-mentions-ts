@@ -21,7 +21,7 @@ const markupToRegex = (
   return createInternalRegExp(
     escapedMarkup
       .replace(PLACEHOLDERS.display, `([^${escapeRegex(charAfterDisplay)}]+?)`)
-      .replace(PLACEHOLDERS.id, idPattern ?? `([^${escapeRegex(charAfterId)}]+?)`)
+      .replace(PLACEHOLDERS.id, () => idPattern ?? `([^${escapeRegex(charAfterId)}]+?)`)
   )
 }
 

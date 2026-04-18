@@ -15,6 +15,7 @@ describe('#getSubstringIndex', () => {
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'aurait-il')).toEqual(0)
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'adore')).toEqual(-1)
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'not existing substring')).toEqual(-1)
+    expect(getSubstringIndex('Alpha ALPHA', 'AL', false, false)).toEqual(6)
   })
   it('Should return the index of the substring or -1 ignoring the accents and the case', () => {
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'adore', true)).toEqual(14)
@@ -95,21 +96,24 @@ describe('#getSubstringIndex', () => {
   })
 
   it('skips characters gracefully when String#codePointAt reports undefined', () => {
-    // eslint-disable-next-line sonarjs/no-primitive-wrappers, unicorn/new-for-builtins
-    const haystackWrapper = new String('abc')
-    const codePointAtMock = vi.fn(function (this: string, pos: number) {
-      if (pos === 1) {
-        return undefined
-      }
-      return String.prototype.codePointAt.call(this, pos)
-    })
-    ;(
-      haystackWrapper as unknown as { codePointAt: (pos: number) => number | undefined }
-    ).codePointAt = codePointAtMock
+    const originalCodePointAt = String.prototype.codePointAt
+    const codePointAtMock = vi
+      .spyOn(String.prototype, 'codePointAt')
+      .mockImplementation(function (this: string, pos: number) {
+        if (this.toString() === 'abc' && pos === 1) {
+          return undefined
+        }
 
-    const result = getSubstringIndex(haystackWrapper as unknown as string, 'c', true)
+        return originalCodePointAt.call(this, pos)
+      })
 
-    expect(codePointAtMock).toHaveBeenCalledWith(1)
-    expect(result).toBe(2)
+    try {
+      const result = getSubstringIndex('abc', 'c', true)
+
+      expect(codePointAtMock).toHaveBeenCalledWith(1)
+      expect(result).toBe(2)
+    } finally {
+      codePointAtMock.mockRestore()
+    }
   })
 })

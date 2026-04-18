@@ -59,40 +59,47 @@ describe('createMarkupSerializer', () => {
       {
         markup: '@[Ada](1|0)',
         index: 3,
-        id: '1|0',
+        id: '1',
         display: 'Ada',
       },
       {
         markup: '@[Ada](1)|0',
-        index: 18,
+        index: 19,
         id: '1',
         display: 'Ada',
       },
     ])
   })
 
-  it('ignores duplicate suffixes for serializers without id placeholders', () => {
+  it('treats duplicate suffixes as literal markup when no id placeholder exists', () => {
     const serializer = createMarkupSerializer('[[__display__]]|0')
 
-    expect(serializer.findAll('[[Ada]]|0')).toEqual([])
+    expect(serializer.findAll('[[Ada]]|0')).toEqual([
+      {
+        markup: '[[Ada]]|0',
+        index: 0,
+        id: 'Ada',
+        display: 'Ada',
+      },
+    ])
   })
 
   it('sorts overlapping matches by index and longer markup first', () => {
-    const serializer = createMarkupSerializer('[__id__]')
-    const value = 'Nested [abc][de]'
+    const serializer = createMarkupSerializer('@[__display__](__id__)|0')
+    const value = '@[Ada](1|0)|0'
 
     expect(serializer.findAll(value)).toEqual([
       {
-        markup: '[abc]',
-        index: 7,
-        id: 'abc',
-        display: null,
+        markup: '@[Ada](1|0)|0',
+        index: 0,
+        id: '1|0',
+        display: 'Ada',
       },
       {
-        markup: '[de]',
-        index: 12,
-        id: 'de',
-        display: null,
+        markup: '@[Ada](1|0)',
+        index: 0,
+        id: '1',
+        display: 'Ada',
       },
     ])
   })

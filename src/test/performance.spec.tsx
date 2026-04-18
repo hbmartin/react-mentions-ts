@@ -32,6 +32,7 @@ describe('performance helpers', () => {
 
   it('emits performance metrics to stdout', () => {
     const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const originalPerfOutputFile = process.env.PERF_OUTPUT_FILE
 
     try {
       delete process.env.PERF_OUTPUT_FILE
@@ -42,12 +43,18 @@ describe('performance helpers', () => {
 
       expect(stdoutWriteSpy).toHaveBeenCalledWith('[perf] render-pass {"count":2}\n')
     } finally {
+      if (originalPerfOutputFile === undefined) {
+        delete process.env.PERF_OUTPUT_FILE
+      } else {
+        process.env.PERF_OUTPUT_FILE = originalPerfOutputFile
+      }
       stdoutWriteSpy.mockRestore()
     }
   })
 
   it('appends performance metrics to the configured output file', () => {
     const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const originalPerfOutputFile = process.env.PERF_OUTPUT_FILE
     const directory = mkdtempSync(path.join(tmpdir(), 'react-mentions-ts-performance-spec-'))
     const outputFile = path.join(directory, 'perf.log')
 
@@ -59,11 +66,16 @@ describe('performance helpers', () => {
         scanCount: 5,
       })
 
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- test owns this temporary output path.
       expect(readFileSync(outputFile, 'utf8')).toBe(
         '[perf] array-provider-scan-count {"resultCount":5,"scanCount":5}\n'
       )
     } finally {
-      delete process.env.PERF_OUTPUT_FILE
+      if (originalPerfOutputFile === undefined) {
+        delete process.env.PERF_OUTPUT_FILE
+      } else {
+        process.env.PERF_OUTPUT_FILE = originalPerfOutputFile
+      }
       stdoutWriteSpy.mockRestore()
       rmSync(directory, { force: true, recursive: true })
     }

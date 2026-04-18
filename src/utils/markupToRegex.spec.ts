@@ -30,4 +30,12 @@ describe('#markupToRegex', () => {
     const regex = markupToRegex('[tag id=__id__ /]')
     expect(regex.exec('[tag id=italy /]')[1]).toEqual('italy')
   })
+
+  it('should insert custom id patterns literally', () => {
+    const regex = markupToRegex('@[__display__](__id__)', { idPattern: '([^$&]+?)' })
+
+    expect(regex.source).toContain('([^$&]+?)')
+    expect(regex.exec('Hi @[Ada](abc)')?.[2]).toEqual('abc')
+    expect(regex.exec('Hi @[Ada](a&)')).toEqual(null)
+  })
 })

@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -61,12 +61,23 @@ interface CommandResult {
   stdout: string
 }
 
+interface ParsedCommandLine {
+  args: string[]
+  command: string
+}
+
 interface RunCommandOptions {
   env?: NodeJS.ProcessEnv
   repositoryRoot: string
 }
 
 const PERF_LINE_PATTERN = /^\[perf] (?<scenario>\S+) (?<metrics>{.+})$/
+
+interface CommandArgumentParseState {
+  args: string[]
+  current: string
+  quote: '"' | "'" | null
+}
 
 export const PERF_COMPARISON_MANIFEST = [
   ['array-provider-scan-count', 'scanCount'],
@@ -166,6 +177,95 @@ const normalizePerfNotePayload = (value: unknown, expectedCommand?: string): Per
   }
 }
 
+const pushCurrentCommandArgument = (state: CommandArgumentParseState): void => {
+  if (state.current.length > 0) {
+    state.args.push(state.current)
+    state.current = ''
+  }
+}
+
+const appendCommandArgumentCharacter = (
+  state: CommandArgumentParseState,
+  commandLine: string,
+  index: number
+): number => {
+  const char = commandLine[index]
+
+  if (char === '\\') {
+    state.current += commandLine[index + 1] ?? '\\'
+    return index + 1
+  }
+
+  if (state.quote !== null) {
+    if (char === state.quote) {
+      state.quote = null
+    } else {
+      state.current += char
+    }
+    return index
+  }
+
+  if (char === '"' || char === "'") {
+    state.quote = char
+    return index
+  }
+
+  if (/\s/u.test(char)) {
+    pushCurrentCommandArgument(state)
+    return index
+  }
+
+  state.current += char
+  return index
+}
+
+const parseCommandArguments = (commandLine: string): string[] => {
+  const state: CommandArgumentParseState = {
+    args: [],
+    current: '',
+    quote: null,
+  }
+
+  let index = 0
+  while (index < commandLine.length) {
+    index = appendCommandArgumentCharacter(state, commandLine, index) + 1
+  }
+
+  if (state.quote !== null) {
+    throw new Error(`Unterminated quoted string in perf command: ${commandLine}`)
+  }
+
+  pushCurrentCommandArgument(state)
+
+  return state.args
+}
+
+const parseCommandLine = (commandLine: string): ParsedCommandLine => {
+  if (commandLine === process.execPath) {
+    return {
+      args: [],
+      command: process.execPath,
+    }
+  }
+
+  if (commandLine.startsWith(`${process.execPath} `)) {
+    return {
+      args: parseCommandArguments(commandLine.slice(process.execPath.length + 1)),
+      command: process.execPath,
+    }
+  }
+
+  const [command, ...args] = parseCommandArguments(commandLine)
+  if (typeof command !== 'string') {
+    throw new TypeError('Perf command must be a non-empty string')
+  }
+
+  return {
+    args,
+    command,
+  }
+}
+
 const runCommand = (command: string, args: string[], options: RunCommandOptions): CommandResult => {
   const result = spawnSync(command, args, {
     // eslint-disable-next-line code-complete/enforce-meaningful-names -- child_process uses the standard cwd option name.
@@ -184,11 +284,13 @@ const runCommand = (command: string, args: string[], options: RunCommandOptions)
 
   if (result.status !== 0) {
     const renderedCommand = [command, ...args].join(' ')
-    throw new Error(
+    const error = new Error(
       [`Command failed: ${renderedCommand}`, stdout.trim(), stderr.trim()]
         .filter(Boolean)
         .join('\n')
     )
+    Object.assign(error, { stderr, stdout })
+    throw error
   }
 
   return {
@@ -238,18 +340,16 @@ const resolvePnpmPerfOutput = (
   env?: NodeJS.ProcessEnv,
   perfCommand = PERF_COMMAND
 ): string => {
+  const { args, command } = parseCommandLine(perfCommand)
+
   try {
-    // eslint-disable-next-line sonarjs/os-command -- perf capture intentionally runs the repository's deterministic perf command.
-    return execSync(perfCommand, {
-      // eslint-disable-next-line code-complete/enforce-meaningful-names -- child_process uses the standard cwd option name.
-      cwd: repositoryRoot,
-      encoding: 'utf8',
+    return runCommand(command, args, {
       env: {
         ...process.env,
         ...env,
       },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
+      repositoryRoot,
+    }).stdout
   } catch (error) {
     const commandError = error as {
       stderr?: string | Buffer

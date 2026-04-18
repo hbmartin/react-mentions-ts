@@ -1736,7 +1736,7 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
       let scrollHeight = 24
       Object.defineProperty(textarea, 'scrollHeight', {
         configurable: true,
@@ -1768,7 +1768,9 @@ describe('MentionsInput', () => {
         scrollHeight = 60
 
         act(() => {
-          callbacks.splice(0).forEach((callback) => callback(0))
+          for (const callback of callbacks.splice(0)) {
+            callback(0)
+          }
         })
 
         expect(instance._autoResizeFrame).toBeNull()
@@ -3757,7 +3759,7 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
       const updateMentionsQueriesSpy = vi
         .spyOn(instance, 'updateMentionsQueries')
         .mockImplementation(() => undefined)
@@ -3885,7 +3887,11 @@ describe('MentionsInput', () => {
       const ref = React.createRef<MentionsInput>()
       const { unmount } = render(
         <MentionsInput ref={ref} value="@a">
-          <Mention trigger="@" data={async () => [{ id: 'alpha', display: 'Alpha' }]} debounceMs={5} />
+          <Mention
+            trigger="@"
+            data={async () => [{ id: 'alpha', display: 'Alpha' }]}
+            debounceMs={5}
+          />
         </MentionsInput>
       )
 
@@ -3927,6 +3933,7 @@ describe('MentionsInput', () => {
           await vi.advanceTimersByTimeAsync(5)
         })
 
+        // eslint-disable-next-line require-atomic-updates -- this test intentionally makes the pending async result stale.
         instance._queryId = 2
 
         await act(async () => {

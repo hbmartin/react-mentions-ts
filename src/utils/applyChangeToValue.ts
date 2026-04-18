@@ -103,8 +103,7 @@ const getSpliceRange = (
 
 const getMismatchRecoveryRange = (
   oldPlainTextValue: string,
-  plainTextValue: string,
-  selectionEndAfter: number
+  plainTextValue: string
 ): SpliceRange => {
   let spliceStart = 0
   while (
@@ -129,7 +128,7 @@ const getMismatchRecoveryRange = (
   return {
     insert: plainTextValue.slice(spliceStart, spliceEndOfNew),
     spliceStart,
-    spliceEnd: spliceEndOfOld >= spliceStart ? spliceEndOfOld : selectionEndAfter,
+    spliceEnd: spliceEndOfOld,
   }
 }
 
@@ -195,11 +194,7 @@ const applyChangeToValue = <Extra extends Record<string, unknown> = Record<strin
   }
 
   // some auto-correction is going on
-  const mismatchRecoveryRange = getMismatchRecoveryRange(
-    oldPlainTextValue,
-    plainTextValue,
-    resolvedSelection.selectionEndAfter
-  )
+  const mismatchRecoveryRange = getMismatchRecoveryRange(oldPlainTextValue, plainTextValue)
 
   return applySpliceRange(value, config, mismatchRecoveryRange).newValue
 }
