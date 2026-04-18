@@ -20,3 +20,20 @@ Pull requests are encouraged. If you want to add a feature or fix a bug:
 5. Run `pnpm build` and then run tests with `pnpm test`
 6. If coding a new feature, please add the examples to the example app (`/demo/src/examples`) and add the docs to the `README.md` file.
 7. Push your branch and open a PR 🚀
+
+## Performance Notes
+
+The repository tracks deterministic perf results in Git notes under `refs/notes/perf`.
+
+- Run `pnpm perf:check` to compare your current branch against the nearest recorded baseline on `origin/master`.
+- Run `pnpm perf:record` only when you intend to attach a perf note to the current `HEAD` commit.
+
+Optional local Git setup for maintainers:
+
+```bash
+git config --add remote.origin.fetch +refs/notes/perf:refs/notes/perf
+git config --add notes.displayRef refs/notes/perf
+git config --add notes.rewriteRef refs/notes/perf
+```
+
+With that config in place, `git log --notes=perf` and `git show --notes=perf <commit>` will display recorded perf notes locally.

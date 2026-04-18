@@ -100,17 +100,30 @@ const applyChangeToValue = <Extra extends Record<string, unknown> = Record<strin
 
       // find start of diff
       spliceStart = 0
-      while (plainTextValue[spliceStart] === controlPlainTextValue[spliceStart]) {
+      while (
+        spliceStart < plainTextValue.length &&
+        spliceStart < oldPlainTextValue.length &&
+        plainTextValue[spliceStart] === oldPlainTextValue[spliceStart]
+      ) {
         spliceStart++
       }
 
+      let spliceEndOfNew = plainTextValue.length
+      let spliceEndOfOld = oldPlainTextValue.length
+      while (
+        spliceEndOfNew > spliceStart &&
+        spliceEndOfOld > spliceStart &&
+        plainTextValue[spliceEndOfNew - 1] === oldPlainTextValue[spliceEndOfOld - 1]
+      ) {
+        spliceEndOfNew--
+        spliceEndOfOld--
+      }
+
       // extract auto-corrected insertion
-      insert = plainTextValue.slice(spliceStart, selectionEndAfter)
+      insert = plainTextValue.slice(spliceStart, spliceEndOfNew)
 
       // find index of the unchanged remainder
-      spliceEnd = oldPlainTextValue.lastIndexOf(
-        plainTextValue.slice(Math.max(0, selectionEndAfter))
-      )
+      spliceEnd = spliceEndOfOld >= spliceStart ? spliceEndOfOld : selectionEndAfter
 
       // re-map the corrected indices
       mappedSpliceStart = ensureNumber(

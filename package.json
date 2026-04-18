@@ -43,6 +43,8 @@
 		"dev": "node ./scripts/dev-with-wdyr.mjs",
 		"demo": "vite --config demo/vite.config.ts",
 		"preview": "vite preview --config demo/vite.config.ts",
+		"perf:check": "node ./scripts/perf-notes.mjs check",
+		"perf:record": "node ./scripts/perf-notes.mjs record",
 		"test": "BROWSERSLIST_IGNORE_OLD_DATA=true vitest run",
 		"test:perf": "BROWSERSLIST_IGNORE_OLD_DATA=true vitest run src/MentionsInput.performance.spec.tsx src/MentionsInputSelectors.performance.spec.ts",
 		"test:watch": "BROWSERSLIST_IGNORE_OLD_DATA=true vitest",

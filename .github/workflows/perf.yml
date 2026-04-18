@@ -1,0 +1,68 @@
+name: Performance Notes
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  perf-check:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Fetch master history
+        run: git fetch origin master:refs/remotes/origin/master
+      - name: Fetch perf notes
+        run: |
+          if git ls-remote --exit-code origin refs/notes/perf >/dev/null 2>&1; then
+            git fetch origin +refs/notes/perf:refs/notes/perf
+          fi
+      - run: pnpm perf:check
+
+  perf-record:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Fetch perf notes
+        run: |
+          if git ls-remote --exit-code origin refs/notes/perf >/dev/null 2>&1; then
+            git fetch origin +refs/notes/perf:refs/notes/perf
+          fi
+      - name: Configure git identity
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+      - run: pnpm perf:record
+      - name: Push perf notes
+        run: git push origin refs/notes/perf:refs/notes/perf

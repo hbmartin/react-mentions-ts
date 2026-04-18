@@ -57,6 +57,44 @@ describe('MentionsInputChildren', () => {
     ).not.toThrow()
   })
 
+  it('treats omitted and default string triggers as the same mention identity', () => {
+    const defaultedConfig = prepareMentionsInputChildren(
+      <>
+        <Mention data={[]} />
+      </>
+    ).config
+    const explicitConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger="@" data={[]} />
+      </>
+    ).config
+
+    expect(areMentionConfigsEqual(defaultedConfig, explicitConfig)).toBe(true)
+  })
+
+  it('treats displayTransform identity as part of the mention equality check', () => {
+    const sharedDisplayTransform = (id: string | number) => `@${String(id)}`
+
+    const baseConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger="@" data={[]} displayTransform={sharedDisplayTransform} />
+      </>
+    ).config
+    const sameConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger="@" data={[]} displayTransform={sharedDisplayTransform} />
+      </>
+    ).config
+    const differentDisplayTransformConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger="@" data={[]} displayTransform={(id) => `#${String(id)}`} />
+      </>
+    ).config
+
+    expect(areMentionConfigsEqual(baseConfig, sameConfig)).toBe(true)
+    expect(areMentionConfigsEqual(baseConfig, differentDisplayTransformConfig)).toBe(false)
+  })
+
   it('treats regex trigger flags as part of the mention identity', () => {
     expect(() =>
       validateMentionChildTree(

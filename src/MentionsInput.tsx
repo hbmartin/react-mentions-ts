@@ -97,8 +97,10 @@ import type {
 let generatedIdCounter = 0
 
 const createGeneratedId = (): string => {
-  if (typeof globalThis.crypto.randomUUID === 'function') {
-    return `mentions-${globalThis.crypto.randomUUID()}`
+  const cryptoObject = globalThis.crypto
+
+  if (cryptoObject && typeof cryptoObject.randomUUID === 'function') {
+    return `mentions-${cryptoObject.randomUUID()}`
   }
 
   generatedIdCounter += 1
@@ -159,7 +161,7 @@ interface ActiveSuggestionQuery<Extra extends Record<string, unknown>> {
 const getMentionDiffKey = <Extra extends Record<string, unknown>>(
   mention: MentionOccurrence<Extra>
 ): string => {
-  return `${mention.childIndex}:${String(mention.id)}:${mention.display}`
+  return JSON.stringify([mention.childIndex, String(mention.id), mention.display])
 }
 
 const getRemovedMentions = <Extra extends Record<string, unknown>>(
@@ -821,7 +823,7 @@ class MentionsInput<
     const { inputRef } = this.props
     if (typeof inputRef === 'function') {
       inputRef(el)
-    } else if (inputRef !== undefined) {
+    } else if (inputRef !== null && inputRef !== undefined) {
       ;(inputRef as React.RefObject<InputElement | null>).current = el
     }
   }
@@ -1728,11 +1730,15 @@ class MentionsInput<
       const regex = resolveTriggerRegex(triggerProp)
       const match = substring.match(regex)
 
-      if (match === null || match.length < 3) {
+      if (match === null) {
         return []
       }
       const replacementRange = match[1]
       const query = match[2]
+
+      if (typeof replacementRange !== 'string' || typeof query !== 'string') {
+        return []
+      }
 
       const matchIndex = match.index ?? 0
       const querySequenceStart =
