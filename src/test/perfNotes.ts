@@ -76,6 +76,7 @@ const PERF_LINE_PATTERN = /^\[perf] (?<scenario>\S+) (?<metrics>{.+})$/
 interface CommandArgumentParseState {
   args: string[]
   current: string
+  inArgument: boolean
   quote: '"' | "'" | null
 }
 
@@ -178,9 +179,10 @@ const normalizePerfNotePayload = (value: unknown, expectedCommand?: string): Per
 }
 
 const pushCurrentCommandArgument = (state: CommandArgumentParseState): void => {
-  if (state.current.length > 0) {
+  if (state.inArgument) {
     state.args.push(state.current)
     state.current = ''
+    state.inArgument = false
   }
 }
 
@@ -192,14 +194,27 @@ const appendCommandArgumentCharacter = (
   const char = commandLine[index]
 
   if (char === '\\') {
-    state.current += commandLine[index + 1] ?? '\\'
-    return index + 1
+    const nextChar = commandLine.charAt(index + 1)
+
+    if (
+      nextChar.length > 0 &&
+      (nextChar === '\\' || nextChar === '"' || nextChar === "'" || /\s/u.test(nextChar))
+    ) {
+      state.inArgument = true
+      state.current += nextChar
+      return index + 1
+    }
+
+    state.inArgument = true
+    state.current += '\\'
+    return index
   }
 
   if (state.quote !== null) {
     if (char === state.quote) {
       state.quote = null
     } else {
+      state.inArgument = true
       state.current += char
     }
     return index
@@ -207,6 +222,7 @@ const appendCommandArgumentCharacter = (
 
   if (char === '"' || char === "'") {
     state.quote = char
+    state.inArgument = true
     return index
   }
 
@@ -215,6 +231,7 @@ const appendCommandArgumentCharacter = (
     return index
   }
 
+  state.inArgument = true
   state.current += char
   return index
 }
@@ -223,6 +240,7 @@ const parseCommandArguments = (commandLine: string): string[] => {
   const state: CommandArgumentParseState = {
     args: [],
     current: '',
+    inArgument: false,
     quote: null,
   }
 
@@ -241,22 +259,8 @@ const parseCommandArguments = (commandLine: string): string[] => {
 }
 
 const parseCommandLine = (commandLine: string): ParsedCommandLine => {
-  if (commandLine === process.execPath) {
-    return {
-      args: [],
-      command: process.execPath,
-    }
-  }
-
-  if (commandLine.startsWith(`${process.execPath} `)) {
-    return {
-      args: parseCommandArguments(commandLine.slice(process.execPath.length + 1)),
-      command: process.execPath,
-    }
-  }
-
   const [command, ...args] = parseCommandArguments(commandLine)
-  if (typeof command !== 'string') {
+  if (typeof command !== 'string' || command.length === 0) {
     throw new TypeError('Perf command must be a non-empty string')
   }
 

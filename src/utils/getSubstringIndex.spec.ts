@@ -15,7 +15,7 @@ describe('#getSubstringIndex', () => {
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'aurait-il')).toEqual(0)
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'adore')).toEqual(-1)
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'not existing substring')).toEqual(-1)
-    expect(getSubstringIndex('Alpha ALPHA', 'AL', false, false)).toEqual(6)
+    expect(getSubstringIndex('Alpha ALPHA', 'AL', false, true)).toEqual(0)
   })
   it('Should return the index of the substring or -1 ignoring the accents and the case', () => {
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'adore', true)).toEqual(14)
@@ -96,16 +96,18 @@ describe('#getSubstringIndex', () => {
   })
 
   it('skips characters gracefully when String#codePointAt reports undefined', () => {
-    const originalCodePointAt = String.prototype.codePointAt
-    const codePointAtMock = vi
-      .spyOn(String.prototype, 'codePointAt')
-      .mockImplementation(function (this: string, pos: number) {
-        if (this.toString() === 'abc' && pos === 1) {
-          return undefined
-        }
+    const originalCodePointAt = Object.getOwnPropertyDescriptor(String.prototype, 'codePointAt')
+      ?.value as (this: string, pos: number) => number | undefined
+    const codePointAtMock = vi.spyOn(String.prototype, 'codePointAt').mockImplementation(function (
+      this: string,
+      pos: number
+    ) {
+      if (this === 'abc' && pos === 1) {
+        return undefined
+      }
 
-        return originalCodePointAt.call(this, pos)
-      })
+      return originalCodePointAt.call(this, pos)
+    })
 
     try {
       const result = getSubstringIndex('abc', 'c', true)

@@ -144,6 +144,18 @@ const createFailingPerfCommand = (stderr = 'perf failed'): string => {
   return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(code)}`
 }
 
+const createArgvCheckingPerfCommand = (expectedArgs: string[], commandTail: string): string => {
+  const perfOutput = `${SAMPLE_PERF_OUTPUT}\n`
+  const code = [
+    `const expected = ${JSON.stringify(expectedArgs)}`,
+    'const actual = process.argv.slice(1)',
+    'if (JSON.stringify(actual) !== JSON.stringify(expected)) { process.stderr.write(`argv mismatch: ${JSON.stringify(actual)}`); process.exit(3) }',
+    `process.stdout.write(${JSON.stringify(perfOutput)})`,
+  ].join(';')
+
+  return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(code)} -- ${commandTail}`
+}
+
 const createMemoryWriteStream = () => {
   const chunks: string[] = []
 
@@ -411,6 +423,41 @@ describe('perfNotes', () => {
       notesRef: 'refs/notes/test-perf',
       perfCommand,
       perfOutput: SAMPLE_PERF_OUTPUT,
+    })
+
+    expect(payload.command).toBe(perfCommand)
+    expect(readPerfNote(cwd, headCommit, 'refs/notes/test-perf', perfCommand)).toEqual(payload)
+  })
+
+  it('passes explicitly empty quoted perf command arguments through to the child process', () => {
+    const cwd = createTempRepository()
+    const headCommit = commitFile(cwd, 'fixture.txt', 'hello\n', 'initial')
+    const perfCommand = createArgvCheckingPerfCommand(
+      ['--empty', '', '--next', 'value'],
+      '--empty "" --next value'
+    )
+
+    const payload = recordPerfNote(cwd, {
+      notesRef: 'refs/notes/test-perf',
+      perfCommand,
+    })
+
+    expect(payload.command).toBe(perfCommand)
+    expect(readPerfNote(cwd, headCommit, 'refs/notes/test-perf', perfCommand)).toEqual(payload)
+  })
+
+  it('preserves Windows path backslashes while supporting escaped whitespace', () => {
+    const cwd = createTempRepository()
+    const headCommit = commitFile(cwd, 'fixture.txt', 'hello\n', 'initial')
+    const windowsPath = 'C:\\Program Files\\nodejs\\node.exe'
+    const perfCommand = createArgvCheckingPerfCommand(
+      ['--path', windowsPath, '--label', 'escaped value'],
+      `--path "${windowsPath}" --label escaped\\ value`
+    )
+
+    const payload = recordPerfNote(cwd, {
+      notesRef: 'refs/notes/test-perf',
+      perfCommand,
     })
 
     expect(payload.command).toBe(perfCommand)

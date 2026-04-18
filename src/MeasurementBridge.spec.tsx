@@ -165,7 +165,7 @@ describe('MeasurementBridge', () => {
           return undefined
         }
 
-        if (target == null) {
+        if (target === null || target === undefined) {
           return undefined
         }
 
