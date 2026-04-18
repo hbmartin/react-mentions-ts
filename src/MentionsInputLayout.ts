@@ -120,7 +120,7 @@ export const getInputInlineStyle = (singleLine?: boolean): CSSProperties => {
     background: 'transparent',
   }
 
-  if (!singleLine && isMobileSafari()) {
+  if (singleLine !== true && isMobileSafari()) {
     // iOS Safari shifts multiline textarea content relative to the mirrored overlay.
     style.marginTop = 1
     style.marginLeft = -3
@@ -351,9 +351,12 @@ export const getTextareaResizePatch = (
   element.style.overflowY = 'hidden'
   let borderAdjustment = 0
 
-  if (globalThis.window !== undefined && typeof globalThis.getComputedStyle === 'function') {
+  if (globalThis.getComputedStyle !== undefined) {
     const computed = globalThis.getComputedStyle(element)
-    const parse = (value: string | null | undefined) => (value ? Number.parseFloat(value) || 0 : 0)
+    const parse = (value: string | null | undefined) =>
+      value === null || value === undefined || value.length === 0
+        ? 0
+        : Number.parseFloat(value) || 0
     borderAdjustment = parse(computed.borderTopWidth) + parse(computed.borderBottomWidth)
   }
 
@@ -371,10 +374,12 @@ export const applyTextareaResizePatch = (
   input: InputElement | null,
   patch: TextareaResizePatch | null
 ): boolean => {
+  const textAreaElementConstructor = globalThis.HTMLTextAreaElement
+
   if (
     !patch ||
-    typeof HTMLTextAreaElement === 'undefined' ||
-    !(input instanceof HTMLTextAreaElement)
+    textAreaElementConstructor === undefined ||
+    !(input instanceof textAreaElementConstructor)
   ) {
     return false
   }

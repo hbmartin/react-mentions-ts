@@ -21,11 +21,11 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
   const childNodes = Children.toArray(children)
 
   for (const [childIndex] of childNodes.entries()) {
-    const entry = suggestionsMap[childIndex]
-    if (!entry) {
+    if (!Object.hasOwn(suggestionsMap, childIndex)) {
       continue
     }
 
+    const entry = suggestionsMap[childIndex]
     handledIndices.add(childIndex)
     const { results, queryInfo } = entry
     for (const result of results) {
@@ -40,10 +40,6 @@ const flattenSuggestions = <Extra extends Record<string, unknown> = Record<strin
 
   for (const index of remainingIndices) {
     const entry = suggestionsMap[index]
-    if (!entry) {
-      continue
-    }
-
     const { results, queryInfo } = entry
     for (const result of results) {
       flattened.push({ result, queryInfo })

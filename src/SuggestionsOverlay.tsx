@@ -212,7 +212,9 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
               displayClassName={displayClassName}
               highlightClassName={highlightClassName}
               key={key}
-              id={id ? getSuggestionHtmlId(id, index) : `suggestion-${index.toString()}`}
+              id={
+                id === undefined ? `suggestion-${index.toString()}` : getSuggestionHtmlId(id, index)
+              }
               query={query}
               index={index}
               renderSuggestion={renderSuggestionFromChild}
@@ -282,16 +284,16 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     ...(top === undefined ? {} : { top }),
     ...(width === undefined ? {} : { width }),
   }
-  const mergedStyle = styleProp ? { ...overlayStyle, ...styleProp } : overlayStyle
+  const mergedStyle = styleProp === undefined ? overlayStyle : { ...overlayStyle, ...styleProp }
 
   return (
     <div
       className={overlayClassName}
-      data-open={isOpened ? 'true' : 'false'}
+      data-open="true"
       data-slot="suggestions"
       aria-live="polite"
       aria-relevant="additions text"
-      aria-busy={isLoading ? 'true' : 'false'}
+      aria-busy={isLoading === true ? 'true' : 'false'}
       ref={containerRef}
       style={mergedStyle}
     >

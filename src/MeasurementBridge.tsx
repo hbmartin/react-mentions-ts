@@ -37,11 +37,13 @@ const MeasurementBridge = ({
   })
 
   const observe = useEventCallback((element: Element | null, callback: () => void) => {
-    if (!element || typeof ResizeObserver === 'undefined') {
+    const resizeObserverConstructor = globalThis.ResizeObserver
+
+    if (!element || resizeObserverConstructor === undefined) {
       return undefined
     }
 
-    const observer = new ResizeObserver(() => {
+    const observer = new resizeObserverConstructor(() => {
       callback()
     })
 
@@ -74,20 +76,16 @@ const MeasurementBridge = ({
   )
 
   useLayoutEffect(() => {
-    if (globalThis.window === undefined) {
-      return undefined
-    }
-
     const handleViewportChange = () => {
       requestAllMeasurements()
     }
 
-    globalThis.addEventListener('resize', handleViewportChange)
-    globalThis.addEventListener('orientationchange', handleViewportChange)
+    globalThis.window.addEventListener('resize', handleViewportChange)
+    globalThis.window.addEventListener('orientationchange', handleViewportChange)
 
     return () => {
-      globalThis.removeEventListener('resize', handleViewportChange)
-      globalThis.removeEventListener('orientationchange', handleViewportChange)
+      globalThis.window.removeEventListener('resize', handleViewportChange)
+      globalThis.window.removeEventListener('orientationchange', handleViewportChange)
     }
   }, [requestAllMeasurements])
 

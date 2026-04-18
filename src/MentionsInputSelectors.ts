@@ -120,7 +120,7 @@ export const getInlineSuggestionRemainder = (
   displayValue: string,
   queryInfo: QueryInfo
 ): string => {
-  const query = queryInfo.query ?? ''
+  const query = queryInfo.query
   if (query.length === 0) {
     return displayValue
   }

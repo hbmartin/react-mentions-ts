@@ -13,7 +13,7 @@ import PLACEHOLDERS from './placeholders'
  */
 const generateMarkupForTrigger = (trigger: string | RegExp | undefined): string => {
   // For RegExp triggers or undefined, fall back to the default markup
-  if (!trigger || trigger instanceof RegExp) {
+  if (trigger === undefined || trigger instanceof RegExp) {
     return DEFAULT_MENTION_PROPS.markup
   }
 

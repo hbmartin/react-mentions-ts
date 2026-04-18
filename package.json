@@ -89,6 +89,7 @@
 	"devDependencies": {
 		"@arethetypeswrong/cli": "^0.18.2",
 		"@eslint/eslintrc": "^3.3.5",
+		"@eslint/js": "^10.0.1",
 		"@microsoft/api-extractor": "^7.58.5",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/jest-dom": "^6.9.1",

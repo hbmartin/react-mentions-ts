@@ -1,4 +1,5 @@
 import type { MentionSerializer, MentionSerializerMatch } from '../types'
+import createInternalRegExp from '../utils/createInternalRegExp'
 import findPositionOfCapturingGroup from '../utils/findPositionOfCapturingGroup'
 import makeMentionsMarkup from '../utils/makeMentionsMarkup'
 import markupToRegex from '../utils/markupToRegex'
@@ -17,7 +18,7 @@ const createMarkupSerializer = (markup: string): MentionSerializer => {
   }
 
   const findAll: MentionSerializer['findAll'] = (value) => {
-    const globalRegex = new RegExp(baseRegex.source, 'g')
+    const globalRegex = createInternalRegExp(baseRegex.source, 'g')
     const matches: MentionSerializerMatch[] = []
     let match: RegExpExecArray | null
 

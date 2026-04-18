@@ -94,7 +94,7 @@ const applyChangeToValue = <Extra extends Record<string, unknown> = Record<strin
 
   if (!willRemoveMention) {
     // test for auto-completion changes
-    let controlPlainTextValue = getPlainText<Extra>(newValue, config)
+    const controlPlainTextValue = getPlainText<Extra>(newValue, config)
     if (controlPlainTextValue !== plainTextValue) {
       // some auto-correction is going on
 
@@ -122,12 +122,7 @@ const applyChangeToValue = <Extra extends Record<string, unknown> = Record<strin
         value.length
       )
       newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
-      // eslint-disable-next-line sonarjs/no-dead-store
-      controlPlainTextValue = getPlainText<Extra>(newValue, config)
-      // After we perform the second splice, we want to make sure the “control” plain text we’re comparing against is actually in sync with the
-      // new markup. Even though we don’t currently use controlPlainTextValue again in this function, recomputing it right after the rewrite
-      // documents that the mismatch has been resolved and gives us an up-to-date value if we ever extend the logic (for example, adding a
-      // follow-up check or loop).
+      getPlainText<Extra>(newValue, config)
     }
   }
 
