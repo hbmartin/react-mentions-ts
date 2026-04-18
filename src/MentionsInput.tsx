@@ -491,10 +491,7 @@ class MentionsInput<
     const previousValue = prevProps.value ?? ''
     const currentValue = this.props.value ?? ''
     const currentConfig = this.getCurrentConfig()
-    const previousConfig =
-      prevProps.children === this.props.children
-        ? currentConfig
-        : prepareMentionsInputChildren<Extra>(prevProps.children).config
+    const previousConfig = this._cachedConfig
     const configChanged = !areMentionConfigsEqual(previousConfig, currentConfig)
     const valueChanged = currentValue !== previousValue || configChanged
 
