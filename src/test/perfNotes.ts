@@ -258,7 +258,21 @@ const parseCommandArguments = (commandLine: string): string[] => {
   return state.args
 }
 
-const parseCommandLine = (commandLine: string): ParsedCommandLine => {
+export const parseCommandLine = (commandLine: string): ParsedCommandLine => {
+  if (commandLine === process.execPath) {
+    return {
+      args: [],
+      command: process.execPath,
+    }
+  }
+
+  if (commandLine.startsWith(`${process.execPath} `)) {
+    return {
+      args: parseCommandArguments(commandLine.slice(process.execPath.length)),
+      command: process.execPath,
+    }
+  }
+
   const [command, ...args] = parseCommandArguments(commandLine)
   if (typeof command !== 'string' || command.length === 0) {
     throw new TypeError('Perf command must be a non-empty string')
