@@ -291,4 +291,143 @@ describe('Highlighter', () => {
     const mentionElement = getByText(container, 'John')
     expect(mentionElement).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' })
   })
+
+  it('measures immediately when requestAnimationFrame is unavailable', async () => {
+    const onCaretPositionChange = vi.fn()
+    const originalRAF = globalThis.requestAnimationFrame
+    const offsetLeftDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetLeft')
+    const offsetTopDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop')
+
+    Object.defineProperty(HTMLElement.prototype, 'offsetLeft', {
+      configurable: true,
+      get() {
+        return this instanceof HTMLSpanElement && this.hasAttribute('data-mentions-caret') ? 5 : 0
+      },
+    })
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+      configurable: true,
+      get() {
+        return this instanceof HTMLSpanElement && this.hasAttribute('data-mentions-caret') ? 9 : 0
+      },
+    })
+    delete (globalThis as typeof globalThis & { requestAnimationFrame?: unknown }).requestAnimationFrame
+
+    try {
+      render(
+        <Highlighter
+          selectionStart={0}
+          selectionEnd={0}
+          value="Hello world"
+          onCaretPositionChange={onCaretPositionChange}
+        >
+          <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+        </Highlighter>
+      )
+
+      await waitFor(() => {
+        expect(onCaretPositionChange).toHaveBeenCalledWith(
+          expect.objectContaining({ left: 5, top: 0 })
+        )
+      })
+    } finally {
+      if (offsetLeftDescriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'offsetLeft', offsetLeftDescriptor)
+      }
+      if (offsetTopDescriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'offsetTop', offsetTopDescriptor)
+      }
+      if (originalRAF) {
+        Object.defineProperty(globalThis, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRAF,
+          writable: true,
+        })
+      }
+    }
+  })
+
+  it('renders repeated mentions without collapsing duplicate keys', () => {
+    const { container } = render(
+      <Highlighter
+        selectionStart={0}
+        selectionEnd={0}
+        value="@[John](user1) and @[John](user1)"
+        onCaretPositionChange={vi.fn()}
+      >
+        <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+      </Highlighter>
+    )
+
+    const renderedMentions = Array.from(container.querySelectorAll('span')).filter(
+      (element) => element.textContent === 'John'
+    )
+    expect(renderedMentions).toHaveLength(2)
+  })
+
+  it('does not emit a redundant caret update when recomputing the same position', async () => {
+    const onCaretPositionChange = vi.fn()
+    const rafCallbacks: FrameRequestCallback[] = []
+    const originalRAF = globalThis.requestAnimationFrame
+    const originalCAF = globalThis.cancelAnimationFrame
+
+    setFrameApi('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb)
+      return rafCallbacks.length
+    })
+    setFrameApi('cancelAnimationFrame', () => undefined)
+
+    try {
+      const { container, rerender } = render(
+        <Highlighter
+          selectionStart={0}
+          selectionEnd={0}
+          value="Hello world"
+          recomputeVersion={0}
+          onCaretPositionChange={onCaretPositionChange}
+        >
+          <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+        </Highlighter>
+      )
+
+      const caret = container.querySelector('[data-mentions-caret]') as HTMLSpanElement
+      Object.defineProperty(caret, 'offsetLeft', { configurable: true, value: 7 })
+      Object.defineProperty(caret, 'offsetTop', { configurable: true, value: 11 })
+
+      for (const callback of rafCallbacks.splice(0)) {
+        callback(0)
+      }
+
+      await waitFor(() => expect(onCaretPositionChange).toHaveBeenCalledTimes(1))
+
+      rerender(
+        <Highlighter
+          selectionStart={0}
+          selectionEnd={0}
+          value="Hello world"
+          recomputeVersion={1}
+          onCaretPositionChange={onCaretPositionChange}
+        >
+          <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+        </Highlighter>
+      )
+
+      for (const callback of rafCallbacks.splice(0)) {
+        callback(0)
+      }
+
+      await waitFor(() => expect(onCaretPositionChange).toHaveBeenCalledTimes(1))
+    } finally {
+      if (originalRAF) {
+        setFrameApi('requestAnimationFrame', originalRAF)
+      } else {
+        delete (globalThis as typeof globalThis & Record<string, unknown>).requestAnimationFrame
+      }
+
+      if (originalCAF) {
+        setFrameApi('cancelAnimationFrame', originalCAF)
+      } else {
+        delete (globalThis as typeof globalThis & Record<string, unknown>).cancelAnimationFrame
+      }
+    }
+  })
 })

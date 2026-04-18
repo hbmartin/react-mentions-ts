@@ -108,6 +108,18 @@ describe('readConfigFromChildren', () => {
       )
     })
 
+    it('should keep parsing legacy duplicate-trigger markup after serializer migration', () => {
+      const children = [
+        <Mention key="1" trigger="@" displayTransform={(id) => `user:${id}`} data={[]} />,
+        <Mention key="2" trigger="@" displayTransform={(id) => `team:${id}`} data={[]} />,
+      ]
+
+      const config = readConfigFromChildren(children)
+      const legacyValue = '@[Alice](alice|0) @[Engineering](eng|1)'
+
+      expect(getPlainText(legacyValue, config)).toBe('user:alice team:eng')
+    })
+
     it('should parse duplicate-trigger markup with the correct serializer when ids contain pipes', () => {
       const children = [
         <Mention key="1" trigger="@" displayTransform={(id) => `user:${id}`} data={[]} />,

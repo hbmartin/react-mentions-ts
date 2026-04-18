@@ -70,6 +70,7 @@ const PERF_LINE_PATTERN = /^\[perf] (?<scenario>\S+) (?<metrics>{.+})$/
 
 export const PERF_COMPARISON_MANIFEST = [
   ['array-provider-scan-count', 'scanCount'],
+  ['accent-provider-scan-count', 'scanCount'],
   ['controlled-keystroke', 'getPlainTextCalls'],
   ['controlled-keystroke', 'deriveMentionValueSnapshotCalls'],
   ['controlled-keystroke', 'prepareMentionsInputChildrenCalls'],
@@ -80,6 +81,26 @@ export const PERF_COMPARISON_MANIFEST = [
   ['overlay-layout', 'calculateInlineSuggestionPositionCalls'],
   ['locality-render-counts', 'stableSiblingRendersDuringInteraction'],
   ['locality-render-counts', 'activeBranchRendersDuringInteraction'],
+  ['debounced-async-query', 'providerCalls'],
+  ['stale-async-result', 'staleResultApplications'],
+  ['long-document-caret-mapping', 'mapPlainTextIndexCalls'],
+  ['long-document-caret-mapping', 'deriveMentionValueSnapshotCalls'],
+  ['paste-replace-mention', 'applyPasteToMentionsValueCalls'],
+  ['paste-replace-mention', 'mapPlainTextIndexCalls'],
+  ['paste-replace-mention', 'getPlainTextCalls'],
+  ['delete-around-mention', 'applyInputChangeToMentionsValueCalls'],
+  ['delete-around-mention', 'applyChangeToValueCalls'],
+  ['delete-around-mention', 'mapPlainTextIndexCalls'],
+  ['multiple-trigger-query-routing', 'activeProviderCalls'],
+  ['multiple-trigger-query-routing', 'inactiveProviderCalls'],
+  ['multiple-trigger-query-routing', 'prepareMentionsInputChildrenCalls'],
+  ['overlay-navigation-layout', 'calculateSuggestionsPositionCalls'],
+  ['overlay-navigation-layout', 'calculateInlineSuggestionPositionCalls'],
+  ['controlled-rerender-stability', 'deriveMentionValueSnapshotCalls'],
+  ['controlled-rerender-stability', 'prepareMentionsInputChildrenCalls'],
+  ['suggestions-measurement-events', 'updateSuggestionsPositionCalls'],
+  ['auto-resize-keystroke', 'getTextareaResizePatchCalls'],
+  ['auto-resize-keystroke', 'applyTextareaResizePatchCalls'],
 ] as const
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -105,7 +126,7 @@ const normalizeMetricRecord = (
   return normalizedMetrics
 }
 
-const normalizePerfNotePayload = (value: unknown): PerfNotePayload => {
+const normalizePerfNotePayload = (value: unknown, expectedCommand?: string): PerfNotePayload => {
   if (!isRecord(value)) {
     throw new TypeError('Perf note payload must be an object')
   }
@@ -116,8 +137,12 @@ const normalizePerfNotePayload = (value: unknown): PerfNotePayload => {
     throw new Error(`Unsupported perf note schema version: ${String(schemaVersion)}`)
   }
 
-  if (command !== PERF_COMMAND) {
-    throw new Error(`Unsupported perf note command: ${String(command)}`)
+  if (typeof command !== 'string' || command.length === 0) {
+    throw new TypeError('Perf note command must be a non-empty string')
+  }
+
+  if (typeof expectedCommand === 'string' && command !== expectedCommand) {
+    throw new Error(`Unsupported perf note command: ${command}`)
   }
 
   if (suite !== PERF_SUITE) {
@@ -197,7 +222,7 @@ const tryShowPerfNote = (
   }
 
   const stderr = result.stderr
-  if (stderr.includes('no note found') || stderr.includes('cannot read note data')) {
+  if (stderr.includes('no note found')) {
     return null
   }
 
@@ -262,7 +287,7 @@ const resolveBaselineStartCommit = (
   }
 }
 
-export const parsePerfOutput = (output: string): PerfNotePayload => {
+export const parsePerfOutput = (output: string, command = PERF_COMMAND): PerfNotePayload => {
   const metricsByScenario = new Map<string, Record<string, number | string>>()
 
   for (const line of output.split(/\r?\n/u)) {
@@ -290,7 +315,7 @@ export const parsePerfOutput = (output: string): PerfNotePayload => {
   }
 
   return {
-    command: PERF_COMMAND,
+    command,
     metrics: normalizedMetrics,
     schemaVersion: PERF_SCHEMA_VERSION,
     suite: PERF_SUITE,
@@ -303,14 +328,15 @@ export const stringifyPerfNote = (payload: PerfNotePayload): string =>
 export const readPerfNote = (
   repositoryRoot: string,
   commit: string,
-  notesRef = PERF_NOTES_REF
+  notesRef = PERF_NOTES_REF,
+  expectedCommand?: string
 ): PerfNotePayload | null => {
   const rawNote = tryShowPerfNote(repositoryRoot, commit, notesRef)
   if (rawNote === null) {
     return null
   }
 
-  return normalizePerfNotePayload(JSON.parse(rawNote))
+  return normalizePerfNotePayload(JSON.parse(rawNote), expectedCommand)
 }
 
 export const writePerfNote = (
@@ -346,10 +372,16 @@ export const comparePerfNotes = (
   const errors: PerfComparisonError[] = []
   const regressions: PerfRegression[] = []
   const skipped: PerfComparisonSkippedMetric[] = []
+  const baselineMetrics = baseline.metrics as Partial<
+    Record<string, Record<string, number | string>>
+  >
+  const candidateMetrics = candidate.metrics as Partial<
+    Record<string, Record<string, number | string>>
+  >
 
   for (const [scenario, metric] of PERF_COMPARISON_MANIFEST) {
-    const baselineValue = baseline.metrics[scenario][metric]
-    const candidateValue = candidate.metrics[scenario][metric]
+    const baselineValue = baselineMetrics[scenario]?.[metric]
+    const candidateValue = candidateMetrics[scenario]?.[metric]
 
     if (typeof candidateValue !== 'number') {
       errors.push({
@@ -392,11 +424,13 @@ export const findNearestBaselineNote = (
     baselineCommit,
     head = 'HEAD',
     notesRef = PERF_NOTES_REF,
+    perfCommand,
     targetRef = PERF_TARGET_REF,
   }: {
     baselineCommit?: string
     head?: string
     notesRef?: string
+    perfCommand?: string
     targetRef?: string
   } = {}
 ): BaselineLookupResult => {
@@ -415,7 +449,7 @@ export const findNearestBaselineNote = (
     .filter(Boolean)
 
   for (const commit of commits) {
-    const note = readPerfNote(repositoryRoot, commit, notesRef)
+    const note = readPerfNote(repositoryRoot, commit, notesRef, perfCommand)
     if (note !== null) {
       return {
         baselineCommit: commit,
@@ -449,7 +483,8 @@ export const recordPerfNote = (
   } = {}
 ): PerfNotePayload => {
   const payload = parsePerfOutput(
-    perfOutput ?? resolvePnpmPerfOutput(repositoryRoot, env, perfCommand)
+    perfOutput ?? resolvePnpmPerfOutput(repositoryRoot, env, perfCommand),
+    perfCommand
   )
   writePerfNote(repositoryRoot, commit, payload, notesRef)
   return payload
@@ -476,12 +511,14 @@ export const checkPerfAgainstBaseline = (
   } = {}
 ): CheckPerfAgainstBaselineResult => {
   const candidateNote = parsePerfOutput(
-    perfOutput ?? resolvePnpmPerfOutput(repositoryRoot, env, perfCommand)
+    perfOutput ?? resolvePnpmPerfOutput(repositoryRoot, env, perfCommand),
+    perfCommand
   )
   const baseline = findNearestBaselineNote(repositoryRoot, {
     baselineCommit,
     head,
     notesRef,
+    perfCommand,
     targetRef,
   })
 

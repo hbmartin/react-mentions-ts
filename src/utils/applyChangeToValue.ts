@@ -9,6 +9,18 @@ interface SelectionChange {
   selectionEndAfter: number
 }
 
+interface ResolvedSelectionChange {
+  selectionStartBefore: number
+  selectionEndBefore: number
+  selectionEndAfter: number
+}
+
+interface SpliceRange {
+  insert: string
+  spliceStart: number
+  spliceEnd: number
+}
+
 const normalizeSelectionPoint = (value: number | 'undefined' | undefined): number | undefined => {
   if (value === 'undefined') {
     return undefined
@@ -23,6 +35,127 @@ const ensureNumber = (value: number | null | undefined, fallback: number): numbe
   return fallback
 }
 
+const resolveSelection = (
+  selection: SelectionChange,
+  oldPlainTextLength: number,
+  plainTextLength: number
+): ResolvedSelectionChange => {
+  const selectionEndAfter = selection.selectionEndAfter
+  const lengthDelta = oldPlainTextLength - plainTextLength
+  const selectionStartBefore =
+    normalizeSelectionPoint(selection.selectionStartBefore) ?? selectionEndAfter + lengthDelta
+  const selectionEndBefore =
+    normalizeSelectionPoint(selection.selectionEndBefore) ?? selectionStartBefore
+
+  return { selectionStartBefore, selectionEndBefore, selectionEndAfter }
+}
+
+const isCollapsedSelection = ({
+  selectionStartBefore,
+  selectionEndBefore,
+  selectionEndAfter,
+}: ResolvedSelectionChange): boolean =>
+  selectionStartBefore === selectionEndBefore && selectionEndBefore === selectionEndAfter
+
+const hasNoEffectiveChange = (
+  oldPlainTextValue: string,
+  plainTextValue: string,
+  selection: ResolvedSelectionChange
+): boolean => oldPlainTextValue === plainTextValue && isCollapsedSelection(selection)
+
+const shouldAdjustForCombinedCharacters = (
+  oldPlainTextValue: string,
+  plainTextValue: string,
+  selection: ResolvedSelectionChange
+): boolean =>
+  isCollapsedSelection(selection) &&
+  oldPlainTextValue.length === plainTextValue.length &&
+  oldPlainTextValue !== plainTextValue
+
+const adjustSelectionForCombinedCharacters = ({
+  selectionStartBefore,
+  selectionEndBefore,
+  selectionEndAfter,
+}: ResolvedSelectionChange): ResolvedSelectionChange => ({
+  selectionStartBefore: Math.max(0, selectionStartBefore - 1),
+  selectionEndBefore: Math.max(0, selectionEndBefore - 1),
+  selectionEndAfter,
+})
+
+const getSpliceRange = (
+  plainTextValue: string,
+  selection: ResolvedSelectionChange,
+  lengthDelta: number
+): SpliceRange => {
+  const { selectionStartBefore, selectionEndBefore, selectionEndAfter } = selection
+  const spliceStart = Math.min(selectionStartBefore, selectionEndAfter)
+  const spliceEnd =
+    selectionStartBefore === selectionEndAfter
+      ? Math.max(selectionEndBefore, selectionStartBefore + lengthDelta)
+      : selectionEndBefore
+
+  return {
+    insert: plainTextValue.slice(selectionStartBefore, selectionEndAfter),
+    spliceStart,
+    spliceEnd,
+  }
+}
+
+const getMismatchRecoveryRange = (
+  oldPlainTextValue: string,
+  plainTextValue: string,
+  selectionEndAfter: number
+): SpliceRange => {
+  let spliceStart = 0
+  while (
+    spliceStart < plainTextValue.length &&
+    spliceStart < oldPlainTextValue.length &&
+    plainTextValue[spliceStart] === oldPlainTextValue[spliceStart]
+  ) {
+    spliceStart++
+  }
+
+  let spliceEndOfNew = plainTextValue.length
+  let spliceEndOfOld = oldPlainTextValue.length
+  while (
+    spliceEndOfNew > spliceStart &&
+    spliceEndOfOld > spliceStart &&
+    plainTextValue[spliceEndOfNew - 1] === oldPlainTextValue[spliceEndOfOld - 1]
+  ) {
+    spliceEndOfNew--
+    spliceEndOfOld--
+  }
+
+  return {
+    insert: plainTextValue.slice(spliceStart, spliceEndOfNew),
+    spliceStart,
+    spliceEnd: spliceEndOfOld >= spliceStart ? spliceEndOfOld : selectionEndAfter,
+  }
+}
+
+const applySpliceRange = <Extra extends Record<string, unknown> = Record<string, unknown>>(
+  value: string,
+  config: ReadonlyArray<MentionChildConfig<Extra>>,
+  spliceRange: SpliceRange
+): { newValue: string; willRemoveMention: boolean } => {
+  const { insert, spliceStart, spliceEnd } = spliceRange
+  const mappedSpliceStart = ensureNumber(
+    mapPlainTextIndex<Extra>(value, config, spliceStart, 'START'),
+    value.length
+  )
+  const mappedSpliceEnd = ensureNumber(
+    mapPlainTextIndex<Extra>(value, config, spliceEnd, 'END'),
+    value.length
+  )
+  const controlSpliceStart = mapPlainTextIndex<Extra>(value, config, spliceStart, 'NULL')
+  const controlSpliceEnd = mapPlainTextIndex<Extra>(value, config, spliceEnd, 'NULL')
+
+  return {
+    newValue: spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert),
+    willRemoveMention: controlSpliceStart === null || controlSpliceEnd === null,
+  }
+}
+
 // Applies a change from the plain text textarea to the underlying marked up value
 // guided by the textarea text selection ranges before and after the change
 const applyChangeToValue = <Extra extends Record<string, unknown> = Record<string, unknown>>(
@@ -31,114 +164,44 @@ const applyChangeToValue = <Extra extends Record<string, unknown> = Record<strin
   selection: SelectionChange,
   config: ReadonlyArray<MentionChildConfig<Extra>>
 ): string => {
-  let selectionStartBefore = normalizeSelectionPoint(selection.selectionStartBefore)
-  let selectionEndBefore = normalizeSelectionPoint(selection.selectionEndBefore)
-  const { selectionEndAfter } = selection
-
   const oldPlainTextValue = getPlainText<Extra>(value, config)
   const lengthDelta = oldPlainTextValue.length - plainTextValue.length
-  if (selectionStartBefore === undefined) {
-    selectionStartBefore = selectionEndAfter + lengthDelta
-  }
+  let resolvedSelection = resolveSelection(
+    selection,
+    oldPlainTextValue.length,
+    plainTextValue.length
+  )
 
-  if (selectionEndBefore === undefined) {
-    selectionEndBefore = selectionStartBefore
-  }
-
-  if (
-    oldPlainTextValue === plainTextValue &&
-    selectionStartBefore === selectionEndBefore &&
-    selectionEndBefore === selectionEndAfter
-  ) {
+  if (hasNoEffectiveChange(oldPlainTextValue, plainTextValue, resolvedSelection)) {
     return value
   }
 
   // Fixes an issue with replacing combined characters for complex input. Eg like accented letters on OSX
-  if (
-    selectionStartBefore === selectionEndBefore &&
-    selectionEndBefore === selectionEndAfter &&
-    oldPlainTextValue.length === plainTextValue.length &&
-    oldPlainTextValue !== plainTextValue
-  ) {
-    // TODO: write tests to determine if this should instead be:
-    selectionStartBefore = Math.max(0, selectionStartBefore - 1)
-    selectionEndBefore = Math.max(0, selectionEndBefore - 1)
+  if (shouldAdjustForCombinedCharacters(oldPlainTextValue, plainTextValue, resolvedSelection)) {
+    resolvedSelection = adjustSelectionForCombinedCharacters(resolvedSelection)
   }
 
-  // extract the insertion from the new plain text value
-  let insert = plainTextValue.slice(selectionStartBefore, selectionEndAfter)
+  const initialSpliceRange = getSpliceRange(plainTextValue, resolvedSelection, lengthDelta)
+  const { newValue, willRemoveMention } = applySpliceRange(value, config, initialSpliceRange)
 
-  // handling for Backspace key with no range selection
-  let spliceStart = Math.min(selectionStartBefore, selectionEndAfter)
-
-  let spliceEnd = selectionEndBefore
-  if (selectionStartBefore === selectionEndAfter) {
-    // handling for Delete key with no range selection
-    spliceEnd = Math.max(selectionEndBefore, selectionStartBefore + lengthDelta)
+  if (willRemoveMention) {
+    return newValue
   }
 
-  let mappedSpliceStart = ensureNumber(
-    mapPlainTextIndex<Extra>(value, config, spliceStart, 'START'),
-    value.length
-  )
-  let mappedSpliceEnd = ensureNumber(
-    mapPlainTextIndex<Extra>(value, config, spliceEnd, 'END'),
-    value.length
+  // test for auto-completion changes
+  const controlPlainTextValue = getPlainText<Extra>(newValue, config)
+  if (controlPlainTextValue === plainTextValue) {
+    return newValue
+  }
+
+  // some auto-correction is going on
+  const mismatchRecoveryRange = getMismatchRecoveryRange(
+    oldPlainTextValue,
+    plainTextValue,
+    resolvedSelection.selectionEndAfter
   )
 
-  const controlSpliceStart = mapPlainTextIndex<Extra>(value, config, spliceStart, 'NULL')
-  const controlSpliceEnd = mapPlainTextIndex<Extra>(value, config, spliceEnd, 'NULL')
-  const willRemoveMention = controlSpliceStart === null || controlSpliceEnd === null
-
-  let newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
-
-  if (!willRemoveMention) {
-    // test for auto-completion changes
-    const controlPlainTextValue = getPlainText<Extra>(newValue, config)
-    if (controlPlainTextValue !== plainTextValue) {
-      // some auto-correction is going on
-
-      // find start of diff
-      spliceStart = 0
-      while (
-        spliceStart < plainTextValue.length &&
-        spliceStart < oldPlainTextValue.length &&
-        plainTextValue[spliceStart] === oldPlainTextValue[spliceStart]
-      ) {
-        spliceStart++
-      }
-
-      let spliceEndOfNew = plainTextValue.length
-      let spliceEndOfOld = oldPlainTextValue.length
-      while (
-        spliceEndOfNew > spliceStart &&
-        spliceEndOfOld > spliceStart &&
-        plainTextValue[spliceEndOfNew - 1] === oldPlainTextValue[spliceEndOfOld - 1]
-      ) {
-        spliceEndOfNew--
-        spliceEndOfOld--
-      }
-
-      // extract auto-corrected insertion
-      insert = plainTextValue.slice(spliceStart, spliceEndOfNew)
-
-      // find index of the unchanged remainder
-      spliceEnd = spliceEndOfOld >= spliceStart ? spliceEndOfOld : selectionEndAfter
-
-      // re-map the corrected indices
-      mappedSpliceStart = ensureNumber(
-        mapPlainTextIndex<Extra>(value, config, spliceStart, 'START'),
-        value.length
-      )
-      mappedSpliceEnd = ensureNumber(
-        mapPlainTextIndex<Extra>(value, config, spliceEnd, 'END'),
-        value.length
-      )
-      newValue = spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert)
-    }
-  }
-
-  return newValue
+  return applySpliceRange(value, config, mismatchRecoveryRange).newValue
 }
 
 export default applyChangeToValue

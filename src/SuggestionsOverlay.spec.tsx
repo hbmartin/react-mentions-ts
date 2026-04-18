@@ -186,6 +186,194 @@ describe('SuggestionsOverlay', () => {
     }
   })
 
+  it('scrolls the focused suggestion upward when it is above the viewport', () => {
+    const longSuggestions = Array.from({ length: 6 }, (_, index) => ({
+      id: `item-${index}`,
+      display: `Item ${index}`,
+    }))
+
+    const suggestionsMap = createSuggestionsMap(longSuggestions)
+    const getBoundingClientRectMock = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingRect(this: HTMLElement) {
+        if (this.dataset.slot === 'suggestions-list') {
+          return {
+            top: 0,
+            bottom: 100,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 100,
+            x: 0,
+            y: 0,
+          }
+        }
+
+        if (this.dataset.focused === 'true') {
+          return {
+            top: -20,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 20,
+            x: 0,
+            y: -20,
+          }
+        }
+
+        return {
+          top: 0,
+          bottom: 20,
+          left: 0,
+          right: 0,
+          width: 0,
+          height: 20,
+          x: 0,
+          y: 0,
+        }
+      })
+
+    try {
+      const { container, rerender } = render(
+        <SuggestionsOverlay
+          id="test-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={0}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+      Object.defineProperty(list, 'offsetHeight', { configurable: true, value: 100 })
+      Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 400 })
+      list.scrollTop = 30
+
+      rerender(
+        <SuggestionsOverlay
+          id="test-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={4}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      expect(list.scrollTop).toBe(10)
+    } finally {
+      getBoundingClientRectMock.mockRestore()
+    }
+  })
+
+  it('skips scroll synchronization when the focused child is missing', () => {
+    const { container, rerender } = render(
+      <SuggestionsOverlay
+        id="test-suggestions"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={4}
+        isOpened
+        scrollFocusedIntoView
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+    Object.defineProperty(list, 'offsetHeight', { configurable: true, value: 100 })
+    Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 400 })
+    list.scrollTop = 30
+
+    rerender(
+      <SuggestionsOverlay
+        id="test-suggestions"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={4}
+        isOpened
+        scrollFocusedIntoView
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(list.scrollTop).toBe(30)
+  })
+
+  it('leaves scroll position unchanged when the focused item is already visible', () => {
+    const suggestionsMap = createSuggestionsMap(
+      Array.from({ length: 3 }, (_, index) => ({
+        id: `item-${index}`,
+        display: `Item ${index}`,
+      }))
+    )
+    const getBoundingClientRectMock = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingRect(this: HTMLElement) {
+        if (this.dataset.slot === 'suggestions-list') {
+          return {
+            top: 0,
+            bottom: 100,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 100,
+            x: 0,
+            y: 0,
+          }
+        }
+
+        return {
+          top: 20,
+          bottom: 40,
+          left: 0,
+          right: 0,
+          width: 0,
+          height: 20,
+          x: 0,
+          y: 20,
+        }
+      })
+
+    try {
+      const { container, rerender } = render(
+        <SuggestionsOverlay
+          id="visible-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={1}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+      Object.defineProperty(list, 'offsetHeight', { configurable: true, value: 100 })
+      Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 400 })
+      list.scrollTop = 10
+
+      rerender(
+        <SuggestionsOverlay
+          id="visible-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={1}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      expect(list.scrollTop).toBe(10)
+    } finally {
+      getBoundingClientRectMock.mockRestore()
+    }
+  })
+
   it('should be possible to style the list.', () => {
     const suggestions = [{ id: '1', display: 'Test' }]
 
@@ -378,6 +566,25 @@ describe('SuggestionsOverlay', () => {
     )
   })
 
+  it('assigns implicit suggestion ids when no overlay id is provided', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        suggestions={createSuggestionsMap([
+          { id: '1', display: 'First' },
+          { id: '2', display: 'Second' },
+        ])}
+        focusIndex={0}
+        isOpened
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const listItems = container.querySelectorAll('li[role="option"]')
+    expect(listItems[0]).toHaveAttribute('id', 'suggestion-0')
+    expect(listItems[1]).toHaveAttribute('id', 'suggestion-1')
+  })
+
   it('should be possible to show a loading indicator.', () => {
     const suggestions = [{ id: '1', display: 'First' }]
 
@@ -464,6 +671,41 @@ describe('SuggestionsOverlay', () => {
     )
 
     expect(container.firstChild).toBeNull()
+  })
+
+  it('omits status content when it is nullish', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="statusless-overlay"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        statusContent={null}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(container.querySelector('[data-slot="suggestions-status"]')).toBeNull()
+  })
+
+  it('defaults the empty status type when the caller omits it', () => {
+    const { container } = render(
+      <SuggestionsOverlay
+        id="default-status-type"
+        suggestions={{}}
+        focusIndex={0}
+        isOpened
+        statusContent="No suggestions found"
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const status = container.querySelector('[data-slot="suggestions-status"]')
+    expect(status).not.toBeNull()
+    expect(status).toHaveAttribute('data-status-type')
+    expect(status).toHaveClass('text-muted-foreground')
   })
 
   it('merges positioning props and inline styles onto the overlay element', () => {
