@@ -107,7 +107,7 @@ describe('SuggestionsOverlay', () => {
 
     const suggestionsMap = createSuggestionsMap(longSuggestions)
 
-    const getBoundingClientRectMock = jest
+    const getBoundingClientRectMock = vi
       .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
       .mockImplementation(function getBoundingRect(this: HTMLElement) {
         if (this.dataset.slot === 'suggestions-list') {
@@ -347,7 +347,7 @@ describe('SuggestionsOverlay', () => {
       { id: '2', display: 'Second' },
     ]
 
-    const onSelect = jest.fn()
+    const onSelect = vi.fn()
 
     const { container } = render(
       <SuggestionsOverlay
@@ -430,7 +430,7 @@ describe('SuggestionsOverlay', () => {
       { id: '3', display: 'Third' },
     ]
 
-    const onMouseEnter = jest.fn()
+    const onMouseEnter = vi.fn()
 
     const { container } = render(
       <SuggestionsOverlay
@@ -523,8 +523,8 @@ describe('SuggestionsOverlay', () => {
   })
 
   it('forwards the container ref and customises the suggestions list wrapper', () => {
-    const ref = jest.fn()
-    const wrap = jest.fn((node: React.ReactElement) => <div data-testid="wrapped">{node}</div>)
+    const ref = vi.fn()
+    const wrap = vi.fn((node: React.ReactElement) => <div data-testid="wrapped">{node}</div>)
 
     const { getByTestId } = render(
       <SuggestionsOverlay
@@ -545,7 +545,7 @@ describe('SuggestionsOverlay', () => {
   })
 
   it('passes mouse down events through to the supplied handler', () => {
-    const handleMouseDown = jest.fn()
+    const handleMouseDown = vi.fn()
     const { container } = render(
       <SuggestionsOverlay
         id="mouse-overlay"
@@ -564,7 +564,7 @@ describe('SuggestionsOverlay', () => {
   })
 
   it('uses a mention child renderSuggestion when provided', () => {
-    const customRender = jest.fn((suggestion, query, highlightedDisplay: React.ReactNode) => (
+    const customRender = vi.fn((suggestion, query, highlightedDisplay: React.ReactNode) => (
       <div data-testid={`custom-${suggestion.id}`}>
         Custom:
         <span data-testid="highlight">{query}</span>
@@ -618,7 +618,7 @@ describe('SuggestionsOverlay', () => {
   })
 
   it('forwards mouse down events from the loading indicator', () => {
-    const handleMouseDown = jest.fn()
+    const handleMouseDown = vi.fn()
 
     const { getByTestId } = render(
       <SuggestionsOverlay

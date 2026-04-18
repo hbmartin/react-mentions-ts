@@ -16,4 +16,17 @@ describe('MentionsInputSelectors', () => {
       },
     ])
   })
+
+  it('rejects instead of throwing synchronously when static data filtering fails', async () => {
+    const provider = getDataProvider([{ id: '123', display: 'Alpha' }], {
+      ignoreAccents: false,
+      signal: new AbortController().signal,
+      getSubstringIndex: () => {
+        throw new Error('boom')
+      },
+      maxSuggestions: undefined,
+    })
+
+    await expect(provider('a')).rejects.toThrow('boom')
+  })
 })

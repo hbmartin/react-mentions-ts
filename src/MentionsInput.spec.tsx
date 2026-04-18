@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
+import type { Mock, MockInstance } from 'vitest'
 import * as utils from './utils'
 import * as readConfigFromChildrenModule from './utils/readConfigFromChildren'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
@@ -31,12 +32,17 @@ const createColonSerializer = (): MentionSerializer => ({
   },
 })
 
-const getLastMentionsChange = (mock: jest.Mock): MentionsInputChangeEvent => {
+const getLastMentionsChange = (mock: Mock): MentionsInputChangeEvent => {
   const calls = mock.mock.calls
   if (calls.length === 0) {
     throw new Error('Expected onMentionsChange to have been called')
   }
   return calls[calls.length - 1][0] as MentionsInputChangeEvent
+}
+
+const parseBorderWidth = (value: string): number => {
+  const parsed = Number.parseFloat(value || '0')
+  return Number.isNaN(parsed) ? 0 : parsed
 }
 
 describe('MentionsInput', () => {
@@ -165,10 +171,10 @@ describe('MentionsInput', () => {
   })
 
   describe('validation', () => {
-    let consoleError: jest.SpyInstance
+    let consoleError: MockInstance
 
     beforeEach(() => {
-      consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+      consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     })
 
     afterEach(() => {
@@ -317,7 +323,7 @@ describe('MentionsInput', () => {
   })
 
   it('should be possible to select a suggestion with enter.', async () => {
-    const onMentionsChange = jest.fn()
+    const onMentionsChange = vi.fn()
 
     render(
       <MentionsInput value="@" onMentionsChange={onMentionsChange}>
@@ -350,7 +356,7 @@ describe('MentionsInput', () => {
   })
 
   it('should append a trailing space when the mention config requests it.', async () => {
-    const onMentionsChange = jest.fn()
+    const onMentionsChange = vi.fn()
 
     render(
       <MentionsInput value="@" onMentionsChange={onMentionsChange}>
@@ -470,7 +476,7 @@ describe('MentionsInput', () => {
   })
 
   it('should load suggestions from async data providers.', async () => {
-    const asyncData = jest.fn(async (query: string) => {
+    const asyncData = vi.fn(async (query: string) => {
       await Promise.resolve()
       return [
         { id: 'async-one', display: 'Async One' },
@@ -508,7 +514,7 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string) =>
         new Promise<Array<{ id: string; display: string }>>((resolve) => {
           requests.set(query, { resolve })
@@ -571,7 +577,7 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string) =>
         new Promise<Array<{ id: string; display: string }>>((resolve) => {
           requests.set(query, { resolve })
@@ -644,13 +650,13 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string) =>
         new Promise<Array<{ id: string; display: string }>>((resolve) => {
           requests.set(query, { resolve })
         })
     )
-    const onMentionsChange = jest.fn()
+    const onMentionsChange = vi.fn()
 
     const { rerender } = render(
       <MentionsInput value="@a" onMentionsChange={onMentionsChange}>
@@ -709,7 +715,7 @@ describe('MentionsInput', () => {
   })
 
   it('renders an error state when an async provider rejects.', async () => {
-    const asyncData = jest.fn(async () => {
+    const asyncData = vi.fn(async () => {
       throw new Error('boom')
     })
 
@@ -735,7 +741,7 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string) =>
         new Promise<Array<{ id: string; display: string }>>((resolve) => {
           requests.set(query, { resolve })
@@ -775,7 +781,7 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string) =>
         new Promise<Array<{ id: string; display: string }>>((resolve) => {
           requests.set(query, { resolve })
@@ -818,7 +824,7 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string) =>
         new Promise<Array<{ id: string; display: string }>>((_resolve, reject) => {
           requests.set(query, { reject })
@@ -858,7 +864,7 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string) =>
         new Promise<Array<{ id: string; display: string }>>((_resolve, reject) => {
           requests.set(query, { reject })
@@ -898,7 +904,7 @@ describe('MentionsInput', () => {
     }
 
     const requests = new Map<string, DeferredResult>()
-    const asyncData = jest.fn(
+    const asyncData = vi.fn(
       (query: string, { signal }: { signal: AbortSignal }) =>
         new Promise<Array<{ id: string; display: string }>>((resolve, reject) => {
           requests.set(query, { resolve, reject, signal })
@@ -976,10 +982,10 @@ describe('MentionsInput', () => {
   })
 
   it('supports debounced async providers and maxSuggestions.', async () => {
-    jest.useFakeTimers()
+    vi.useFakeTimers()
 
     try {
-      const asyncData = jest.fn(async () => [
+      const asyncData = vi.fn(async () => [
         { id: 'one', display: 'One' },
         { id: 'two', display: 'Two' },
         { id: 'three', display: 'Three' },
@@ -999,22 +1005,21 @@ describe('MentionsInput', () => {
       expect(asyncData).not.toHaveBeenCalled()
 
       await act(async () => {
-        jest.advanceTimersByTime(200)
-        await Promise.resolve()
+        await vi.advanceTimersByTimeAsync(200)
       })
 
-      await waitFor(() => {
-        expect(asyncData).toHaveBeenCalledWith(
-          'a',
-          expect.objectContaining({ signal: expect.any(Object) })
-        )
-      })
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ signal: expect.any(Object) })
+      )
+
+      vi.useRealTimers()
 
       await waitFor(() => {
         expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(2)
       })
     } finally {
-      jest.useRealTimers()
+      vi.useRealTimers()
     }
   })
 
@@ -1207,7 +1212,7 @@ describe('MentionsInput', () => {
   })
 
   it('should forward the `inputRef` prop to become the `ref` of the input (callback ref)', () => {
-    const inputRef = jest.fn()
+    const inputRef = vi.fn()
 
     render(
       <MentionsInput value="test" inputRef={inputRef}>
@@ -1286,7 +1291,7 @@ describe('MentionsInput', () => {
 
   describe('autoResize', () => {
     it('resizes the textarea to the scroll height after a controlled value update', () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
       const { rerender } = render(
         <MentionsInput autoResize value="short" onMentionsChange={onMentionsChange}>
           <Mention trigger="@" data={data} />
@@ -1315,14 +1320,14 @@ describe('MentionsInput', () => {
       )
 
       const computed = globalThis.getComputedStyle(combobox)
-      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
-      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      const borderTop = parseBorderWidth(computed.borderTopWidth)
+      const borderBottom = parseBorderWidth(computed.borderBottomWidth)
       expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
       expect(combobox.style.overflowY).toBe('hidden')
     })
 
     it('updates the textarea height when autoResize toggles from false to true', () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
       const { rerender } = render(
         <MentionsInput autoResize={false} value="initial" onMentionsChange={onMentionsChange}>
           <Mention trigger="@" data={data} />
@@ -1347,8 +1352,8 @@ describe('MentionsInput', () => {
       )
 
       const computed = globalThis.getComputedStyle(combobox)
-      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
-      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      const borderTop = parseBorderWidth(computed.borderTopWidth)
+      const borderBottom = parseBorderWidth(computed.borderBottomWidth)
       expect(Number.parseFloat(combobox.style.height)).toBe(scrollHeight + borderTop + borderBottom)
       expect(combobox.style.overflowY).toBe('hidden')
     })
@@ -1394,8 +1399,8 @@ describe('MentionsInput', () => {
 
       await waitFor(() => {
         const computed = globalThis.getComputedStyle(combobox)
-        const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
-        const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+        const borderTop = parseBorderWidth(computed.borderTopWidth)
+        const borderBottom = parseBorderWidth(computed.borderBottomWidth)
         expect(Number.parseFloat(combobox.style.height)).toBe(
           scrollHeight + borderTop + borderBottom
         )
@@ -1417,8 +1422,8 @@ describe('MentionsInput', () => {
     })
 
     it('adds border widths to the measured height', () => {
-      const onMentionsChange = jest.fn()
-      const getComputedStyleSpy = jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
+      const onMentionsChange = vi.fn()
+      const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
         borderTopWidth: '4px',
         borderBottomWidth: '6px',
       } as unknown as CSSStyleDeclaration)
@@ -1455,7 +1460,7 @@ describe('MentionsInput', () => {
     })
 
     it('clears inline sizing when autoResize is disabled', () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
       const { rerender } = render(
         <MentionsInput autoResize value="draft" onMentionsChange={onMentionsChange}>
           <Mention trigger="@" data={data} />
@@ -1478,8 +1483,8 @@ describe('MentionsInput', () => {
       )
 
       const computed = globalThis.getComputedStyle(textarea)
-      const borderTop = Number.parseFloat(computed.borderTopWidth || '0')
-      const borderBottom = Number.parseFloat(computed.borderBottomWidth || '0')
+      const borderTop = parseBorderWidth(computed.borderTopWidth)
+      const borderBottom = parseBorderWidth(computed.borderBottomWidth)
       expect(Number.parseFloat(textarea.style.height)).toBe(scrollHeight + borderTop + borderBottom)
       expect(textarea.style.overflowY).toBe('hidden')
 
@@ -1612,7 +1617,7 @@ describe('MentionsInput', () => {
           target: { selectionStart, selectionEnd },
         })
 
-        const setData = jest.fn()
+        const setData = vi.fn()
 
         const event = new Event(eventType, { bubbles: true })
         event.clipboardData = { setData }
@@ -1653,7 +1658,7 @@ describe('MentionsInput', () => {
           target: { selectionStart, selectionEnd },
         })
 
-        const setData = jest.fn()
+        const setData = vi.fn()
 
         const event = new Event(eventType, { bubbles: true })
         event.clipboardData = { setData }
@@ -1696,7 +1701,7 @@ describe('MentionsInput', () => {
           target: { selectionStart, selectionEnd },
         })
 
-        const preventDefault = jest.fn()
+        const preventDefault = vi.fn()
         const event = new Event(eventType, { bubbles: true })
         event.preventDefault = preventDefault
 
@@ -1707,7 +1712,7 @@ describe('MentionsInput', () => {
     )
 
     it('should remove a leading mention from the value when the text is cut.', () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
 
       render(
         <MentionsInput value={value} onMentionsChange={onMentionsChange}>
@@ -1726,7 +1731,7 @@ describe('MentionsInput', () => {
       })
 
       const event = new Event('cut', { bubbles: true })
-      event.clipboardData = { setData: jest.fn() }
+      event.clipboardData = { setData: vi.fn() }
 
       expect(onMentionsChange).not.toHaveBeenCalled()
 
@@ -1747,7 +1752,7 @@ describe('MentionsInput', () => {
     })
 
     it('should remove a trailing mention from the value when the text is cut.', () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
 
       render(
         <MentionsInput value={value} onMentionsChange={onMentionsChange}>
@@ -1766,7 +1771,7 @@ describe('MentionsInput', () => {
       })
 
       const event = new Event('cut', { bubbles: true })
-      event.clipboardData = { setData: jest.fn() }
+      event.clipboardData = { setData: vi.fn() }
 
       expect(onMentionsChange).not.toHaveBeenCalled()
 
@@ -1787,7 +1792,7 @@ describe('MentionsInput', () => {
     })
 
     it('should restore the caret to the start of the cut selection.', async () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
 
       render(
         <MentionsInput value={value} onMentionsChange={onMentionsChange}>
@@ -1809,7 +1814,7 @@ describe('MentionsInput', () => {
       })
 
       const event = new Event('cut', { bubbles: true })
-      event.clipboardData = { setData: jest.fn() }
+      event.clipboardData = { setData: vi.fn() }
 
       fireEvent(textarea, event)
 
@@ -1824,7 +1829,7 @@ describe('MentionsInput', () => {
     })
 
     it('should read mentions markup from a paste event.', () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
 
       render(
         <MentionsInput value={value} onMentionsChange={onMentionsChange}>
@@ -1838,7 +1843,7 @@ describe('MentionsInput', () => {
 
       const event = new Event('paste', { bubbles: true })
       event.clipboardData = {
-        getData: jest.fn((type) => (type === 'text/react-mentions' ? pastedText : '')),
+        getData: vi.fn((type) => (type === 'text/react-mentions' ? pastedText : '')),
       }
 
       expect(onMentionsChange).not.toHaveBeenCalled()
@@ -1861,7 +1866,7 @@ describe('MentionsInput', () => {
     })
 
     it('should default to the standard pasted text.', () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
 
       render(
         <MentionsInput value={value} onMentionsChange={onMentionsChange}>
@@ -1875,7 +1880,7 @@ describe('MentionsInput', () => {
 
       const event = new Event('paste', { bubbles: true })
       event.clipboardData = {
-        getData: jest.fn((type) => (type === 'text/plain' ? pastedText : '')),
+        getData: vi.fn((type) => (type === 'text/plain' ? pastedText : '')),
       }
 
       expect(onMentionsChange).not.toHaveBeenCalled()
@@ -1903,10 +1908,10 @@ describe('MentionsInput', () => {
       const event = new Event('paste', { bubbles: true })
 
       event.clipboardData = {
-        getData: jest.fn((type) => (type === 'text/plain' ? pastedText : '')),
+        getData: vi.fn((type) => (type === 'text/plain' ? pastedText : '')),
       }
 
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
 
       render(
         <MentionsInput value="" onMentionsChange={onMentionsChange}>
@@ -1953,7 +1958,7 @@ describe('MentionsInput', () => {
         target: { selectionStart, selectionEnd },
       })
 
-      const preventDefault = jest.fn()
+      const preventDefault = vi.fn()
       const event = new Event('paste', { bubbles: true })
       event.preventDefault = preventDefault
 
@@ -1984,7 +1989,7 @@ describe('MentionsInput', () => {
     }
 
     it('reports inside and boundary for caret placements within a mention', async () => {
-      const onMentionSelectionChange = jest.fn()
+      const onMentionSelectionChange = vi.fn()
       const { textarea } = renderMentionsInput({ onMentionSelectionChange })
 
       const expectedPlainTextValue = `${mentionDisplay} remainder`
@@ -2054,7 +2059,7 @@ describe('MentionsInput', () => {
     })
 
     it('classifies range selections as partial and full', async () => {
-      const onMentionSelectionChange = jest.fn()
+      const onMentionSelectionChange = vi.fn()
       const { textarea } = renderMentionsInput({ onMentionSelectionChange })
       const expectedIdValue = `${data[0].id} remainder`
 
@@ -2171,7 +2176,7 @@ describe('MentionsInput', () => {
     })
 
     it('refreshes cached mentions when the value prop changes', async () => {
-      const onMentionSelectionChange = jest.fn()
+      const onMentionSelectionChange = vi.fn()
       const initialValue = '@[First](first) remainder'
       const updatedValue = '@[Second](second) remainder'
 
@@ -2211,9 +2216,9 @@ describe('MentionsInput', () => {
     })
 
     it('reuses cached mentions for caret-only updates', async () => {
-      const getMentionsAndPlainTextSpy = jest.spyOn(utils, 'getMentionsAndPlainText')
+      const getMentionsAndPlainTextSpy = vi.spyOn(utils, 'getMentionsAndPlainText')
       try {
-        const onMentionSelectionChange = jest.fn()
+        const onMentionSelectionChange = vi.fn()
         const { textarea } = renderMentionsInput({
           onMentionSelectionChange,
         })
@@ -2233,7 +2238,7 @@ describe('MentionsInput', () => {
     })
 
     it('does not reparse stable mention children on selection-only updates', async () => {
-      const collectMentionElementsSpy = jest.spyOn(
+      const collectMentionElementsSpy = vi.spyOn(
         readConfigFromChildrenModule,
         'collectMentionElements'
       )
@@ -2264,7 +2269,7 @@ describe('MentionsInput', () => {
     })
 
     it('recomputes mention selection state when the mention config changes without moving the caret', async () => {
-      const onMentionSelectionChange = jest.fn()
+      const onMentionSelectionChange = vi.fn()
       const initialValue = '@[First](first) and more text'
       const { rerender } = render(
         <MentionsInput value={initialValue} onMentionSelectionChange={onMentionSelectionChange}>
@@ -2293,9 +2298,9 @@ describe('MentionsInput', () => {
     })
 
     it('clears cached mentions when the mention config changes', async () => {
-      const getMentionsAndPlainTextSpy = jest.spyOn(utils, 'getMentionsAndPlainText')
+      const getMentionsAndPlainTextSpy = vi.spyOn(utils, 'getMentionsAndPlainText')
       try {
-        const onMentionSelectionChange = jest.fn()
+        const onMentionSelectionChange = vi.fn()
         const initialValue = '@[First](first) and more text'
         const { rerender } = render(
           <MentionsInput value={initialValue} onMentionSelectionChange={onMentionSelectionChange}>
@@ -2336,13 +2341,13 @@ describe('MentionsInput', () => {
       }
 
       const requests = new Map<string, DeferredResult>()
-      const firstAsyncData = jest.fn(
+      const firstAsyncData = vi.fn(
         () =>
           new Promise<Array<{ id: string; display: string }>>((resolve) => {
             requests.set('first', { resolve })
           })
       )
-      const secondAsyncData = jest.fn(
+      const secondAsyncData = vi.fn(
         () =>
           new Promise<Array<{ id: string; display: string }>>((resolve) => {
             requests.set('second', { resolve })
@@ -2392,13 +2397,13 @@ describe('MentionsInput', () => {
       }
 
       const requests = new Map<string, DeferredResult>()
-      const firstAsyncData = jest.fn(
+      const firstAsyncData = vi.fn(
         () =>
           new Promise<Array<{ id: string; display: string }>>((resolve, reject) => {
             requests.set('first', { resolve, reject })
           })
       )
-      const secondAsyncData = jest.fn(
+      const secondAsyncData = vi.fn(
         () =>
           new Promise<Array<{ id: string; display: string }>>((resolve, reject) => {
             requests.set('second', { resolve, reject })
@@ -2442,7 +2447,7 @@ describe('MentionsInput', () => {
     })
 
     it('returns multiple selections when a range overlaps several mentions', async () => {
-      const onMentionSelectionChange = jest.fn()
+      const onMentionSelectionChange = vi.fn()
       const valueWithTwoMentions = '@[First](first) and @[Second](second) together'
       const { textarea } = renderMentionsInput({ onMentionSelectionChange }, valueWithTwoMentions)
 
@@ -2552,7 +2557,7 @@ describe('MentionsInput', () => {
       }
 
       const requests = new Map<string, DeferredResult>()
-      const asyncData = jest.fn(
+      const asyncData = vi.fn(
         (query: string) =>
           new Promise<Array<{ id: string; display: string }>>((resolve) => {
             requests.set(query, { resolve })
@@ -2612,7 +2617,7 @@ describe('MentionsInput', () => {
     })
 
     it('can accept the inline suggestion with Tab', async () => {
-      const onMentionsChange = jest.fn()
+      const onMentionsChange = vi.fn()
       const textbox = renderInlineMentionsInput({ onMentionsChange })
 
       await waitFor(() => {
@@ -2745,7 +2750,7 @@ describe('MentionsInput', () => {
   })
 
   it('forwards native change events to the consumer.', () => {
-    const onChange = jest.fn()
+    const onChange = vi.fn()
 
     render(
       <MentionsInput value="" onChange={onChange}>
@@ -2762,8 +2767,8 @@ describe('MentionsInput', () => {
   })
 
   it('invokes both onMentionBlur and onBlur when focus leaves naturally.', () => {
-    const onMentionBlur = jest.fn()
-    const onBlur = jest.fn()
+    const onMentionBlur = vi.fn()
+    const onBlur = vi.fn()
 
     render(
       <MentionsInput value="" onMentionBlur={onMentionBlur} onBlur={onBlur}>
@@ -2782,7 +2787,7 @@ describe('MentionsInput', () => {
   })
 
   it('flags suggestion clicks via onMentionBlur.', async () => {
-    const onMentionBlur = jest.fn()
+    const onMentionBlur = vi.fn()
 
     render(
       <MentionsInput value="@" onMentionBlur={onMentionBlur}>
@@ -2828,10 +2833,10 @@ describe('MentionsInput', () => {
 
       const instance = ref.current as unknown as any
       instance.suggestionsElement = document.createElement('div')
-      const updateSpy = jest
+      const updateSpy = vi
         .spyOn(instance, 'updateSuggestionsPosition')
         .mockImplementation(() => undefined)
-      const raf = jest
+      const raf = vi
         .spyOn(globalThis, 'requestAnimationFrame')
         .mockImplementation((cb: FrameRequestCallback) => {
           cb(0)
@@ -2858,7 +2863,7 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      const requestViewSyncSpy = jest
+      const requestViewSyncSpy = vi
         .spyOn(instance, 'requestViewSync')
         .mockImplementation(() => undefined)
 
@@ -2882,7 +2887,7 @@ describe('MentionsInput', () => {
 
       const instance = ref.current as unknown as any
       instance.suggestionsElement = document.createElement('div')
-      const updateSpy = jest
+      const updateSpy = vi
         .spyOn(instance, 'updateSuggestionsPosition')
         .mockImplementation(() => undefined)
       const originalRAF = globalThis.requestAnimationFrame
@@ -3006,7 +3011,7 @@ describe('MentionsInput', () => {
       Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
       Object.defineProperty(container, 'offsetWidth', { value: 320, configurable: true })
 
-      const setStateMock = jest.spyOn(instance, 'setState').mockImplementation((update, cb) => {
+      const setStateMock = vi.spyOn(instance, 'setState').mockImplementation((update, cb) => {
         const nextState =
           typeof update === 'function' ? update(instance.state, instance.props) : update
         Object.assign(instance.state, nextState)
@@ -3092,7 +3097,7 @@ describe('MentionsInput', () => {
       instance.state.caretPosition = { left: 32, top: 18 }
       instance.state.suggestionsPosition = {}
 
-      const setStateMock = jest.spyOn(instance, 'setState').mockImplementation((update, cb) => {
+      const setStateMock = vi.spyOn(instance, 'setState').mockImplementation((update, cb) => {
         const nextState =
           typeof update === 'function' ? update(instance.state, instance.props) : update
         Object.assign(instance.state, nextState)
@@ -3123,11 +3128,11 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      const updateSpy = jest
+      const updateSpy = vi
         .spyOn(instance, 'updateHighlighterScroll')
         .mockImplementation(() => false)
-      const flushSpy = jest.spyOn(instance, 'flushPendingViewSync')
-      const raf = jest
+      const flushSpy = vi.spyOn(instance, 'flushPendingViewSync')
+      const raf = vi
         .spyOn(globalThis, 'requestAnimationFrame')
         .mockImplementation((cb: FrameRequestCallback) => {
           cb(0)
@@ -3156,7 +3161,7 @@ describe('MentionsInput', () => {
       )
 
       const instance = ref.current as unknown as any
-      const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 9)
+      const raf = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 9)
 
       act(() => {
         instance.requestHighlighterScrollSync()
@@ -3187,10 +3192,12 @@ describe('MentionsInput', () => {
       instance.inputElement = null
       instance.highlighterElement = null
 
+      let didSync = true
       act(() => {
-        instance.updateHighlighterScroll()
+        didSync = instance.updateHighlighterScroll()
       })
 
+      expect(didSync).toBe(false)
       unmount()
     })
 
@@ -3200,7 +3207,7 @@ describe('MentionsInput', () => {
         'letter-spacing': '0.12em',
       }
 
-      const getComputedStyleSpy = jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
+      const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
         getPropertyValue: (prop: string) => styleMap[prop] ?? '',
       } as unknown as CSSStyleDeclaration)
 

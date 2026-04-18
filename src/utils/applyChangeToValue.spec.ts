@@ -302,7 +302,7 @@ describe('#applyChangeToValue', () => {
 
   it('re-runs splice logic when the reconstructed plain text differs from the target plain text', () => {
     const actualGetPlainText = getPlainTextModule.default
-    const getPlainTextSpy = jest
+    const getPlainTextSpy = vi
       .spyOn(getPlainTextModule, 'default')
       .mockImplementationOnce((inputValue, inputConfig) =>
         actualGetPlainText(inputValue, inputConfig)

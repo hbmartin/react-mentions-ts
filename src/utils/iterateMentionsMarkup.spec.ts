@@ -50,7 +50,7 @@ describe('#iterateMentionsMarkup', () => {
     ]
 
     const overlappingValue = 'Hello @[Ada](user:ada)'
-    const markupIteratee = jest.fn()
+    const markupIteratee = vi.fn()
 
     iterateMentionsMarkup(overlappingValue, overlappingConfig, markupIteratee)
 
@@ -58,7 +58,7 @@ describe('#iterateMentionsMarkup', () => {
     expect(matchedStrings).toContain('@[Ada](user:ada)')
     const shorterIndex = matchedStrings.indexOf('@[Ada]')
     if (shorterIndex !== -1) {
-      // eslint-disable-next-line jest/no-conditional-expect
+      // eslint-disable-next-line vitest/no-conditional-expect
       expect(matchedStrings.indexOf('@[Ada](user:ada)')).toBeLessThan(shorterIndex)
     }
     expect(markupIteratee).toHaveBeenCalledTimes(1)
@@ -80,7 +80,7 @@ describe('#iterateMentionsMarkup', () => {
     ]
 
     const overlappingValue = '@[Ada](user:ada) and @[Ada]'
-    const markupIteratee = jest.fn()
+    const markupIteratee = vi.fn()
 
     iterateMentionsMarkup(overlappingValue, overlappingConfig, markupIteratee)
 
@@ -108,7 +108,7 @@ describe('#iterateMentionsMarkup', () => {
       },
     ]
 
-    const markupIteratee = jest.fn()
+    const markupIteratee = vi.fn()
     iterateMentionsMarkup('mention', configWithEqualLength, markupIteratee)
 
     expect(markupIteratee.mock.calls).toHaveLength(1)
@@ -116,7 +116,7 @@ describe('#iterateMentionsMarkup', () => {
   })
 
   it('should call the `markupIteratee` for every markup occurrence', () => {
-    const markupIteratee = jest.fn()
+    const markupIteratee = vi.fn()
     iterateMentionsMarkup(value, config, markupIteratee)
 
     expect(markupIteratee.mock.calls.length).toEqual(2)
@@ -141,7 +141,7 @@ describe('#iterateMentionsMarkup', () => {
   })
 
   it('should call the `markupIteratee` with the correct plain text indices when a display transform is used', () => {
-    const markupIteratee = jest.fn()
+    const markupIteratee = vi.fn()
     const displayTransform = (id, display) => `[${display}]`
     iterateMentionsMarkup(
       value,
@@ -173,7 +173,7 @@ describe('#iterateMentionsMarkup', () => {
   })
 
   it('should call the `textIteratee` for all plain text sub string between markups', () => {
-    const textIteratee = jest.fn()
+    const textIteratee = vi.fn()
     iterateMentionsMarkup(value, config, () => {}, textIteratee)
 
     expect(textIteratee.mock.calls.length).toEqual(3)
@@ -191,7 +191,7 @@ describe('#iterateMentionsMarkup', () => {
   })
 
   it('should call the `markupIteratee` for every markup occurrence with display transform', () => {
-    const markupIteratee = jest.fn()
+    const markupIteratee = vi.fn()
     iterateMentionsMarkup(
       value,
       config.map((c) => ({ ...c, displayTransform })),
@@ -220,7 +220,7 @@ describe('#iterateMentionsMarkup', () => {
   })
 
   it('should call the `textIteratee` for all plain text sub string between markups with display transform', () => {
-    const textIteratee = jest.fn()
+    const textIteratee = vi.fn()
     iterateMentionsMarkup(
       value,
       config.map((c) => ({ ...c, displayTransform })),
