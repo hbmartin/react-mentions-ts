@@ -99,14 +99,16 @@ describe('#getSubstringIndex', () => {
     const originalCodePointAt = Object.getOwnPropertyDescriptor(String.prototype, 'codePointAt')
       ?.value as (this: string, pos: number) => number | undefined
     const codePointAtMock = vi.spyOn(String.prototype, 'codePointAt').mockImplementation(function (
-      this: string,
+      this: unknown,
       pos: number
     ) {
-      if (this === 'abc' && pos === 1) {
+      const receiver = String(this)
+
+      if (receiver === 'abc' && pos === 1) {
         return undefined
       }
 
-      return originalCodePointAt.call(this, pos)
+      return originalCodePointAt.call(receiver, pos)
     })
 
     try {

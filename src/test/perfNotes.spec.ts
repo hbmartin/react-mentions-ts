@@ -7,6 +7,7 @@ import {
   checkPerfAgainstBaseline,
   comparePerfNotes,
   findNearestBaselineNote,
+  parseCommandLine,
   parsePerfOutput,
   recordPerfNote,
   readPerfNote,
@@ -154,6 +155,24 @@ const createArgvCheckingPerfCommand = (expectedArgs: string[], commandTail: stri
   ].join(';')
 
   return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(code)} -- ${commandTail}`
+}
+
+const withProcessExecPath = <Result>(execPath: string, callback: () => Result): Result => {
+  const originalExecPathDescriptor = Object.getOwnPropertyDescriptor(process, 'execPath')
+  Object.defineProperty(process, 'execPath', {
+    configurable: true,
+    enumerable: originalExecPathDescriptor?.enumerable ?? true,
+    value: execPath,
+    writable: true,
+  })
+
+  try {
+    return callback()
+  } finally {
+    if (originalExecPathDescriptor) {
+      Object.defineProperty(process, 'execPath', originalExecPathDescriptor)
+    }
+  }
 }
 
 const createMemoryWriteStream = () => {
@@ -462,6 +481,17 @@ describe('perfNotes', () => {
 
     expect(payload.command).toBe(perfCommand)
     expect(readPerfNote(cwd, headCommit, 'refs/notes/test-perf', perfCommand)).toEqual(payload)
+  })
+
+  it('preserves unquoted process.execPath commands that contain spaces', () => {
+    const execPathWithSpaces = path.join(tmpdir(), 'runtime with spaces', 'node')
+    const code = 'process.stdout.write("ok")'
+    const commandLine = `${execPathWithSpaces} -e ${JSON.stringify(code)} --label escaped\\ value`
+
+    expect(withProcessExecPath(execPathWithSpaces, () => parseCommandLine(commandLine))).toEqual({
+      args: ['-e', code, '--label', 'escaped value'],
+      command: execPathWithSpaces,
+    })
   })
 
   it('records a perf note on HEAD without touching the default notes ref', () => {
