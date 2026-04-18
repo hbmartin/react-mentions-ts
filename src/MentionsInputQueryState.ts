@@ -83,14 +83,14 @@ export const applyErroredQueryResult = <Extra extends Record<string, unknown>>(
   error: unknown,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
-  const suggestions: SuggestionsMap<Extra> = { ...currentSuggestions }
-  delete suggestions[childIndex]
+  const suggestions = Object.fromEntries(
+    Object.entries(currentSuggestions).filter(([key]) => Number(key) !== childIndex)
+  ) as SuggestionsMap<Extra>
   const suggestionsCount = countSuggestions(suggestions)
 
   return {
     suggestions,
-    focusIndex:
-      focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex,
+    focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex,
     queryStates: {
       ...currentQueryStates,
       [childIndex]: {

@@ -317,29 +317,31 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
   const applyMaxSuggestions = (
     items: ReadonlyArray<MentionDataItem<Extra>>
   ): MentionDataItem<Extra>[] =>
-    maxSuggestions === undefined ? [...items] : [...items.slice(0, maxSuggestions)]
+    maxSuggestions === undefined ? [...items] : items.slice(0, maxSuggestions)
 
   if (Array.isArray(data)) {
     const items = data as ReadonlyArray<MentionDataItem<Extra>>
 
-    return async (query: string) =>
-      applyMaxSuggestions(
-        items.flatMap((item) => {
-          if (signal.aborted) {
-            return []
-          }
+    return (query: string) =>
+      Promise.resolve(
+        applyMaxSuggestions(
+          items.flatMap((item) => {
+            if (signal.aborted) {
+              return []
+            }
 
-          const index = getSubstringIndex(item.display ?? String(item.id), query, ignoreAccents)
+            const index = getSubstringIndex(item.display ?? String(item.id), query, ignoreAccents)
 
-          return index >= 0
-            ? [
-                {
-                  ...item,
-                  highlights: [{ start: index, end: index + query.length }],
-                },
-              ]
-            : []
-        })
+            return index >= 0
+              ? [
+                  {
+                    ...item,
+                    highlights: [{ start: index, end: index + query.length }],
+                  },
+                ]
+              : []
+          })
+        )
       )
   }
 

@@ -36,6 +36,35 @@ export const areMentionOccurrencesEqual = <Extra extends Record<string, unknown>
   })
 }
 
+const getCollapsedMentionSelectionState = (
+  cursor: number,
+  mentionStart: number,
+  mentionEnd: number
+): MentionSelectionState | null => {
+  if (cursor > mentionStart && cursor < mentionEnd) {
+    return 'inside'
+  }
+
+  if (cursor === mentionStart || cursor === mentionEnd) {
+    return 'boundary'
+  }
+
+  return null
+}
+
+const getRangeMentionSelectionState = (
+  start: number,
+  end: number,
+  mentionStart: number,
+  mentionEnd: number
+): MentionSelectionState | null => {
+  if (start >= mentionEnd || end <= mentionStart) {
+    return null
+  }
+
+  return start <= mentionStart && end >= mentionEnd ? 'full' : 'partial'
+}
+
 export const computeMentionSelectionDetails = <Extra extends Record<string, unknown>>(
   mentions: ReadonlyArray<MentionOccurrence<Extra>>,
   config: ReadonlyArray<MentionChildConfig<Extra>>,
@@ -55,17 +84,9 @@ export const computeMentionSelectionDetails = <Extra extends Record<string, unkn
   for (const mention of mentions) {
     const mentionStart = mention.plainTextIndex
     const mentionEnd = mentionStart + mention.display.length
-    let selectionState: MentionSelectionState | null = null
-
-    if (isCollapsed) {
-      if (start > mentionStart && start < mentionEnd) {
-        selectionState = 'inside'
-      } else if (start === mentionStart || start === mentionEnd) {
-        selectionState = 'boundary'
-      }
-    } else if (start < mentionEnd && end > mentionStart) {
-      selectionState = start <= mentionStart && end >= mentionEnd ? 'full' : 'partial'
-    }
+    const selectionState = isCollapsed
+      ? getCollapsedMentionSelectionState(start, mentionStart, mentionEnd)
+      : getRangeMentionSelectionState(start, end, mentionStart, mentionEnd)
 
     if (selectionState === null) {
       continue

@@ -98,12 +98,12 @@ describe('MentionsInputLayout', () => {
     const highlighter = document.createElement('div')
     const suggestions = document.createElement('div')
     const container = document.createElement('div')
-    const originalInnerHeight = window.innerHeight
+    const originalInnerHeight = globalThis.innerHeight
     const originalClientHeight = document.documentElement.clientHeight
 
     highlighter.style.fontSize = '16px'
 
-    Object.defineProperty(window, 'innerHeight', { value: 180, configurable: true })
+    Object.defineProperty(globalThis, 'innerHeight', { value: 180, configurable: true })
     Object.defineProperty(document.documentElement, 'clientHeight', {
       value: 180,
       configurable: true,
@@ -139,7 +139,7 @@ describe('MentionsInputLayout', () => {
         width: 180,
       })
     } finally {
-      Object.defineProperty(window, 'innerHeight', {
+      Object.defineProperty(globalThis, 'innerHeight', {
         value: originalInnerHeight,
         configurable: true,
       })
@@ -155,7 +155,7 @@ describe('MentionsInputLayout', () => {
     const highlighter = document.createElement('div')
     const caret = document.createElement('span')
 
-    caret.setAttribute('data-mentions-caret', 'true')
+    caret.dataset.mentionsCaret = 'true'
     highlighter.append(caret)
     control.append(highlighter)
 
@@ -184,12 +184,9 @@ describe('MentionsInputLayout', () => {
       left: 22,
       top: 18,
     })
-    expect(
-      areInlineSuggestionPositionsEqual(
-        { left: 22, top: 18 },
-        { left: 22, top: 18 }
-      )
-    ).toBe(true)
+    expect(areInlineSuggestionPositionsEqual({ left: 22, top: 18 }, { left: 22, top: 18 })).toBe(
+      true
+    )
   })
 
   it('merges pending view-sync flags without dropping prior work', () => {
@@ -209,10 +206,7 @@ describe('MentionsInputLayout', () => {
       recomputeHighlighter: false,
     })
     expect(
-      areSuggestionsPositionsEqual(
-        { left: 1, top: 2, width: 3 },
-        { left: 1, top: 2, width: 3 }
-      )
+      areSuggestionsPositionsEqual({ left: 1, top: 2, width: 3 }, { left: 1, top: 2, width: 3 })
     ).toBe(true)
   })
 
@@ -221,11 +215,7 @@ describe('MentionsInputLayout', () => {
     const highlighter = document.createElement('div')
     const getComputedStyleSpy = jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
       getPropertyValue: (property: string) =>
-        property === 'line-height'
-          ? '24px'
-          : property === 'letter-spacing'
-            ? '0.08em'
-            : '',
+        property === 'line-height' ? '24px' : property === 'letter-spacing' ? '0.08em' : '',
     } as unknown as CSSStyleDeclaration)
 
     try {

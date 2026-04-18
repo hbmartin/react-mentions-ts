@@ -5,7 +5,6 @@ interface TriggerOptions {
   ignoreAccents?: boolean
 }
 
-// eslint-disable-next-line code-complete/low-function-cohesion
 export const makeTriggerRegex = (
   trigger: string | RegExp = '@',
   options: TriggerOptions = {}

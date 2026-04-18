@@ -25,7 +25,6 @@ const ensureNumber = (value: number | null | undefined, fallback: number): numbe
 
 // Applies a change from the plain text textarea to the underlying marked up value
 // guided by the textarea text selection ranges before and after the change
-// eslint-disable-next-line code-complete/low-function-cohesion
 const applyChangeToValue = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: string,
   plainTextValue: string,

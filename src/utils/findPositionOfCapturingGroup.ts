@@ -2,7 +2,6 @@ import PLACEHOLDERS from './placeholders'
 
 type PlaceholderName = 'id' | 'display'
 
-// eslint-disable-next-line code-complete/low-function-cohesion
 const findPositionOfCapturingGroup = (markup: string, parameterName: PlaceholderName): number => {
   // find positions of placeholders in the markup
   let indexDisplay: number | null = markup.indexOf(PLACEHOLDERS.display)

@@ -43,7 +43,10 @@ export interface MentionSearchContext {
 
 export type DataSource<Extra extends Record<string, unknown> = Record<string, unknown>> =
   | ReadonlyArray<MentionDataItem<Extra>>
-  | ((query: string, context: MentionSearchContext) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
+  | ((
+      query: string,
+      context: MentionSearchContext
+    ) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
 
 export function isDataSource<Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: unknown

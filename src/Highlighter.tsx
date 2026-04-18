@@ -59,7 +59,6 @@ const singleLineContentWrapperStyle: CSSProperties = {
   minWidth: '100%',
 }
 
-// eslint-disable-next-line code-complete/low-function-cohesion
 function Highlighter<Extra extends Record<string, unknown> = Record<string, unknown>>({
   selectionStart,
   selectionEnd,
@@ -90,7 +89,6 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
   })
 
   // Ensure caret position updates whenever content/selection affects layout.
-  // eslint-disable-next-line code-complete/low-function-cohesion
   useLayoutEffect(() => {
     if (caretElement === null) {
       return undefined
@@ -122,7 +120,15 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
       }
     }
     // value/selection/singleLine impact layout/position
-  }, [caretElement, value, selectionStart, selectionEnd, singleLine, recomputeVersion])
+  }, [
+    caretElement,
+    recomputeVersion,
+    selectionEnd,
+    selectionStart,
+    singleLine,
+    updatePosition,
+    value,
+  ])
 
   const mentionChildren = useMemo(
     () => mentionChildrenProp ?? collectMentionElements(children),
