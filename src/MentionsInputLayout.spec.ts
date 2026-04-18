@@ -716,9 +716,7 @@ describe('MentionsInputLayout', () => {
     ).toBe(false)
 
     const input = document.createElement('textarea')
-    expect(
-      getHighlighterViewPatch(input, highlighter)
-    ).toMatchObject({
+    expect(getHighlighterViewPatch(input, highlighter)).toMatchObject({
       height: null,
     })
   })

@@ -1,21 +1,22 @@
 import Advanced from './Advanced'
+import AllowSpaceInQuery from './AllowSpaceInQuery'
+import AlphabetRegexTrigger from './AlphabetRegexTrigger'
 import AsyncGithubUserMentions from './AsyncGithubUserMentions'
-import Emojis from './Emojis'
+import AutoResize from './AutoResize'
+import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import CutCopyPaste from './CutCopyPaste'
+import Emojis from './Emojis'
+import InlineAutocomplete from './InlineAutocomplete'
+import LeftAnchored from './LeftAnchored'
+import MentionSelection from './MentionSelection'
 import MultipleTriggers from './MultipleTriggers'
+import ParenAwareSerializer from './ParenAwareSerializer'
 import ProfilingHarness from './ProfilingHarness'
 import Scrollable from './Scrollable'
 import SingleLine from './SingleLine'
 import SingleLineIgnoringAccents from './SingleLineIgnoringAccents'
 import StateLocalityLab from './StateLocalityLab'
 import SuggestionPortal from './SuggestionPortal'
-import CustomSuggestionsContainer from './CustomSuggestionsContainer'
-import InlineAutocomplete from './InlineAutocomplete'
-import AllowSpaceInQuery from './AllowSpaceInQuery'
-import AlphabetRegexTrigger from './AlphabetRegexTrigger'
-import MentionSelection from './MentionSelection'
-import AutoResize from './AutoResize'
-import LeftAnchored from './LeftAnchored'
 
 const users = [
   {
@@ -79,8 +80,6 @@ const users = [
 export default function Examples() {
   return (
     <div className="grid gap-8">
-      <ProfilingHarness />
-      <StateLocalityLab />
       <MultipleTriggers data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SingleLine data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <AllowSpaceInQuery data={users} />
@@ -97,6 +96,9 @@ export default function Examples() {
       <SuggestionPortal data={users} />
       <CustomSuggestionsContainer data={users} />
       <LeftAnchored data={users} />
+      <ParenAwareSerializer />
+      <ProfilingHarness />
+      <StateLocalityLab />
     </div>
   )
 }
