@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-nested-functions */
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
@@ -504,7 +503,7 @@ describe('MentionsInput', () => {
   })
 
   it('ignores stale async suggestions when a newer query resolves first.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       resolve: (value: Array<{ id: string; display: string }>) => void
     }
 
@@ -567,7 +566,7 @@ describe('MentionsInput', () => {
   })
 
   it('keeps the previous overlay suggestions visible while the next async query loads.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       resolve: (value: Array<{ id: string; display: string }>) => void
     }
 
@@ -640,7 +639,7 @@ describe('MentionsInput', () => {
   })
 
   it('replaces the latest query range when selecting a preserved async suggestion.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       resolve: (value: Array<{ id: string; display: string }>) => void
     }
 
@@ -731,7 +730,7 @@ describe('MentionsInput', () => {
   })
 
   it('allows renderEmpty to suppress the built-in empty state.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       resolve: (value: Array<{ id: string; display: string }>) => void
     }
 
@@ -771,7 +770,7 @@ describe('MentionsInput', () => {
   })
 
   it('falls back to the built-in empty state when renderEmpty returns undefined.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       resolve: (value: Array<{ id: string; display: string }>) => void
     }
 
@@ -814,14 +813,14 @@ describe('MentionsInput', () => {
   })
 
   it('allows renderError to suppress the built-in error state.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       reject: (reason?: unknown) => void
     }
 
     const requests = new Map<string, DeferredResult>()
     const asyncData = jest.fn(
       (query: string) =>
-        new Promise<Array<{ id: string; display: string }>>((_, reject) => {
+        new Promise<Array<{ id: string; display: string }>>((_resolve, reject) => {
           requests.set(query, { reject })
         })
     )
@@ -854,14 +853,14 @@ describe('MentionsInput', () => {
   })
 
   it('falls back to the built-in error state when renderError returns undefined.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       reject: (reason?: unknown) => void
     }
 
     const requests = new Map<string, DeferredResult>()
     const asyncData = jest.fn(
       (query: string) =>
-        new Promise<Array<{ id: string; display: string }>>((_, reject) => {
+        new Promise<Array<{ id: string; display: string }>>((_resolve, reject) => {
           requests.set(query, { reject })
         })
     )
@@ -892,7 +891,7 @@ describe('MentionsInput', () => {
   })
 
   it('keeps the active request abortable after an older request rejects.', async () => {
-    type DeferredResult = {
+    interface DeferredResult {
       resolve: (value: Array<{ id: string; display: string }>) => void
       reject: (reason?: unknown) => void
       signal: AbortSignal
@@ -2264,6 +2263,35 @@ describe('MentionsInput', () => {
       }
     })
 
+    it('recomputes mention selection state when the mention config changes without moving the caret', async () => {
+      const onMentionSelectionChange = jest.fn()
+      const initialValue = '@[First](first) and more text'
+      const { rerender } = render(
+        <MentionsInput value={initialValue} onMentionSelectionChange={onMentionSelectionChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole('combobox')
+      fireEvent.focus(textarea)
+      textarea.setSelectionRange(2, 2)
+      fireEvent.select(textarea)
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalled())
+      expect(onMentionSelectionChange.mock.calls.at(-1)?.[0]).toHaveLength(1)
+
+      onMentionSelectionChange.mockClear()
+
+      rerender(
+        <MentionsInput value={initialValue} onMentionSelectionChange={onMentionSelectionChange}>
+          <Mention trigger="#" data={data} />
+        </MentionsInput>
+      )
+
+      await waitFor(() => expect(onMentionSelectionChange).toHaveBeenCalledTimes(1))
+      expect(onMentionSelectionChange.mock.calls[0][0]).toHaveLength(0)
+    })
+
     it('clears cached mentions when the mention config changes', async () => {
       const getMentionsAndPlainTextSpy = jest.spyOn(utils, 'getMentionsAndPlainText')
       try {
@@ -2303,7 +2331,7 @@ describe('MentionsInput', () => {
     })
 
     it('merges async suggestion results from multiple matching children', async () => {
-      type DeferredResult = {
+      interface DeferredResult {
         resolve: (value: Array<{ id: string; display: string }>) => void
       }
 
@@ -2324,7 +2352,7 @@ describe('MentionsInput', () => {
       render(
         <MentionsInput value="@a">
           <Mention trigger={/(@([a-z]*))$/} data={firstAsyncData} />
-          <Mention trigger={/(@([a-z0-9]*))$/} data={secondAsyncData} />
+          <Mention trigger={/(@([\da-z]*))$/} data={secondAsyncData} />
         </MentionsInput>
       )
 
@@ -2358,7 +2386,7 @@ describe('MentionsInput', () => {
     })
 
     it('preserves successful async suggestions when a sibling query rejects', async () => {
-      type DeferredResult = {
+      interface DeferredResult {
         resolve: (value: Array<{ id: string; display: string }>) => void
         reject: (reason?: unknown) => void
       }
@@ -2380,7 +2408,7 @@ describe('MentionsInput', () => {
       render(
         <MentionsInput value="@a">
           <Mention trigger={/(@([a-z]*))$/} data={firstAsyncData} />
-          <Mention trigger={/(@([a-z0-9]*))$/} data={secondAsyncData} />
+          <Mention trigger={/(@([\da-z]*))$/} data={secondAsyncData} />
         </MentionsInput>
       )
 
@@ -2519,7 +2547,7 @@ describe('MentionsInput', () => {
     })
 
     it('keeps inline completion visible while the next async query loads.', async () => {
-      type DeferredResult = {
+      interface DeferredResult {
         resolve: (value: Array<{ id: string; display: string }>) => void
       }
 

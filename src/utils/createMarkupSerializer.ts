@@ -16,7 +16,6 @@ const createMarkupSerializer = (markup: string): MentionSerializer => {
     return makeMentionsMarkup(markup, id, display)
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   const findAll: MentionSerializer['findAll'] = (value) => {
     const globalRegex = new RegExp(baseRegex.source, 'g')
     const matches: MentionSerializerMatch[] = []

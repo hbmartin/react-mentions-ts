@@ -81,6 +81,7 @@ import {
 import type {
   CaretCoordinates,
   InputComponentProps,
+  MentionChildConfig,
   MentionComponentProps,
   MentionDataItem,
   MentionIdentifier,
@@ -341,12 +342,22 @@ class MentionsInput<
     return preparedChildren
   }
 
-  private getMentionChildren() {
+  private getMentionChildren(): PreparedMentionsInputChildren<Extra>['mentionChildren'] {
     return this.getPreparedChildren().mentionChildren
   }
 
-  private getCurrentConfig() {
+  private getCurrentConfig(): PreparedMentionsInputChildren<Extra>['config'] {
     return this.getPreparedChildren().config
+  }
+
+  private getPreviousConfig(
+    previousChildren: MentionsInputProps<Extra>['children']
+  ): ReadonlyArray<MentionChildConfig<Extra>> {
+    if (previousChildren === this.props.children) {
+      return this._cachedConfig
+    }
+
+    return this.getPreparedChildren(previousChildren).config
   }
 
   private getSlotClassName(slot: keyof MentionsInputClassNames, baseClass: string) {
@@ -479,7 +490,7 @@ class MentionsInput<
     )
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   componentDidUpdate(
     prevProps: MentionsInputProps<Extra>,
     prevState: MentionsInputState<Extra>
@@ -491,7 +502,7 @@ class MentionsInput<
     const previousValue = prevProps.value ?? ''
     const currentValue = this.props.value ?? ''
     const currentConfig = this.getCurrentConfig()
-    const previousConfig = this._cachedConfig
+    const previousConfig = this.getPreviousConfig(prevProps.children)
     const configChanged = !areMentionConfigsEqual(previousConfig, currentConfig)
     const valueChanged = currentValue !== previousValue || configChanged
 
@@ -565,7 +576,7 @@ class MentionsInput<
     this.flushPendingViewSync()
 
     if (selectionPositionsChanged || valueChanged) {
-      const currentSelection = computeMentionSelectionDetails(
+      const currentSelection = computeMentionSelectionDetails<Extra>(
         snapshotForSelection.mentions,
         currentConfig,
         this.state.selectionStart,
@@ -574,7 +585,7 @@ class MentionsInput<
       let shouldEmit = selectionPositionsChanged
 
       if (!shouldEmit && valueChanged) {
-        const previousSelection = computeMentionSelectionDetails(
+        const previousSelection = computeMentionSelectionDetails<Extra>(
           prevState.cachedMentions,
           previousConfig,
           prevState.selectionStart,
@@ -638,7 +649,7 @@ class MentionsInput<
     this.containerElement = el
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion, sonarjs/cognitive-complexity
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   getInputProps = (): InputComponentProps => {
     const { readOnly, disabled, singleLine } = this.props
 
@@ -739,7 +750,6 @@ class MentionsInput<
     }
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   private readonly resetTextareaHeight = (): boolean => {
     const hasTextarea =
       typeof HTMLTextAreaElement !== 'undefined' && this.inputElement instanceof HTMLTextAreaElement
@@ -790,7 +800,6 @@ class MentionsInput<
     this.suggestionsElement = el
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   renderSuggestionsOverlay = (): React.ReactNode | null => {
     if (this.isInlineAutocomplete()) {
       return null
@@ -849,7 +858,6 @@ class MentionsInput<
     return suggestionsNode
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   renderInlineSuggestion = (): React.ReactNode => {
     if (!this.isInlineAutocomplete()) {
       return null
@@ -1235,7 +1243,6 @@ class MentionsInput<
   }
 
   // Handle input element's change event
-  // eslint-disable-next-line code-complete/low-function-cohesion
   handleChange = (ev: ChangeEvent<InputElement>) => {
     const native = ev.nativeEvent
     if ('isComposing' in native && typeof native.isComposing === 'boolean') {
@@ -1318,7 +1325,6 @@ class MentionsInput<
     )
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   private readonly syncSelectionFromInput = (
     reason: 'select' | 'selectionchange' = 'selectionchange'
   ): void => {
@@ -1359,7 +1365,6 @@ class MentionsInput<
     this.requestHighlighterScrollSync()
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   handleKeyDown = (ev: KeyboardEvent<InputElement>) => {
     const inlineAutocomplete = this.isInlineAutocomplete()
 
@@ -1376,7 +1381,7 @@ class MentionsInput<
           if (suggestionsCount > 0) {
             ev.preventDefault()
             ev.stopPropagation()
-            this.shiftFocus(+1)
+            this.shiftFocus(1)
             return
           }
           break
@@ -1419,7 +1424,7 @@ class MentionsInput<
         return
       }
       case KEY.DOWN: {
-        this.shiftFocus(+1)
+        this.shiftFocus(1)
         return
       }
       case KEY.UP: {
@@ -1491,7 +1496,6 @@ class MentionsInput<
     })
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion, sonarjs/cognitive-complexity
   updateSuggestionsPosition = (): boolean => {
     const position =
       calculateSuggestionsPosition({
@@ -1515,7 +1519,6 @@ class MentionsInput<
     return true
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   updateHighlighterScroll = (): boolean =>
     applyHighlighterViewPatch(
       this.highlighterElement,
@@ -1531,8 +1534,7 @@ class MentionsInput<
   }
 
   handleDocumentScroll = (): void => {
-    const shouldMeasureInline =
-      this.isInlineAutocomplete() && isNumber(this.state.selectionStart)
+    const shouldMeasureInline = this.isInlineAutocomplete() && isNumber(this.state.selectionStart)
 
     if (!this.suggestionsElement && !shouldMeasureInline) {
       return
@@ -1540,7 +1542,7 @@ class MentionsInput<
 
     this.requestViewSync({
       measureSuggestions: true,
-      measureInline: true,
+      measureInline: shouldMeasureInline,
     })
   }
 
@@ -1556,7 +1558,6 @@ class MentionsInput<
     this._isComposing = false
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   setSelection = (selectionStart: number | null, selectionEnd: number | null): void => {
     if (selectionStart === null || selectionEnd === null) {
       return
@@ -1595,9 +1596,11 @@ class MentionsInput<
   private replaceSuggestions(
     computeNextState: (
       prevState: MentionsInputState<Extra>
-    ) => Pick<MentionsInputState<Extra>, 'suggestions'> & Partial<MentionsInputState<Extra>>
+    ) => Pick<MentionsInputState<Extra>, 'suggestions' | 'queryStates' | 'focusIndex'>
   ): void {
-    this.setState((prevState) => computeNextState(prevState))
+    this.setState<'suggestions' | 'queryStates' | 'focusIndex'>((prevState) =>
+      computeNextState(prevState)
+    )
   }
 
   private getActiveSuggestionQueries(
@@ -1630,7 +1633,8 @@ class MentionsInput<
         return []
       }
 
-      const querySequenceStart = substringStartIndex + substring.indexOf(match[1], match.index)
+      const matchIndex = match.index ?? 0
+      const querySequenceStart = substringStartIndex + substring.indexOf(match[1], matchIndex)
       return [
         {
           childIndex,
@@ -1826,7 +1830,6 @@ class MentionsInput<
     }
   }
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   addMention = (
     suggestion: SuggestionDataItem<Extra>,
     { childIndex, querySequenceStart, querySequenceEnd }: QueryInfo
@@ -1842,7 +1845,6 @@ class MentionsInput<
     }
     const {
       serializer,
-      displayTransform = DEFAULT_MENTION_PROPS.displayTransform,
       appendSpaceOnAdd = DEFAULT_MENTION_PROPS.appendSpaceOnAdd,
       onAdd = DEFAULT_MENTION_PROPS.onAdd,
     } = config[childIndex]
@@ -1861,7 +1863,7 @@ class MentionsInput<
     // Refocus input and set caret position to end of mention
     this.inputElement?.focus()
 
-    let displayValue = displayTransform(id, mentionDisplay)
+    let displayValue = config[childIndex].displayTransform(id, mentionDisplay)
     if (appendSpaceOnAdd) {
       displayValue += ' '
     }

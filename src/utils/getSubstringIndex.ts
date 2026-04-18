@@ -1,4 +1,4 @@
-// eslint-disable-next-line code-complete/low-function-cohesion, code-complete/enforce-meaningful-names
+// eslint-disable-next-line code-complete/enforce-meaningful-names
 const stripWithMap = (s: string) => {
   let out = ''
   const map: number[] = []

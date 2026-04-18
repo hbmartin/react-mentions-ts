@@ -10,7 +10,6 @@ export interface FlattenedSuggestion<
   queryInfo: QueryInfo
 }
 
-// eslint-disable-next-line code-complete/low-function-cohesion
 const flattenSuggestions = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   children: ReactNode,
   suggestions: SuggestionsMap<Extra> | undefined

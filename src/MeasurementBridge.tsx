@@ -56,12 +56,18 @@ const MeasurementBridge = ({
     requestAllMeasurements()
   }, [requestAllMeasurements])
 
-  useLayoutEffect(() => observe(container, requestAllMeasurements), [container, observe, requestAllMeasurements])
+  useLayoutEffect(
+    () => observe(container, requestAllMeasurements),
+    [container, observe, requestAllMeasurements]
+  )
   useLayoutEffect(
     () => observe(highlighter, requestAllMeasurements),
     [highlighter, observe, requestAllMeasurements]
   )
-  useLayoutEffect(() => observe(input, requestAllMeasurements), [input, observe, requestAllMeasurements])
+  useLayoutEffect(
+    () => observe(input, requestAllMeasurements),
+    [input, observe, requestAllMeasurements]
+  )
   useLayoutEffect(
     () => observe(suggestions, requestSuggestionsMeasurement),
     [suggestions, observe, requestSuggestionsMeasurement]

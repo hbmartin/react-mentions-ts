@@ -79,9 +79,9 @@ describe('MeasurementBridge', () => {
       })
 
       act(() => {
-        observers.forEach((observer) => {
+        for (const observer of observers) {
           observer.callback()
-        })
+        }
       })
 
       act(() => {

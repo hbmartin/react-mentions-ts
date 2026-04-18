@@ -111,6 +111,7 @@ export default defineConfig([
 			"import-x/no-duplicates": ["error", { "prefer-inline": false }],
 			"import-x/no-unresolved": "error",
 			"import-x/no-cycle": "error",
+			"import-x/no-named-as-default-member": "off",
 
 			// === DISABLE CONFLICTING RULES ===
 			"@typescript-eslint/no-unused-vars": "off", // Use unused-imports plugin
@@ -136,7 +137,7 @@ export default defineConfig([
 			"security/detect-object-injection": "off",
 
 			"code-complete/no-late-argument-usage": "error",
-			"code-complete/low-function-cohesion": "error",
+			"code-complete/low-function-cohesion": "off",
 			"code-complete/enforce-meaningful-names": "error",
 			"code-complete/no-magic-numbers-except-zero-one": "off",
 			"code-complete/no-boolean-params": "off",
@@ -261,6 +262,7 @@ export default defineConfig([
 			"react-perf/jsx-no-new-array-as-prop": "off",
 			"react-perf/jsx-no-new-function-as-prop": "off",
 			"react-perf/jsx-no-new-object-as-prop": "off",
+			"react-perf/jsx-no-jsx-as-prop": "off",
 			"code-complete/low-function-cohesion": "off",
 		},
 	},

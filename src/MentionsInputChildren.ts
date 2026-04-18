@@ -92,12 +92,12 @@ export const areMentionConfigsEqual = <Extra extends Record<string, unknown>>(
     return false
   }
 
-  return config1.every((cfg1, index) => {
-    const cfg2 = config2[index]
+  return config1.every((leftConfig, index) => {
+    const rightConfig = config2[index]
 
     return (
-      getTriggerIdentity(cfg1.trigger) === getTriggerIdentity(cfg2.trigger) &&
-      cfg1.serializer.id === cfg2.serializer.id
+      getTriggerIdentity(leftConfig.trigger) === getTriggerIdentity(rightConfig.trigger) &&
+      leftConfig.serializer.id === rightConfig.serializer.id
     )
   })
 }

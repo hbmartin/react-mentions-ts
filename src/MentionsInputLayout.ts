@@ -344,7 +344,7 @@ export const getTextareaResizePatch = (
     return null
   }
 
-  const element = input as HTMLTextAreaElement
+  const element = input
   const previousHeight = element.style.height
   const previousOverflowY = element.style.overflowY
   element.style.height = 'auto'
@@ -371,7 +371,11 @@ export const applyTextareaResizePatch = (
   input: InputElement | null,
   patch: TextareaResizePatch | null
 ): boolean => {
-  if (!patch || typeof HTMLTextAreaElement === 'undefined' || !(input instanceof HTMLTextAreaElement)) {
+  if (
+    !patch ||
+    typeof HTMLTextAreaElement === 'undefined' ||
+    !(input instanceof HTMLTextAreaElement)
+  ) {
     return false
   }
 

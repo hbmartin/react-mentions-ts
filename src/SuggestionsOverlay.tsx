@@ -118,7 +118,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     [mentionChildren]
   )
 
-  // eslint-disable-next-line code-complete/low-function-cohesion
   useLayoutEffect(() => {
     if (!ulElement || ulElement.offsetHeight >= ulElement.scrollHeight || !scrollFocusedIntoView) {
       return
@@ -177,7 +176,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         index,
       }
     })
-  }, [childRenderSuggestions, focusIndex, flattenedSuggestions])
+  }, [childRenderSuggestions, focusIndex, flattenedSuggestions, handleMouseEnter, selectSuggestion])
 
   const handleListMouseDown = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(
     (event) => {
@@ -250,7 +249,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   }
 
   const renderStatus = (): React.ReactNode => {
-    if (statusContent == null) {
+    if (statusContent === null || statusContent === undefined) {
       return null
     }
 
