@@ -1,5 +1,4 @@
 import React from 'react'
-import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import type { MentionChildConfig, MentionComponentProps } from './types'
 import { isMentionElement } from './utils/isMentionElement'
 import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
@@ -13,44 +12,37 @@ export interface PreparedMentionsInputChildren<
 
 const getTriggerIdentity = (trigger: string | RegExp | undefined): string => {
   if (trigger === undefined) {
-    return `str:${DEFAULT_MENTION_PROPS.trigger}`
-  }
-
-  if (typeof trigger === 'string') {
-    return `str:${trigger}`
-  }
-
-  return `re:${trigger.source}/${trigger.flags.replaceAll('g', '')}`
-}
-
-const getTriggerLabel = (trigger: string | RegExp | undefined): string => {
-  if (trigger === undefined) {
-    return DEFAULT_MENTION_PROPS.trigger
+    return 'default:@'
   }
 
   return typeof trigger === 'string'
-    ? trigger
-    : `/${trigger.source}/${trigger.flags.replaceAll('g', '')}`
+    ? `str:${trigger}`
+    : `re:${trigger.source}/${trigger.flags.replaceAll('g', '')}`
 }
 
 const getInvalidChildLabel = (child: React.ReactNode): string => {
   if (React.isValidElement(child)) {
-    return typeof child.type === 'string' ? child.type : child.type?.name || 'unknown component'
+    if (typeof child.type === 'string') {
+      return child.type
+    }
+
+    return 'name' in child.type && typeof child.type.name === 'string' && child.type.name.length > 0
+      ? child.type.name
+      : 'unknown component'
   }
 
   return 'unknown component'
 }
 
 export const validateMentionChildTree = <Extra extends Record<string, unknown>>(
-  children: React.ReactNode,
-  seenChildren: Set<string> = new Set<string>()
+  children: React.ReactNode
 ): void => {
   React.Children.forEach(children, (child) => {
     if (
       React.isValidElement<{ children?: React.ReactNode }>(child) &&
       child.type === React.Fragment
     ) {
-      validateMentionChildTree<Extra>(child.props.children, seenChildren)
+      validateMentionChildTree<Extra>(child.props.children)
       return
     }
 
@@ -59,17 +51,23 @@ export const validateMentionChildTree = <Extra extends Record<string, unknown>>(
         `MentionsInput only accepts Mention components as children. Found: ${getInvalidChildLabel(child)}`
       )
     }
+  })
+}
 
-    const trigger = getTriggerIdentity(child.props.trigger)
+const validateUniqueSerializerIds = <Extra extends Record<string, unknown>>(
+  config: ReadonlyArray<MentionChildConfig<Extra>>
+): void => {
+  const seenSerializerIds = new Set<string>()
 
-    if (seenChildren.has(trigger)) {
+  for (const childConfig of config) {
+    if (seenSerializerIds.has(childConfig.serializer.id)) {
       throw new Error(
-        `MentionsInput does not support Mention children with duplicate triggers: ${getTriggerLabel(child.props.trigger)}.`
+        `MentionsInput does not support Mention children with duplicate serializer ids: ${childConfig.serializer.id}.`
       )
     }
 
-    seenChildren.add(trigger)
-  })
+    seenSerializerIds.add(childConfig.serializer.id)
+  }
 }
 
 export const prepareMentionsInputChildren = <Extra extends Record<string, unknown>>(
@@ -77,10 +75,12 @@ export const prepareMentionsInputChildren = <Extra extends Record<string, unknow
 ): PreparedMentionsInputChildren<Extra> => {
   validateMentionChildTree<Extra>(children)
   const mentionChildren = collectMentionElements<Extra>(children)
+  const config = readConfigFromChildren<Extra>(mentionChildren)
+  validateUniqueSerializerIds(config)
 
   return {
     mentionChildren,
-    config: readConfigFromChildren<Extra>(mentionChildren),
+    config,
   }
 }
 

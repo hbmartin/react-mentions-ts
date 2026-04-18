@@ -46,7 +46,7 @@ describe('MentionsInputChildren', () => {
     ).toBe(false)
   })
 
-  it('rejects duplicate triggers during validation', () => {
+  it('allows duplicate triggers during validation', () => {
     expect(() =>
       validateMentionChildTree(
         <>
@@ -54,7 +54,7 @@ describe('MentionsInputChildren', () => {
           <Mention trigger="@" data={[]} />
         </>
       )
-    ).toThrow('duplicate triggers')
+    ).not.toThrow()
   })
 
   it('treats regex trigger flags as part of the mention identity', () => {

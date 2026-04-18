@@ -27,6 +27,10 @@ const generateMarkupForTrigger = (trigger: string | RegExp | undefined): string 
   return `${trigger}[${PLACEHOLDERS.display}](${PLACEHOLDERS.id})`
 }
 
+const appendSerializerMarker = (markup: string, occurrenceIndex: number): string => {
+  return markup.replace(PLACEHOLDERS.id, `${PLACEHOLDERS.id}|${occurrenceIndex.toString()}`)
+}
+
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
 
@@ -47,15 +51,44 @@ export const collectMentionElements = <Extra extends Record<string, unknown>>(
 
 const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   children: ReactNode
-): MentionChildConfig<Extra>[] =>
-  collectMentionElements<Extra>(children).map((child) => {
+): MentionChildConfig<Extra>[] => {
+  const mentionChildren = collectMentionElements<Extra>(children)
+  const serializerIdCounts = new Map<string, number>()
+
+  for (const child of mentionChildren) {
+    const serializerId =
+      child.props.markup === undefined
+        ? generateMarkupForTrigger(child.props.trigger)
+        : typeof child.props.markup === 'string'
+          ? child.props.markup
+          : child.props.markup.id
+
+    serializerIdCounts.set(serializerId, (serializerIdCounts.get(serializerId) ?? 0) + 1)
+  }
+
+  const autoSerializerOccurrences = new Map<string, number>()
+
+  return mentionChildren.map((child) => {
     const props = child.props
     const trigger = props.trigger ?? DEFAULT_MENTION_PROPS.trigger
     const displayTransform = props.displayTransform ?? DEFAULT_MENTION_PROPS.displayTransform
+    const baseMarkup = generateMarkupForTrigger(trigger)
     const serializer: MentionSerializer =
       props.markup !== undefined && typeof props.markup !== 'string'
         ? props.markup
-        : createMarkupSerializer(props.markup ?? generateMarkupForTrigger(trigger))
+        : createMarkupSerializer(
+            props.markup ??
+              ((serializerIdCounts.get(baseMarkup) ?? 0) > 1
+                ? appendSerializerMarker(baseMarkup, autoSerializerOccurrences.get(baseMarkup) ?? 0)
+                : baseMarkup)
+          )
+
+    if (props.markup === undefined) {
+      autoSerializerOccurrences.set(
+        baseMarkup,
+        (autoSerializerOccurrences.get(baseMarkup) ?? 0) + 1
+      )
+    }
 
     return {
       ...DEFAULT_MENTION_PROPS,
@@ -64,5 +97,6 @@ const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<s
       serializer,
     } satisfies MentionChildConfig<Extra>
   })
+}
 
 export default readConfigFromChildren

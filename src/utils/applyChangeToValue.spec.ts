@@ -325,7 +325,7 @@ describe('#applyChangeToValue', () => {
       )
 
       expect(result).toEqual(changed)
-      expect(getPlainTextSpy).toHaveBeenCalledTimes(3)
+      expect(getPlainTextSpy).toHaveBeenCalledTimes(2)
     } finally {
       getPlainTextSpy.mockRestore()
     }
