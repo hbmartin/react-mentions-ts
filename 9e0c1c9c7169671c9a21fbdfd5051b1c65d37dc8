@@ -1,0 +1,31 @@
+{
+  "command": "pnpm test:perf",
+  "metrics": {
+    "array-provider-scan-count": {
+      "scanCount": 5,
+      "resultCount": 5
+    },
+    "controlled-keystroke": {
+      "getPlainTextCalls": 0,
+      "deriveMentionValueSnapshotCalls": 1,
+      "prepareMentionsInputChildrenCalls": 1
+    },
+    "selection-only": {
+      "deriveMentionValueSnapshotCalls": 0
+    },
+    "inline-layout": {
+      "calculateSuggestionsPositionCalls": 0,
+      "calculateInlineSuggestionPositionCalls": 1
+    },
+    "overlay-layout": {
+      "calculateSuggestionsPositionCalls": 2,
+      "calculateInlineSuggestionPositionCalls": 0
+    },
+    "locality-render-counts": {
+      "stableSiblingRendersDuringInteraction": 0,
+      "activeBranchRendersDuringInteraction": 1
+    }
+  },
+  "schemaVersion": 1,
+  "suite": "react-mentions-ts/perf"
+}
