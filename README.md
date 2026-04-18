@@ -294,11 +294,11 @@ Pass the result as the `markup` prop on `Mention`:
 For cases where `createMarkupSerializer` is not flexible enough, you can implement the `MentionSerializer` interface directly:
 
 ```ts
-import type { MentionSerializer, MentionIdentifier } from 'react-mentions-ts'
+import type { MentionSerializer } from 'react-mentions-ts'
 
 interface MentionSerializer {
   id: string
-  insert: (input: { id: MentionIdentifier; display: string }) => string
+  insert: (input: { id: string | number; display: string }) => string
   findAll: (value: string) => MentionSerializerMatch[]
 }
 
@@ -313,6 +313,52 @@ interface MentionSerializerMatch {
 - **`id`** — a unique string identifying this serializer (used internally to distinguish multiple `Mention` children)
 - **`insert`** — given a mention's `id` and `display`, returns the markup string to splice into the value
 - **`findAll`** — scans a value string and returns every mention match with its position and extracted fields
+
+### Custom serializer for IDs containing `)`
+
+If your mention IDs can contain characters that would otherwise terminate a template placeholder early, write a custom serializer and encode the `id` before storing it in the markup.
+
+The example below percent-encodes reserved characters so an ID like `team)west` is stored safely and decoded back to its original value when the controlled value is parsed:
+
+```ts
+import type { MentionSerializer } from 'react-mentions-ts'
+
+const encodeMentionId = (id: string): string =>
+  encodeURIComponent(id).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  )
+
+const decodeMentionId = (encoded: string): string => decodeURIComponent(encoded)
+
+export const parenSafeSerializer: MentionSerializer = {
+  id: 'paren-safe-serializer',
+  insert: ({ id, display }) => `@[${display}](${encodeMentionId(String(id))})`,
+  findAll: (value) => {
+    const regex = /@\[([^\]]+)]\(([^)]+)\)/g
+    const matches = []
+    let match: RegExpExecArray | null
+
+    while ((match = regex.exec(value)) !== null) {
+      matches.push({
+        markup: match[0],
+        index: match.index,
+        display: match[1],
+        id: decodeMentionId(match[2]),
+      })
+    }
+
+    return matches
+  },
+}
+```
+
+Use it on `Mention` like any other serializer:
+
+```tsx
+<Mention trigger="@" data={users} markup={parenSafeSerializer} />
+```
+
+For example, selecting a mention with `id: 'team)west'` stores `@[Team West](team%29west)` in `value`, and `findAll` decodes it back to `team)west`.
 
 ### SSR and Next.js
 

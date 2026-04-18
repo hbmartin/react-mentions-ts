@@ -1,10 +1,15 @@
 import {
+  applyHighlighterViewPatch,
+  applyTextareaResizePatch,
   areInlineSuggestionPositionsEqual,
   areSuggestionsPositionsEqual,
   calculateInlineSuggestionPosition,
   calculateSuggestionsPosition,
   createPendingViewSync,
+  getComputedStyleLengthProp,
   getHighlighterViewPatch,
+  getInputInlineStyle,
+  getTextareaResizePatch,
   mergePendingViewSync,
 } from './MentionsInputLayout'
 
@@ -150,6 +155,80 @@ describe('MentionsInputLayout', () => {
     }
   })
 
+  it('places portal suggestions above the caret when the viewport is constrained', () => {
+    const highlighter = document.createElement('div')
+    const suggestions = document.createElement('div')
+    const container = document.createElement('div')
+    const originalInnerHeight = globalThis.innerHeight
+    const originalInnerWidth = globalThis.innerWidth
+    const originalClientHeight = document.documentElement.clientHeight
+    const originalClientWidth = document.documentElement.clientWidth
+
+    highlighter.style.fontSize = '16px'
+    suggestions.style.marginLeft = '0px'
+    suggestions.style.marginTop = '0px'
+
+    Object.defineProperty(globalThis, 'innerHeight', { value: 120, configurable: true })
+    Object.defineProperty(globalThis, 'innerWidth', { value: 140, configurable: true })
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      value: 120,
+      configurable: true,
+    })
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 140,
+      configurable: true,
+    })
+    Object.defineProperty(highlighter, 'getBoundingClientRect', {
+      value: () => ({
+        left: 4,
+        top: 80,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(suggestions, 'offsetHeight', { value: 40, configurable: true })
+    Object.defineProperty(container, 'offsetWidth', { value: 220, configurable: true })
+
+    try {
+      const position = calculateSuggestionsPosition({
+        caretPosition: { left: 24, top: 32 },
+        suggestionsPlacement: 'auto',
+        anchorMode: 'caret',
+        resolvedPortalHost: document.body,
+        suggestions,
+        highlighter,
+        container,
+      })
+
+      expect(position).toEqual({
+        left: 0,
+        position: 'fixed',
+        top: 56,
+        width: 140,
+      })
+    } finally {
+      Object.defineProperty(globalThis, 'innerHeight', {
+        value: originalInnerHeight,
+        configurable: true,
+      })
+      Object.defineProperty(globalThis, 'innerWidth', {
+        value: originalInnerWidth,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientHeight', {
+        value: originalClientHeight,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        value: originalClientWidth,
+        configurable: true,
+      })
+    }
+  })
+
   it('calculates inline suggestion offsets from the caret marker', () => {
     const control = document.createElement('div')
     const highlighter = document.createElement('div')
@@ -232,5 +311,213 @@ describe('MentionsInputLayout', () => {
     } finally {
       getComputedStyleSpy.mockRestore()
     }
+  })
+
+  it('returns null or zero from guard paths', () => {
+    expect(
+      calculateSuggestionsPosition({
+        caretPosition: null,
+        suggestionsPlacement: 'below',
+        anchorMode: 'caret',
+        resolvedPortalHost: null,
+        suggestions: null,
+        highlighter: null,
+        container: null,
+      })
+    ).toBeNull()
+    expect(calculateInlineSuggestionPosition({ highlighter: null })).toBeNull()
+    expect(getHighlighterViewPatch(null, document.createElement('div'))).toBeNull()
+    expect(getHighlighterViewPatch(document.createElement('textarea'), null)).toBeNull()
+  })
+
+  it('anchors non-portal suggestions to the right edge when the popup would overflow', () => {
+    const highlighter = document.createElement('div')
+    const suggestions = document.createElement('div')
+    const container = document.createElement('div')
+
+    highlighter.style.fontSize = '16px'
+    Object.defineProperty(highlighter, 'getBoundingClientRect', {
+      value: () => ({
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(container, 'offsetWidth', { value: 120, configurable: true })
+    Object.defineProperty(suggestions, 'offsetHeight', { value: 20, configurable: true })
+
+    const position = calculateSuggestionsPosition({
+      caretPosition: { left: 90, top: 12 },
+      suggestionsPlacement: 'below',
+      anchorMode: 'caret',
+      resolvedPortalHost: null,
+      suggestions,
+      highlighter,
+      container,
+    })
+
+    expect(position).toEqual({
+      right: 0,
+      top: 12,
+      width: 120,
+    })
+  })
+
+  it('returns zero when computed style APIs are unavailable', () => {
+    const detachedDocument = document.implementation.createHTMLDocument('detached')
+    const detachedElement = detachedDocument.createElement('div')
+
+    Object.defineProperty(detachedDocument, 'defaultView', {
+      configurable: true,
+      value: {},
+    })
+
+    expect(getComputedStyleLengthProp(detachedElement, 'font-size')).toBe(0)
+  })
+
+  it('returns zero for non-finite computed style lengths', () => {
+    const element = document.createElement('div')
+    const originalGetComputedStyle = globalThis.getComputedStyle
+    Object.defineProperty(globalThis, 'getComputedStyle', {
+      configurable: true,
+      writable: true,
+      value: () =>
+        ({
+          getPropertyValue: () => 'not-a-number',
+        }) as CSSStyleDeclaration,
+    })
+
+    try {
+      expect(getComputedStyleLengthProp(element, 'font-size')).toBe(0)
+    } finally {
+      Object.defineProperty(globalThis, 'getComputedStyle', {
+        configurable: true,
+        writable: true,
+        value: originalGetComputedStyle,
+      })
+    }
+  })
+
+  it('applies multiline mobile safari offsets but not single-line offsets', () => {
+    const originalUserAgent = globalThis.navigator.userAgent
+    Object.defineProperty(globalThis.navigator, 'userAgent', {
+      configurable: true,
+      value: 'iPhone',
+    })
+
+    try {
+      expect(getInputInlineStyle(false)).toMatchObject({
+        marginLeft: -3,
+        marginTop: 1,
+      })
+      expect(getInputInlineStyle(true)).toEqual({
+        background: 'transparent',
+      })
+    } finally {
+      Object.defineProperty(globalThis.navigator, 'userAgent', {
+        configurable: true,
+        value: originalUserAgent,
+      })
+    }
+  })
+
+  it('creates textarea resize patches and ignores non-textareas', () => {
+    const textarea = document.createElement('textarea')
+    Object.defineProperty(textarea, 'scrollHeight', { value: 32, configurable: true })
+
+    const patch = getTextareaResizePatch(textarea, {
+      autoResize: true,
+      singleLine: false,
+    })
+
+    expect(patch).toEqual({
+      height: '32px',
+      overflowY: 'hidden',
+    })
+    expect(
+      getTextareaResizePatch(document.createElement('input'), {
+        autoResize: true,
+        singleLine: false,
+      })
+    ).toBeNull()
+    expect(
+      getTextareaResizePatch(textarea, {
+        autoResize: false,
+        singleLine: false,
+      })
+    ).toEqual({
+      height: '',
+      overflowY: '',
+    })
+  })
+
+  it('returns a null inline position when the caret marker or control is missing', () => {
+    const highlighter = document.createElement('div')
+    expect(calculateInlineSuggestionPosition({ highlighter })).toBeNull()
+
+    const control = document.createElement('div')
+    const detachedHighlighter = document.createElement('div')
+    const caret = document.createElement('span')
+    caret.dataset.mentionsCaret = 'true'
+    detachedHighlighter.append(caret)
+    control.append(detachedHighlighter)
+    detachedHighlighter.remove()
+
+    expect(calculateInlineSuggestionPosition({ highlighter: detachedHighlighter })).toBeNull()
+  })
+
+  it('applies highlighter and textarea patches only when values change', () => {
+    const highlighter = document.createElement('div')
+    const textArea = document.createElement('textarea')
+
+    expect(
+      applyHighlighterViewPatch(highlighter, {
+        height: null,
+        scrollLeft: 0,
+        scrollTop: 0,
+        typography: [],
+      })
+    ).toBe(false)
+
+    expect(
+      applyHighlighterViewPatch(highlighter, {
+        height: '24px',
+        scrollLeft: 2,
+        scrollTop: 3,
+        typography: [{ property: 'line-height', value: '24px' }],
+      })
+    ).toBe(true)
+    expect(highlighter.style.height).toBe('24px')
+
+    expect(applyTextareaResizePatch(textArea, null)).toBe(false)
+    expect(
+      applyTextareaResizePatch(document.createElement('input'), {
+        height: '12px',
+        overflowY: 'hidden',
+      } as never)
+    ).toBe(false)
+    expect(
+      applyTextareaResizePatch(textArea, {
+        height: '12px',
+        overflowY: 'hidden',
+      })
+    ).toBe(true)
+    expect(
+      applyTextareaResizePatch(textArea, {
+        height: '12px',
+        overflowY: 'hidden',
+      })
+    ).toBe(false)
+
+    const input = document.createElement('textarea')
+    expect(
+      getHighlighterViewPatch(input, highlighter)
+    ).toMatchObject({
+      height: null,
+    })
   })
 })

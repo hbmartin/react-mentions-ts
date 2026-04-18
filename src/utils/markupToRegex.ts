@@ -2,7 +2,14 @@ import createInternalRegExp from './createInternalRegExp'
 import escapeRegex from './escapeRegex'
 import PLACEHOLDERS from './placeholders'
 
-const markupToRegex = (markup: string): RegExp => {
+const markupToRegex = (
+  markup: string,
+  {
+    idPattern,
+  }: {
+    idPattern?: string
+  } = {}
+): RegExp => {
   const escapedMarkup = escapeRegex(markup)
 
   const charAfterDisplay = markup.charAt(
@@ -14,7 +21,7 @@ const markupToRegex = (markup: string): RegExp => {
   return createInternalRegExp(
     escapedMarkup
       .replace(PLACEHOLDERS.display, `([^${escapeRegex(charAfterDisplay)}]+?)`)
-      .replace(PLACEHOLDERS.id, `([^${escapeRegex(charAfterId)}]+?)`)
+      .replace(PLACEHOLDERS.id, idPattern ?? `([^${escapeRegex(charAfterId)}]+?)`)
   )
 }
 

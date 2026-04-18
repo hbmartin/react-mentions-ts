@@ -4,6 +4,7 @@ import {
   areMentionOccurrencesEqual,
   computeMentionSelectionDetails,
   getMentionSelectionKey,
+  getMentionSelectionMap,
 } from './MentionsInputSelection'
 import readConfigFromChildren from './utils/readConfigFromChildren'
 
@@ -45,5 +46,40 @@ describe('MentionsInputSelection', () => {
         },
       ])
     ).toBe(false)
+  })
+
+  it('treats length changes as mention snapshot changes', () => {
+    expect(areMentionOccurrencesEqual(mentions, [])).toBe(false)
+  })
+
+  it('returns an empty selection when the caret bounds are missing', () => {
+    expect(computeMentionSelectionDetails(mentions, config, null, 2)).toEqual({
+      selections: [],
+      selectionMap: {},
+    })
+  })
+
+  it('returns null for non-overlapping ranges and falls back to an empty serializer id', () => {
+    const result = computeMentionSelectionDetails(
+      [
+        {
+          id: 'orphan',
+          display: 'Orphan',
+          childIndex: 9,
+          index: 0,
+          plainTextIndex: 0,
+        },
+      ],
+      config,
+      0,
+      6
+    )
+
+    expect(result.selections[0]).toMatchObject({
+      id: 'orphan',
+      selection: 'full',
+      serializerId: '',
+    })
+    expect(getMentionSelectionMap(mentions, config, 30, 40)).toEqual({})
   })
 })

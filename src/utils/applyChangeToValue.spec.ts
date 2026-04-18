@@ -1,6 +1,7 @@
 import applyChangeToValue from './applyChangeToValue'
 import createMarkupSerializer from './createMarkupSerializer'
 import * as getPlainTextModule from './getPlainText'
+import * as mapPlainTextIndexModule from './mapPlainTextIndex'
 
 describe('#applyChangeToValue', () => {
   const userMarkup = '@[__display__](user:__id__)'
@@ -431,6 +432,44 @@ describe('#applyChangeToValue', () => {
       expect(getPlainTextSpy).toHaveBeenCalledTimes(2)
     } finally {
       getPlainTextSpy.mockRestore()
+    }
+  })
+
+  it('adjusts collapsed selections when replacing a same-length composed character', () => {
+    const result = applyChangeToValue(
+      'Cafe',
+      'Cafè',
+      {
+        selectionStartBefore: 4,
+        selectionEndBefore: 4,
+        selectionEndAfter: 4,
+      },
+      config
+    )
+
+    expect(result).toEqual('Cafè')
+  })
+
+  it('falls back to value-length splice points when plain-text mapping is unavailable', () => {
+    const mapSpy = vi
+      .spyOn(mapPlainTextIndexModule, 'default')
+      .mockReturnValue(undefined as unknown as number)
+
+    try {
+      const result = applyChangeToValue(
+        '@[John Doe](user:johndoe)',
+        '!',
+        {
+          selectionStartBefore: 0,
+          selectionEndBefore: 0,
+          selectionEndAfter: 1,
+        },
+        config
+      )
+
+      expect(result).toBe('@[John Doe](user:johndoe)!')
+    } finally {
+      mapSpy.mockRestore()
     }
   })
 })

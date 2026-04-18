@@ -1174,6 +1174,30 @@ describe('MentionsInput', () => {
     }
   })
 
+  it('merges an existing aria-describedby with the inline live region id', async () => {
+    render(
+      <MentionsInput value="@f" suggestionsDisplay="inline" aria-describedby="existing-hint">
+        <Mention
+          trigger="@"
+          data={[
+            { id: 'first', display: 'First' },
+            { id: 'second', display: 'Second' },
+          ]}
+        />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const status = screen.getByRole('status')
+      expect(textarea).toHaveAttribute('aria-describedby', `existing-hint ${status.id}`)
+    })
+  })
+
   it('should accept a Document instance as the suggestionsPortalHost.', async () => {
     render(
       <MentionsInput value="@" suggestionsPortalHost={document}>
@@ -1378,10 +1402,11 @@ describe('MentionsInput', () => {
 
   it('ignores custom regular expression matches without a replacement range capture', async () => {
     const mentionData = vi.fn(() => [{ id: 'first', display: 'First' }])
+    const triggerWithoutReplacementRangeCapture = /(#)?([a-z]{0,32})$/i
 
     render(
       <MentionsInput value="hello">
-        <Mention trigger={/(#)?(\S*)$/} data={mentionData} />
+        <Mention trigger={triggerWithoutReplacementRangeCapture} data={mentionData} />
       </MentionsInput>
     )
 
@@ -1700,6 +1725,67 @@ describe('MentionsInput', () => {
       expect(textarea.style.height).not.toBe('')
       ;(globalThis as any).window = originalWindow
       unmount()
+    })
+
+    it('applies the scheduled follow-up resize on the next animation frame', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} autoResize value="draft" onMentionsChange={() => undefined}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      let scrollHeight = 24
+      Object.defineProperty(textarea, 'scrollHeight', {
+        configurable: true,
+        get: () => scrollHeight,
+      })
+
+      const callbacks: FrameRequestCallback[] = []
+      const originalRAF = globalThis.requestAnimationFrame
+      const originalCAF = globalThis.cancelAnimationFrame
+      Object.defineProperty(globalThis, 'requestAnimationFrame', {
+        configurable: true,
+        writable: true,
+        value: (callback: FrameRequestCallback) => {
+          callbacks.push(callback)
+          return callbacks.length
+        },
+      })
+      Object.defineProperty(globalThis, 'cancelAnimationFrame', {
+        configurable: true,
+        writable: true,
+        value: vi.fn(),
+      })
+
+      try {
+        act(() => {
+          instance.resetTextareaHeight()
+        })
+
+        scrollHeight = 60
+
+        act(() => {
+          callbacks.splice(0).forEach((callback) => callback(0))
+        })
+
+        expect(instance._autoResizeFrame).toBeNull()
+        expect(textarea.style.height).not.toBe('')
+      } finally {
+        Object.defineProperty(globalThis, 'requestAnimationFrame', {
+          configurable: true,
+          writable: true,
+          value: originalRAF,
+        })
+        Object.defineProperty(globalThis, 'cancelAnimationFrame', {
+          configurable: true,
+          writable: true,
+          value: originalCAF,
+        })
+        unmount()
+      }
     })
   })
 
@@ -3167,7 +3253,10 @@ describe('MentionsInput', () => {
         })
 
         const instance = ref.current as unknown as any
-        const combobox = screen.getByRole('combobox') as HTMLTextAreaElement
+        const combobox = screen.getByRole('combobox')
+        if (!(combobox instanceof HTMLTextAreaElement)) {
+          throw new TypeError('Expected MentionsInput combobox to render a textarea')
+        }
 
         act(() => {
           instance.setState({ selectionStart: 4, selectionEnd: 4 })
@@ -3504,6 +3593,416 @@ describe('MentionsInput', () => {
       expect(highlighter.style.letterSpacing).toBe('0.12em')
 
       getComputedStyleSpy.mockRestore()
+      unmount()
+    })
+
+    it('ensures generated ids and recompute-only view sync requests when needed', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      act(() => {
+        instance.setState({ generatedId: null })
+      })
+
+      const recomputeSpy = vi
+        .spyOn(instance, 'scheduleHighlighterRecompute')
+        .mockImplementation(() => undefined)
+
+      act(() => {
+        instance.ensureGeneratedIdIfNeeded()
+        instance.requestViewSync({ recomputeHighlighter: true }, { flushNow: true })
+      })
+
+      await waitFor(() => {
+        expect(instance.state.generatedId).toBeTruthy()
+      })
+      expect(recomputeSpy).toHaveBeenCalled()
+
+      recomputeSpy.mockRestore()
+      unmount()
+    })
+
+    it('clears stale inline suggestion positions when inline autocomplete is disabled', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { rerender, unmount } = render(
+        <MentionsInput ref={ref} value="@a" suggestionsDisplay="inline">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      act(() => {
+        instance.setState({ inlineSuggestionPosition: { left: 1, top: 2 } })
+      })
+
+      rerender(
+        <MentionsInput ref={ref} value="@a">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      let didUpdate = false
+      act(() => {
+        didUpdate = instance.updateInlineSuggestionPosition()
+      })
+
+      expect(didUpdate).toBe(true)
+      expect(instance.state.inlineSuggestionPosition).toBeNull()
+      unmount()
+    })
+
+    it('returns false from inline application guards when prerequisites are missing', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { rerender, unmount } = render(
+        <MentionsInput ref={ref} value="@a" suggestionsDisplay="inline">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+
+      expect(instance.canApplyInlineSuggestion()).toBe(false)
+      expect(instance.getPreferredQueryState()).toBeNull()
+
+      act(() => {
+        instance.setState({
+          selectionStart: 1,
+          selectionEnd: 2,
+          suggestions: {
+            0: {
+              queryInfo: {
+                childIndex: 0,
+                query: 'a',
+                querySequenceStart: 0,
+                querySequenceEnd: 2,
+              },
+              results: [{ id: 'alice', display: 'Alice' }],
+            },
+          },
+        })
+      })
+      expect(instance.canApplyInlineSuggestion()).toBe(false)
+
+      rerender(
+        <MentionsInput ref={ref} value="@a">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      expect(instance.canApplyInlineSuggestion()).toBe(false)
+      unmount()
+    })
+
+    it('ignores clipboard handlers when targets or clipboard data are unavailable', () => {
+      const onMentionsChange = vi.fn()
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@[First](first)" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const textarea = screen.getByRole('combobox')
+      const foreignTarget = document.createElement('div')
+      const preventDefault = vi.fn()
+      const setData = vi.fn()
+
+      act(() => {
+        instance.handlePaste({
+          target: foreignTarget,
+          clipboardData: { getData: vi.fn() },
+          preventDefault,
+        })
+        instance.handleCopy({
+          target: foreignTarget,
+          clipboardData: { setData },
+          preventDefault,
+        })
+        instance.handleCut({
+          target: foreignTarget,
+          clipboardData: { setData },
+          preventDefault,
+        })
+        instance.handlePaste({
+          target: textarea,
+          preventDefault,
+        })
+        instance.saveSelectionToClipboard({
+          clipboardData: undefined,
+        })
+        instance.inputElement = null
+        instance.saveSelectionToClipboard({
+          clipboardData: { setData },
+        })
+      })
+
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(setData).not.toHaveBeenCalled()
+      expect(onMentionsChange).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('skips selection syncing when the input is missing, inactive, or composing', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@a">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const textarea = screen.getByRole('combobox') as HTMLTextAreaElement
+      const updateMentionsQueriesSpy = vi
+        .spyOn(instance, 'updateMentionsQueries')
+        .mockImplementation(() => undefined)
+
+      instance.inputElement = null
+      act(() => {
+        instance.syncSelectionFromInput()
+      })
+
+      instance.inputElement = textarea
+      const otherInput = document.createElement('input')
+      document.body.append(otherInput)
+      otherInput.focus()
+
+      act(() => {
+        instance.syncSelectionFromInput('selectionchange')
+      })
+
+      textarea.focus()
+      textarea.setSelectionRange(1, 1)
+      instance._isComposing = true
+      act(() => {
+        instance.syncSelectionFromInput('selectionchange')
+      })
+
+      expect(updateMentionsQueriesSpy).not.toHaveBeenCalled()
+
+      updateMentionsQueriesSpy.mockRestore()
+      otherInput.remove()
+      unmount()
+    })
+
+    it('falls back through keydown no-op paths when suggestions are unavailable', () => {
+      const inlineKeyDown = vi.fn()
+      const overlayKeyDown = vi.fn()
+      const inlineRef = React.createRef<MentionsInput>()
+      const overlayRef = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <>
+          <MentionsInput
+            ref={inlineRef}
+            value="@a"
+            suggestionsDisplay="inline"
+            onKeyDown={inlineKeyDown}
+          >
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+          <MentionsInput ref={overlayRef} value="@a" onKeyDown={overlayKeyDown}>
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        </>
+      )
+
+      const inlineInstance = inlineRef.current as unknown as any
+      const overlayInstance = overlayRef.current as unknown as any
+      const inlineEvent = {
+        key: 'Tab',
+        shiftKey: false,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      }
+      const overlayEvent = {
+        key: 'Enter',
+        shiftKey: false,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      }
+
+      act(() => {
+        inlineInstance.handleKeyDown(inlineEvent)
+        overlayInstance.handleKeyDown(overlayEvent)
+        overlayInstance.shiftFocus(1)
+        overlayInstance.selectFocused()
+      })
+
+      expect(inlineKeyDown).toHaveBeenCalled()
+      expect(overlayKeyDown).toHaveBeenCalled()
+      expect(inlineEvent.preventDefault).not.toHaveBeenCalled()
+      expect(overlayEvent.preventDefault).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('uses legacy text ranges when setSelectionRange is unavailable', () => {
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const range = {
+        collapse: vi.fn(),
+        moveEnd: vi.fn(),
+        moveStart: vi.fn(),
+        select: vi.fn(),
+      }
+      const requestHighlighterScrollSyncSpy = vi
+        .spyOn(instance, 'requestHighlighterScrollSync')
+        .mockImplementation(() => undefined)
+
+      act(() => {
+        instance.setSelection(null, null)
+        instance.inputElement = null
+        instance.setSelection(1, 2)
+        instance.inputElement = {
+          createTextRange: () => range,
+        }
+        instance.setSelection(1, 3)
+      })
+
+      expect(range.collapse).toHaveBeenCalledWith(true)
+      expect(range.moveEnd).toHaveBeenCalledWith('character', 3)
+      expect(range.moveStart).toHaveBeenCalledWith('character', 1)
+      expect(range.select).toHaveBeenCalled()
+      expect(requestHighlighterScrollSyncSpy).toHaveBeenCalled()
+
+      requestHighlighterScrollSyncSpy.mockRestore()
+      unmount()
+    })
+
+    it('clears pending timers, aborts previous queries, and ignores stale async results', async () => {
+      vi.useFakeTimers()
+
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@a">
+          <Mention trigger="@" data={async () => [{ id: 'alpha', display: 'Alpha' }]} debounceMs={5} />
+        </MentionsInput>
+      )
+
+      try {
+        const instance = ref.current as unknown as any
+        const previousController = new AbortController()
+        const pendingTimer = setTimeout(() => undefined, 100)
+        const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+        const replaceSuggestionsSpy = vi
+          .spyOn(instance, 'replaceSuggestions')
+          .mockImplementation(() => undefined)
+
+        instance._queryAbortControllers.set(0, previousController)
+        instance._queryDebounceTimers.set(0, pendingTimer)
+
+        act(() => {
+          instance.scheduleSuggestionQuery(
+            1,
+            0,
+            {
+              childIndex: 0,
+              query: 'a',
+              querySequenceStart: 0,
+              querySequenceEnd: 2,
+            },
+            <Mention
+              trigger="@"
+              data={async () => [{ id: 'alpha', display: 'Alpha' }]}
+              debounceMs={5}
+            />,
+            false
+          )
+        })
+
+        expect(previousController.signal.aborted).toBe(true)
+        expect(clearTimeoutSpy).toHaveBeenCalled()
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5)
+        })
+
+        instance._queryId = 2
+
+        await act(async () => {
+          await instance.updateSuggestions(
+            1,
+            0,
+            {
+              childIndex: 0,
+              query: 'a',
+              querySequenceStart: 0,
+              querySequenceEnd: 2,
+            },
+            Promise.resolve([{ id: 'alpha', display: 'Alpha' }]),
+            new AbortController()
+          )
+        })
+
+        expect(replaceSuggestionsSpy).not.toHaveBeenCalled()
+
+        clearTimeoutSpy.mockRestore()
+        replaceSuggestionsSpy.mockRestore()
+      } finally {
+        vi.useRealTimers()
+        unmount()
+      }
+    })
+
+    it('clears suggestions with no active queries and covers addMention guard branches', () => {
+      const onMentionsChange = vi.fn()
+      const onAdd = vi.fn()
+      const ref = React.createRef<MentionsInput>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@a" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} onAdd={onAdd} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const replaceSuggestionsSpy = vi
+        .spyOn(instance, 'replaceSuggestions')
+        .mockImplementation((computeNextState: any) => {
+          Object.assign(instance.state, computeNextState(instance.state))
+        })
+
+      act(() => {
+        instance.updateMentionsQueries('hello world', 11)
+      })
+
+      expect(instance.state.suggestions).toEqual({})
+      expect(instance.state.queryStates).toEqual({})
+
+      act(() => {
+        instance.addMention(
+          { id: 'first', display: 'First entry' },
+          { childIndex: 99, querySequenceStart: 0, querySequenceEnd: 2 }
+        )
+      })
+
+      expect(onMentionsChange).not.toHaveBeenCalled()
+
+      act(() => {
+        instance.addMention(
+          { id: 'first', display: 'First entry' },
+          { childIndex: 0, querySequenceStart: 0, querySequenceEnd: 2 }
+        )
+      })
+
+      expect(onAdd).toHaveBeenCalledWith({
+        id: 'first',
+        display: 'First entry',
+        startPos: 0,
+        endPos: 2,
+        serializerId: '@[__display__](__id__)',
+      })
+
+      replaceSuggestionsSpy.mockRestore()
       unmount()
     })
   })

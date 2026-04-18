@@ -1,6 +1,7 @@
 import React from 'react'
 import { Mention } from './index'
 import {
+  applyInputChangeToMentionsValue,
   applyCutToMentionsValue,
   applyPasteToMentionsValue,
   getMarkupSelectionRange,
@@ -43,5 +44,59 @@ describe('MentionsInputEditing', () => {
     expect(result.value).toBe('Hello ')
     expect(result.snapshot.plainText).toBe('Hello ')
     expect(result.nextSelectionStart).toBe(6)
+  })
+
+  it('falls back to zero when selection bounds are null', () => {
+    const range = getMarkupSelectionRange('Hello @[Walter White](user:walter)', config, null, null)
+
+    expect(range.safeSelectionStart).toBe(0)
+    expect(range.safeSelectionEnd).toBe(0)
+    expect(range.markupStartIndex).toBe(0)
+    expect(range.markupEndIndex).toBe(0)
+  })
+
+  it('uses the safe selection start when pasting without a tracked mention boundary', () => {
+    const result = applyPasteToMentionsValue('Hello', config, null, null, ' friend')
+
+    expect(result.value).toBe(' friendHello')
+    expect(result.nextSelectionStart).toBe(' friend'.length)
+  })
+
+  it('restores the caret to the start of a mention when typing inside one', () => {
+    const value = 'Hello @[Walter White](user:walter)'
+    const plainTextValue = 'Hello W!'
+    const result = applyInputChangeToMentionsValue(
+      value,
+      plainTextValue,
+      config,
+      7,
+      7,
+      plainTextValue.length,
+      10,
+      '!'
+    )
+
+    expect(result.shouldRestoreSelection).toBe(true)
+    expect(result.nextSelectionStart).toBe(7)
+    expect(result.nextSelectionEnd).toBe(7)
+  })
+
+  it('keeps the updated caret when there is no tracked mention range to restore', () => {
+    const value = 'Hello @[Walter White](user:walter)'
+    const plainTextValue = 'Hello Walter White!'
+    const result = applyInputChangeToMentionsValue(
+      value,
+      plainTextValue,
+      config,
+      plainTextValue.length - 1,
+      plainTextValue.length - 1,
+      plainTextValue.length,
+      null,
+      '!'
+    )
+
+    expect(result.shouldRestoreSelection).toBe(false)
+    expect(result.nextSelectionStart).toBe(plainTextValue.length)
+    expect(result.nextSelectionEnd).toBe(plainTextValue.length)
   })
 })

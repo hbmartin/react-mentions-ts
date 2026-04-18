@@ -124,4 +124,79 @@ describe('MentionsInputChildren', () => {
     expect(areMentionConfigsEqual(flaggedConfig, sameConfig)).toBe(true)
     expect(areMentionConfigsEqual(flaggedConfig, differentFlagsConfig)).toBe(false)
   })
+
+  it('includes wrapped component names in invalid child errors', () => {
+    function WrappedThing() {
+      return <div>Wrapped</div>
+    }
+
+    expect(() =>
+      validateMentionChildTree(
+        <>
+          <WrappedThing />
+        </>
+      )
+    ).toThrow('MentionsInput only accepts Mention components as children. Found: WrappedThing')
+  })
+
+  it('rejects duplicate serializer identifiers', () => {
+    const serializer = {
+      insert: ({ id }: { id: string | number }) => `:${String(id)}`,
+      findAll: (value: string) => {
+        const regex = /:(\S+)/g
+        const matches: Array<{ markup: string; index: number; id: string; display: null }> = []
+        let match: RegExpExecArray | null
+
+        while ((match = regex.exec(value)) !== null) {
+          matches.push({
+            markup: match[0],
+            index: match.index,
+            id: match[1],
+            display: null,
+          })
+        }
+
+        return matches
+      },
+      id: 'colon',
+    }
+
+    expect(() =>
+      prepareMentionsInputChildren(
+        <>
+          <Mention trigger="@" data={[]} markup={serializer} />
+          <Mention trigger="#" data={[]} markup={serializer} />
+        </>
+      )
+    ).toThrow(
+      'MentionsInput does not support Mention children with duplicate serializer ids: colon.'
+    )
+  })
+
+  it('treats configs with different lengths as different', () => {
+    const singleConfig = prepareMentionsInputChildren(<Mention trigger="@" data={[]} />).config
+    const doubleConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger="@" data={[]} />
+        <Mention trigger="#" data={[]} />
+      </>
+    ).config
+
+    expect(areMentionConfigsEqual(singleConfig, doubleConfig)).toBe(false)
+  })
+
+  it('normalizes regex trigger identities by stripping global flags', () => {
+    const globalConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger={/(@([a-z]*))$/gi} data={[]} />
+      </>
+    ).config
+    const nonGlobalConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger={/(@([a-z]*))$/i} data={[]} />
+      </>
+    ).config
+
+    expect(areMentionConfigsEqual(globalConfig, nonGlobalConfig)).toBe(true)
+  })
 })
