@@ -11,8 +11,7 @@ const findStartOfMentionInPlainText = <
   config: ReadonlyArray<MentionChildConfig<Extra>>,
   indexInPlainText: number
 ): number | undefined => {
-  let result = indexInPlainText
-  let foundMention = false
+  let result: number | undefined
 
   const markupIteratee = (
     _markup: string,
@@ -26,17 +25,11 @@ const findStartOfMentionInPlainText = <
       mentionPlainTextIndex + display.length > indexInPlainText
     ) {
       result = mentionPlainTextIndex
-      foundMention = true
     }
   }
 
   iterateMentionsMarkup(value, config, markupIteratee)
-
-  if (foundMention) {
-    return result
-  }
-
-  return undefined
+  return result
 }
 
 export default findStartOfMentionInPlainText

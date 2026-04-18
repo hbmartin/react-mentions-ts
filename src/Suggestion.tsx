@@ -37,7 +37,8 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   highlightClassName,
 }: SuggestionProps<Extra>) {
   const rest = { onClick, onMouseEnter }
-  const itemClassName = cn(suggestionItemBase, className, focused ? focusedClassName : undefined)
+  const isFocused = focused === true
+  const itemClassName = cn(suggestionItemBase, className, isFocused ? focusedClassName : undefined)
   const displayClassNameResolved = cn(suggestionDisplayStyles, displayClassName)
   const highlightClassNameResolved = cn(suggestionHighlightStyles, highlightClassName)
 
@@ -80,7 +81,7 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     const highlightedDisplay = renderHighlightedDisplay(display)
 
     return renderSuggestion
-      ? renderSuggestion(suggestion, query, highlightedDisplay, index, Boolean(focused))
+      ? renderSuggestion(suggestion, query, highlightedDisplay, index, isFocused)
       : highlightedDisplay
   }
 
@@ -88,10 +89,10 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
     <li
       id={id}
       role="option"
-      aria-selected={focused}
+      aria-selected={isFocused}
       className={itemClassName}
       data-slot="suggestion-item"
-      data-focused={focused ? 'true' : undefined}
+      data-focused={isFocused ? 'true' : undefined}
       {...rest}
     >
       {renderContent()}
