@@ -1,5 +1,4 @@
 export { default as applyChangeToValue } from './applyChangeToValue'
-export { default as cn } from './cn'
 export { default as countSuggestions } from './countSuggestions'
 export { default as findStartOfMentionInPlainText } from './findStartOfMentionInPlainText'
 export { default as flattenSuggestions } from './flattenSuggestions'

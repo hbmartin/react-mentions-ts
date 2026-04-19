@@ -12,7 +12,7 @@ import type {
   SuggestionsMap,
 } from './types'
 import type { FlattenedSuggestion } from './utils/flattenSuggestions'
-import { flattenSuggestions } from './utils'
+import flattenSuggestions from './utils/flattenSuggestions'
 import { collectMentionElements } from './utils/readConfigFromChildren'
 
 export interface InlineSuggestionDetails<

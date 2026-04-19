@@ -38,7 +38,7 @@ yarn add react-mentions-ts
 pnpm add react-mentions-ts
 ```
 
-React Mentions TS uses peer dependencies for its styling helpers and React runtime. Ensure these are installed in your application (skip any you already have):
+The default `react-mentions-ts` entry is Tailwind-ready and uses optional styling peer dependencies for class composition. Install them when using the default styled entry:
 
 ```bash
 # npm
@@ -52,6 +52,12 @@ pnpm add class-variance-authority clsx react react-dom tailwind-merge
 ```
 
 Check `package.json` for the latest peer dependency version ranges.
+
+If you want the smaller dependency-free rendering path, import from `react-mentions-ts/core` instead. The core entry only needs the React peers and leaves all visual styling to your app:
+
+```tsx
+import { MentionsInput, Mention } from 'react-mentions-ts/core'
+```
 
 ## 🚀 Quick Start
 
@@ -382,7 +388,7 @@ No dynamic imports or `next/dynamic` wrappers are needed.
 
 ## 🎨 Styling
 
-React Mentions ships its markup with **Tailwind utility classes**. Consumers should have Tailwind configured in their application build so these classes compile to real CSS. If you do not use Tailwind you can still provide your own styles via `className`, CSS modules, or inline styles.
+The default `react-mentions-ts` entry ships its markup with **Tailwind utility classes**. Consumers should have Tailwind configured in their application build so these classes compile to real CSS. If you do not use Tailwind, import from `react-mentions-ts/core` and provide your own styles via `className`, CSS modules, or inline styles.
 
 ### Tailwind CSS
 
@@ -403,9 +409,21 @@ module.exports = {
 @import 'react-mentions-ts/styles/tailwind.css';
 ```
 
-The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source “../dist”;` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
+The optional helper `react-mentions-ts/styles/tailwind.css` is for the default styled entry. It only declares an `@source “../dist”;` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
 
 If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*.{js,jsx,ts,tsx}` to the `content` array instead of importing the helper file.
+
+### Core Entry
+
+Use `react-mentions-ts/core` when you want the behavior without Tailwind helper dependencies:
+
+```tsx
+import { MentionsInput, Mention } from 'react-mentions-ts/core'
+```
+
+The core entry exposes the same primary components and types as the default entry. It keeps the structural inline styles required for caret measurement, highlighter alignment, suggestions positioning, and single-line/multi-line behavior, but it does not provide visual Tailwind defaults.
+
+The only intentional class behavior difference is merging: the styled root entry collapses conflicting Tailwind utility classes with `tailwind-merge`; the core entry concatenates classes as provided.
 
 ### CSS Class Names
 

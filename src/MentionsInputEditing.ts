@@ -1,11 +1,9 @@
 import type { MentionChildConfig } from './types'
-import {
-  applyChangeToValue,
-  findStartOfMentionInPlainText,
-  getPlainText,
-  mapPlainTextIndex,
-  spliceString,
-} from './utils'
+import applyChangeToValue from './utils/applyChangeToValue'
+import findStartOfMentionInPlainText from './utils/findStartOfMentionInPlainText'
+import getPlainText from './utils/getPlainText'
+import mapPlainTextIndex from './utils/mapPlainTextIndex'
+import spliceString from './utils/spliceString'
 import type { MentionValueSnapshot } from './MentionsInputDerived'
 import { deriveMentionValueSnapshot } from './MentionsInputDerived'
 

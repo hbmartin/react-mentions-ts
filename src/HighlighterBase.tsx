@@ -1,0 +1,253 @@
+import React, { useLayoutEffect, useMemo, useState } from 'react'
+import type { CSSProperties } from 'react'
+import iterateMentionsMarkup from './utils/iterateMentionsMarkup'
+import mapPlainTextIndex from './utils/mapPlainTextIndex'
+import isNumber from './utils/isNumber'
+import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
+import { useEventCallback } from './utils/useEventCallback'
+import mergeStyles from './styles/mergeStyles'
+import type {
+  CaretCoordinates,
+  MentionChildConfig,
+  MentionComponentProps,
+  MentionSelectionState,
+} from './types'
+import type { HighlighterStyleConfig } from './styles/types'
+
+const generateComponentKey = (usedKeys: Record<string, number>, id: string) => {
+  if (Object.hasOwn(usedKeys, id)) {
+    usedKeys[id] += 1
+  } else {
+    usedKeys[id] = 0
+  }
+  return `${id}_${usedKeys[id].toString()}`
+}
+
+export interface HighlighterProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
+  readonly selectionStart: number | null
+  readonly selectionEnd: number | null
+  readonly value?: string
+  readonly onCaretPositionChange: (position: CaretCoordinates) => void
+  readonly containerRef?: (node: HTMLDivElement | null) => void
+  readonly children: React.ReactNode
+  readonly mentionChildren?: React.ReactElement<MentionComponentProps<Extra>>[]
+  readonly config?: MentionChildConfig<Extra>[]
+  readonly singleLine: boolean
+  readonly className?: string
+  readonly substringClassName?: string
+  readonly caretClassName?: string
+  readonly recomputeVersion?: number
+  readonly mentionSelectionMap?: Record<string, MentionSelectionState>
+  readonly styles: HighlighterStyleConfig
+}
+
+const singleLineContentWrapperStyle: CSSProperties = {
+  display: 'inline-block',
+  whiteSpace: 'inherit',
+  width: 'max-content',
+  minWidth: '100%',
+}
+
+function HighlighterBase<Extra extends Record<string, unknown> = Record<string, unknown>>({
+  selectionStart,
+  selectionEnd,
+  value = '',
+  onCaretPositionChange,
+  containerRef,
+  children,
+  mentionChildren: mentionChildrenProp,
+  config: configProp,
+  singleLine,
+  className,
+  substringClassName,
+  caretClassName,
+  recomputeVersion,
+  mentionSelectionMap,
+  styles,
+}: HighlighterProps<Extra>) {
+  const [position, setPosition] = useState<CaretCoordinates | null>(null)
+  const [caretElement, setCaretElement] = useState<HTMLSpanElement | null>(null)
+
+  const updatePosition = useEventCallback((offsetLeft: number, offsetTop: number) => {
+    if (position?.left === offsetLeft && position.top === offsetTop) {
+      return
+    }
+
+    const newPosition: CaretCoordinates = { left: offsetLeft, top: offsetTop }
+    setPosition(newPosition)
+    onCaretPositionChange(newPosition)
+  })
+
+  // Ensure caret position updates whenever content/selection affects layout.
+  useLayoutEffect(() => {
+    if (caretElement === null) {
+      return undefined
+    }
+
+    const measure = () => {
+      const offsetLeft = caretElement.offsetLeft
+      const offsetTop =
+        caretElement.previousElementSibling === null
+          ? caretElement.offsetTop
+          : (caretElement.previousElementSibling as HTMLSpanElement).offsetTop +
+            (caretElement.previousElementSibling as HTMLSpanElement).offsetHeight
+
+      updatePosition(offsetLeft, offsetTop)
+    }
+
+    const rafId =
+      typeof globalThis.requestAnimationFrame === 'function'
+        ? globalThis.requestAnimationFrame(measure)
+        : undefined
+
+    if (rafId === undefined) {
+      measure()
+    }
+
+    return () => {
+      if (rafId !== undefined && typeof globalThis.cancelAnimationFrame === 'function') {
+        globalThis.cancelAnimationFrame(rafId)
+      }
+    }
+    // value/selection/singleLine impact layout/position
+  }, [
+    caretElement,
+    recomputeVersion,
+    selectionEnd,
+    selectionStart,
+    singleLine,
+    updatePosition,
+    value,
+  ])
+
+  const mentionChildren = useMemo(
+    () => mentionChildrenProp ?? collectMentionElements(children),
+    [children, mentionChildrenProp]
+  )
+  const config: MentionChildConfig<Extra>[] = useMemo(
+    () => configProp ?? readConfigFromChildren<Extra>(mentionChildren),
+    [configProp, mentionChildren]
+  )
+  let caretPositionInMarkup: number | null | undefined
+
+  const rootClassName = styles.mergeClassNames(styles.rootClassName({ singleLine }), className)
+  const substringClass = styles.mergeClassNames(styles.substringClassName, substringClassName)
+  const caretClass = styles.mergeClassNames(styles.caretClassName, caretClassName)
+
+  if (selectionEnd === selectionStart) {
+    caretPositionInMarkup = mapPlainTextIndex(value, config, selectionStart, 'START') as
+      | number
+      | undefined
+  }
+  const selectionMap = mentionSelectionMap ?? {}
+
+  const resultComponents: React.ReactNode[] = []
+  const componentKeys: Record<string, number> = {}
+  let components: React.ReactNode[] = resultComponents
+  let substringComponentKey = 0
+
+  const renderSubstring = (substringValue: string, key: number) => (
+    // set substring span to hidden, so that Emojis are not shown double in Mobile Safari
+    <span className={substringClass} key={key}>
+      {substringValue}
+    </span>
+  )
+
+  const getMentionComponentForMatch = (
+    id: string,
+    display: string,
+    mentionChildIndex: number,
+    key: string,
+    plainTextIndex: number
+  ) => {
+    const selectionKey = `${mentionChildIndex}:${plainTextIndex}`
+    const selectionState = selectionMap[selectionKey]
+    const props = { id, display, key, selectionState }
+    const child = mentionChildren[mentionChildIndex] as React.ReactElement<MentionComponentProps>
+    return React.cloneElement(child, props)
+  }
+
+  const renderCaretMarker = () => (
+    <span
+      className={caretClass}
+      data-mentions-caret
+      ref={setCaretElement}
+      key="caret"
+      aria-hidden="true"
+    />
+  )
+
+  const textIteratee = (substr: string, index: number, _substrPlainTextIndex: number) => {
+    if (
+      isNumber(caretPositionInMarkup) &&
+      caretPositionInMarkup >= index &&
+      caretPositionInMarkup <= index + substr.length
+    ) {
+      const splitIndex = caretPositionInMarkup - index
+      // Before the reassignment, components still points at resultComponents, so the push stores
+      // the substring that comes before the caret in the final output.
+      components.push(renderSubstring(substr.slice(0, splitIndex), substringComponentKey))
+      substringComponentKey += 1
+      // Reassigning component just switches the working array to a fresh list
+      // for the text after the caret; later we splice that array back in
+      //  Without the initial push, the prefix would not land in resultComponents.
+      components = [renderSubstring(substr.slice(splitIndex), substringComponentKey)]
+    } else {
+      components.push(renderSubstring(substr, substringComponentKey))
+    }
+    substringComponentKey += 1
+  }
+
+  const mentionIteratee = (
+    _markup: string,
+    _index: number,
+    plainTextIndex: number,
+    id: string,
+    display: string,
+    mentionChildIndex: number
+  ) => {
+    const key = generateComponentKey(componentKeys, id)
+    components.push(
+      getMentionComponentForMatch(id, display, mentionChildIndex, key, plainTextIndex)
+    )
+  }
+
+  iterateMentionsMarkup(value, config, mentionIteratee, textIteratee)
+
+  // append a span containing a space, to ensure the last text line has the correct height
+  components.push(' ')
+
+  if (components !== resultComponents) {
+    resultComponents.push(renderCaretMarker(), ...components)
+  }
+  const content = singleLine ? (
+    <div style={singleLineContentWrapperStyle}>{resultComponents}</div>
+  ) : (
+    resultComponents
+  )
+
+  return (
+    <div
+      className={rootClassName}
+      data-slot="highlighter"
+      data-single-line={singleLine ? 'true' : undefined}
+      data-multi-line={singleLine ? undefined : 'true'}
+      style={mergeStyles(HIGHLIGHTER_OVERLAY_STYLE, styles.rootStyle?.({ singleLine }))}
+      ref={containerRef}
+    >
+      {content}
+    </div>
+  )
+}
+
+const HIGHLIGHTER_OVERLAY_STYLE: CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  pointerEvents: 'none',
+  zIndex: 0,
+}
+
+export default HighlighterBase
