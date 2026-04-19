@@ -135,7 +135,17 @@ The `MentionsInput` component supports the following props:
 - `mentionId`: the identifier of the mention that triggered the change when the `trigger.type` is mention-specific (e.g. `'mention-add'`); otherwise `undefined`
 - `mentions`: the mention occurrences extracted from the new value
 - `previousValue`: the markup string before the change
-- `trigger`: metadata about what caused the change. `trigger.type` is one of `'input'`, `'paste'`, `'cut'`, `'mention-add'`, or `'mention-remove'`, and, when available, `trigger.nativeEvent` references the originating DOM event (optional; do not rely on its exact shape). Regular text edits (typing, Backspace/Delete) use `trigger.type: 'input'`.
+- `trigger`: metadata about what caused the change. `trigger.type` is one of `'input'`, `'paste'`, `'cut'`, `'mention-add'`, `'mention-remove'`, or `'insert-text'`, and, when available, `trigger.nativeEvent` references the originating DOM event (optional; do not rely on its exact shape). Regular text edits (typing, Backspace/Delete) use `trigger.type: 'input'`.
+
+#### Imperative API
+
+Attach a ref to `MentionsInput` when you need to programmatically insert text at the current caret position or replace the current selection:
+
+```tsx
+const mentionsRef = useRef<MentionsInput>(null)
+
+mentionsRef.current?.insertText('anything')
+```
 
 #### onMentionSelectionChange payload
 

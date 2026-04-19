@@ -44,6 +44,7 @@ import SuggestionsOverlay from './SuggestionsOverlay'
 import {
   applyCutToMentionsValue,
   applyInputChangeToMentionsValue,
+  applyInsertTextToMentionsValue,
   applyPasteToMentionsValue,
   getMarkupSelectionRange,
 } from './MentionsInputEditing'
@@ -1218,6 +1219,46 @@ class MentionsInput<
     }
   }
 
+  insertText = (text: string): void => {
+    const input = this.inputElement
+    const selectionStart = input?.selectionStart ?? this.state.selectionStart
+    const selectionEnd = input?.selectionEnd ?? this.state.selectionEnd
+    const value = this.props.value ?? ''
+    const config = this.getCurrentConfig()
+    const previousSnapshot = this.getCurrentSnapshot(value, config)
+    const insertResult = applyInsertTextToMentionsValue<Extra>(
+      value,
+      config,
+      selectionStart,
+      selectionEnd,
+      text
+    )
+
+    this.cacheSnapshot(insertResult.value, config, insertResult.snapshot)
+    input?.focus()
+    this.setState({
+      selectionStart: insertResult.nextSelectionStart,
+      selectionEnd: insertResult.nextSelectionStart,
+      pendingSelectionUpdate: true,
+    })
+
+    this.executeOnChange(
+      { type: 'insert-text' },
+      insertResult.value,
+      insertResult.snapshot,
+      value,
+      previousSnapshot,
+      config
+    )
+
+    this.updateMentionsQueries(
+      insertResult.snapshot.plainText,
+      insertResult.nextSelectionStart,
+      insertResult.value
+    )
+    this.requestHighlighterScrollSync()
+  }
+
   handlePaste = (event: ClipboardEvent): void => {
     if (event.target !== this.inputElement) {
       return
@@ -1706,9 +1747,9 @@ class MentionsInput<
 
   private getActiveSuggestionQueries(
     plainTextValue: string,
-    caretPosition: number
+    caretPosition: number,
+    value: string = this.props.value ?? ''
   ): ActiveSuggestionQuery<Extra>[] {
-    const value = this.props.value ?? ''
     const mentionChildren = this.getMentionChildren()
     const config = this.getCurrentConfig()
     const positionInValue = mapPlainTextIndex(value, config, caretPosition, 'NULL')
@@ -1847,8 +1888,8 @@ class MentionsInput<
     executeQuery()
   }
 
-  updateMentionsQueries = (plainTextValue: string, caretPosition: number): void => {
-    const activeQueries = this.getActiveSuggestionQueries(plainTextValue, caretPosition)
+  updateMentionsQueries = (plainTextValue: string, caretPosition: number, value?: string): void => {
+    const activeQueries = this.getActiveSuggestionQueries(plainTextValue, caretPosition, value)
 
     // Invalidate previous queries. Async results for previous queries will be neglected.
     const queryId = this._queryId + 1

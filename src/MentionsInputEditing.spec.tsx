@@ -2,6 +2,7 @@ import React from 'react'
 import { Mention } from './index'
 import {
   applyInputChangeToMentionsValue,
+  applyInsertTextToMentionsValue,
   applyCutToMentionsValue,
   applyPasteToMentionsValue,
   getMarkupSelectionRange,
@@ -27,6 +28,20 @@ describe('MentionsInputEditing', () => {
     expect(result.snapshot.plainText).toBe('Walter White')
     expect(result.snapshot.mentions[0]?.id).toBe('user:walter')
     expect(result.nextSelectionStart).toBe('Walter White'.length)
+  })
+
+  it('derives the next snapshot when inserting text', () => {
+    const result = applyInsertTextToMentionsValue(
+      'Hello ',
+      config,
+      6,
+      6,
+      '@[Walter White](user:walter)'
+    )
+
+    expect(result.value).toBe('Hello @[Walter White](user:walter)')
+    expect(result.snapshot.plainText).toBe('Hello Walter White')
+    expect(result.nextSelectionStart).toBe('Hello Walter White'.length)
   })
 
   it('normalizes only the pasted payload when removing carriage returns', () => {
