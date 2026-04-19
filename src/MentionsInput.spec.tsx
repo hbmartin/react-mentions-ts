@@ -889,6 +889,73 @@ describe('MentionsInput', () => {
     expect(screen.getByText('Beta')).toBeInTheDocument()
   })
 
+  it('keeps suggestions cleared when a late page result resolves after escape.', async () => {
+    interface DeferredPage {
+      resolve: (value: {
+        items: Array<{ id: string; display: string }>
+        nextCursor: string | null
+      }) => void
+      signal: AbortSignal
+    }
+
+    const pageRequests: DeferredPage[] = []
+    const asyncData = vi.fn((query: string, context: MentionSearchContext) => {
+      if (context.reason === 'page') {
+        return new Promise<{
+          items: Array<{ id: string; display: string }>
+          nextCursor: string | null
+        }>((resolve) => {
+          pageRequests.push({ resolve, signal: context.signal })
+        })
+      }
+
+      return Promise.resolve({
+        items: [{ id: `${query}-first`, display: 'Alpha' }],
+        nextCursor: 'cursor-2',
+      })
+    })
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument()
+    })
+
+    scrollSuggestionsNearBottom()
+
+    await waitFor(() => {
+      expect(pageRequests).toHaveLength(1)
+    })
+
+    fireEvent.keyDown(textarea, { key: 'Escape' })
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="suggestions"]')).toBeNull()
+    })
+    expect(pageRequests[0]?.signal.aborted).toBe(true)
+
+    pageRequests[0]?.resolve({
+      items: [{ id: 'stale-page', display: 'Stale Page' }],
+      nextCursor: null,
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByText('Stale Page')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-slot="suggestions"]')).toBeNull()
+  })
+
   it('keeps current suggestions visible when loading the next page fails.', async () => {
     const asyncData = vi.fn((query: string, context: MentionSearchContext) => {
       if (context.reason === 'page') {

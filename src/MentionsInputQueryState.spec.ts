@@ -264,17 +264,51 @@ describe('MentionsInputQueryState', () => {
         hasMore: false,
         paginated: true,
       },
-      0
+      5
     )
 
     expect(nextState.suggestions[0]?.results).toEqual([
       { id: 'first', display: 'First' },
       { id: 'second', display: 'Second' },
     ])
+    expect(nextState.focusIndex).toBe(1)
     expect(nextState.queryStates[0]?.pagination).toEqual({
       nextCursor: null,
       hasMore: false,
       isLoading: false,
+    })
+  })
+
+  it('ignores page lifecycle updates after query state has been cleared', () => {
+    const suggestions = {
+      0: {
+        queryInfo,
+        results: [{ id: 'first', display: 'First' }],
+      },
+    }
+    const queryStates = {}
+    const page = {
+      items: [{ id: 'stale', display: 'Stale' }],
+      nextCursor: null,
+      hasMore: false,
+      paginated: true,
+    }
+    const error = new Error('stale')
+
+    expect(applyLoadingPageResult(suggestions, queryStates, 0, 2)).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
+    })
+    expect(applySuccessfulPageResult(suggestions, queryStates, 0, queryInfo, page, 2)).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
+    })
+    expect(applyErroredPageResult(suggestions, queryStates, 0, error, 2)).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
     })
   })
 

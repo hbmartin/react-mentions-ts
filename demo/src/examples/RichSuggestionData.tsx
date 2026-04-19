@@ -65,15 +65,20 @@ const PEOPLE: MentionDataItem<PersonExtra>[] = [
 
 const wait = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, ms)
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer)
-        reject(signal.reason as Error)
-      },
-      { once: true }
-    )
+    if (signal.aborted) {
+      reject(signal.reason as Error)
+      return
+    }
+
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(signal.reason as Error)
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal.addEventListener('abort', onAbort, { once: true })
   })
 
 /**

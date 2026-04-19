@@ -35,17 +35,20 @@ const ALL_USERS: MentionDataItem<UserExtra>[] = Array.from({ length: TOTAL_USERS
 
 const wait = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason as Error)
+      return
+    }
+
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(signal.reason as Error)
+    }
     const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
       resolve()
     }, ms)
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer)
-        reject(signal.reason as Error)
-      },
-      { once: true }
-    )
+    signal.addEventListener('abort', onAbort, { once: true })
   })
 
 async function fetchUserPage(
