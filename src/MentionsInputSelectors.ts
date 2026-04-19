@@ -416,6 +416,12 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
   }
 
   return async (query: string, request = {}) => {
+    const isSignalAborted = () => signal.aborted
+
+    if (isSignalAborted()) {
+      return normalizeMentionDataResult<Extra>([], maxSuggestions)
+    }
+
     const provider = data as (
       query: string,
       context: MentionSearchContext
@@ -427,6 +433,11 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
         reason: request.reason ?? 'query',
       })
     )
+
+    if (isSignalAborted()) {
+      return normalizeMentionDataResult<Extra>([], maxSuggestions)
+    }
+
     return normalizeMentionDataResult(result, maxSuggestions)
   }
 }

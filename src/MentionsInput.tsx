@@ -1816,7 +1816,7 @@ class MentionsInput<
         ? nextSuggestions[activeQuery.childIndex].results
         : []
       queryStates[activeQuery.childIndex] = {
-        ...createLoadingQueryState<Extra>(activeQuery.queryInfo),
+        ...createLoadingQueryState<Extra>(activeQuery.queryInfo, activeQuery.ignoreAccents),
         results: previousResults,
       }
       return queryStates
@@ -1844,13 +1844,6 @@ class MentionsInput<
 
       return nextSuggestions
     }, {})
-  }
-
-  private getIgnoreAccentsForMentionChild(
-    mentionChild: React.ReactElement<MentionComponentProps<Extra>>
-  ): boolean {
-    const triggerProp = mentionChild.props.trigger ?? '@'
-    return resolveTriggerRegex(triggerProp).flags.includes('u')
   }
 
   private scheduleSuggestionQuery(
@@ -1977,7 +1970,7 @@ class MentionsInput<
         childIndex,
         queryState.queryInfo,
         mentionChild,
-        this.getIgnoreAccentsForMentionChild(mentionChild),
+        queryState.ignoreAccents,
         pagination.nextCursor
       )
     }
@@ -2170,10 +2163,16 @@ class MentionsInput<
       displayValue += ' '
     }
     const newCaretPosition = querySequenceStart + displayValue.length
+    const clearedState = createClearedSuggestionsState<Extra>()
+    this._queryId++
+    this.clearPendingSuggestionRequests()
     this.setState({
       selectionStart: newCaretPosition,
       selectionEnd: newCaretPosition,
       pendingSelectionUpdate: true,
+      suggestions: clearedState.suggestions,
+      queryStates: clearedState.queryStates,
+      focusIndex: clearedState.focusIndex,
     })
 
     // Propagate change
@@ -2207,9 +2206,6 @@ class MentionsInput<
         serializerId: serializer.id,
       })
     }
-
-    // Make sure the suggestions overlay is closed
-    this.clearSuggestions()
   }
 
   isLoading = (): boolean => {
