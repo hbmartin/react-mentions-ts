@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const projectRoot = resolve(import.meta.dirname, '..')
 const [schemaArgument, configArgument] = process.argv.slice(2)
 const schemaPath = resolve(
   projectRoot,
@@ -22,7 +22,7 @@ const rules = Object.fromEntries(
   (ruleIds.length > 0 ? ruleIds : getRegisteredRuleIds(plugins)).map((ruleId) => [ruleId, 'error'])
 )
 
-const existingConfig = existsSync(configPath) ? readJson(configPath) : {}
+const existingConfig = readJsonIfExists(configPath)
 const nextConfig = {
   $schema: existingConfig.$schema ?? './node_modules/oxlint/configuration_schema.json',
   plugins,
@@ -38,6 +38,18 @@ console.log(
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
+}
+
+function readJsonIfExists(path) {
+  try {
+    return readJson(path)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return {}
+    }
+
+    throw error
+  }
 }
 
 function omitKeys(object, keys) {
@@ -118,7 +130,6 @@ function getRegisteredRuleIds(plugins) {
 function getPluginFlags(plugins) {
   const flagsByPlugin = new Map([
     ['import', '--import-plugin'],
-    ['jest', '--jest-plugin'],
     ['jsdoc', '--jsdoc-plugin'],
     ['jsx-a11y', '--jsx-a11y-plugin'],
     ['nextjs', '--nextjs-plugin'],
