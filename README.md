@@ -142,18 +142,38 @@ The `MentionsInput` component supports the following props:
 Attach a ref to `MentionsInput` when you need to programmatically insert text at the current caret position or replace the current selection:
 
 ```tsx
-const mentionsRef = useRef<MentionsInput>(null)
-const [value, setValue] = useState('')
+import { useRef, useState } from 'react'
+import { Mention, MentionsInput } from 'react-mentions-ts'
 
-<MentionsInput
-  ref={mentionsRef}
-  value={value}
-  onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
->
-  <Mention trigger="@" data={users} />
-</MentionsInput>
+const users = [
+  { id: 'walter', display: 'Walter White' },
+  { id: 'jesse', display: 'Jesse Pinkman' },
+]
 
-mentionsRef.current?.insertText('anything')
+function ImperativeApiExample() {
+  const mentionsRef = useRef<MentionsInput>(null)
+  const [value, setValue] = useState('')
+
+  const handleInsertText = () => {
+    mentionsRef.current?.insertText('anything')
+  }
+
+  return (
+    <>
+      <button type="button" onClick={handleInsertText}>
+        Insert text
+      </button>
+
+      <MentionsInput
+        ref={mentionsRef}
+        value={value}
+        onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+      >
+        <Mention trigger="@" data={users} />
+      </MentionsInput>
+    </>
+  )
+}
 ```
 
 #### onMentionSelectionChange payload

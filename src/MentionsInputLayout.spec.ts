@@ -168,8 +168,8 @@ describe('MentionsInputLayout', () => {
     suggestions.style.marginLeft = '0px'
     suggestions.style.marginTop = '0px'
 
-    Object.defineProperty(globalThis, 'innerHeight', { value: 120, configurable: true })
-    Object.defineProperty(globalThis, 'innerWidth', { value: 140, configurable: true })
+    Object.defineProperty(globalThis, 'innerHeight', { value: 0, configurable: true })
+    Object.defineProperty(globalThis, 'innerWidth', { value: 0, configurable: true })
     Object.defineProperty(document.documentElement, 'clientHeight', {
       value: 120,
       configurable: true,
@@ -303,6 +303,80 @@ describe('MentionsInputLayout', () => {
     }
   })
 
+  it('clamps portal suggestions with document dimensions when they exceed window dimensions', () => {
+    const highlighter = document.createElement('div')
+    const suggestions = document.createElement('div')
+    const container = document.createElement('div')
+    const originalInnerHeight = globalThis.innerHeight
+    const originalInnerWidth = globalThis.innerWidth
+    const originalClientHeight = document.documentElement.clientHeight
+    const originalClientWidth = document.documentElement.clientWidth
+
+    highlighter.style.fontSize = '16px'
+    suggestions.style.marginLeft = '0px'
+    suggestions.style.marginTop = '0px'
+
+    Object.defineProperty(globalThis, 'innerHeight', { value: 120, configurable: true })
+    Object.defineProperty(globalThis, 'innerWidth', { value: 140, configurable: true })
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      value: 220,
+      configurable: true,
+    })
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 260,
+      configurable: true,
+    })
+    Object.defineProperty(highlighter, 'getBoundingClientRect', {
+      value: () => ({
+        left: 240,
+        top: 80,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(suggestions, 'offsetHeight', { value: 40, configurable: true })
+    Object.defineProperty(container, 'offsetWidth', { value: 220, configurable: true })
+
+    try {
+      expect(
+        calculateSuggestionsPosition({
+          caretPosition: { left: 24, top: 30 },
+          suggestionsPlacement: 'below',
+          anchorMode: 'caret',
+          resolvedPortalHost: document.body,
+          suggestions,
+          highlighter,
+          container,
+        })
+      ).toEqual({
+        left: 60,
+        position: 'fixed',
+        top: 110,
+        width: 200,
+      })
+    } finally {
+      Object.defineProperty(globalThis, 'innerHeight', {
+        value: originalInnerHeight,
+        configurable: true,
+      })
+      Object.defineProperty(globalThis, 'innerWidth', {
+        value: originalInnerWidth,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientHeight', {
+        value: originalClientHeight,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        value: originalClientWidth,
+        configurable: true,
+      })
+    }
+  })
+
   it('calculates inline suggestion offsets from the caret marker', () => {
     const control = document.createElement('div')
     const highlighter = document.createElement('div')
@@ -385,6 +459,17 @@ describe('MentionsInputLayout', () => {
     } finally {
       getComputedStyleSpy.mockRestore()
     }
+  })
+
+  it('includes input height in highlighter view patches when the input is measured', () => {
+    const input = document.createElement('textarea')
+    const highlighter = document.createElement('div')
+
+    Object.defineProperty(input, 'clientHeight', { configurable: true, value: 48 })
+
+    expect(getHighlighterViewPatch(input, highlighter)).toMatchObject({
+      height: '48px',
+    })
   })
 
   it('returns null or zero from guard paths', () => {
@@ -544,6 +629,12 @@ describe('MentionsInputLayout', () => {
     expect(
       getTextareaResizePatch(document.createElement('input'), {
         autoResize: true,
+        singleLine: false,
+      })
+    ).toBeNull()
+    expect(
+      getTextareaResizePatch(document.createElement('input'), {
+        autoResize: false,
         singleLine: false,
       })
     ).toBeNull()

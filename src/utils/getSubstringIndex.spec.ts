@@ -16,6 +16,7 @@ describe('#getSubstringIndex', () => {
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'adore')).toEqual(-1)
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'not existing substring')).toEqual(-1)
     expect(getSubstringIndex('Alpha ALPHA', 'AL', false, true)).toEqual(0)
+    expect(getSubstringIndex('Alpha ALPHA', 'AL', false, false)).toEqual(6)
   })
   it('Should return the index of the substring or -1 ignoring the accents and the case', () => {
     expect(getSubstringIndex('Aurait-Il été ãdOré là-bas ?', 'adore', true)).toEqual(14)

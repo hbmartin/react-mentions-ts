@@ -2356,8 +2356,12 @@ describe('MentionsInput', () => {
       const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
       textarea.setSelectionRange('Hello'.length, 'Hello'.length)
 
-      act(() => {
+      await act(async () => {
         ref.current?.insertText(' @')
+      })
+
+      await waitFor(() => {
+        expect(onMentionsChange).toHaveBeenCalled()
       })
 
       const payload = getLastMentionsChange(onMentionsChange)
