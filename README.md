@@ -143,6 +143,15 @@ Attach a ref to `MentionsInput` when you need to programmatically insert text at
 
 ```tsx
 const mentionsRef = useRef<MentionsInput>(null)
+const [value, setValue] = useState('')
+
+<MentionsInput
+  ref={mentionsRef}
+  value={value}
+  onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+>
+  <Mention trigger="@" data={users} />
+</MentionsInput>
 
 mentionsRef.current?.insertText('anything')
 ```

@@ -68,7 +68,7 @@ export const applyInsertTextToMentionsValue = <Extra extends Record<string, unkn
     selectionStart,
     selectionEnd
   )
-  const normalizedText = text.replaceAll('\r', '')
+  const normalizedText = text.replaceAll(/\r\n?/g, '\n')
   const nextValue = spliceString(value, markupStartIndex, markupEndIndex, normalizedText)
   const snapshot = deriveMentionValueSnapshot<Extra>(nextValue, config)
   const startOfMention =

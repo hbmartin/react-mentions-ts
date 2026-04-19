@@ -44,13 +44,21 @@ describe('MentionsInputEditing', () => {
     expect(result.nextSelectionStart).toBe('Hello Walter White'.length)
   })
 
-  it('normalizes only the pasted payload when removing carriage returns', () => {
+  it('normalizes only the pasted payload when converting CRLF to LF', () => {
     const value = 'Keep\r\nline'
     const result = applyPasteToMentionsValue(value, config, value.length, value.length, '\r\nnext')
 
     expect(result.value).toBe('Keep\r\nline\nnext')
     expect(result.snapshot.plainText).toBe('Keep\r\nline\nnext')
     expect(result.nextSelectionStart).toBe('Keep\r\nline\nnext'.length)
+  })
+
+  it('normalizes lone carriage returns in inserted text', () => {
+    const result = applyInsertTextToMentionsValue('Hello', config, 5, 5, '\rthere')
+
+    expect(result.value).toBe('Hello\nthere')
+    expect(result.snapshot.plainText).toBe('Hello\nthere')
+    expect(result.nextSelectionStart).toBe('Hello\nthere'.length)
   })
 
   it('cuts mention markup while restoring the caret to the selection start', () => {
