@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
@@ -136,6 +136,12 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     [mentionChildren]
   )
 
+  useEffect(() => {
+    if (!isOpened) {
+      lastMouseEnterPosition.current = null
+    }
+  }, [isOpened])
+
   useLayoutEffect(() => {
     if (!ulElement || ulElement.offsetHeight >= ulElement.scrollHeight || !scrollFocusedIntoView) {
       return
@@ -228,6 +234,10 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   )
 
   const handleListScroll = useEventCallback<React.UIEventHandler<HTMLUListElement>>((event) => {
+    if (isLoading === true) {
+      return
+    }
+
     const list = event.currentTarget
     const remainingScrollDistance = list.scrollHeight - list.scrollTop - list.clientHeight
 

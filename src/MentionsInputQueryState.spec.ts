@@ -18,10 +18,11 @@ const queryInfo = {
 
 describe('MentionsInputQueryState', () => {
   it('creates loading state with empty results by default', () => {
-    expect(createLoadingQueryState(queryInfo)).toEqual({
+    expect(createLoadingQueryState(queryInfo, true)).toEqual({
       queryInfo,
       results: [],
       status: 'loading',
+      ignoreAccents: true,
     })
   })
 
@@ -44,7 +45,14 @@ describe('MentionsInputQueryState', () => {
           ],
         },
       },
-      {},
+      {
+        0: {
+          queryInfo,
+          results: [],
+          status: 'loading',
+          ignoreAccents: true,
+        },
+      },
       0,
       queryInfo,
       {
@@ -60,6 +68,7 @@ describe('MentionsInputQueryState', () => {
     expect(nextState.focusIndex).toBe(0)
     expect(nextState.suggestions[0]?.results).toHaveLength(1)
     expect(nextState.queryStates[0]?.status).toBe('success')
+    expect(nextState.queryStates[0]?.ignoreAccents).toBe(true)
   })
 
   it('removes failed suggestions while keeping the latest error state', () => {
@@ -70,7 +79,14 @@ describe('MentionsInputQueryState', () => {
           results: [{ id: 'first', display: 'First' }],
         },
       },
-      {},
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+          status: 'loading',
+          ignoreAccents: true,
+        },
+      },
       0,
       queryInfo,
       new Error('boom'),
@@ -80,6 +96,7 @@ describe('MentionsInputQueryState', () => {
     expect(nextState.suggestions[0]).toBeUndefined()
     expect(nextState.focusIndex).toBe(0)
     expect(nextState.queryStates[0]?.status).toBe('error')
+    expect(nextState.queryStates[0]?.ignoreAccents).toBe(true)
   })
 
   it('clamps focus when an errored query removes the focused preserved results', () => {
@@ -97,7 +114,14 @@ describe('MentionsInputQueryState', () => {
           results: [{ id: 'third', display: 'Third' }],
         },
       },
-      {},
+      {
+        1: {
+          queryInfo: { ...queryInfo, childIndex: 1 },
+          results: [{ id: 'third', display: 'Third' }],
+          status: 'loading',
+          ignoreAccents: false,
+        },
+      },
       1,
       { ...queryInfo, childIndex: 1 },
       new Error('boom'),
@@ -151,6 +175,7 @@ describe('MentionsInputQueryState', () => {
           queryInfo,
           results: [{ id: 'first', display: 'First' }],
           status: 'success',
+          ignoreAccents: false,
           pagination: {
             nextCursor: 'cursor-2',
             hasMore: true,
@@ -179,6 +204,7 @@ describe('MentionsInputQueryState', () => {
           queryInfo,
           results: [{ id: 'first', display: 'First' }],
           status: 'success',
+          ignoreAccents: false,
           pagination: {
             nextCursor: 'cursor-2',
             hasMore: true,
@@ -208,6 +234,63 @@ describe('MentionsInputQueryState', () => {
     })
   })
 
+  it('ignores stale successful page results without current pagination state', () => {
+    const suggestions = {
+      0: {
+        queryInfo,
+        results: [{ id: 'first', display: 'First' }],
+      },
+    }
+    const queryStates = {
+      1: {
+        queryInfo: { ...queryInfo, childIndex: 1 },
+        results: [],
+        status: 'loading' as const,
+        ignoreAccents: false,
+      },
+    }
+
+    expect(
+      applySuccessfulPageResult(
+        suggestions,
+        queryStates,
+        0,
+        queryInfo,
+        {
+          items: [{ id: 'stale', display: 'Stale' }],
+          nextCursor: null,
+          hasMore: false,
+          paginated: true,
+        },
+        2
+      )
+    ).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
+    })
+
+    expect(
+      applySuccessfulPageResult(
+        suggestions,
+        queryStates,
+        1,
+        { ...queryInfo, childIndex: 1 },
+        {
+          items: [{ id: 'stale', display: 'Stale' }],
+          nextCursor: null,
+          hasMore: false,
+          paginated: true,
+        },
+        2
+      )
+    ).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
+    })
+  })
+
   it('keeps successful suggestions when a next page fails', () => {
     const error = new Error('boom')
     const nextState = applyErroredPageResult(
@@ -222,6 +305,7 @@ describe('MentionsInputQueryState', () => {
           queryInfo,
           results: [{ id: 'first', display: 'First' }],
           status: 'success',
+          ignoreAccents: false,
           pagination: {
             nextCursor: 'cursor-2',
             hasMore: true,

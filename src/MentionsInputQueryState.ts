@@ -24,11 +24,13 @@ export const createClearedSuggestionsState = <
 })
 
 export const createLoadingQueryState = <Extra extends Record<string, unknown>>(
-  queryInfo: QueryInfo
+  queryInfo: QueryInfo,
+  ignoreAccents: boolean
 ): SuggestionQueryState<Extra> => ({
   queryInfo,
   results: [],
   status: 'loading',
+  ignoreAccents,
 })
 
 export const isAbortError = (error: unknown): boolean =>
@@ -49,6 +51,9 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
   inlineAutocomplete: boolean
 ): SuggestionsLifecycleState<Extra> => {
   const results = page.items
+  const ignoreAccents = Object.hasOwn(currentQueryStates, childIndex)
+    ? currentQueryStates[childIndex].ignoreAccents
+    : false
   const suggestions: SuggestionsMap<Extra> = {
     ...currentSuggestions,
     [childIndex]: {
@@ -71,6 +76,7 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
         queryInfo,
         results,
         status: 'success',
+        ignoreAccents,
         pagination: page.paginated
           ? {
               nextCursor: page.nextCursor,
@@ -132,6 +138,24 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
   page: NormalizedMentionDataPage<Extra>,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
+  if (!Object.hasOwn(currentQueryStates, childIndex)) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
+  const currentQueryState = currentQueryStates[childIndex]
+
+  if (currentQueryState.pagination === undefined) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
   const previousResults = Object.hasOwn(currentSuggestions, childIndex)
     ? currentSuggestions[childIndex].results
     : []
@@ -151,7 +175,7 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
     queryStates: {
       ...currentQueryStates,
       [childIndex]: {
-        ...currentQueryStates[childIndex],
+        ...currentQueryState,
         queryInfo,
         results,
         status: 'success',
@@ -219,6 +243,9 @@ export const applyErroredQueryResult = <Extra extends Record<string, unknown>>(
     Object.entries(currentSuggestions).filter(([key]) => Number(key) !== childIndex)
   ) as SuggestionsMap<Extra>
   const suggestionsCount = countSuggestions(suggestions)
+  const ignoreAccents = Object.hasOwn(currentQueryStates, childIndex)
+    ? currentQueryStates[childIndex].ignoreAccents
+    : false
 
   return {
     suggestions,
@@ -229,6 +256,7 @@ export const applyErroredQueryResult = <Extra extends Record<string, unknown>>(
         queryInfo,
         results: [],
         status: 'error',
+        ignoreAccents,
         error,
       },
     },

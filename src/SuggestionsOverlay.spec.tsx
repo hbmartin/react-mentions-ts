@@ -734,6 +734,60 @@ describe('SuggestionsOverlay', () => {
     expect(onMouseEnter).toHaveBeenCalledWith(2)
   })
 
+  it('resets cached mouse position after closing the overlay.', () => {
+    const suggestions = [
+      { id: '1', display: 'First' },
+      { id: '2', display: 'Second' },
+    ]
+    const suggestionsMap = createSuggestionsMap(suggestions)
+    const onMouseEnter = vi.fn()
+
+    const { container, rerender } = render(
+      <SuggestionsOverlay
+        id="test-suggestions"
+        suggestions={suggestionsMap}
+        focusIndex={0}
+        isOpened
+        onMouseEnter={onMouseEnter}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    let listItems = container.querySelectorAll('li[role="option"]')
+    fireEvent.mouseEnter(listItems[1], { clientX: 20, clientY: 20 })
+    expect(onMouseEnter).toHaveBeenCalledWith(1)
+
+    rerender(
+      <SuggestionsOverlay
+        id="test-suggestions"
+        suggestions={suggestionsMap}
+        focusIndex={0}
+        isOpened={false}
+        onMouseEnter={onMouseEnter}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    rerender(
+      <SuggestionsOverlay
+        id="test-suggestions"
+        suggestions={suggestionsMap}
+        focusIndex={0}
+        isOpened
+        onMouseEnter={onMouseEnter}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    listItems = container.querySelectorAll('li[role="option"]')
+    fireEvent.mouseEnter(listItems[1], { clientX: 20, clientY: 20 })
+    expect(onMouseEnter).toHaveBeenCalledTimes(2)
+    expect(onMouseEnter).toHaveBeenLastCalledWith(1)
+  })
+
   it('does not render anything when closed', () => {
     const { container } = render(
       <SuggestionsOverlay id="test-suggestions" suggestions={{}} focusIndex={0} isOpened={false}>
@@ -893,6 +947,44 @@ describe('SuggestionsOverlay', () => {
     expect(handleLoadMore).not.toHaveBeenCalled()
 
     list.scrollTop = 60
+    fireEvent.scroll(list)
+    expect(handleLoadMore).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not request more suggestions while loading', () => {
+    const handleLoadMore = vi.fn()
+    const { container, rerender } = render(
+      <SuggestionsOverlay
+        id="loading-load-more-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        isLoading
+        onLoadMore={handleLoadMore}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+    Object.defineProperty(list, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(list, 'clientHeight', { value: 100, configurable: true })
+    list.scrollTop = 60
+    fireEvent.scroll(list)
+    expect(handleLoadMore).not.toHaveBeenCalled()
+
+    rerender(
+      <SuggestionsOverlay
+        id="loading-load-more-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        onLoadMore={handleLoadMore}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
     fireEvent.scroll(list)
     expect(handleLoadMore).toHaveBeenCalledTimes(1)
   })

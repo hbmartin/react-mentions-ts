@@ -515,6 +515,54 @@ describe('MentionsInputSelectors', () => {
     })
   })
 
+  it('does not invoke async providers when the signal is already aborted', async () => {
+    const asyncData = vi.fn(() => [{ id: 'alice', display: 'Alice' }])
+    const controller = new AbortController()
+    controller.abort()
+
+    const provider = getDataProvider(asyncData, {
+      ignoreAccents: false,
+      signal: controller.signal,
+      getSubstringIndex: () => 0,
+    })
+
+    await expect(provider('a')).resolves.toEqual({
+      items: [],
+      nextCursor: null,
+      hasMore: false,
+      paginated: false,
+    })
+    expect(asyncData).not.toHaveBeenCalled()
+  })
+
+  it('drops async provider results when the signal aborts before resolution', async () => {
+    let resolveProvider: (value: Array<{ id: string; display: string }>) => void = () => undefined
+    const asyncData = vi.fn(
+      () =>
+        new Promise<Array<{ id: string; display: string }>>((resolve) => {
+          resolveProvider = resolve
+        })
+    )
+    const controller = new AbortController()
+    const provider = getDataProvider(asyncData, {
+      ignoreAccents: false,
+      signal: controller.signal,
+      getSubstringIndex: () => 0,
+    })
+
+    const result = provider('a')
+    controller.abort()
+    resolveProvider([{ id: 'alice', display: 'Alice' }])
+
+    await expect(result).resolves.toEqual({
+      items: [],
+      nextCursor: null,
+      hasMore: false,
+      paginated: false,
+    })
+    expect(asyncData).toHaveBeenCalledTimes(1)
+  })
+
   it('normalizes paginated provider results without applying maxSuggestions', () => {
     expect(
       normalizeMentionDataResult(

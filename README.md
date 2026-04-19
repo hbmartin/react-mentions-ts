@@ -12,20 +12,39 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
 
 ### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/)
 
-## 🎯 Features
+## Table of Contents
 
-- ✅ **Flexible Triggers** - Use any character or pattern to trigger mentions (@, #, :, or custom)
-- 🎨 **Tailwind v4 Ready** - First-class support for Tailwind CSS v4 utility styling
-- ⚡ **Async Data Loading** - Load suggestions dynamically from APIs
-- 🔍 **Smart Suggestions** - Real-time filtering and matching
-- 🪄 **Caret Aware** - Detect when the caret overlaps mentions and style them via data attributes
-- ♿ **Accessible** - Built with ARIA labels and keyboard navigation
-- 🎯 **TypeScript First** - Written in TypeScript with complete type definitions
-- 🧪 **Well Tested** - Comprehensive test suite with Testing Library
-- 🌐 **SSR Compatible** - Works with Next.js and other SSR frameworks
-- 📱 **Mobile Friendly** - Touch-optimized for mobile devices
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [How It Works](#how-it-works)
+- [Configuration](#configuration)
+  - [MentionsInput Props](#mentionsinput-props)
+  - [Mention Props](#mention-props)
+  - [Async Data Loading](#async-data-loading)
+- [More Examples](#more-examples)
+- [Advanced Usage](#advanced-usage)
+- [Styling](#styling)
+- [Testing](#testing)
+- [FAQ & Gotchas](#faq--gotchas)
+- [Migrating from react-mentions](#migrating-from-react-mentions)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
-## 📦 Installation
+## Features
+
+- **Flexible Triggers** — any character, string, or custom `RegExp` (`@`, `#`, `:`, or your own)
+- **Async Data Loading** — real-time filtering with debouncing, `AbortSignal` cancellation, and cursor pagination
+- **Caret Aware** — detect when the caret overlaps mentions and style them via `data-mention-selection`
+- **Inline Autocomplete** — ghost-text hints accepted with Tab, Enter, or arrow keys
+- **Tailwind v4 Ready** — first-class support for Tailwind CSS v4 utility styling
+- **TypeScript First** — written in TypeScript with complete type definitions
+- **Accessible** — built with ARIA labels and keyboard navigation
+- **SSR Compatible** — works with Next.js and other SSR frameworks
+- **Mobile Friendly** — touch-optimized for mobile devices
+
+## Installation
 
 ```bash
 # npm

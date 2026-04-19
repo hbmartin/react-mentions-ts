@@ -38,12 +38,12 @@ export type SuggestionDataItem<Extra extends Record<string, unknown> = Record<st
 type MaybePromise<T> = T | Promise<T>
 
 export type MentionSearchReason = 'query' | 'page'
-export type MentionPageCursor = NonNullable<unknown>
+export type MentionPageCursor = string | number | boolean | symbol | bigint | object
 
 export interface MentionSearchContext {
   signal: AbortSignal
   cursor?: MentionPageCursor | null
-  reason: MentionSearchReason
+  reason?: MentionSearchReason
 }
 
 export interface MentionDataPage<Extra extends Record<string, unknown> = Record<string, unknown>> {
@@ -95,6 +95,7 @@ export interface SuggestionQueryState<
   queryInfo: QueryInfo
   results: SuggestionDataItem<Extra>[]
   status: 'loading' | 'success' | 'error'
+  ignoreAccents: boolean
   error?: unknown
   pagination?: {
     nextCursor: MentionPageCursor | null
