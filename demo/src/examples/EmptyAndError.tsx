@@ -8,6 +8,7 @@ import {
   mergeClassNames,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import { waitForAbortableDelay } from './waitForAbortableDelay'
 
 const DIRECTORY: MentionDataItem[] = [
   { id: 'ada', display: 'Ada Lovelace' },
@@ -16,29 +17,11 @@ const DIRECTORY: MentionDataItem[] = [
   { id: 'margaret', display: 'Margaret Hamilton' },
 ]
 
-const wait = (ms: number, signal: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    if (signal.aborted) {
-      reject(signal.reason as Error)
-      return
-    }
-
-    const onAbort = () => {
-      clearTimeout(timer)
-      reject(signal.reason as Error)
-    }
-    const timer = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort)
-      resolve()
-    }, ms)
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
-
 async function fetchPeople(
   query: string,
   { signal }: MentionSearchContext
 ): Promise<MentionDataItem[]> {
-  await wait(250, signal)
+  await waitForAbortableDelay(250, signal)
 
   if (query.toLowerCase().includes('fail')) {
     throw new Error('Directory service is offline')
