@@ -13,7 +13,7 @@ export default defineConfig({
       reporter: ['cobertura', 'lcov', 'text-summary'],
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.spec.{ts,tsx}', 'src/**/__snapshots__/**'],
+      exclude: ['src/**/*.spec.{ts,tsx}', 'src/**/__snapshots__/**', 'scripts/**'],
       thresholds: {
         statements: 95,
         branches: 95,

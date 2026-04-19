@@ -38,6 +38,8 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint src",
+    "lint:rule-counts": "oxlint src --format json | jq '[.diagnostics[].code] | group_by(.) | map({ rule: .[0], count: length }) | sort_by(-.count)'",
+    "lint:all-rules": "node ./scripts/write-oxlint-all-rules.mjs",
     "publint": "npx publint --pack npm",
     "types:lint": "npm_config_cache=.npm-cache attw --pack .",
     "ci:verify": "pnpm lint && pnpm typecheck && pnpm build && npx publint --pack npm && pnpm types:lint",
