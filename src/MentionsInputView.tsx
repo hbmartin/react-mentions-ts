@@ -7,6 +7,7 @@ export interface MentionsInputViewProps {
   readonly style?: CSSProperties
   readonly singleLine: boolean
   readonly controlClassName: string
+  readonly controlStyle?: CSSProperties
   readonly highlighter: React.ReactNode
   readonly input: React.ReactNode
   readonly inlineSuggestion: React.ReactNode
@@ -21,6 +22,7 @@ const MentionsInputView = ({
   style,
   singleLine,
   controlClassName,
+  controlStyle,
   highlighter,
   input,
   inlineSuggestion,
@@ -35,7 +37,7 @@ const MentionsInputView = ({
     data-single-line={singleLine ? 'true' : undefined}
     data-multi-line={singleLine ? undefined : 'true'}
   >
-    <div className={controlClassName} data-slot="control">
+    <div className={controlClassName} style={controlStyle} data-slot="control">
       {highlighter}
       {input}
       {inlineSuggestion}

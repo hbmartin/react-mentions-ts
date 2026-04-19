@@ -2,7 +2,8 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import type { Mock, MockInstance } from 'vitest'
-import * as utils from './utils'
+import * as getMentionsAndPlainTextModule from './utils/getMentionsAndPlainText'
+import * as getPlainTextModule from './utils/getPlainText'
 import * as readConfigFromChildrenModule from './utils/readConfigFromChildren'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
@@ -2606,7 +2607,7 @@ describe('MentionsInput', () => {
     })
 
     it('reuses cached mentions for caret-only updates', async () => {
-      const getMentionsAndPlainTextSpy = vi.spyOn(utils, 'getMentionsAndPlainText')
+      const getMentionsAndPlainTextSpy = vi.spyOn(getMentionsAndPlainTextModule, 'default')
       try {
         const onMentionSelectionChange = vi.fn()
         const { textarea } = renderMentionsInput({
@@ -2688,7 +2689,7 @@ describe('MentionsInput', () => {
     })
 
     it('clears cached mentions when the mention config changes', async () => {
-      const getMentionsAndPlainTextSpy = vi.spyOn(utils, 'getMentionsAndPlainText')
+      const getMentionsAndPlainTextSpy = vi.spyOn(getMentionsAndPlainTextModule, 'default')
       try {
         const onMentionSelectionChange = vi.fn()
         const initialValue = '@[First](first) and more text'
@@ -3375,9 +3376,9 @@ describe('MentionsInput', () => {
           instance.setState({ selectionStart: 4, selectionEnd: 4 })
         })
 
-        const actualGetPlainText = utils.getPlainText
+        const actualGetPlainText = getPlainTextModule.default
         const getPlainTextSpy = vi
-          .spyOn(utils, 'getPlainText')
+          .spyOn(getPlainTextModule, 'default')
           .mockImplementationOnce((inputValue, inputConfig) =>
             actualGetPlainText(inputValue, inputConfig)
           )

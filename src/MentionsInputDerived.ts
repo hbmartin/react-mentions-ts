@@ -4,7 +4,7 @@ import type {
   MentionOccurrence,
   MentionSelectionChangeEvent,
 } from './types'
-import { getMentionsAndPlainText } from './utils'
+import getMentionsAndPlainText from './utils/getMentionsAndPlainText'
 
 export interface MentionValueSnapshot<
   Extra extends Record<string, unknown> = Record<string, unknown>,

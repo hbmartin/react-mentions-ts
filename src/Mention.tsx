@@ -1,33 +1,11 @@
-import type { CSSProperties } from 'react'
-import cn from './utils/cn'
-import type { MentionComponentProps } from './types'
+import MentionBase from './MentionBase'
+import type { MentionProps } from './MentionBase'
+import styledStyles from './styles/styled'
 
-export interface MentionProps<
-  Extra extends Record<string, unknown> = Record<string, unknown>,
-> extends MentionComponentProps<Extra> {
-  readonly display?: string
-  readonly className?: string
-  readonly style?: CSSProperties
-}
+export type { MentionProps }
 
-const mentionBaseClass = 'rounded-md bg-primary/20'
-
-const mentionsRequiredClass =
-  'inline [font-family:inherit] [font-size:inherit] [letter-spacing:inherit] [font-weight:inherit] text-transparent p-0'
-
-export default function Mention<Extra extends Record<string, unknown> = Record<string, unknown>>({
-  display,
-  className,
-  style,
-  selectionState,
-}: Readonly<MentionProps<Extra>>) {
-  return (
-    <span
-      className={cn(mentionBaseClass, className, mentionsRequiredClass)}
-      style={style}
-      data-mention-selection={selectionState ?? undefined}
-    >
-      {display}
-    </span>
-  )
+export default function Mention<Extra extends Record<string, unknown> = Record<string, unknown>>(
+  props: Readonly<MentionProps<Extra>>
+) {
+  return <MentionBase {...props} styles={styledStyles.mention} />
 }

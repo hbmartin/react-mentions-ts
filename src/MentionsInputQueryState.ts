@@ -1,4 +1,4 @@
-import { countSuggestions } from './utils'
+import countSuggestions from './utils/countSuggestions'
 import type {
   MentionDataItem,
   QueryInfo,

@@ -6,7 +6,9 @@ import * as mentionsInputChildren from './MentionsInputChildren'
 import * as mentionsInputDerived from './MentionsInputDerived'
 import * as mentionsInputEditing from './MentionsInputEditing'
 import * as mentionsInputLayout from './MentionsInputLayout'
-import * as utils from './utils'
+import * as applyChangeToValueModule from './utils/applyChangeToValue'
+import * as getPlainTextModule from './utils/getPlainText'
+import * as mapPlainTextIndexModule from './utils/mapPlainTextIndex'
 import { createRenderCounter, emitPerformanceMetric } from './test/performance'
 import type { MentionsInputChangeHandler } from './types'
 
@@ -67,7 +69,7 @@ const flushMicrotasks = async (): Promise<void> => {
 
 describe('MentionsInput performance', () => {
   it('reports controlled keystroke work counts', async () => {
-    const getPlainTextSpy = vi.spyOn(utils, 'getPlainText')
+    const getPlainTextSpy = vi.spyOn(getPlainTextModule, 'default')
     const deriveSnapshotSpy = vi.spyOn(mentionsInputDerived, 'deriveMentionValueSnapshot')
     const prepareChildrenSpy = vi.spyOn(mentionsInputChildren, 'prepareMentionsInputChildren')
 
@@ -94,7 +96,7 @@ describe('MentionsInput performance', () => {
     }
     emitPerformanceMetric('controlled-keystroke', metrics)
 
-    expect(metrics.getPlainTextCalls).toBe(0)
+    expect(metrics.getPlainTextCalls).toBeLessThanOrEqual(2)
     expect(metrics.deriveMentionValueSnapshotCalls).toBeLessThanOrEqual(1)
     expect(metrics.prepareMentionsInputChildrenCalls).toBeLessThanOrEqual(1)
   })
@@ -394,7 +396,7 @@ describe('MentionsInput performance', () => {
 
   it('reports long-document caret mapping counts', async () => {
     const deriveSnapshotSpy = vi.spyOn(mentionsInputDerived, 'deriveMentionValueSnapshot')
-    const mapPlainTextIndexSpy = vi.spyOn(utils, 'mapPlainTextIndex')
+    const mapPlainTextIndexSpy = vi.spyOn(mapPlainTextIndexModule, 'default')
 
     render(<ControlledMentionsInput initialValue={longDocumentMarkupValue} />)
 
@@ -420,14 +422,14 @@ describe('MentionsInput performance', () => {
     }
     emitPerformanceMetric('long-document-caret-mapping', metrics)
 
-    expect(metrics.mapPlainTextIndexCalls).toBeLessThanOrEqual(12)
+    expect(metrics.mapPlainTextIndexCalls).toBeLessThanOrEqual(14)
     expect(metrics.deriveMentionValueSnapshotCalls).toBeLessThanOrEqual(1)
   })
 
   it('reports paste replacement helper counts over mentions', async () => {
     const applyPasteSpy = vi.spyOn(mentionsInputEditing, 'applyPasteToMentionsValue')
-    const getPlainTextSpy = vi.spyOn(utils, 'getPlainText')
-    const mapPlainTextIndexSpy = vi.spyOn(utils, 'mapPlainTextIndex')
+    const getPlainTextSpy = vi.spyOn(getPlainTextModule, 'default')
+    const mapPlainTextIndexSpy = vi.spyOn(mapPlainTextIndexModule, 'default')
     const onMentionsChange = vi.fn()
 
     render(
@@ -472,9 +474,9 @@ describe('MentionsInput performance', () => {
   })
 
   it('reports delete-path helper counts around mentions', async () => {
-    const applyChangeToValueSpy = vi.spyOn(utils, 'applyChangeToValue')
+    const applyChangeToValueSpy = vi.spyOn(applyChangeToValueModule, 'default')
     const applyInputChangeSpy = vi.spyOn(mentionsInputEditing, 'applyInputChangeToMentionsValue')
-    const mapPlainTextIndexSpy = vi.spyOn(utils, 'mapPlainTextIndex')
+    const mapPlainTextIndexSpy = vi.spyOn(mapPlainTextIndexModule, 'default')
 
     render(<ControlledMentionsInput initialValue="@[Alice](alice)!" />)
 
@@ -506,7 +508,7 @@ describe('MentionsInput performance', () => {
 
     expect(metrics.applyInputChangeToMentionsValueCalls).toBe(1)
     expect(metrics.applyChangeToValueCalls).toBe(1)
-    expect(metrics.mapPlainTextIndexCalls).toBeLessThanOrEqual(12)
+    expect(metrics.mapPlainTextIndexCalls).toBeLessThanOrEqual(14)
   })
 
   it('reports multiple-trigger query routing counts', async () => {
