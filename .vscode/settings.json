@@ -1,17 +1,17 @@
 {
-	"javascript.validate.enable": false,
-	"editor.tabSize": 2,
-	"search.exclude": {
-		"**/lib": true
-	},
-	"eslint.enable": true,
-	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"editor.formatOnSave": true,
-	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": "explicit"
-	},
-	"eslint.options": {
-		"overrideConfigFile": "./eslint.config.ts"
-	},
-	"typescript.tsserver.implicitProjectConfig.types": ["node", "jest", "@testing-library/jest-dom"]
+  "javascript.validate.enable": false,
+  "editor.tabSize": 2,
+  "search.exclude": {
+    "**/lib": true
+  },
+  "eslint.enable": true,
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.options": {
+    "overrideConfigFile": "./eslint.config.ts"
+  },
+  "typescript.tsserver.implicitProjectConfig.types": ["node", "jest", "@testing-library/jest-dom"]
 }

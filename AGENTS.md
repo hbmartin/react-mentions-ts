@@ -1,6 +1,6 @@
 - never run publint with pnpm, instead always use `npx publint --pack npm`
 - use `pnpm` for all commands except `pack`
-- always run `pnpm format && pnpm lint && pnpm test` after completing work and fix findings
+- always run `pnpm fmt && pnpm lint && pnpm test` after completing work and fix findings
 
 ## Relevant best-practice guidance for this library
 

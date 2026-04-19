@@ -1,5 +1,5 @@
 comment:
-  layout: "reach, diff, files"
+  layout: 'reach, diff, files'
   behavior: default
 coverage:
   status:

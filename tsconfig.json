@@ -5,5 +5,14 @@
     "types": ["node"]
   },
   "include": ["src/**/*", "scripts/**/*", "tsdown.config.ts"],
-  "exclude": ["dist_build", "coverage", "build", "node_modules", "demo", "tests", "**/*.spec.ts", "**/*.spec.tsx"]
+  "exclude": [
+    "dist_build",
+    "coverage",
+    "build",
+    "node_modules",
+    "demo",
+    "tests",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
 }

@@ -19,4 +19,6 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod
+      - run: pnpm fmt:check
       - run: pnpm lint

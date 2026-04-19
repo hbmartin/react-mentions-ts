@@ -273,18 +273,21 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     )
   }
 
+  const mergedStyle = useMemo<CSSProperties>(() => {
+    const overlayStyle: CSSProperties = {
+      position: position ?? 'absolute',
+      ...(left === undefined ? {} : { left }),
+      ...(right === undefined ? {} : { right }),
+      ...(top === undefined ? {} : { top }),
+      ...(width === undefined ? {} : { width }),
+    }
+
+    return styleProp === undefined ? overlayStyle : { ...overlayStyle, ...styleProp }
+  }, [left, position, right, styleProp, top, width])
+
   if (!isOpened) {
     return null
   }
-
-  const overlayStyle: CSSProperties = {
-    position: position ?? 'absolute',
-    ...(left === undefined ? {} : { left }),
-    ...(right === undefined ? {} : { right }),
-    ...(top === undefined ? {} : { top }),
-    ...(width === undefined ? {} : { width }),
-  }
-  const mergedStyle = styleProp === undefined ? overlayStyle : { ...overlayStyle, ...styleProp }
 
   return (
     <div

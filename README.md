@@ -105,25 +105,25 @@ function MyComponent() {
 
 The `MentionsInput` component supports the following props:
 
-| Prop name                  | Type                                                                   | Default value  | Description                                                                                                                           |
-| -------------------------- | ---------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| value                      | string                                                                 | `''`           | The value containing markup for mentions                                                                                              |
-| onMentionsChange           | function ({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, id-based text, the affected mention id (when applicable), active mentions, and the previous markup value |
-| onMentionSelectionChange   | function (selection, context)                                          | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries and a metadata context containing the current value, plain text, and mention identifiers |
-| onKeyDown                  | function (event)                                                       | empty function | A callback that is invoked when the user presses a key in the mentions input                                                          |
-| singleLine                 | boolean                                                                | `false`        | Renders a single line text input instead of a textarea, if set to `true`                                                              |
-| autoResize                 | boolean                                                                | `false`        | When `true`, resizes the textarea to match its scroll height after each input change (ignored when `singleLine` is `true`)           |
-| anchorMode                 | `'caret' \| 'left'`                                                    | `'caret'`      | Controls whether the overlay follows the caret (`'caret'`) or pins to the control’s leading edge (`'left'`)                         |
-| onMentionBlur              | function (event, clickedSuggestion)                                    | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list                                                   |
-| suggestionsPortalHost      | DOM Element                                                            | undefined      | Render suggestions into the DOM in the supplied host element.                                                                         |
-| inputRef                   | React ref                                                              | undefined      | Accepts a React ref to forward to the underlying input element                                                                        |
-| suggestionsPlacement       | `'auto' \| 'above' \| 'below'`                                         | `'below'`      | Controls where the suggestion list renders relative to the caret (`'auto'` flips when space is limited)                               |
-| a11ySuggestionsListLabel   | string                                                                 | `''`           | This label would be exposed to screen readers when suggestion popup appears                                                           |
-| customSuggestionsContainer | function(children)                                                     | empty function | Allows customizing the container of the suggestions                                                                                   |
-| inputComponent             | React component                                                        | undefined      | Allows the use of a custom input component                                                                                            |
-| suggestionsDisplay         | `'overlay' \| 'inline'`                                                | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints                                                      |
-| spellCheck                 | boolean                                                                | `false`        | Controls browser spell checking on the underlying input (disabled by default)                                                         |
-| onSelect                   | function (event)                                                       | empty function | A callback that is invoked when the user selects a portion of the text in the input                                                   |
+| Prop name                  | Type                                                                                       | Default value  | Description                                                                                                                                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| value                      | string                                                                                     | `''`           | The value containing markup for mentions                                                                                                                                                                               |
+| onMentionsChange           | function ({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, id-based text, the affected mention id (when applicable), active mentions, and the previous markup value                        |
+| onMentionSelectionChange   | function (selection, context)                                                              | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries and a metadata context containing the current value, plain text, and mention identifiers |
+| onKeyDown                  | function (event)                                                                           | empty function | A callback that is invoked when the user presses a key in the mentions input                                                                                                                                           |
+| singleLine                 | boolean                                                                                    | `false`        | Renders a single line text input instead of a textarea, if set to `true`                                                                                                                                               |
+| autoResize                 | boolean                                                                                    | `false`        | When `true`, resizes the textarea to match its scroll height after each input change (ignored when `singleLine` is `true`)                                                                                             |
+| anchorMode                 | `'caret' \| 'left'`                                                                        | `'caret'`      | Controls whether the overlay follows the caret (`'caret'`) or pins to the control’s leading edge (`'left'`)                                                                                                            |
+| onMentionBlur              | function (event, clickedSuggestion)                                                        | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list                                                                                                                                    |
+| suggestionsPortalHost      | DOM Element                                                                                | undefined      | Render suggestions into the DOM in the supplied host element.                                                                                                                                                          |
+| inputRef                   | React ref                                                                                  | undefined      | Accepts a React ref to forward to the underlying input element                                                                                                                                                         |
+| suggestionsPlacement       | `'auto' \| 'above' \| 'below'`                                                             | `'below'`      | Controls where the suggestion list renders relative to the caret (`'auto'` flips when space is limited)                                                                                                                |
+| a11ySuggestionsListLabel   | string                                                                                     | `''`           | This label would be exposed to screen readers when suggestion popup appears                                                                                                                                            |
+| customSuggestionsContainer | function(children)                                                                         | empty function | Allows customizing the container of the suggestions                                                                                                                                                                    |
+| inputComponent             | React component                                                                            | undefined      | Allows the use of a custom input component                                                                                                                                                                             |
+| suggestionsDisplay         | `'overlay' \| 'inline'`                                                                    | `'overlay'`    | Choose between the traditional suggestions overlay and inline autocomplete hints                                                                                                                                       |
+| spellCheck                 | boolean                                                                                    | `false`        | Controls browser spell checking on the underlying input (disabled by default)                                                                                                                                          |
+| onSelect                   | function (event)                                                                           | empty function | A callback that is invoked when the user selects a portion of the text in the input                                                                                                                                    |
 
 #### onMentionsChange payload
 
@@ -163,19 +163,19 @@ The optional `context` argument includes:
 
 Each data source is configured using a `Mention` component, which has the following props:
 
-| Prop name        | Type                                                         | Default value              | Description                                                                                                                                            |
-| ---------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| trigger          | RegExp or string                                             | `'@'`                      | Defines the char sequence upon which to trigger querying the data source                                                                               |
-| data             | array or function `(query, { signal })`                     | `null`                     | An array of mentionable entries, or a filtering function that returns matching entries for the current query. Async providers receive an `AbortSignal` so stale requests can be cancelled safely |
-| renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                     | Allows customizing how mention suggestions are rendered (optional)                                                                                     |
-| renderEmpty      | function `(query) => ReactNode`                             | `null`                     | Renders custom empty-state content when a query completes without any suggestions                                                                      |
-| renderError      | function `(query, error) => ReactNode`                      | `null`                     | Renders custom error-state content when an async data provider rejects                                                                                 |
-| markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'` | Template string for stored markup, or pass a `MentionSerializer` instance for full control                                                             |
-| displayTransform | function (id, display)                                       | returns `display`          | Accepts a function for customizing the string that is displayed for a mention                                                                          |
-| onAdd            | function ({id, display, startPos, endPos, serializerId})     | empty function             | Callback invoked when a suggestion has been added (optional)                                                                                           |
-| appendSpaceOnAdd | boolean                                                      | `false`                    | Append a space when a suggestion has been added (optional)                                                                                             |
-| debounceMs       | number                                                       | `0`                        | Debounces async provider calls to reduce network chatter while typing                                                                                  |
-| maxSuggestions   | number                                                       | unlimited                  | Caps the number of suggestions rendered from a given provider result                                                                                   |
+| Prop name        | Type                                                         | Default value              | Description                                                                                                                                                                                      |
+| ---------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| trigger          | RegExp or string                                             | `'@'`                      | Defines the char sequence upon which to trigger querying the data source                                                                                                                         |
+| data             | array or function `(query, { signal })`                      | `null`                     | An array of mentionable entries, or a filtering function that returns matching entries for the current query. Async providers receive an `AbortSignal` so stale requests can be cancelled safely |
+| renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                     | Allows customizing how mention suggestions are rendered (optional)                                                                                                                               |
+| renderEmpty      | function `(query) => ReactNode`                              | `null`                     | Renders custom empty-state content when a query completes without any suggestions                                                                                                                |
+| renderError      | function `(query, error) => ReactNode`                       | `null`                     | Renders custom error-state content when an async data provider rejects                                                                                                                           |
+| markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'` | Template string for stored markup, or pass a `MentionSerializer` instance for full control                                                                                                       |
+| displayTransform | function (id, display)                                       | returns `display`          | Accepts a function for customizing the string that is displayed for a mention                                                                                                                    |
+| onAdd            | function ({id, display, startPos, endPos, serializerId})     | empty function             | Callback invoked when a suggestion has been added (optional)                                                                                                                                     |
+| appendSpaceOnAdd | boolean                                                      | `false`                    | Append a space when a suggestion has been added (optional)                                                                                                                                       |
+| debounceMs       | number                                                       | `0`                        | Debounces async provider calls to reduce network chatter while typing                                                                                                                            |
+| maxSuggestions   | number                                                       | unlimited                  | Caps the number of suggestions rendered from a given provider result                                                                                                                             |
 
 > Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `markup={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
 
@@ -190,39 +190,36 @@ If a function is passed as the `data` prop, it receives the current search query
 ```tsx
 type User = { id: string; display: string }
 
-const fetchUsers = async (
-  query: string,
-  { signal }: MentionSearchContext
-): Promise<User[]> => {
+const fetchUsers = async (query: string, { signal }: MentionSearchContext): Promise<User[]> => {
   const response = await fetch(`/api/users?search=${query}`, { signal })
   return response.json()
 }
 
-<Mention trigger="@" data={fetchUsers} debounceMs={150} maxSuggestions={8} />
+;<Mention trigger="@" data={fetchUsers} debounceMs={150} maxSuggestions={8} />
 ```
 
 ## 📚 More Examples
 
 The [live demo](https://hbmartin.github.io/react-mentions-ts/) includes many ready-to-use patterns. Each demo's source is in [`demo/src/examples/`](https://github.com/hbmartin/react-mentions-ts/tree/master/demo/src/examples):
 
-| Demo | Description |
-| ---- | ----------- |
-| **Multiple Triggers** | Mention teammates with `@` or type an email address — styling switches based on the trigger |
-| **Single Line** | Compact single-line input for chat composer bars |
-| **Multi-Word Queries** | Use `makeTriggerRegex('@', { allowSpaceInQuery: true })` for multi-word searches |
-| **Regex Trigger** | Fire suggestions on any alphabetical word with no prefix character required |
-| **Accent-Insensitive** | Normalises diacritics before matching so `Lydia` finds `Lydìã` |
-| **Scrollable Composer** | Textarea and highlighter stay in sync while scrolling long drafts |
-| **Auto-Resize** | Textarea grows to match its content with `autoResize` |
-| **Copy & Paste** | Mentions survive clipboard round-trips, even into plain-text fields |
-| **Caret Mention States** | Style mentions based on caret overlap via `data-mention-selection` attributes |
-| **Inline Autocomplete** | Ghost-text completions accepted with Tab, Enter, or arrow keys |
-| **Async GitHub Mentions** | Live GitHub API search with debouncing, cancellation, and stale-result suppression |
-| **Emoji Support** | Mix people mentions with emoji search powered by a JSON data source |
-| **Suggestions Portal** | Render suggestions anywhere in the DOM for modals, drawers, or fixed toolbars |
-| **Custom Container** | Wrap suggestions in bespoke UI chrome — badges, headlines, or analytics |
-| **Left Anchored** | Pin the overlay to the input's leading edge instead of following the caret |
-| **Advanced Formatting** | Custom markup, programmatic focus, and flipped suggestion lists |
+| Demo                      | Description                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| **Multiple Triggers**     | Mention teammates with `@` or type an email address — styling switches based on the trigger |
+| **Single Line**           | Compact single-line input for chat composer bars                                            |
+| **Multi-Word Queries**    | Use `makeTriggerRegex('@', { allowSpaceInQuery: true })` for multi-word searches            |
+| **Regex Trigger**         | Fire suggestions on any alphabetical word with no prefix character required                 |
+| **Accent-Insensitive**    | Normalises diacritics before matching so `Lydia` finds `Lydìã`                              |
+| **Scrollable Composer**   | Textarea and highlighter stay in sync while scrolling long drafts                           |
+| **Auto-Resize**           | Textarea grows to match its content with `autoResize`                                       |
+| **Copy & Paste**          | Mentions survive clipboard round-trips, even into plain-text fields                         |
+| **Caret Mention States**  | Style mentions based on caret overlap via `data-mention-selection` attributes               |
+| **Inline Autocomplete**   | Ghost-text completions accepted with Tab, Enter, or arrow keys                              |
+| **Async GitHub Mentions** | Live GitHub API search with debouncing, cancellation, and stale-result suppression          |
+| **Emoji Support**         | Mix people mentions with emoji search powered by a JSON data source                         |
+| **Suggestions Portal**    | Render suggestions anywhere in the DOM for modals, drawers, or fixed toolbars               |
+| **Custom Container**      | Wrap suggestions in bespoke UI chrome — badges, headlines, or analytics                     |
+| **Left Anchored**         | Pin the overlay to the input's leading edge instead of following the caret                  |
+| **Advanced Formatting**   | Custom markup, programmatic focus, and flipped suggestion lists                             |
 
 ## 🔧 Advanced Usage
 
@@ -301,10 +298,10 @@ interface MentionSerializer {
 }
 
 interface MentionSerializerMatch {
-  markup: string   // the full matched substring
-  index: number    // position in the value string
-  id: string       // extracted mention identifier
-  display?: string | null  // extracted display text
+  markup: string // the full matched substring
+  index: number // position in the value string
+  id: string // extracted mention identifier
+  display?: string | null // extracted display text
 }
 ```
 
@@ -322,8 +319,9 @@ The example below percent-encodes reserved characters so an ID like `team)west` 
 import type { MentionSerializer } from 'react-mentions-ts'
 
 const encodeMentionId = (id: string): string =>
-  encodeURIComponent(id).replace(/[!'()*]/g, (char) =>
-    `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  encodeURIComponent(id).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
   )
 
 const decodeMentionId = (encoded: string): string => decodeURIComponent(encoded)
@@ -451,12 +449,12 @@ When `suggestionsDisplay=”inline”` is set, the component renders a ghost-tex
 
 Customize the inline hint appearance via the `classNames` prop:
 
-| Class name slot            | What it targets                                      |
-| -------------------------- | ---------------------------------------------------- |
-| `inlineSuggestion`         | The absolutely-positioned wrapper around the hint    |
-| `inlineSuggestionText`     | The visible completion text                          |
-| `inlineSuggestionPrefix`   | The already-typed portion (hidden with `sr-only`)    |
-| `inlineSuggestionSuffix`   | The remaining suggestion shown after the caret       |
+| Class name slot          | What it targets                                   |
+| ------------------------ | ------------------------------------------------- |
+| `inlineSuggestion`       | The absolutely-positioned wrapper around the hint |
+| `inlineSuggestionText`   | The visible completion text                       |
+| `inlineSuggestionPrefix` | The already-typed portion (hidden with `sr-only`) |
+| `inlineSuggestionSuffix` | The remaining suggestion shown after the caret    |
 
 See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for a full styling example.
 
@@ -493,34 +491,34 @@ This library is a TypeScript rewrite of [react-mentions](https://github.com/sign
 
 ### Renamed Props
 
-| react-mentions | react-mentions-ts | Notes |
-| -------------- | ----------------- | ----- |
+| react-mentions                                           | react-mentions-ts                                                                                   | Notes                                                                                                                           |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `onChange(event, newValue, newPlainTextValue, mentions)` | `onMentionsChange({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue })` | Receives a single object instead of positional arguments. See [onMentionsChange payload](#onmentionschange-payload) for details |
-| `onBlur(event, clickedSuggestion)` | `onMentionBlur(event, clickedSuggestion)` | Renamed to avoid shadowing the native `onBlur` (which is also available) |
-| `allowSuggestionsAboveCursor` | `suggestionsPlacement="auto"` | Use `'auto'`, `'above'`, or `'below'` instead of two separate booleans |
-| `forceSuggestionsAboveCursor` | `suggestionsPlacement="above"` | |
-| `allowSpaceInQuery` (on `MentionsInput`) | `trigger={makeTriggerRegex('@', { allowSpaceInQuery: true })}` (on `Mention`) | Moved from a top-level boolean to a per-trigger option via the `makeTriggerRegex` utility |
-| `onAdd(id, display, startPos, endPos)` | `onAdd({ id, display, startPos, endPos, serializerId })` | Receives a single object; adds `serializerId` |
+| `onBlur(event, clickedSuggestion)`                       | `onMentionBlur(event, clickedSuggestion)`                                                           | Renamed to avoid shadowing the native `onBlur` (which is also available)                                                        |
+| `allowSuggestionsAboveCursor`                            | `suggestionsPlacement="auto"`                                                                       | Use `'auto'`, `'above'`, or `'below'` instead of two separate booleans                                                          |
+| `forceSuggestionsAboveCursor`                            | `suggestionsPlacement="above"`                                                                      |                                                                                                                                 |
+| `allowSpaceInQuery` (on `MentionsInput`)                 | `trigger={makeTriggerRegex('@', { allowSpaceInQuery: true })}` (on `Mention`)                       | Moved from a top-level boolean to a per-trigger option via the `makeTriggerRegex` utility                                       |
+| `onAdd(id, display, startPos, endPos)`                   | `onAdd({ id, display, startPos, endPos, serializerId })`                                            | Receives a single object; adds `serializerId`                                                                                   |
 
 ### Replaced Props
 
-| react-mentions | react-mentions-ts | Notes |
-| -------------- | ----------------- | ----- |
+| react-mentions              | react-mentions-ts                        | Notes                                                                                                                                                                                                                               |
+| --------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `markup` (string) + `regex` | `markup` (string \| `MentionSerializer`) | The separate `regex` prop is removed. Pass a `MentionSerializer` for custom parsing, or use `createMarkupSerializer(template)` to convert a legacy template string. See [MentionSerializer Interface](#mentionserializer-interface) |
 
 ### New Features (no react-mentions equivalent)
 
-| Feature | Prop / API |
-| ------- | ---------- |
-| Async data via Promises with `AbortSignal` | `data` accepts `(query, { signal }) => Promise<...>` |
-| Debounced async queries | `debounceMs` on `Mention` |
-| Cap suggestion count | `maxSuggestions` on `Mention` |
-| Caret-aware mention styling | `onMentionSelectionChange`, `data-mention-selection` attribute |
-| Inline ghost-text autocomplete | `suggestionsDisplay="inline"` |
-| Auto-resizing textarea | `autoResize` |
-| Left-anchored overlay | `anchorMode="left"` |
-| Empty/error state rendering | `renderEmpty`, `renderError` on `Mention` |
-| Tailwind v4 styling out of the box | Built-in utility classes |
+| Feature                                    | Prop / API                                                     |
+| ------------------------------------------ | -------------------------------------------------------------- |
+| Async data via Promises with `AbortSignal` | `data` accepts `(query, { signal }) => Promise<...>`           |
+| Debounced async queries                    | `debounceMs` on `Mention`                                      |
+| Cap suggestion count                       | `maxSuggestions` on `Mention`                                  |
+| Caret-aware mention styling                | `onMentionSelectionChange`, `data-mention-selection` attribute |
+| Inline ghost-text autocomplete             | `suggestionsDisplay="inline"`                                  |
+| Auto-resizing textarea                     | `autoResize`                                                   |
+| Left-anchored overlay                      | `anchorMode="left"`                                            |
+| Empty/error state rendering                | `renderEmpty`, `renderError` on `Mention`                      |
+| Tailwind v4 styling out of the box         | Built-in utility classes                                       |
 
 ### Styling
 

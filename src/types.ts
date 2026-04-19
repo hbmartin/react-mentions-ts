@@ -249,6 +249,7 @@ export interface MentionsInputProps<
   inputRef?:
     | RefObject<HTMLInputElement | HTMLTextAreaElement>
     | ((el: HTMLInputElement | HTMLTextAreaElement | null) => void)
+    | null
   spellCheck?: boolean
   onBlur?: (event: ReactFocusEvent<InputElement>) => void
   onMentionBlur?: (event: ReactFocusEvent<InputElement>, clickedSuggestion: boolean) => void
