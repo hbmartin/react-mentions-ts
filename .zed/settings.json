@@ -194,6 +194,9 @@
 					"language_server": {
 						"name": "oxfmt"
 					}
+				},
+				{
+					"code_action": "source.fixAll.oxc"
 				}
 			]
 		},
@@ -207,6 +210,9 @@
 					"language_server": {
 						"name": "oxfmt"
 					}
+				},
+				{
+					"code_action": "source.fixAll.oxc"
 				}
 			]
 		},

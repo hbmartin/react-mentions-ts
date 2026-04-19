@@ -4,14 +4,11 @@
   "search.exclude": {
     "**/lib": true
   },
-  "eslint.enable": true,
+  "eslint.enable": false,
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
-  },
-  "eslint.options": {
-    "overrideConfigFile": "./eslint.config.ts"
+    "source.fixAll.oxc": "explicit"
   },
   "typescript.tsserver.implicitProjectConfig.types": ["node", "jest", "@testing-library/jest-dom"]
 }

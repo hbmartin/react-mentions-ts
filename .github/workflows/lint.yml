@@ -1,4 +1,4 @@
-name: ESLint
+name: oxlint
 on:
   push:
 jobs:

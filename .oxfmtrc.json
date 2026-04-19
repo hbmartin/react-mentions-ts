@@ -9,5 +9,5 @@
   "bracketSpacing": true,
   "arrowParens": "always",
   "sortPackageJson": false,
-  "ignorePatterns": []
+  "ignorePatterns": ["**/*.json"]
 }
