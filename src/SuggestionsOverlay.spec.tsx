@@ -374,6 +374,77 @@ describe('SuggestionsOverlay', () => {
     }
   })
 
+  it('keeps the scroll position when focus moves to a visible item after measurement is ready', () => {
+    const suggestionsMap = createSuggestionsMap(
+      Array.from({ length: 3 }, (_, index) => ({
+        id: `visible-${index}`,
+        display: `Visible ${index}`,
+      }))
+    )
+    const getBoundingClientRectMock = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingRect(this: HTMLElement) {
+        if (this.dataset.slot === 'suggestions-list') {
+          return {
+            top: 0,
+            bottom: 100,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 100,
+            x: 0,
+            y: 0,
+          }
+        }
+
+        return {
+          top: 20,
+          bottom: 40,
+          left: 0,
+          right: 0,
+          width: 0,
+          height: 20,
+          x: 0,
+          y: 20,
+        }
+      })
+
+    try {
+      const { container, rerender } = render(
+        <SuggestionsOverlay
+          id="visible-suggestions-after-measure"
+          suggestions={suggestionsMap}
+          focusIndex={0}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+      Object.defineProperty(list, 'offsetHeight', { configurable: true, value: 100 })
+      Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 400 })
+      list.scrollTop = 10
+
+      rerender(
+        <SuggestionsOverlay
+          id="visible-suggestions-after-measure"
+          suggestions={suggestionsMap}
+          focusIndex={1}
+          isOpened
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      expect(list.scrollTop).toBe(10)
+    } finally {
+      getBoundingClientRectMock.mockRestore()
+    }
+  })
+
   it('should be possible to style the list.', () => {
     const suggestions = [{ id: '1', display: 'Test' }]
 

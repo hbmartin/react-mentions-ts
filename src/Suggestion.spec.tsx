@@ -133,4 +133,30 @@ describe('Suggestion', () => {
     const highlightedElement3 = container3.querySelector('b')
     expect(highlightedElement3).toBeNull()
   })
+
+  it('renders text between multiple highlighted display ranges', () => {
+    const { container } = render(
+      <Suggestion
+        id="suggestion-multi-highlight"
+        index={0}
+        query="a"
+        suggestion={{
+          id: '1',
+          display: 'Ada Lovelace',
+          highlights: [
+            { start: 0, end: 3 },
+            { start: 4, end: 8 },
+          ],
+        }}
+        onClick={vi.fn()}
+        onMouseEnter={vi.fn()}
+      />
+    )
+
+    const highlightedElements = container.querySelectorAll('b')
+    expect(highlightedElements).toHaveLength(2)
+    expect(highlightedElements[0]).toHaveTextContent('Ada')
+    expect(highlightedElements[1]).toHaveTextContent('Love')
+    expect(container.textContent).toBe('Ada Lovelace')
+  })
 })

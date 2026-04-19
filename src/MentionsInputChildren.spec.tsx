@@ -140,6 +140,18 @@ describe('MentionsInputChildren', () => {
     ).toThrow('MentionsInput only accepts Mention components as children. Found: WrappedThing')
   })
 
+  it('falls back to an unknown component label for nameless invalid components', () => {
+    const NamelessThing = () => <div>Nameless</div>
+    Object.defineProperty(NamelessThing, 'name', {
+      configurable: true,
+      value: '',
+    })
+
+    expect(() => validateMentionChildTree(<NamelessThing />)).toThrow(
+      'MentionsInput only accepts Mention components as children. Found: unknown component'
+    )
+  })
+
   it('rejects duplicate serializer identifiers', () => {
     const serializer = {
       insert: ({ id }: { id: string | number }) => `:${String(id)}`,

@@ -494,6 +494,20 @@ describe('perfNotes', () => {
     })
   })
 
+  it('parses the exact process executable path as a command with no arguments', () => {
+    expect(parseCommandLine(process.execPath)).toEqual({
+      args: [],
+      command: process.execPath,
+    })
+  })
+
+  it('rejects empty and unterminated perf commands', () => {
+    expect(() => parseCommandLine('   ')).toThrow('Perf command must be a non-empty string')
+    expect(() => parseCommandLine('node "unterminated')).toThrow(
+      'Unterminated quoted string in perf command: node "unterminated'
+    )
+  })
+
   it('records a perf note on HEAD without touching the default notes ref', () => {
     const cwd = createTempRepository()
     const headCommit = commitFile(cwd, 'fixture.txt', 'hello\n', 'initial')
@@ -748,6 +762,18 @@ describe('perfNotes', () => {
     ).toThrow('Perf command failed:')
   })
 
+  it('wraps missing perf command failures without stdout or stderr context', () => {
+    const cwd = createTempRepository()
+    commitFile(cwd, 'fixture.txt', 'hello\n', 'initial')
+
+    expect(() =>
+      recordPerfNote(cwd, {
+        notesRef: 'refs/notes/test-perf',
+        perfCommand: '/definitely/missing/react-mentions-ts-perf-command',
+      })
+    ).toThrow('Perf command failed: /definitely/missing/react-mentions-ts-perf-command')
+  })
+
   it('stringifies perf notes with a trailing newline', () => {
     expect(stringifyPerfNote(parsePerfOutput(SAMPLE_PERF_OUTPUT)).endsWith('\n')).toBe(true)
   })
@@ -860,6 +886,38 @@ describe('perfNotes', () => {
     expect(stdout.toString()).toBe('')
   })
 
+  it('reports regressions without skipped baseline metrics through the CLI', () => {
+    const { commits, cwd } = createFeatureRepository()
+    const perfCommand = createPerfCommand(
+      `${SAMPLE_PERF_OUTPUT.replace('"scanCount":5', '"scanCount":6')}\n`
+    )
+    writePerfNote(
+      cwd,
+      commits.mergeBase,
+      parsePerfOutput(SAMPLE_PERF_OUTPUT, perfCommand),
+      'refs/notes/test-perf'
+    )
+    const stdout = createMemoryWriteStream()
+    const stderr = createMemoryWriteStream()
+
+    const exitCode = runPerfNotesCli(['check'], {
+      repositoryRoot: cwd,
+      env: {
+        ...process.env,
+        PERF_COMMAND: perfCommand,
+        PERF_NOTES_REF: 'refs/notes/test-perf',
+        PERF_TARGET_REF: 'origin/master',
+      },
+      stdout: stdout as unknown as NodeJS.WriteStream,
+      stderr: stderr as unknown as NodeJS.WriteStream,
+    })
+
+    expect(exitCode).toBe(1)
+    expect(stderr.toString()).toContain('Perf regressions detected')
+    expect(stderr.toString()).not.toContain('Skipped baseline metrics')
+    expect(stdout.toString()).toBe('')
+  })
+
   it('reports a passing check and skipped metrics through the CLI', () => {
     const { commits, cwd } = createFeatureRepository()
     const perfCommand = createPerfCommand(`${SAMPLE_PERF_OUTPUT}\n`)
@@ -887,6 +945,36 @@ describe('perfNotes', () => {
     expect(stderr.toString()).toBe('')
   })
 
+  it('reports a passing check without skipped metrics through the CLI', () => {
+    const { commits, cwd } = createFeatureRepository()
+    const perfCommand = createPerfCommand(`${SAMPLE_PERF_OUTPUT}\n`)
+    writePerfNote(
+      cwd,
+      commits.mergeBase,
+      parsePerfOutput(SAMPLE_PERF_OUTPUT, perfCommand),
+      'refs/notes/test-perf'
+    )
+    const stdout = createMemoryWriteStream()
+    const stderr = createMemoryWriteStream()
+
+    const exitCode = runPerfNotesCli(['check'], {
+      repositoryRoot: cwd,
+      env: {
+        ...process.env,
+        PERF_COMMAND: perfCommand,
+        PERF_NOTES_REF: 'refs/notes/test-perf',
+        PERF_TARGET_REF: 'origin/master',
+      },
+      stdout: stdout as unknown as NodeJS.WriteStream,
+      stderr: stderr as unknown as NodeJS.WriteStream,
+    })
+
+    expect(exitCode).toBe(0)
+    expect(stdout.toString()).toContain(`Perf check passed against ${commits.mergeBase}.`)
+    expect(stdout.toString()).not.toContain('Skipped baseline metrics')
+    expect(stderr.toString()).toBe('')
+  })
+
   it('prints CLI usage for unknown subcommands', () => {
     const stdout = createMemoryWriteStream()
     const stderr = createMemoryWriteStream()
@@ -897,6 +985,22 @@ describe('perfNotes', () => {
         ...process.env,
         PERF_COMMAND,
       },
+      stdout: stdout as unknown as NodeJS.WriteStream,
+      stderr: stderr as unknown as NodeJS.WriteStream,
+    })
+
+    expect(exitCode).toBe(1)
+    expect(stdout.toString()).toBe('')
+    expect(stderr.toString()).toBe('Usage: node scripts/perf-notes.mjs <record|check>\n')
+  })
+
+  it('uses default CLI environment values when optional env entries are absent', () => {
+    const stdout = createMemoryWriteStream()
+    const stderr = createMemoryWriteStream()
+
+    const exitCode = runPerfNotesCli(['nope'], {
+      repositoryRoot: process.cwd(),
+      env: {},
       stdout: stdout as unknown as NodeJS.WriteStream,
       stderr: stderr as unknown as NodeJS.WriteStream,
     })
