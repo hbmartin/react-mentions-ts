@@ -2334,11 +2334,24 @@ describe('MentionsInput', () => {
       const ref = React.createRef<MentionsInput>()
       const onMentionsChange = vi.fn()
 
-      render(
-        <MentionsInput ref={ref} value="Hello" onMentionsChange={onMentionsChange}>
-          <Mention trigger="@" data={data} />
-        </MentionsInput>
-      )
+      function ControlledMentionsInput() {
+        const [value, setValue] = React.useState('Hello')
+
+        return (
+          <MentionsInput
+            ref={ref}
+            value={value}
+            onMentionsChange={(change) => {
+              onMentionsChange(change)
+              setValue(change.value)
+            }}
+          >
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+      }
+
+      render(<ControlledMentionsInput />)
 
       const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
       textarea.setSelectionRange('Hello'.length, 'Hello'.length)
@@ -2351,6 +2364,10 @@ describe('MentionsInput', () => {
       expect(payload.trigger.type).toBe('insert-text')
       expect(payload.value).toBe('Hello @')
       expect(payload.plainTextValue).toBe('Hello @')
+
+      await waitFor(() => {
+        expect(textarea).toHaveValue('Hello @')
+      })
 
       await waitFor(() => {
         expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(data.length)

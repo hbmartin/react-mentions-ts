@@ -2,6 +2,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
+import { relative, resolve } from 'node:path'
 
 const projectRoot = resolve(import.meta.dirname, '..')
 const [schemaArgument, configArgument] = process.argv.slice(2)
