@@ -17,7 +17,9 @@
       "WebFetch(domain:www.testim.io)",
       "WebFetch(domain:www.angularminds.com)",
       "Bash(find:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(pnpm build:demo)",
+      "Bash(python3 *)"
     ],
     "deny": [],
     "ask": []

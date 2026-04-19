@@ -71,6 +71,43 @@ describe('MentionsInputQueryState', () => {
     expect(nextState.queryStates[0]?.ignoreAccents).toBe(true)
   })
 
+  it('ignores stale successful query results without current query state', () => {
+    const suggestions = {
+      1: {
+        queryInfo: { ...queryInfo, childIndex: 1 },
+        results: [{ id: 'preserved', display: 'Preserved' }],
+      },
+    }
+    const queryStates = {
+      1: {
+        queryInfo: { ...queryInfo, childIndex: 1 },
+        results: [{ id: 'preserved', display: 'Preserved' }],
+        status: 'success' as const,
+      },
+    }
+
+    expect(
+      applySuccessfulQueryResult(
+        suggestions,
+        queryStates,
+        0,
+        queryInfo,
+        {
+          items: [{ id: 'stale', display: 'Stale' }],
+          nextCursor: null,
+          hasMore: false,
+          paginated: false,
+        },
+        1,
+        false
+      )
+    ).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 1,
+    })
+  })
+
   it('removes failed suggestions while keeping the latest error state', () => {
     const nextState = applyErroredQueryResult(
       {
@@ -142,7 +179,13 @@ describe('MentionsInputQueryState', () => {
   it('tracks initial paginated query metadata', () => {
     const nextState = applySuccessfulQueryResult(
       {},
-      {},
+      {
+        0: {
+          queryInfo,
+          results: [],
+          status: 'loading',
+        },
+      },
       0,
       queryInfo,
       {
@@ -160,6 +203,7 @@ describe('MentionsInputQueryState', () => {
       hasMore: true,
       isLoading: false,
     })
+    expect(nextState.queryStates[0]?.ignoreAccents).toBe(false)
   })
 
   it('marks a next page as loading without clearing successful suggestions', () => {

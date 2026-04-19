@@ -57,24 +57,23 @@ yarn add react-mentions-ts
 pnpm add react-mentions-ts
 ```
 
-React Mentions TS uses peer dependencies for its styling helpers and React runtime. Ensure these are installed in your application (skip any you already have):
+### Peer dependencies
+
+`react` and `react-dom` are required. The remaining peers are only needed if you use the built-in Tailwind styling:
 
 ```bash
-# npm
-npm install class-variance-authority clsx react react-dom tailwind-merge
+# Required
+npm install react react-dom
 
-# yarn
-yarn add class-variance-authority clsx react react-dom tailwind-merge
-
-# pnpm
-pnpm add class-variance-authority clsx react react-dom tailwind-merge
+# Required only if using the built-in Tailwind utility classes
+npm install class-variance-authority clsx tailwind-merge
 ```
 
 Check `package.json` for the latest peer dependency version ranges.
 
-## 🚀 Quick Start
+## Quick Start
 
-### Add a MentionsInput with Mention children
+### Basic usage
 
 ```tsx
 import { useState } from 'react'
@@ -98,27 +97,64 @@ function MyComponent() {
 }
 ```
 
-### Configure boilerplate tailwind styling in your styles/tailwind.css
+### Reading mentions and mixing multiple triggers
 
-```css
-@import "tailwindcss";
-(...)
-@import "react-mentions-ts/styles/tailwind.css";
+Most apps need both the text and the structured list of selected entities. Pass multiple `Mention` children for different triggers and read `mentions` from the change payload:
+
+```tsx
+import { useState } from 'react'
+import { MentionsInput, Mention } from 'react-mentions-ts'
+
+const users = [
+  { id: 'walter', display: 'Walter White' },
+  { id: 'jesse', display: 'Jesse Pinkman' },
+]
+
+const tags = [
+  { id: 'urgent', display: 'urgent' },
+  { id: 'followup', display: 'follow-up' },
+]
+
+function CommentBox() {
+  const [value, setValue] = useState('')
+  const [mentionedIds, setMentionedIds] = useState<string[]>([])
+
+  return (
+    <>
+      <MentionsInput
+        value={value}
+        onMentionsChange={({ value: nextValue, mentions }) => {
+          setValue(nextValue)
+          setMentionedIds(mentions.map((m) => String(m.id)))
+        }}
+      >
+        <Mention trigger="@" data={users} appendSpaceOnAdd />
+        <Mention trigger="#" data={tags} markup="#[__display__](__id__)" appendSpaceOnAdd />
+      </MentionsInput>
+
+      <button type="button" onClick={() => submitComment({ body: value, mentionedIds })}>
+        Post
+      </button>
+    </>
+  )
+}
 ```
 
-## 💡 How It Works
+See [Styling](#styling) for the Tailwind setup (optional; the component also works with plain CSS, CSS modules, or inline styles).
+
+## How It Works
 
 `MentionsInput` is the main component that renders the textarea control. It accepts one or multiple `Mention` components as children. Each `Mention` component represents a data source for a specific class of mentionable objects:
 
-- 👥 **Users** - `@username` mentions
-- 🏷️ **Tags** - `#hashtag` mentions
-- 📋 **Templates** - `{{variable}}` mentions
-- 🎭 **Emojis** - `:emoji:` mentions
-- ✨ **Custom** - Any pattern you need!
+- **Users** — `@username` mentions
+- **Tags** — `#hashtag` mentions
+- **Templates** — `{{variable}}` mentions
+- **Emojis** — `:emoji:` mentions
+- **Custom** — any pattern you need
 
 **[View more examples](https://github.com/hbmartin/react-mentions-ts/tree/master/demo/src/examples)**
 
-## ⚙️ Configuration
+## Configuration
 
 ### MentionsInput Props
 
@@ -132,7 +168,7 @@ The `MentionsInput` component supports the following props:
 | onKeyDown                  | function (event)                                                                           | empty function | A callback that is invoked when the user presses a key in the mentions input                                                                                                                                           |
 | singleLine                 | boolean                                                                                    | `false`        | Renders a single line text input instead of a textarea, if set to `true`                                                                                                                                               |
 | autoResize                 | boolean                                                                                    | `false`        | When `true`, resizes the textarea to match its scroll height after each input change (ignored when `singleLine` is `true`)                                                                                             |
-| anchorMode                 | `'caret' \| 'left'`                                                                        | `'caret'`      | Controls whether the overlay follows the caret (`'caret'`) or pins to the control’s leading edge (`'left'`)                                                                                                            |
+| anchorMode                 | `'caret' \| 'left'`                                                                        | `'caret'`      | Controls whether the overlay follows the caret (`'caret'`) or pins to the control's leading edge (`'left'`)                                                                                                            |
 | onMentionBlur              | function (event, clickedSuggestion)                                                        | `undefined`    | Receives an extra `clickedSuggestion` flag when focus left via the suggestions list                                                                                                                                    |
 | suggestionsPortalHost      | DOM Element                                                                                | undefined      | Render suggestions into the DOM in the supplied host element.                                                                                                                                                          |
 | inputRef                   | React ref                                                                                  | undefined      | Accepts a React ref to forward to the underlying input element                                                                                                                                                         |
@@ -241,11 +277,13 @@ Each data source is configured using a `Mention` component, which has the follow
 
 > Want to allow spaces (or other advanced patterns) after a trigger? Pass a custom `RegExp`—for example `trigger={makeTriggerRegex('@', { allowSpaceInQuery: true })}`—instead of relying on a boolean flag. The `makeTriggerRegex` utility handles the regex construction for you.
 
-### 🔄 Async Data Loading
+### Async Data Loading
 
-If a function is passed as the `data` prop, it receives the current search query plus an `AbortSignal` and should return a promise that resolves with the list of suggestions. When the user keeps typing, the previous request is aborted and its results are ignored automatically.
+If a function is passed as the `data` prop, it receives the current search query plus a [`MentionSearchContext`](src/types.ts) containing an `AbortSignal`, and should return a promise that resolves with the list of suggestions. When the user keeps typing, the previous request is aborted and its results are ignored automatically.
 
 ```tsx
+import type { MentionSearchContext } from 'react-mentions-ts'
+
 type User = { id: string; display: string }
 
 const fetchUsers = async (query: string, { signal }: MentionSearchContext): Promise<User[]> => {
@@ -289,7 +327,7 @@ const data = (query: string, { cursor, signal }: MentionSearchContext) =>
   })
 ```
 
-## 📚 More Examples
+## More Examples
 
 The [live demo](https://hbmartin.github.io/react-mentions-ts/) includes many ready-to-use patterns. Each demo's source is in [`demo/src/examples/`](https://github.com/hbmartin/react-mentions-ts/tree/master/demo/src/examples):
 
@@ -312,7 +350,7 @@ The [live demo](https://hbmartin.github.io/react-mentions-ts/) includes many rea
 | **Left Anchored**         | Pin the overlay to the input's leading edge instead of following the caret                  |
 | **Advanced Formatting**   | Custom markup, programmatic focus, and flipped suggestion lists                             |
 
-## 🔧 Advanced Usage
+## Advanced Usage
 
 ### Markup Format and Controlled State
 
@@ -461,7 +499,7 @@ import { MentionsInput, Mention } from 'react-mentions-ts'
 
 No dynamic imports or `next/dynamic` wrappers are needed.
 
-## 🎨 Styling
+## Styling
 
 React Mentions ships its markup with **Tailwind utility classes**. Consumers should have Tailwind configured in their application build so these classes compile to real CSS. If you do not use Tailwind you can still provide your own styles via `className`, CSS modules, or inline styles.
 
@@ -484,7 +522,7 @@ module.exports = {
 @import 'react-mentions-ts/styles/tailwind.css';
 ```
 
-The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source “../dist”;` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
+The optional helper `react-mentions-ts/styles/tailwind.css` only declares an `@source "../dist";` directive so Tailwind v4 can detect the library's utility classes inside `node_modules/react-mentions-ts/dist`. Including it keeps your Tailwind config clean and avoids adding explicit `content` globs for the package.
 
 If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*.{js,jsx,ts,tsx}` to the `content` array instead of importing the helper file.
 
@@ -493,8 +531,8 @@ If you are still on Tailwind v3, add `./node_modules/react-mentions-ts/dist/**/*
 Assign a `className` prop to `MentionsInput`. All DOM nodes will receive derived class names:
 
 ```tsx
-<MentionsInput className=”mentions”>
-  <Mention className=”mentions__mention” />
+<MentionsInput className="mentions">
+  <Mention className="mentions__mention" />
 </MentionsInput>
 ```
 
@@ -512,29 +550,29 @@ Every rendered mention exposes a `data-mention-selection` attribute whenever the
 
 ```tsx
 <Mention
-  trigger=”@”
+  trigger="@"
   data={users}
-  className=”rounded-full bg-indigo-500/25 px-2 py-0.5 text-sm font-semibold text-indigo-100 transition
+  className="rounded-full bg-indigo-500/25 px-2 py-0.5 text-sm font-semibold text-indigo-100 transition
              data-[mention-selection=inside]:bg-emerald-500/35 data-[mention-selection=inside]:text-emerald-50
              data-[mention-selection=boundary]:ring-2 data-[mention-selection=boundary]:ring-indigo-300
              data-[mention-selection=partial]:bg-amber-500/35 data-[mention-selection=partial]:text-amber-50
-             data-[mention-selection=full]:bg-indigo-500 data-[mention-selection=full]:text-white”
+             data-[mention-selection=full]:bg-indigo-500 data-[mention-selection=full]:text-white"
 />
 ```
 
-See the “Caret mention states” demo (`demo/src/examples/MentionSelection.tsx`) for a complete example that combines styling with the `onMentionSelectionChange` callback.
+See the "Caret mention states" demo (`demo/src/examples/MentionSelection.tsx`) for a complete example that combines styling with the `onMentionSelectionChange` callback.
 
 ### Inline Autocomplete Styling
 
-When `suggestionsDisplay=”inline”` is set, the component renders a ghost-text hint next to the caret instead of a dropdown overlay. The user accepts the suggestion with Tab, Enter, or the right arrow key.
+When `suggestionsDisplay="inline"` is set, the component renders a ghost-text hint next to the caret instead of a dropdown overlay. The user accepts the suggestion with Tab, Enter, or the right arrow key.
 
 ```tsx
 <MentionsInput
   value={value}
   onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
-  suggestionsDisplay=”inline”
+  suggestionsDisplay="inline"
 >
-  <Mention trigger=”@” data={users} />
+  <Mention trigger="@" data={users} />
 </MentionsInput>
 ```
 
@@ -549,7 +587,7 @@ Customize the inline hint appearance via the `classNames` prop:
 
 See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for a full styling example.
 
-## 🧪 Testing
+## Testing
 
 Due to React Mentions' internal cursor tracking, use [@testing-library/user-event](https://github.com/testing-library/user-event) for realistic event simulation:
 
@@ -566,7 +604,30 @@ test('mentions work correctly', async () => {
 })
 ```
 
-## 🔀 Migrating from react-mentions
+## FAQ & Gotchas
+
+**My Tailwind classes aren't applying to the library's DOM.**
+Tailwind v4 only generates utilities it finds in your source. Either import `react-mentions-ts/styles/tailwind.css` (which adds an `@source` pointing at the library's `dist`), or on Tailwind v3 add `./node_modules/react-mentions-ts/dist/**/*.{js,jsx,ts,tsx}` to your `content` array. See [Tailwind CSS](#tailwind-css).
+
+**The caret or highlighted mentions look misaligned inside a scroll container.**
+The overlay and textarea must share the same font metrics, padding, and line-height. If you wrap `MentionsInput` in a scrollable element, avoid changing font size or box-sizing on an intermediate wrapper; apply styling directly to `MentionsInput` via `className` or `style`. The "Scrollable Composer" demo shows a working setup.
+
+**I'm getting a "document is not defined" error during SSR.**
+In Next.js App Router, add `'use client'` to any file that imports `MentionsInput`. The component itself guards against missing browser globals, but the module must only execute on the client for event listeners to attach correctly.
+
+**My custom `trigger` RegExp isn't matching.**
+Three rules: (1) do not include the global `/g` flag — the internal clone shares `lastIndex` and will skip matches; (2) anchor with `$` so it only matches at the cursor position; (3) expose exactly two capture groups — the first for trigger + query (e.g. `@mention`), the second for the query alone (e.g. `mention`). If you just need spaces or accent-insensitivity, use `makeTriggerRegex` instead of rolling your own.
+
+**Mention IDs containing `)` or `]` corrupt my markup.**
+The default template `@[__display__](__id__)` uses `)` as a terminator. Either switch to a template that can't collide with your IDs, or implement a custom `MentionSerializer` that encodes reserved characters. See [Custom serializer for IDs containing `)`](#custom-serializer-for-ids-containing-).
+
+**Async requests aren't cancelling.**
+You must forward the `signal` from `MentionSearchContext` into `fetch` (or your HTTP client's equivalent). Without it, stale responses will race and overwrite the active query's results.
+
+**`onBlur` isn't firing with the expected signature.**
+The native `onBlur` is unchanged. For the library-specific callback that also reports whether focus moved to a suggestion, use `onMentionBlur(event, clickedSuggestion)`.
+
+## Migrating from react-mentions
 
 This library is a TypeScript rewrite of [react-mentions](https://github.com/signavio/react-mentions). The API has been modernized — most changes are mechanical renames, but a few features work differently.
 
@@ -638,7 +699,15 @@ react-mentions shipped no CSS and relied entirely on inline styles or manual cla
 
 > The default markup template `@[__display__](__id__)` is unchanged, so if you were using the default you can omit the `markup` prop entirely — no `createMarkupSerializer` call needed.
 
-## 🙏 Acknowledgments
+## Contributing
+
+Pull requests, bug reports, and feature suggestions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup (Node 22+, Corepack, `pnpm install`), test instructions, and the PR checklist. All contributors are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+[BSD-3-Clause](LICENSE)
+
+## Acknowledgments
 
 This project is a TypeScript rewrite and modernization of the original [react-mentions](https://github.com/signavio/react-mentions) library.
 
