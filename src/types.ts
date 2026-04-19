@@ -43,7 +43,7 @@ export type MentionPageCursor = string | number | boolean | symbol | bigint | ob
 export interface MentionSearchContext {
   signal: AbortSignal
   cursor?: MentionPageCursor | null
-  reason?: MentionSearchReason
+  reason: MentionSearchReason
 }
 
 export interface MentionDataPage<Extra extends Record<string, unknown> = Record<string, unknown>> {
@@ -95,7 +95,7 @@ export interface SuggestionQueryState<
   queryInfo: QueryInfo
   results: SuggestionDataItem<Extra>[]
   status: 'loading' | 'success' | 'error'
-  ignoreAccents: boolean
+  ignoreAccents?: boolean
   error?: unknown
   pagination?: {
     nextCursor: MentionPageCursor | null

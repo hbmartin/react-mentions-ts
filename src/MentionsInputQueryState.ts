@@ -50,10 +50,17 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
   focusIndex: number,
   inlineAutocomplete: boolean
 ): SuggestionsLifecycleState<Extra> => {
+  if (!Object.hasOwn(currentQueryStates, childIndex)) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
+  const currentQueryState = currentQueryStates[childIndex]
   const results = page.items
-  const ignoreAccents = Object.hasOwn(currentQueryStates, childIndex)
-    ? currentQueryStates[childIndex].ignoreAccents
-    : false
+  const ignoreAccents = currentQueryState.ignoreAccents ?? false
   const suggestions: SuggestionsMap<Extra> = {
     ...currentSuggestions,
     [childIndex]: {
@@ -244,7 +251,7 @@ export const applyErroredQueryResult = <Extra extends Record<string, unknown>>(
   ) as SuggestionsMap<Extra>
   const suggestionsCount = countSuggestions(suggestions)
   const ignoreAccents = Object.hasOwn(currentQueryStates, childIndex)
-    ? currentQueryStates[childIndex].ignoreAccents
+    ? (currentQueryStates[childIndex].ignoreAccents ?? false)
     : false
 
   return {

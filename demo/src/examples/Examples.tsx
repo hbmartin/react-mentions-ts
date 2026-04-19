@@ -6,12 +6,16 @@ import AutoResize from './AutoResize'
 import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import CutCopyPaste from './CutCopyPaste'
 import Emojis from './Emojis'
+import EmptyAndError from './EmptyAndError'
 import InlineAutocomplete from './InlineAutocomplete'
 import LeftAnchored from './LeftAnchored'
 import MentionSelection from './MentionSelection'
 import MultipleTriggers from './MultipleTriggers'
+import MultiSerializer from './MultiSerializer'
+import PaginatedUsers from './PaginatedUsers'
 import ParenAwareSerializer from './ParenAwareSerializer'
 import ProfilingHarness from './ProfilingHarness'
+import RichSuggestionData from './RichSuggestionData'
 import Scrollable from './Scrollable'
 import SingleLine from './SingleLine'
 import SingleLineIgnoringAccents from './SingleLineIgnoringAccents'
@@ -92,6 +96,10 @@ export default function Examples() {
       <MentionSelection data={users} />
       <InlineAutocomplete data={users} />
       <AsyncGithubUserMentions />
+      <PaginatedUsers />
+      <EmptyAndError />
+      <RichSuggestionData />
+      <MultiSerializer />
       <Emojis data={users} onAdd={(addParams) => console.log('onAdd', addParams)} />
       <SuggestionPortal data={users} />
       <CustomSuggestionsContainer data={users} />

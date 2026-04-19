@@ -1970,7 +1970,7 @@ class MentionsInput<
         childIndex,
         queryState.queryInfo,
         mentionChild,
-        queryState.ignoreAccents,
+        queryState.ignoreAccents ?? false,
         pagination.nextCursor
       )
     }
