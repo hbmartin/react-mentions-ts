@@ -89,6 +89,7 @@ import type {
   MentionsInputState,
   MentionsInputClassNames,
   MentionsInputChangeTrigger,
+  MentionPageCursor,
   NormalizedMentionDataPage,
   QueryInfo,
   SuggestionDataItem,
@@ -1907,7 +1908,7 @@ class MentionsInput<
     queryInfo: QueryInfo,
     mentionChild: React.ReactElement<MentionComponentProps<Extra>>,
     ignoreAccents: boolean,
-    cursor: unknown
+    cursor: MentionPageCursor
   ): void {
     if (this._loadingPageChildren.has(childIndex)) {
       return
@@ -1958,18 +1959,16 @@ class MentionsInput<
     for (const [childIndex, queryState] of getSuggestionQueryStateEntries(this.state.queryStates)) {
       const { pagination } = queryState
 
-      if (
-        queryState.status !== 'success' ||
-        !pagination?.hasMore ||
-        pagination.isLoading ||
-        pagination.nextCursor === null ||
-        pagination.nextCursor === undefined
-      ) {
+      if (queryState.status !== 'success' || pagination === undefined) {
         continue
       }
 
-      const mentionChild = mentionChildren[childIndex]
-      if (!mentionChild) {
+      if (!pagination.hasMore || pagination.isLoading || pagination.nextCursor === null) {
+        continue
+      }
+
+      const mentionChild = mentionChildren.at(childIndex)
+      if (mentionChild === undefined) {
         continue
       }
 
@@ -2089,13 +2088,15 @@ class MentionsInput<
     results: NormalizedMentionDataPage<Extra> | Promise<NormalizedMentionDataPage<Extra>>,
     controller: AbortController
   ): Promise<void> => {
+    const isStaleRequest = () => queryId !== this._queryId || controller.signal.aborted
+
     try {
-      if (queryId !== this._queryId || controller.signal.aborted) {
+      if (isStaleRequest()) {
         return
       }
 
       const page = await Promise.resolve(results)
-      if (queryId !== this._queryId || controller.signal.aborted) {
+      if (isStaleRequest()) {
         return
       }
 
@@ -2110,7 +2111,7 @@ class MentionsInput<
         )
       )
     } catch (error) {
-      if (queryId !== this._queryId || controller.signal.aborted || isAbortError(error)) {
+      if (isStaleRequest() || isAbortError(error)) {
         return
       }
 

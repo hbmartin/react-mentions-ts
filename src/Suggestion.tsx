@@ -7,7 +7,7 @@ interface SuggestionProps<Extra extends Record<string, unknown> = Record<string,
   readonly focused?: boolean
   readonly index: number
   readonly onClick: () => void
-  readonly onMouseEnter: () => void
+  readonly onMouseEnter: React.MouseEventHandler<HTMLLIElement>
   readonly query: string
   readonly renderSuggestion?: MentionRenderSuggestion<Extra> | null
   readonly suggestion: SuggestionDataItem<Extra>
