@@ -9,6 +9,7 @@ import {
   mergeClassNames,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import { waitForAbortableDelay } from './waitForAbortableDelay'
 
 type Availability = 'online' | 'away' | 'offline'
 
@@ -63,24 +64,6 @@ const PEOPLE: MentionDataItem<PersonExtra>[] = [
   },
 ]
 
-const wait = (ms: number, signal: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    if (signal.aborted) {
-      reject(signal.reason as Error)
-      return
-    }
-
-    const onAbort = () => {
-      clearTimeout(timer)
-      reject(signal.reason as Error)
-    }
-    const timer = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort)
-      resolve()
-    }, ms)
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
-
 /**
  * Subsequence fuzzy matcher that returns a highlight range per matched character —
  * demonstrates multi-range highlights, which the built-in array source (single
@@ -117,7 +100,7 @@ async function searchPeople(
   query: string,
   { signal }: MentionSearchContext
 ): Promise<MentionDataItem<PersonExtra>[]> {
-  await wait(180, signal)
+  await waitForAbortableDelay(180, signal)
 
   return PEOPLE.flatMap((person) => {
     const display = person.display ?? String(person.id)

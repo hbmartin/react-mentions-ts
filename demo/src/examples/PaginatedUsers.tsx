@@ -14,6 +14,7 @@ import {
   mergeClassNames,
   multilineMentionsClassNames,
 } from './mentionsClassNames'
+import { waitForAbortableDelay } from './waitForAbortableDelay'
 
 type UserExtra = {
   department: string
@@ -33,29 +34,11 @@ const ALL_USERS: MentionDataItem<UserExtra>[] = Array.from({ length: TOTAL_USERS
   }
 })
 
-const wait = (ms: number, signal: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    if (signal.aborted) {
-      reject(signal.reason as Error)
-      return
-    }
-
-    const onAbort = () => {
-      clearTimeout(timer)
-      reject(signal.reason as Error)
-    }
-    const timer = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort)
-      resolve()
-    }, ms)
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
-
 async function fetchUserPage(
   query: string,
   { cursor, signal }: MentionSearchContext
 ): Promise<MentionDataPage<UserExtra>> {
-  await wait(SIMULATED_LATENCY_MS, signal)
+  await waitForAbortableDelay(SIMULATED_LATENCY_MS, signal)
 
   const matches = ALL_USERS.filter((user) =>
     (user.display ?? String(user.id)).toLowerCase().includes(query.toLowerCase())
