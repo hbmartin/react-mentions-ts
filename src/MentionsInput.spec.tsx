@@ -2234,6 +2234,130 @@ describe('MentionsInput', () => {
     })
   })
 
+  describe('insertText', () => {
+    it('inserts plain text at the current caret position', async () => {
+      const ref = React.createRef<MentionsInput>()
+
+      function ControlledMentionsInput() {
+        const [value, setValue] = React.useState('Hello world')
+
+        return (
+          <MentionsInput
+            ref={ref}
+            value={value}
+            onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+          >
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+      }
+
+      render(<ControlledMentionsInput />)
+
+      const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
+      textarea.setSelectionRange('Hello'.length, 'Hello'.length)
+
+      act(() => {
+        ref.current?.insertText(', typed')
+      })
+
+      await waitFor(() => {
+        expect(textarea).toHaveValue('Hello, typed world')
+        expect(textarea.selectionStart).toBe('Hello, typed'.length)
+        expect(textarea.selectionEnd).toBe('Hello, typed'.length)
+      })
+    })
+
+    it('replaces the current selection', async () => {
+      const ref = React.createRef<MentionsInput>()
+
+      function ControlledMentionsInput() {
+        const [value, setValue] = React.useState('Hello world')
+
+        return (
+          <MentionsInput
+            ref={ref}
+            value={value}
+            onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+          >
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+      }
+
+      render(<ControlledMentionsInput />)
+
+      const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
+      const selectionStart = 'Hello '.length
+      const selectionEnd = 'Hello world'.length
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+
+      act(() => {
+        ref.current?.insertText('there')
+      })
+
+      await waitFor(() => {
+        expect(textarea).toHaveValue('Hello there')
+        expect(textarea.selectionStart).toBe('Hello there'.length)
+        expect(textarea.selectionEnd).toBe('Hello there'.length)
+      })
+    })
+
+    it('emits mention-remove when inserted text replaces a mention', () => {
+      const ref = React.createRef<MentionsInput>()
+      const onMentionsChange = vi.fn()
+      const onRemove = vi.fn()
+
+      render(
+        <MentionsInput ref={ref} value="Hello @[First](first)" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@[__display__](__id__)" data={data} onRemove={onRemove} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
+      const selectionStart = 'Hello '.length
+      const selectionEnd = 'Hello First'.length
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+
+      act(() => {
+        ref.current?.insertText('replacement')
+      })
+
+      const payload = getLastMentionsChange(onMentionsChange)
+      expect(payload.trigger.type).toBe('mention-remove')
+      expect(payload.mentionId).toBe('first')
+      expect(payload.value).toBe('Hello replacement')
+      expect(onRemove).toHaveBeenCalledWith('first')
+    })
+
+    it('emits insert-text changes, refreshes suggestions, and supports typed refs', async () => {
+      const ref = React.createRef<MentionsInput>()
+      const onMentionsChange = vi.fn()
+
+      render(
+        <MentionsInput ref={ref} value="Hello" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
+      textarea.setSelectionRange('Hello'.length, 'Hello'.length)
+
+      act(() => {
+        ref.current?.insertText(' @')
+      })
+
+      const payload = getLastMentionsChange(onMentionsChange)
+      expect(payload.trigger.type).toBe('insert-text')
+      expect(payload.value).toBe('Hello @')
+      expect(payload.plainTextValue).toBe('Hello @')
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(data.length)
+      })
+    })
+  })
+
   describe('mention selection change', () => {
     const mentionMarkup = '@[First](first)'
     const mentionDisplay = 'First'

@@ -28,6 +28,9 @@ export interface CutResult<Extra extends Record<string, unknown> = Record<string
   nextSelectionStart: number
 }
 
+export type InsertTextResult<Extra extends Record<string, unknown> = Record<string, unknown>> =
+  PasteResult<Extra>
+
 export interface InputChangeResult<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > extends PasteResult<Extra> {
@@ -52,21 +55,21 @@ export const getMarkupSelectionRange = <Extra extends Record<string, unknown>>(
   }
 }
 
-export const applyPasteToMentionsValue = <Extra extends Record<string, unknown>>(
+export const applyInsertTextToMentionsValue = <Extra extends Record<string, unknown>>(
   value: string,
   config: ReadonlyArray<MentionChildConfig<Extra>>,
   selectionStart: number | null,
   selectionEnd: number | null,
-  pastedText: string
-): PasteResult<Extra> => {
+  text: string
+): InsertTextResult<Extra> => {
   const { safeSelectionStart, markupStartIndex, markupEndIndex } = getMarkupSelectionRange(
     value,
     config,
     selectionStart,
     selectionEnd
   )
-  const normalizedPastedText = pastedText.replaceAll('\r', '')
-  const nextValue = spliceString(value, markupStartIndex, markupEndIndex, normalizedPastedText)
+  const normalizedText = text.replaceAll('\r', '')
+  const nextValue = spliceString(value, markupStartIndex, markupEndIndex, normalizedText)
   const snapshot = deriveMentionValueSnapshot<Extra>(nextValue, config)
   const startOfMention =
     selectionStart === null
@@ -77,8 +80,18 @@ export const applyPasteToMentionsValue = <Extra extends Record<string, unknown>>
     value: nextValue,
     snapshot,
     nextSelectionStart:
-      (startOfMention ?? safeSelectionStart) + getPlainText(normalizedPastedText, config).length,
+      (startOfMention ?? safeSelectionStart) + getPlainText(normalizedText, config).length,
   }
+}
+
+export const applyPasteToMentionsValue = <Extra extends Record<string, unknown>>(
+  value: string,
+  config: ReadonlyArray<MentionChildConfig<Extra>>,
+  selectionStart: number | null,
+  selectionEnd: number | null,
+  pastedText: string
+): PasteResult<Extra> => {
+  return applyInsertTextToMentionsValue(value, config, selectionStart, selectionEnd, pastedText)
 }
 
 export const applyCutToMentionsValue = <Extra extends Record<string, unknown>>(

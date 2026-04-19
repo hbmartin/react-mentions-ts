@@ -136,6 +136,7 @@ export type MentionsInputChangeTriggerType =
   | 'cut'
   | 'mention-add'
   | 'mention-remove'
+  | 'insert-text'
 
 export interface MentionsInputChangeTrigger {
   type: MentionsInputChangeTriggerType
