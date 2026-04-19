@@ -24,7 +24,7 @@ describe('MentionsInputSelectors performance', () => {
 
     const metrics = {
       scanCount,
-      resultCount: results.length,
+      resultCount: results.items.length,
     }
     emitPerformanceMetric('array-provider-scan-count', metrics)
 
@@ -53,7 +53,7 @@ describe('MentionsInputSelectors performance', () => {
 
     const metrics = {
       scanCount,
-      resultCount: results.length,
+      resultCount: results.items.length,
     }
     emitPerformanceMetric('accent-provider-scan-count', metrics)
 

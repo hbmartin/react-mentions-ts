@@ -20,6 +20,7 @@ import {
   getSuggestionQueryStateEntries,
   getSuggestionsStatusContent,
   getSuggestionsStatusContentForMentionChildren,
+  normalizeMentionDataResult,
 } from './MentionsInputSelectors'
 
 const mentionChildren = [
@@ -413,12 +414,17 @@ describe('MentionsInputSelectors', () => {
       maxSuggestions: undefined,
     })
 
-    await expect(provider('1')).resolves.toEqual([
-      {
-        id: '123',
-        highlights: [{ start: 0, end: 1 }],
-      },
-    ])
+    await expect(provider('1')).resolves.toEqual({
+      items: [
+        {
+          id: '123',
+          highlights: [{ start: 0, end: 1 }],
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+      paginated: false,
+    })
   })
 
   it('rejects instead of throwing synchronously when static data filtering fails', async () => {
@@ -451,7 +457,12 @@ describe('MentionsInputSelectors', () => {
       }
     )
 
-    await expect(abortedProvider('a')).resolves.toEqual([])
+    await expect(abortedProvider('a')).resolves.toEqual({
+      items: [],
+      nextCursor: null,
+      hasMore: false,
+      paginated: false,
+    })
 
     const limitedProvider = getDataProvider(
       [
@@ -466,7 +477,9 @@ describe('MentionsInputSelectors', () => {
       }
     )
 
-    await expect(limitedProvider('A')).resolves.toHaveLength(1)
+    await expect(limitedProvider('A')).resolves.toMatchObject({
+      items: [{ id: 'alice', display: 'Alice', highlights: [{ start: 0, end: 1 }] }],
+    })
   })
 
   it('passes signals through async providers and limits the returned suggestions', async () => {
@@ -483,15 +496,70 @@ describe('MentionsInputSelectors', () => {
       maxSuggestions: 1,
     })
 
-    await expect(provider('a')).resolves.toEqual([
-      {
-        id: 'alice',
-        display: 'Alice',
-        signalMatches: false,
-      },
-    ])
+    await expect(provider('a')).resolves.toEqual({
+      items: [
+        {
+          id: 'alice',
+          display: 'Alice',
+          signalMatches: false,
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+      paginated: false,
+    })
     expect(asyncData).toHaveBeenCalledWith('a', {
       signal: controller.signal,
+      cursor: null,
+      reason: 'query',
+    })
+  })
+
+  it('normalizes paginated provider results without applying maxSuggestions', () => {
+    expect(
+      normalizeMentionDataResult(
+        {
+          items: [
+            { id: 'alice', display: 'Alice' },
+            { id: 'adam', display: 'Adam' },
+          ],
+          nextCursor: 'cursor-2',
+        },
+        1
+      )
+    ).toEqual({
+      items: [
+        { id: 'alice', display: 'Alice' },
+        { id: 'adam', display: 'Adam' },
+      ],
+      nextCursor: 'cursor-2',
+      hasMore: true,
+      paginated: true,
+    })
+  })
+
+  it('passes cursor and reason through async providers', async () => {
+    const asyncData = vi.fn(async () => ({
+      items: [{ id: 'alice', display: 'Alice' }],
+      nextCursor: null,
+    }))
+    const controller = new AbortController()
+    const provider = getDataProvider(asyncData, {
+      ignoreAccents: false,
+      signal: controller.signal,
+      getSubstringIndex: () => 0,
+    })
+
+    await expect(provider('a', { cursor: 'next-page', reason: 'page' })).resolves.toEqual({
+      items: [{ id: 'alice', display: 'Alice' }],
+      nextCursor: null,
+      hasMore: false,
+      paginated: true,
+    })
+    expect(asyncData).toHaveBeenCalledWith('a', {
+      signal: controller.signal,
+      cursor: 'next-page',
+      reason: 'page',
     })
   })
 })

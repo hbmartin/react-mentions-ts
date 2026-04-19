@@ -6,7 +6,7 @@ import * as utils from './utils'
 import * as readConfigFromChildrenModule from './utils/readConfigFromChildren'
 import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { Mention, MentionsInput } from './index'
-import type { MentionsInputChangeEvent, MentionSerializer } from './types'
+import type { MentionsInputChangeEvent, MentionSearchContext, MentionSerializer } from './types'
 
 const data = [
   { id: 'first', value: 'First entry' },
@@ -43,6 +43,19 @@ const getLastMentionsChange = (mock: Mock): MentionsInputChangeEvent => {
 const parseBorderWidth = (value: string): number => {
   const parsed = Number.parseFloat(value || '0')
   return Number.isNaN(parsed) ? 0 : parsed
+}
+
+const scrollSuggestionsNearBottom = (): HTMLUListElement => {
+  const list = document.querySelector('[data-slot="suggestions-list"]') as HTMLUListElement | null
+  if (!list) {
+    throw new Error('Expected suggestions list to be rendered')
+  }
+
+  Object.defineProperty(list, 'scrollHeight', { value: 200, configurable: true })
+  Object.defineProperty(list, 'clientHeight', { value: 100, configurable: true })
+  list.scrollTop = 60
+  fireEvent.scroll(list)
+  return list
 }
 
 describe('MentionsInput', () => {
@@ -650,6 +663,289 @@ describe('MentionsInput', () => {
 
     expect(screen.queryByText('Alpha')).not.toBeInTheDocument()
     expect(document.querySelector('[data-slot="suggestions"]')).not.toBeNull()
+  })
+
+  it('loads and appends the next async suggestion page when scrolling near the bottom.', async () => {
+    const asyncData = vi.fn(async (_query: string, context: MentionSearchContext) =>
+      context.reason === 'page'
+        ? {
+            items: [{ id: 'albert', display: 'Albert' }],
+            nextCursor: null,
+          }
+        : {
+            items: [{ id: 'alpha', display: 'Alpha' }],
+            nextCursor: 'cursor-2',
+          }
+    )
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument()
+    })
+
+    scrollSuggestionsNearBottom()
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({
+          cursor: 'cursor-2',
+          reason: 'page',
+        })
+      )
+    })
+    await waitFor(() => {
+      expect(screen.getByText('Albert')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(2)
+
+    const callCountAfterLastPage = asyncData.mock.calls.length
+    scrollSuggestionsNearBottom()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(asyncData).toHaveBeenCalledTimes(callCountAfterLastPage)
+  })
+
+  it('does not start duplicate page loads while a page request is already loading.', async () => {
+    interface DeferredResult {
+      resolve: (value: {
+        items: Array<{ id: string; display: string }>
+        nextCursor: string | null
+      }) => void
+    }
+
+    const pageRequests: DeferredResult[] = []
+    const asyncData = vi.fn((query: string, context: MentionSearchContext) => {
+      if (context.reason === 'page') {
+        return new Promise<{
+          items: Array<{ id: string; display: string }>
+          nextCursor: string | null
+        }>((resolve) => {
+          pageRequests.push({ resolve })
+        })
+      }
+
+      return Promise.resolve({
+        items: [{ id: `${query}-first`, display: 'Alpha' }],
+        nextCursor: 'cursor-2',
+      })
+    })
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument()
+    })
+
+    scrollSuggestionsNearBottom()
+    scrollSuggestionsNearBottom()
+
+    await waitFor(() => {
+      expect(pageRequests).toHaveLength(1)
+    })
+
+    pageRequests[0]?.resolve({
+      items: [{ id: 'albert', display: 'Albert' }],
+      nextCursor: null,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Albert')).toBeInTheDocument()
+    })
+    expect(asyncData.mock.calls.filter(([, context]) => context.reason === 'page')).toHaveLength(1)
+  })
+
+  it('ignores stale page results when the active query changes.', async () => {
+    interface DeferredPage {
+      resolve: (value: {
+        items: Array<{ id: string; display: string }>
+        nextCursor: string | null
+      }) => void
+      signal: AbortSignal
+    }
+
+    const pageRequests = new Map<string, DeferredPage>()
+    const asyncData = vi.fn((query: string, context: MentionSearchContext) => {
+      if (context.reason === 'page') {
+        return new Promise<{
+          items: Array<{ id: string; display: string }>
+          nextCursor: string | null
+        }>((resolve) => {
+          pageRequests.set(query, { resolve, signal: context.signal })
+        })
+      }
+
+      return Promise.resolve({
+        items: [{ id: `${query}-first`, display: query === 'ab' ? 'Beta' : 'Alpha' }],
+        nextCursor: 'cursor-2',
+      })
+    })
+
+    const { rerender } = render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument()
+    })
+
+    scrollSuggestionsNearBottom()
+    await waitFor(() => {
+      expect(pageRequests.get('a')).toBeDefined()
+    })
+
+    rerender(
+      <MentionsInput value="@ab">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+    textarea.setSelectionRange(3, 3)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Beta')).toBeInTheDocument()
+    })
+
+    expect(pageRequests.get('a')?.signal.aborted).toBe(true)
+    pageRequests.get('a')?.resolve({
+      items: [{ id: 'stale', display: 'Stale Result' }],
+      nextCursor: null,
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByText('Stale Result')).not.toBeInTheDocument()
+    expect(screen.getByText('Beta')).toBeInTheDocument()
+  })
+
+  it('keeps current suggestions visible when loading the next page fails.', async () => {
+    const asyncData = vi.fn((query: string, context: MentionSearchContext) => {
+      if (context.reason === 'page') {
+        return Promise.reject(new Error('boom'))
+      }
+
+      return Promise.resolve({
+        items: [{ id: `${query}-first`, display: 'Alpha' }],
+        nextCursor: 'cursor-2',
+      })
+    })
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeInTheDocument()
+    })
+
+    scrollSuggestionsNearBottom()
+
+    await waitFor(() => {
+      expect(asyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ cursor: 'cursor-2', reason: 'page' })
+      )
+      const overlay = document.querySelector('[data-slot="suggestions"]')
+      expect(overlay).toHaveAttribute('aria-busy', 'false')
+    })
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+    expect(screen.queryByText('Unable to load suggestions')).not.toBeInTheDocument()
+  })
+
+  it('loads additional pages for every matching mention child.', async () => {
+    const firstAsyncData = vi.fn(async (_query: string, context: MentionSearchContext) =>
+      context.reason === 'page'
+        ? {
+            items: [{ id: 'first-page-2', display: 'First Page 2' }],
+            nextCursor: null,
+          }
+        : {
+            items: [{ id: 'first-page-1', display: 'First Page 1' }],
+            nextCursor: 'first-cursor-2',
+          }
+    )
+    const secondAsyncData = vi.fn(async (_query: string, context: MentionSearchContext) =>
+      context.reason === 'page'
+        ? {
+            items: [{ id: 'second-page-2', display: 'Second Page 2' }],
+            nextCursor: null,
+          }
+        : {
+            items: [{ id: 'second-page-1', display: 'Second Page 1' }],
+            nextCursor: 'second-cursor-2',
+          }
+    )
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger={/(@([a-z]*))$/} data={firstAsyncData} />
+        <Mention trigger={/(@([a-z]*))$/} data={secondAsyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('First Page 1')).toBeInTheDocument()
+      expect(screen.getByText('Second Page 1')).toBeInTheDocument()
+    })
+
+    scrollSuggestionsNearBottom()
+
+    await waitFor(() => {
+      expect(screen.getByText('First Page 2')).toBeInTheDocument()
+      expect(screen.getByText('Second Page 2')).toBeInTheDocument()
+    })
+    expect(firstAsyncData).toHaveBeenCalledWith(
+      'a',
+      expect.objectContaining({ cursor: 'first-cursor-2', reason: 'page' })
+    )
+    expect(secondAsyncData).toHaveBeenCalledWith(
+      'a',
+      expect.objectContaining({ cursor: 'second-cursor-2', reason: 'page' })
+    )
   })
 
   it('replaces the latest query range when selecting a preserved async suggestion.', async () => {
@@ -4078,7 +4374,12 @@ describe('MentionsInput', () => {
               querySequenceStart: 0,
               querySequenceEnd: 2,
             },
-            Promise.resolve([{ id: 'alpha', display: 'Alpha' }]),
+            Promise.resolve({
+              items: [{ id: 'alpha', display: 'Alpha' }],
+              nextCursor: null,
+              hasMore: false,
+              paginated: false,
+            }),
             new AbortController()
           )
         })

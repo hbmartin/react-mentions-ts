@@ -37,8 +37,32 @@ export type SuggestionDataItem<Extra extends Record<string, unknown> = Record<st
 
 type MaybePromise<T> = T | Promise<T>
 
+export type MentionSearchReason = 'query' | 'page'
+export type MentionPageCursor = NonNullable<unknown>
+
 export interface MentionSearchContext {
   signal: AbortSignal
+  cursor?: MentionPageCursor | null
+  reason: MentionSearchReason
+}
+
+export interface MentionDataPage<Extra extends Record<string, unknown> = Record<string, unknown>> {
+  items: ReadonlyArray<MentionDataItem<Extra>>
+  nextCursor?: MentionPageCursor | null
+  hasMore?: boolean
+}
+
+export type MentionDataProviderResult<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> = ReadonlyArray<MentionDataItem<Extra>> | MentionDataPage<Extra>
+
+export interface NormalizedMentionDataPage<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> {
+  items: MentionDataItem<Extra>[]
+  nextCursor: MentionPageCursor | null
+  hasMore: boolean
+  paginated: boolean
 }
 
 export type DataSource<Extra extends Record<string, unknown> = Record<string, unknown>> =
@@ -46,7 +70,7 @@ export type DataSource<Extra extends Record<string, unknown> = Record<string, un
   | ((
       query: string,
       context: MentionSearchContext
-    ) => MaybePromise<ReadonlyArray<MentionDataItem<Extra>>>)
+    ) => MaybePromise<MentionDataProviderResult<Extra>>)
 
 export function isDataSource<Extra extends Record<string, unknown> = Record<string, unknown>>(
   value: unknown
@@ -72,6 +96,12 @@ export interface SuggestionQueryState<
   results: SuggestionDataItem<Extra>[]
   status: 'loading' | 'success' | 'error'
   error?: unknown
+  pagination?: {
+    nextCursor: MentionPageCursor | null
+    hasMore: boolean
+    isLoading: boolean
+    error?: unknown
+  }
 }
 
 export type SuggestionQueryStateMap<

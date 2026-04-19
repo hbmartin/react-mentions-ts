@@ -1,6 +1,6 @@
 import { countSuggestions } from './utils'
 import type {
-  MentionDataItem,
+  NormalizedMentionDataPage,
   QueryInfo,
   SuggestionQueryState,
   SuggestionQueryStateMap,
@@ -44,10 +44,11 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
   currentQueryStates: SuggestionQueryStateMap<Extra>,
   childIndex: number,
   queryInfo: QueryInfo,
-  results: MentionDataItem<Extra>[],
+  page: NormalizedMentionDataPage<Extra>,
   focusIndex: number,
   inlineAutocomplete: boolean
 ): SuggestionsLifecycleState<Extra> => {
+  const results = page.items
   const suggestions: SuggestionsMap<Extra> = {
     ...currentSuggestions,
     [childIndex]: {
@@ -70,6 +71,119 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
         queryInfo,
         results,
         status: 'success',
+        pagination: page.paginated
+          ? {
+              nextCursor: page.nextCursor,
+              hasMore: page.hasMore,
+              isLoading: false,
+            }
+          : undefined,
+      },
+    },
+  }
+}
+
+export const applyLoadingPageResult = <Extra extends Record<string, unknown>>(
+  currentSuggestions: SuggestionsMap<Extra>,
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  childIndex: number,
+  focusIndex: number
+): SuggestionsLifecycleState<Extra> => {
+  const currentQueryState = currentQueryStates[childIndex]
+
+  if (!currentQueryState?.pagination) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
+  return {
+    suggestions: currentSuggestions,
+    focusIndex,
+    queryStates: {
+      ...currentQueryStates,
+      [childIndex]: {
+        ...currentQueryState,
+        pagination: {
+          ...currentQueryState.pagination,
+          isLoading: true,
+          error: undefined,
+        },
+      },
+    },
+  }
+}
+
+export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>(
+  currentSuggestions: SuggestionsMap<Extra>,
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  childIndex: number,
+  queryInfo: QueryInfo,
+  page: NormalizedMentionDataPage<Extra>,
+  focusIndex: number
+): SuggestionsLifecycleState<Extra> => {
+  const previousResults = currentSuggestions[childIndex]?.results ?? []
+  const results = [...previousResults, ...page.items]
+  const suggestions: SuggestionsMap<Extra> = {
+    ...currentSuggestions,
+    [childIndex]: {
+      queryInfo,
+      results,
+    },
+  }
+  const suggestionsCount = countSuggestions(suggestions)
+
+  return {
+    suggestions,
+    focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex,
+    queryStates: {
+      ...currentQueryStates,
+      [childIndex]: {
+        ...(currentQueryStates[childIndex] ?? {}),
+        queryInfo,
+        results,
+        status: 'success',
+        pagination: {
+          nextCursor: page.nextCursor,
+          hasMore: page.hasMore,
+          isLoading: false,
+        },
+      },
+    },
+  }
+}
+
+export const applyErroredPageResult = <Extra extends Record<string, unknown>>(
+  currentSuggestions: SuggestionsMap<Extra>,
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  childIndex: number,
+  error: unknown,
+  focusIndex: number
+): SuggestionsLifecycleState<Extra> => {
+  const currentQueryState = currentQueryStates[childIndex]
+
+  if (!currentQueryState?.pagination) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
+  return {
+    suggestions: currentSuggestions,
+    focusIndex,
+    queryStates: {
+      ...currentQueryStates,
+      [childIndex]: {
+        ...currentQueryState,
+        pagination: {
+          ...currentQueryState.pagination,
+          isLoading: false,
+          error,
+        },
       },
     },
   }

@@ -869,6 +869,34 @@ describe('SuggestionsOverlay', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement))
   })
 
+  it('requests more suggestions when the internal list scrolls near the bottom', () => {
+    const handleLoadMore = vi.fn()
+    const { container } = render(
+      <SuggestionsOverlay
+        id="load-more-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        onLoadMore={handleLoadMore}
+        customSuggestionsContainer={(node) => <div data-testid="outer-wrapper">{node}</div>}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+    Object.defineProperty(list, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(list, 'clientHeight', { value: 100, configurable: true })
+
+    list.scrollTop = 40
+    fireEvent.scroll(list)
+    expect(handleLoadMore).not.toHaveBeenCalled()
+
+    list.scrollTop = 60
+    fireEvent.scroll(list)
+    expect(handleLoadMore).toHaveBeenCalledTimes(1)
+  })
+
   it('passes mouse down events through to the supplied handler', () => {
     const handleMouseDown = vi.fn()
     const { container } = render(
