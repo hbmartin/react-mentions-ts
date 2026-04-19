@@ -97,9 +97,9 @@ import type {
 let generatedIdCounter = 0
 
 const createGeneratedId = (): string => {
-  const cryptoObject = globalThis.crypto
+  const cryptoObject = (globalThis as { crypto?: Crypto }).crypto
 
-  if (cryptoObject && typeof cryptoObject.randomUUID === 'function') {
+  if (typeof cryptoObject?.randomUUID === 'function') {
     return `mentions-${cryptoObject.randomUUID()}`
   }
 

@@ -1324,10 +1324,7 @@ describe('MentionsInput', () => {
 
   it('should ignore a null inputRef object without throwing', () => {
     render(
-      <MentionsInput
-        value="test"
-        inputRef={null as unknown as React.RefObject<HTMLInputElement | HTMLTextAreaElement>}
-      >
+      <MentionsInput value="test" inputRef={null}>
         <Mention trigger="@" data={data} />
       </MentionsInput>
     )
@@ -1433,15 +1430,13 @@ describe('MentionsInput', () => {
       )
 
       const combobox = screen.getByRole('combobox')
-      let scrollHeight = 0
+      const scrollHeight = 64
       Object.defineProperty(combobox, 'scrollHeight', {
         configurable: true,
         get: () => scrollHeight,
       })
 
       expect(combobox.style.height).not.toBe('64px')
-
-      scrollHeight = 64
 
       rerender(
         <MentionsInput
@@ -1469,15 +1464,13 @@ describe('MentionsInput', () => {
       )
 
       const combobox = screen.getByRole('combobox')
-      let scrollHeight = 0
+      const scrollHeight = 88
       Object.defineProperty(combobox, 'scrollHeight', {
         configurable: true,
         get: () => scrollHeight,
       })
 
       expect(combobox.style.height).toBe('')
-
-      scrollHeight = 88
 
       rerender(
         <MentionsInput autoResize value="initial" onMentionsChange={onMentionsChange}>
@@ -1509,7 +1502,7 @@ describe('MentionsInput', () => {
       render(<ControlledInput />)
 
       const combobox = screen.getByRole('combobox')
-      let scrollHeight = 0
+      const scrollHeight = 150
       Object.defineProperty(combobox, 'scrollHeight', {
         configurable: true,
         get: () => scrollHeight,
@@ -1518,8 +1511,6 @@ describe('MentionsInput', () => {
       const updatedValue = `${combobox.value} that is now longer`
       combobox.focus()
       combobox.setSelectionRange(combobox.value.length, combobox.value.length)
-
-      scrollHeight = 150
 
       await act(async () => {
         fireEvent.change(combobox, {
@@ -1569,13 +1560,11 @@ describe('MentionsInput', () => {
       )
 
       const textarea = screen.getByRole('combobox')
-      let scrollHeight = 0
+      const scrollHeight = 90
       Object.defineProperty(textarea, 'scrollHeight', {
         configurable: true,
         get: () => scrollHeight,
       })
-
-      scrollHeight = 90
 
       rerender(
         <MentionsInput
@@ -1602,13 +1591,11 @@ describe('MentionsInput', () => {
       )
 
       const textarea = screen.getByRole('combobox')
-      let scrollHeight = 0
+      const scrollHeight = 72
       Object.defineProperty(textarea, 'scrollHeight', {
         configurable: true,
         get: () => scrollHeight,
       })
-
-      scrollHeight = 72
 
       rerender(
         <MentionsInput autoResize value="draft updated" onMentionsChange={onMentionsChange}>

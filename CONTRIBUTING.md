@@ -15,7 +15,7 @@ Pull requests are encouraged. If you want to add a feature or fix a bug:
 
 1. [Fork](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo) and [clone](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository) the [repository](https://github.com/hbmartin/react-mentions-ts)
 2. [Create a separate branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches) for your changes
-3. Make your changes, and ensure that it is formatted by [Prettier](https://prettier.io)
+3. Make your changes, and ensure that it is formatted by oxfmt
 4. Write tests that validate your change and/or fix.
 5. Run `pnpm build` and then run tests with `pnpm test`
 6. If coding a new feature, please add the examples to the example app (`/demo/src/examples`) and add the docs to the `README.md` file.
