@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -22,7 +22,7 @@ const rules = Object.fromEntries(
   (ruleIds.length > 0 ? ruleIds : getRegisteredRuleIds(plugins)).map((ruleId) => [ruleId, 'error'])
 )
 
-const existingConfig = existsSync(configPath) ? readJson(configPath) : {}
+const existingConfig = readJsonIfExists(configPath)
 const nextConfig = {
   $schema: existingConfig.$schema ?? './node_modules/oxlint/configuration_schema.json',
   plugins,
@@ -38,6 +38,18 @@ console.log(
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
+}
+
+function readJsonIfExists(path) {
+  try {
+    return readJson(path)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return {}
+    }
+
+    throw error
+  }
 }
 
 function omitKeys(object, keys) {
