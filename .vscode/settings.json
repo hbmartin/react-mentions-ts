@@ -10,5 +10,5 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit"
   },
-  "typescript.tsserver.implicitProjectConfig.types": ["node", "jest", "@testing-library/jest-dom"]
+  "typescript.tsserver.implicitProjectConfig.types": ["node", "vitest", "@testing-library/jest-dom"]
 }

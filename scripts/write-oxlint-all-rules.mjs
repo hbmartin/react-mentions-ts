@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const projectRoot = resolve(import.meta.dirname, '..')
 const [schemaArgument, configArgument] = process.argv.slice(2)
 const schemaPath = resolve(
   projectRoot,
@@ -118,7 +118,6 @@ function getRegisteredRuleIds(plugins) {
 function getPluginFlags(plugins) {
   const flagsByPlugin = new Map([
     ['import', '--import-plugin'],
-    ['jest', '--jest-plugin'],
     ['jsdoc', '--jsdoc-plugin'],
     ['jsx-a11y', '--jsx-a11y-plugin'],
     ['nextjs', '--nextjs-plugin'],
