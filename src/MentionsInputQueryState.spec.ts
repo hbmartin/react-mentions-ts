@@ -1,5 +1,8 @@
 import {
+  applyErroredPageResult,
   applyErroredQueryResult,
+  applyLoadingPageResult,
+  applySuccessfulPageResult,
   applySuccessfulQueryResult,
   createClearedSuggestionsState,
   createLoadingQueryState,
@@ -44,7 +47,12 @@ describe('MentionsInputQueryState', () => {
       {},
       0,
       queryInfo,
-      [{ id: 'first', display: 'First' }],
+      {
+        items: [{ id: 'first', display: 'First' }],
+        nextCursor: null,
+        hasMore: false,
+        paginated: false,
+      },
       4,
       false
     )
@@ -105,5 +113,134 @@ describe('MentionsInputQueryState', () => {
     expect(isAbortError(new DOMException('cancelled', 'AbortError'))).toBe(true)
     expect(isAbortError({ name: 'AbortError' })).toBe(true)
     expect(isAbortError(new Error('boom'))).toBe(false)
+  })
+
+  it('tracks initial paginated query metadata', () => {
+    const nextState = applySuccessfulQueryResult(
+      {},
+      {},
+      0,
+      queryInfo,
+      {
+        items: [{ id: 'first', display: 'First' }],
+        nextCursor: 'cursor-2',
+        hasMore: true,
+        paginated: true,
+      },
+      0,
+      false
+    )
+
+    expect(nextState.queryStates[0]?.pagination).toEqual({
+      nextCursor: 'cursor-2',
+      hasMore: true,
+      isLoading: false,
+    })
+  })
+
+  it('marks a next page as loading without clearing successful suggestions', () => {
+    const nextState = applyLoadingPageResult(
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+        },
+      },
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+          status: 'success',
+          pagination: {
+            nextCursor: 'cursor-2',
+            hasMore: true,
+            isLoading: false,
+          },
+        },
+      },
+      0,
+      0
+    )
+
+    expect(nextState.suggestions[0]?.results).toHaveLength(1)
+    expect(nextState.queryStates[0]?.pagination?.isLoading).toBe(true)
+  })
+
+  it('appends page results and records the next cursor', () => {
+    const nextState = applySuccessfulPageResult(
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+        },
+      },
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+          status: 'success',
+          pagination: {
+            nextCursor: 'cursor-2',
+            hasMore: true,
+            isLoading: true,
+          },
+        },
+      },
+      0,
+      queryInfo,
+      {
+        items: [{ id: 'second', display: 'Second' }],
+        nextCursor: null,
+        hasMore: false,
+        paginated: true,
+      },
+      0
+    )
+
+    expect(nextState.suggestions[0]?.results).toEqual([
+      { id: 'first', display: 'First' },
+      { id: 'second', display: 'Second' },
+    ])
+    expect(nextState.queryStates[0]?.pagination).toEqual({
+      nextCursor: null,
+      hasMore: false,
+      isLoading: false,
+    })
+  })
+
+  it('keeps successful suggestions when a next page fails', () => {
+    const error = new Error('boom')
+    const nextState = applyErroredPageResult(
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+        },
+      },
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+          status: 'success',
+          pagination: {
+            nextCursor: 'cursor-2',
+            hasMore: true,
+            isLoading: true,
+          },
+        },
+      },
+      0,
+      error,
+      0
+    )
+
+    expect(nextState.suggestions[0]?.results).toHaveLength(1)
+    expect(nextState.queryStates[0]?.status).toBe('success')
+    expect(nextState.queryStates[0]?.pagination).toMatchObject({
+      nextCursor: 'cursor-2',
+      hasMore: true,
+      isLoading: false,
+      error,
+    })
   })
 })

@@ -3,8 +3,13 @@ import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import type {
   MentionComponentProps,
   MentionDataItem,
+  MentionDataPage,
+  MentionDataProviderResult,
   MentionIdentifier,
+  MentionPageCursor,
   MentionSearchContext,
+  MentionSearchReason,
+  NormalizedMentionDataPage,
   QueryInfo,
   SuggestionDataItem,
   SuggestionQueryState,
@@ -64,6 +69,33 @@ const getCachedSearchableItems = <Extra extends Record<string, unknown>>(
   cache.set(cacheKey, searchableItems as CachedSearchableSuggestionItems)
 
   return searchableItems
+}
+
+const isMentionDataPage = <Extra extends Record<string, unknown>>(
+  result: MentionDataProviderResult<Extra>
+): result is MentionDataPage<Extra> => !Array.isArray(result)
+
+export const normalizeMentionDataResult = <Extra extends Record<string, unknown>>(
+  result: MentionDataProviderResult<Extra>,
+  maxSuggestions?: number
+): NormalizedMentionDataPage<Extra> => {
+  if (!isMentionDataPage(result)) {
+    return {
+      items: maxSuggestions === undefined ? [...result] : result.slice(0, maxSuggestions),
+      nextCursor: null,
+      hasMore: false,
+      paginated: false,
+    }
+  }
+
+  const nextCursor = result.nextCursor ?? null
+
+  return {
+    items: [...result.items],
+    nextCursor,
+    hasMore: result.hasMore !== false && nextCursor !== null,
+    paginated: true,
+  }
 }
 
 export const getMentionChildFromArray = <Extra extends Record<string, unknown>>(
@@ -337,19 +369,18 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
     | ((
         query: string,
         context: MentionSearchContext
-      ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>),
+      ) => Promise<MentionDataProviderResult<Extra>> | MentionDataProviderResult<Extra>),
   options: {
     ignoreAccents: boolean
     maxSuggestions?: number
     signal: AbortSignal
     getSubstringIndex: (string: string, substring: string, ignoreAccents: boolean) => number
   }
-): ((query: string) => Promise<MentionDataItem<Extra>[]>) => {
+): ((
+  query: string,
+  request?: { cursor?: MentionPageCursor | null; reason?: MentionSearchReason }
+) => Promise<NormalizedMentionDataPage<Extra>>) => {
   const { ignoreAccents, maxSuggestions, signal, getSubstringIndex } = options
-  const applyMaxSuggestions = (
-    items: ReadonlyArray<MentionDataItem<Extra>>
-  ): MentionDataItem<Extra>[] =>
-    maxSuggestions === undefined ? [...items] : items.slice(0, maxSuggestions)
 
   if (Array.isArray(data)) {
     const items = data as ReadonlyArray<MentionDataItem<Extra>>
@@ -361,7 +392,7 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
 
         for (const { item, searchableDisplay } of searchableItems) {
           if (signal.aborted) {
-            return []
+            return normalizeMentionDataResult<Extra>([], maxSuggestions)
           }
 
           const index = getSubstringIndex(searchableDisplay, query, ignoreAccents)
@@ -379,17 +410,23 @@ export const getDataProvider = <Extra extends Record<string, unknown>>(
           }
         }
 
-        return applyMaxSuggestions(results)
+        return normalizeMentionDataResult<Extra>(results, maxSuggestions)
       })
     }
   }
 
-  return async (query: string) => {
+  return async (query: string, request = {}) => {
     const provider = data as (
       query: string,
       context: MentionSearchContext
-    ) => Promise<ReadonlyArray<MentionDataItem<Extra>>> | ReadonlyArray<MentionDataItem<Extra>>
-    const result = await Promise.resolve(provider(query, { signal }))
-    return applyMaxSuggestions(result)
+    ) => Promise<MentionDataProviderResult<Extra>> | MentionDataProviderResult<Extra>
+    const result = await Promise.resolve(
+      provider(query, {
+        signal,
+        cursor: request.cursor ?? null,
+        reason: request.reason ?? 'query',
+      })
+    )
+    return normalizeMentionDataResult(result, maxSuggestions)
   }
 }

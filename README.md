@@ -202,19 +202,19 @@ The optional `context` argument includes:
 
 Each data source is configured using a `Mention` component, which has the following props:
 
-| Prop name        | Type                                                         | Default value              | Description                                                                                                                                                                                      |
-| ---------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| trigger          | RegExp or string                                             | `'@'`                      | Defines the char sequence upon which to trigger querying the data source                                                                                                                         |
-| data             | array or function `(query, { signal })`                      | `null`                     | An array of mentionable entries, or a filtering function that returns matching entries for the current query. Async providers receive an `AbortSignal` so stale requests can be cancelled safely |
-| renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                     | Allows customizing how mention suggestions are rendered (optional)                                                                                                                               |
-| renderEmpty      | function `(query) => ReactNode`                              | `null`                     | Renders custom empty-state content when a query completes without any suggestions                                                                                                                |
-| renderError      | function `(query, error) => ReactNode`                       | `null`                     | Renders custom error-state content when an async data provider rejects                                                                                                                           |
-| markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'` | Template string for stored markup, or pass a `MentionSerializer` instance for full control                                                                                                       |
-| displayTransform | function (id, display)                                       | returns `display`          | Accepts a function for customizing the string that is displayed for a mention                                                                                                                    |
-| onAdd            | function ({id, display, startPos, endPos, serializerId})     | empty function             | Callback invoked when a suggestion has been added (optional)                                                                                                                                     |
-| appendSpaceOnAdd | boolean                                                      | `false`                    | Append a space when a suggestion has been added (optional)                                                                                                                                       |
-| debounceMs       | number                                                       | `0`                        | Debounces async provider calls to reduce network chatter while typing                                                                                                                            |
-| maxSuggestions   | number                                                       | unlimited                  | Caps the number of suggestions rendered from a given provider result                                                                                                                             |
+| Prop name        | Type                                                         | Default value              | Description                                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| trigger          | RegExp or string                                             | `'@'`                      | Defines the char sequence upon which to trigger querying the data source                                                                                                                    |
+| data             | array or function `(query, { signal, cursor, reason })`      | `null`                     | An array of mentionable entries, or a filtering function that returns matching entries or a cursor page. Async providers receive an `AbortSignal` so stale requests can be cancelled safely |
+| renderSuggestion | function (entry, search, highlightedDisplay, index, focused) | `null`                     | Allows customizing how mention suggestions are rendered (optional)                                                                                                                          |
+| renderEmpty      | function `(query) => ReactNode`                              | `null`                     | Renders custom empty-state content when a query completes without any suggestions                                                                                                           |
+| renderError      | function `(query, error) => ReactNode`                       | `null`                     | Renders custom error-state content when an async data provider rejects                                                                                                                      |
+| markup           | string \| `MentionSerializer`                                | `'@[__display__](__id__)'` | Template string for stored markup, or pass a `MentionSerializer` instance for full control                                                                                                  |
+| displayTransform | function (id, display)                                       | returns `display`          | Accepts a function for customizing the string that is displayed for a mention                                                                                                               |
+| onAdd            | function ({id, display, startPos, endPos, serializerId})     | empty function             | Callback invoked when a suggestion has been added (optional)                                                                                                                                |
+| appendSpaceOnAdd | boolean                                                      | `false`                    | Append a space when a suggestion has been added (optional)                                                                                                                                  |
+| debounceMs       | number                                                       | `0`                        | Debounces async provider calls to reduce network chatter while typing                                                                                                                       |
+| maxSuggestions   | number                                                       | unlimited                  | Caps the number of suggestions rendered from array results. Cursor page results own their page size and are not capped                                                                      |
 
 > Need the legacy `markup` customization? Import `createMarkupSerializer` from `react-mentions` and pass `markup={createMarkupSerializer(':__id__')}` (or any other template) to keep markup/parse logic in sync without wiring a regex manually.
 
@@ -235,6 +235,39 @@ const fetchUsers = async (query: string, { signal }: MentionSearchContext): Prom
 }
 
 ;<Mention trigger="@" data={fetchUsers} debounceMs={150} maxSuggestions={8} />
+```
+
+Async providers can also return cursor pages. The first request receives `reason: 'query'` and `cursor: null`. When the overlay list scrolls near the bottom, the provider is called again with `reason: 'page'` and the previous `nextCursor`; returned `items` are appended to the active suggestions. `null` or `undefined` `nextCursor`, or `hasMore: false`, stops pagination. Providers should avoid duplicate ids within the same query.
+
+```tsx
+type UserPage = {
+  items: User[]
+  nextCursor?: string | null
+}
+
+const fetchUsersPage = async (
+  query: string,
+  { cursor, signal }: MentionSearchContext
+): Promise<UserPage> => {
+  const params = new URLSearchParams({ search: query })
+  if (typeof cursor === 'string') {
+    params.set('cursor', cursor)
+  }
+
+  const response = await fetch(`/api/users?${params.toString()}`, { signal })
+  return response.json()
+}
+
+;<Mention trigger="@" data={fetchUsersPage} debounceMs={150} />
+```
+
+Redux-Saga and similar async layers can bridge pagination by returning a promise from `data` and resolving it from the saga:
+
+```tsx
+const data = (query: string, { cursor, signal }: MentionSearchContext) =>
+  new Promise<UserPage>((resolve, reject) => {
+    dispatch(fetchMentionPage({ query, cursor, signal, resolve, reject }))
+  })
 ```
 
 ## 📚 More Examples
@@ -547,17 +580,18 @@ This library is a TypeScript rewrite of [react-mentions](https://github.com/sign
 
 ### New Features (no react-mentions equivalent)
 
-| Feature                                    | Prop / API                                                     |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| Async data via Promises with `AbortSignal` | `data` accepts `(query, { signal }) => Promise<...>`           |
-| Debounced async queries                    | `debounceMs` on `Mention`                                      |
-| Cap suggestion count                       | `maxSuggestions` on `Mention`                                  |
-| Caret-aware mention styling                | `onMentionSelectionChange`, `data-mention-selection` attribute |
-| Inline ghost-text autocomplete             | `suggestionsDisplay="inline"`                                  |
-| Auto-resizing textarea                     | `autoResize`                                                   |
-| Left-anchored overlay                      | `anchorMode="left"`                                            |
-| Empty/error state rendering                | `renderEmpty`, `renderError` on `Mention`                      |
-| Tailwind v4 styling out of the box         | Built-in utility classes                                       |
+| Feature                                    | Prop / API                                                           |
+| ------------------------------------------ | -------------------------------------------------------------------- |
+| Async data via Promises with `AbortSignal` | `data` accepts `(query, { signal, cursor, reason }) => Promise<...>` |
+| Cursor-paginated async suggestions         | Return `{ items, nextCursor, hasMore }` from `data`                  |
+| Debounced async queries                    | `debounceMs` on `Mention`                                            |
+| Cap suggestion count                       | `maxSuggestions` on `Mention`                                        |
+| Caret-aware mention styling                | `onMentionSelectionChange`, `data-mention-selection` attribute       |
+| Inline ghost-text autocomplete             | `suggestionsDisplay="inline"`                                        |
+| Auto-resizing textarea                     | `autoResize`                                                         |
+| Left-anchored overlay                      | `anchorMode="left"`                                                  |
+| Empty/error state rendering                | `renderEmpty`, `renderError` on `Mention`                            |
+| Tailwind v4 styling out of the box         | Built-in utility classes                                             |
 
 ### Styling
 

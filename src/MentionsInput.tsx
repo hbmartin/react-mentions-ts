@@ -67,7 +67,10 @@ import { areMentionConfigsEqual, prepareMentionsInputChildren } from './Mentions
 import type { MentionValueSnapshot } from './MentionsInputDerived'
 import { createMentionSelectionContext, deriveMentionValueSnapshot } from './MentionsInputDerived'
 import {
+  applyErroredPageResult,
   applyErroredQueryResult,
+  applyLoadingPageResult,
+  applySuccessfulPageResult,
   applySuccessfulQueryResult,
   createClearedSuggestionsState,
   createLoadingQueryState,
@@ -79,7 +82,6 @@ import type {
   InputComponentProps,
   MentionChildConfig,
   MentionComponentProps,
-  MentionDataItem,
   MentionIdentifier,
   MentionOccurrence,
   MentionSelectionState,
@@ -87,6 +89,7 @@ import type {
   MentionsInputState,
   MentionsInputClassNames,
   MentionsInputChangeTrigger,
+  NormalizedMentionDataPage,
   QueryInfo,
   SuggestionDataItem,
   SuggestionQueryState,
@@ -276,6 +279,7 @@ class MentionsInput<
   private _isFlushingViewSync = false
   private readonly _queryDebounceTimers = new Map<number, ReturnType<typeof setTimeout>>()
   private readonly _queryAbortControllers = new Map<number, AbortController>()
+  private readonly _loadingPageChildren = new Set<number>()
 
   private cancelScheduledFrame(frameKey: '_scrollSyncFrame' | '_autoResizeFrame'): void {
     const frame = this[frameKey]
@@ -295,6 +299,7 @@ class MentionsInput<
       controller.abort()
     }
     this._queryAbortControllers.clear()
+    this._loadingPageChildren.clear()
   }
 
   private cacheSnapshot(
@@ -920,6 +925,7 @@ class MentionsInput<
         onSelect={this.addMention}
         onMouseDown={this.handleSuggestionsMouseDown}
         onMouseEnter={this.handleSuggestionsMouseEnter}
+        onLoadMore={this.loadMoreSuggestions}
         isLoading={this.isLoading()}
         isOpened={this.isOpened()}
         a11ySuggestionsListLabel={this.props.a11ySuggestionsListLabel}
@@ -1839,6 +1845,13 @@ class MentionsInput<
     }, {})
   }
 
+  private getIgnoreAccentsForMentionChild(
+    mentionChild: React.ReactElement<MentionComponentProps<Extra>>
+  ): boolean {
+    const triggerProp = mentionChild.props.trigger ?? '@'
+    return resolveTriggerRegex(triggerProp).flags.includes('u')
+  }
+
   private scheduleSuggestionQuery(
     queryId: number,
     childIndex: number,
@@ -1886,6 +1899,89 @@ class MentionsInput<
     }
 
     executeQuery()
+  }
+
+  private scheduleSuggestionPageQuery(
+    queryId: number,
+    childIndex: number,
+    queryInfo: QueryInfo,
+    mentionChild: React.ReactElement<MentionComponentProps<Extra>>,
+    ignoreAccents: boolean,
+    cursor: unknown
+  ): void {
+    if (this._loadingPageChildren.has(childIndex)) {
+      return
+    }
+
+    this._loadingPageChildren.add(childIndex)
+
+    const controller = new AbortController()
+    this._queryAbortControllers.set(childIndex, controller)
+    const maxSuggestions = mentionChild.props.maxSuggestions ?? DEFAULT_MENTION_PROPS.maxSuggestions
+
+    this.replaceSuggestions((prevState) =>
+      applyLoadingPageResult(
+        prevState.suggestions,
+        prevState.queryStates,
+        childIndex,
+        prevState.focusIndex
+      )
+    )
+
+    const provideData = getDataProvider<Extra>(mentionChild.props.data, {
+      ignoreAccents,
+      maxSuggestions,
+      signal: controller.signal,
+      getSubstringIndex,
+    })
+
+    void this.updatePageSuggestions(
+      queryId,
+      childIndex,
+      queryInfo,
+      provideData(queryInfo.query, {
+        cursor,
+        reason: 'page',
+      }),
+      controller
+    )
+  }
+
+  loadMoreSuggestions = (): void => {
+    if (this.isInlineAutocomplete()) {
+      return
+    }
+
+    const mentionChildren = this.getMentionChildren()
+    const queryId = this._queryId
+
+    for (const [childIndex, queryState] of getSuggestionQueryStateEntries(this.state.queryStates)) {
+      const { pagination } = queryState
+
+      if (
+        queryState.status !== 'success' ||
+        !pagination?.hasMore ||
+        pagination.isLoading ||
+        pagination.nextCursor === null ||
+        pagination.nextCursor === undefined
+      ) {
+        continue
+      }
+
+      const mentionChild = mentionChildren[childIndex]
+      if (!mentionChild) {
+        continue
+      }
+
+      this.scheduleSuggestionPageQuery(
+        queryId,
+        childIndex,
+        queryState.queryInfo,
+        mentionChild,
+        this.getIgnoreAccentsForMentionChild(mentionChild),
+        pagination.nextCursor
+      )
+    }
   }
 
   updateMentionsQueries = (plainTextValue: string, caretPosition: number, value?: string): void => {
@@ -1936,7 +2032,7 @@ class MentionsInput<
     queryId: number,
     childIndex: number,
     queryInfo: QueryInfo,
-    results: MentionDataItem<Extra>[] | Promise<MentionDataItem<Extra>[]>,
+    results: NormalizedMentionDataPage<Extra> | Promise<NormalizedMentionDataPage<Extra>>,
     controller: AbortController
   ): Promise<void> => {
     if (queryId !== this._queryId) {
@@ -1944,7 +2040,7 @@ class MentionsInput<
       return
     }
     try {
-      const data: MentionDataItem<Extra>[] = await Promise.resolve(results)
+      const page = await Promise.resolve(results)
       if (queryId !== this._queryId || controller.signal.aborted) {
         return
       }
@@ -1959,7 +2055,7 @@ class MentionsInput<
           prevState.queryStates,
           childIndex,
           queryInfo,
-          data,
+          page,
           prevState.focusIndex,
           this.isInlineAutocomplete()
         )
@@ -1983,6 +2079,55 @@ class MentionsInput<
           prevState.focusIndex
         )
       )
+    }
+  }
+
+  updatePageSuggestions = async (
+    queryId: number,
+    childIndex: number,
+    queryInfo: QueryInfo,
+    results: NormalizedMentionDataPage<Extra> | Promise<NormalizedMentionDataPage<Extra>>,
+    controller: AbortController
+  ): Promise<void> => {
+    try {
+      if (queryId !== this._queryId || controller.signal.aborted) {
+        return
+      }
+
+      const page = await Promise.resolve(results)
+      if (queryId !== this._queryId || controller.signal.aborted) {
+        return
+      }
+
+      this.replaceSuggestions((prevState) =>
+        applySuccessfulPageResult(
+          prevState.suggestions,
+          prevState.queryStates,
+          childIndex,
+          queryInfo,
+          page,
+          prevState.focusIndex
+        )
+      )
+    } catch (error) {
+      if (queryId !== this._queryId || controller.signal.aborted || isAbortError(error)) {
+        return
+      }
+
+      this.replaceSuggestions((prevState) =>
+        applyErroredPageResult(
+          prevState.suggestions,
+          prevState.queryStates,
+          childIndex,
+          error,
+          prevState.focusIndex
+        )
+      )
+    } finally {
+      if (this._queryAbortControllers.get(childIndex) === controller) {
+        this._queryAbortControllers.delete(childIndex)
+        this._loadingPageChildren.delete(childIndex)
+      }
     }
   }
 
@@ -2070,7 +2215,8 @@ class MentionsInput<
     return (
       this.getMentionChildren().some((child) => child.props.isLoading === true) ||
       getSuggestionQueryStateEntries(this.state.queryStates).some(
-        ([, queryState]) => queryState.status === 'loading'
+        ([, queryState]) =>
+          queryState.status === 'loading' || queryState.pagination?.isLoading === true
       )
     )
   }

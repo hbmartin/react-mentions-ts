@@ -46,6 +46,7 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly customSuggestionsContainer?: (node: React.ReactElement) => React.ReactElement
   readonly onMouseDown?: React.MouseEventHandler
   readonly onMouseEnter?: (index: number) => void
+  readonly onLoadMore?: () => void
   readonly statusContent?: React.ReactNode
   readonly statusClassName?: string
   readonly statusType?: 'empty' | 'error' | null
@@ -56,6 +57,7 @@ const overlayStyles = cva(
 )
 const listStyles =
   'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
+const loadMoreThresholdPx = 48
 const statusStyles = cva('px-4 py-2.5 text-left text-sm leading-relaxed', {
   variants: {
     type: {
@@ -98,6 +100,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   customSuggestionsContainer,
   onMouseDown,
   onMouseEnter,
+  onLoadMore,
   statusContent,
   statusClassName,
   statusType,
@@ -184,6 +187,15 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     }
   )
 
+  const handleListScroll = useEventCallback<React.UIEventHandler<HTMLUListElement>>((event) => {
+    const list = event.currentTarget
+    const remainingScrollDistance = list.scrollHeight - list.scrollTop - list.clientHeight
+
+    if (remainingScrollDistance <= loadMoreThresholdPx) {
+      onLoadMore?.()
+    }
+  })
+
   const renderSuggestions = (): React.ReactElement => {
     const suggestionsToRender = (
       <ul
@@ -194,6 +206,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         className={listClassNameResolved}
         data-slot="suggestions-list"
         onMouseDown={handleListMouseDown}
+        onScroll={handleListScroll}
       >
         {suggestionEntries.map(
           ({
