@@ -89,9 +89,17 @@ export const applyLoadingPageResult = <Extra extends Record<string, unknown>>(
   childIndex: number,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
+  if (!Object.hasOwn(currentQueryStates, childIndex)) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
   const currentQueryState = currentQueryStates[childIndex]
 
-  if (!currentQueryState?.pagination) {
+  if (currentQueryState.pagination === undefined) {
     return {
       suggestions: currentSuggestions,
       queryStates: currentQueryStates,
@@ -124,7 +132,9 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
   page: NormalizedMentionDataPage<Extra>,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
-  const previousResults = currentSuggestions[childIndex]?.results ?? []
+  const previousResults = Object.hasOwn(currentSuggestions, childIndex)
+    ? currentSuggestions[childIndex].results
+    : []
   const results = [...previousResults, ...page.items]
   const suggestions: SuggestionsMap<Extra> = {
     ...currentSuggestions,
@@ -141,7 +151,7 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
     queryStates: {
       ...currentQueryStates,
       [childIndex]: {
-        ...(currentQueryStates[childIndex] ?? {}),
+        ...currentQueryStates[childIndex],
         queryInfo,
         results,
         status: 'success',
@@ -162,9 +172,17 @@ export const applyErroredPageResult = <Extra extends Record<string, unknown>>(
   error: unknown,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
+  if (!Object.hasOwn(currentQueryStates, childIndex)) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
   const currentQueryState = currentQueryStates[childIndex]
 
-  if (!currentQueryState?.pagination) {
+  if (currentQueryState.pagination === undefined) {
     return {
       suggestions: currentSuggestions,
       queryStates: currentQueryStates,

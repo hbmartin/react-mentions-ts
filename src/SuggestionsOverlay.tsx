@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useState } from 'react'
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
@@ -58,6 +58,20 @@ const overlayStyles = cva(
 const listStyles =
   'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
 const loadMoreThresholdPx = 48
+
+interface MousePosition {
+  readonly clientX: number
+  readonly clientY: number
+}
+
+const didMousePositionChange = (
+  previousPosition: MousePosition | null,
+  nextPosition: MousePosition
+): boolean =>
+  previousPosition === null ||
+  previousPosition.clientX !== nextPosition.clientX ||
+  previousPosition.clientY !== nextPosition.clientY
+
 const statusStyles = cva('px-4 py-2.5 text-left text-sm leading-relaxed', {
   variants: {
     type: {
@@ -106,6 +120,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   statusType,
 }: SuggestionsOverlayProps<Extra>) {
   const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null)
+  const lastMouseEnterPosition = useRef<MousePosition | null>(null)
   const mentionChildren = useMemo(
     () => mentionChildrenProp ?? collectMentionElements(children),
     [children, mentionChildrenProp]
@@ -153,8 +168,27 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     }
   )
 
-  const handleMouseEnter = useEventCallback((index: number) => {
-    onMouseEnter?.(index)
+  const handleMouseEnter = useEventCallback(
+    (index: number, event: React.MouseEvent<HTMLLIElement>) => {
+      const nextMousePosition = { clientX: event.clientX, clientY: event.clientY }
+
+      if (!didMousePositionChange(lastMouseEnterPosition.current, nextMousePosition)) {
+        return
+      }
+
+      lastMouseEnterPosition.current = nextMousePosition
+      onMouseEnter?.(index)
+    }
+  )
+
+  const handleMouseEnterAtIndex = useEventCallback((index: number) => {
+    return (event: React.MouseEvent<HTMLLIElement>) => {
+      handleMouseEnter(index, event)
+    }
+  })
+
+  const handleListMouseLeave = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(() => {
+    lastMouseEnterPosition.current = null
   })
 
   const flattenedSuggestions = useMemo<FlattenedSuggestion<Extra>[]>(() => {
@@ -174,12 +208,18 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         isFocused,
         renderSuggestionFromChild,
         onClick: () => selectSuggestion(suggestionItem, queryInfo),
-        onMouseEnterHandler: () => handleMouseEnter(index),
+        onMouseEnterHandler: handleMouseEnterAtIndex(index),
         query,
         index,
       }
     })
-  }, [childRenderSuggestions, focusIndex, flattenedSuggestions, handleMouseEnter, selectSuggestion])
+  }, [
+    childRenderSuggestions,
+    focusIndex,
+    flattenedSuggestions,
+    handleMouseEnterAtIndex,
+    selectSuggestion,
+  ])
 
   const handleListMouseDown = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(
     (event) => {
@@ -206,6 +246,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         className={listClassNameResolved}
         data-slot="suggestions-list"
         onMouseDown={handleListMouseDown}
+        onMouseLeave={handleListMouseLeave}
         onScroll={handleListScroll}
       >
         {suggestionEntries.map(

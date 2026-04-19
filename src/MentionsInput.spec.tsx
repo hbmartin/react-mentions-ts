@@ -343,6 +343,46 @@ describe('MentionsInput', () => {
     expect(activeDescendant).toBe(refreshedSuggestions[1].id)
   })
 
+  it('keeps arrow-key navigation ahead of a stationary hovered suggestion.', async () => {
+    render(
+      <MentionsInput value="@">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const combobox = screen.getByRole('combobox')
+    fireEvent.focus(combobox)
+    combobox.setSelectionRange(1, 1)
+    fireEvent.select(combobox)
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(data.length)
+    })
+
+    let suggestions = screen.getAllByRole('option', { hidden: true })
+    fireEvent.mouseEnter(suggestions[1], { clientX: 20, clientY: 20 })
+
+    await waitFor(() => {
+      suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions[1]).toHaveAttribute('aria-selected', 'true')
+    })
+
+    fireEvent.keyDown(combobox, { key: 'ArrowDown', keyCode: 40 })
+
+    suggestions = screen.getAllByRole('option', { hidden: true })
+    expect(suggestions[2]).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.mouseEnter(suggestions[1], { clientX: 20, clientY: 20 })
+
+    suggestions = screen.getAllByRole('option', { hidden: true })
+    expect(suggestions[2]).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.keyDown(combobox, { key: 'ArrowDown', keyCode: 40 })
+
+    suggestions = screen.getAllByRole('option', { hidden: true })
+    expect(suggestions[0]).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('should be possible to select a suggestion with enter.', async () => {
     const onMentionsChange = vi.fn()
 
@@ -935,17 +975,19 @@ describe('MentionsInput', () => {
     scrollSuggestionsNearBottom()
 
     await waitFor(() => {
+      expect(firstAsyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ cursor: 'first-cursor-2', reason: 'page' })
+      )
+      expect(secondAsyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ cursor: 'second-cursor-2', reason: 'page' })
+      )
+    })
+    await waitFor(() => {
       expect(screen.getByText('First Page 2')).toBeInTheDocument()
       expect(screen.getByText('Second Page 2')).toBeInTheDocument()
     })
-    expect(firstAsyncData).toHaveBeenCalledWith(
-      'a',
-      expect.objectContaining({ cursor: 'first-cursor-2', reason: 'page' })
-    )
-    expect(secondAsyncData).toHaveBeenCalledWith(
-      'a',
-      expect.objectContaining({ cursor: 'second-cursor-2', reason: 'page' })
-    )
   })
 
   it('replaces the latest query range when selecting a preserved async suggestion.', async () => {

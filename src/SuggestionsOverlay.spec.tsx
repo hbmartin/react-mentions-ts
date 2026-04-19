@@ -724,13 +724,13 @@ describe('SuggestionsOverlay', () => {
 
     const listItems = container.querySelectorAll('li[role="option"]')
 
-    fireEvent.mouseEnter(listItems[0])
+    fireEvent.mouseEnter(listItems[0], { clientX: 10, clientY: 10 })
     expect(onMouseEnter).toHaveBeenCalledWith(0)
 
-    fireEvent.mouseEnter(listItems[1])
+    fireEvent.mouseEnter(listItems[1], { clientX: 10, clientY: 30 })
     expect(onMouseEnter).toHaveBeenCalledWith(1)
 
-    fireEvent.mouseEnter(listItems[2])
+    fireEvent.mouseEnter(listItems[2], { clientX: 10, clientY: 50 })
     expect(onMouseEnter).toHaveBeenCalledWith(2)
   })
 
