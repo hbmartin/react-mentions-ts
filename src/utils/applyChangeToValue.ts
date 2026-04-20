@@ -1,4 +1,5 @@
 import type { MentionChildConfig } from '../types'
+import ensureNumber from './ensureNumber'
 import getPlainText from './getPlainText'
 import { mapPlainTextIndices } from './mapPlainTextIndex'
 import spliceString from './spliceString'
@@ -26,13 +27,6 @@ const normalizeSelectionPoint = (value: number | 'undefined' | undefined): numbe
     return undefined
   }
   return value
-}
-
-const ensureNumber = (value: number | null | undefined, fallback: number): number => {
-  if (typeof value === 'number') {
-    return value
-  }
-  return fallback
 }
 
 const resolveSelection = (

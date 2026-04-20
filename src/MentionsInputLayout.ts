@@ -5,12 +5,7 @@ import type {
   InputElement,
   MentionsInputAnchorMode,
   PreparedMentionChildConfig,
-  QueryInfo,
-  SuggestionDataItem,
-  SuggestionQueryState,
-  SuggestionQueryStateMap,
   SuggestionsPosition,
-  SuggestionsMap,
 } from './types'
 import { areMentionConfigsEqual } from './MentionsInputChildren'
 
@@ -48,8 +43,6 @@ export interface ViewSyncCommit<Extra extends Record<string, unknown> = Record<s
   isInlineAutocomplete: boolean
   selectionStart: number | null
   selectionEnd: number | null
-  suggestions: SuggestionsMap<Extra>
-  queryStates: SuggestionQueryStateMap<Extra>
   generatedId: string | null
   caretPosition: CaretCoordinates | null
   pendingSelectionUpdate: boolean
@@ -58,111 +51,6 @@ export interface ViewSyncCommit<Extra extends Record<string, unknown> = Record<s
 export interface ViewSyncDecision {
   flags: Partial<PendingViewSync>
   flushNow: boolean
-}
-
-const getRecordKeys = (record: Record<number, unknown>): string[] => Object.keys(record).sort()
-
-const areQueryInfosEqual = (left: QueryInfo, right: QueryInfo): boolean =>
-  left.childIndex === right.childIndex &&
-  left.query === right.query &&
-  left.querySequenceStart === right.querySequenceStart &&
-  left.querySequenceEnd === right.querySequenceEnd
-
-const areSuggestionResultsEqual = <Extra extends Record<string, unknown>>(
-  left: SuggestionDataItem<Extra>[],
-  right: SuggestionDataItem<Extra>[]
-): boolean => {
-  if (left === right) {
-    return true
-  }
-  if (left.length !== right.length) {
-    return false
-  }
-
-  return left.every((item, index) => item === right[index])
-}
-
-const areSuggestionsMapsEqual = <Extra extends Record<string, unknown>>(
-  left: SuggestionsMap<Extra>,
-  right: SuggestionsMap<Extra>
-): boolean => {
-  if (left === right) {
-    return true
-  }
-
-  const leftKeys = getRecordKeys(left)
-  const rightKeys = getRecordKeys(right)
-
-  if (leftKeys.length !== rightKeys.length) {
-    return false
-  }
-
-  return leftKeys.every((key, index) => {
-    if (key !== rightKeys[index]) {
-      return false
-    }
-
-    const leftEntry = left[Number(key)]
-    const rightEntry = right[Number(key)]
-
-    return (
-      areQueryInfosEqual(leftEntry.queryInfo, rightEntry.queryInfo) &&
-      areSuggestionResultsEqual(leftEntry.results, rightEntry.results)
-    )
-  })
-}
-
-const areQueryStatePaginationsEqual = (
-  left: SuggestionQueryState['pagination'],
-  right: SuggestionQueryState['pagination']
-): boolean => {
-  if (left === right) {
-    return true
-  }
-  if (left === undefined || right === undefined) {
-    return false
-  }
-
-  return (
-    left.nextCursor === right.nextCursor &&
-    left.hasMore === right.hasMore &&
-    left.isLoading === right.isLoading &&
-    left.error === right.error
-  )
-}
-
-const areSuggestionQueryStatesEqual = <Extra extends Record<string, unknown>>(
-  left: SuggestionQueryStateMap<Extra>,
-  right: SuggestionQueryStateMap<Extra>
-): boolean => {
-  if (left === right) {
-    return true
-  }
-
-  const leftKeys = getRecordKeys(left)
-  const rightKeys = getRecordKeys(right)
-
-  if (leftKeys.length !== rightKeys.length) {
-    return false
-  }
-
-  return leftKeys.every((key, index) => {
-    if (key !== rightKeys[index]) {
-      return false
-    }
-
-    const leftState = left[Number(key)]
-    const rightState = right[Number(key)]
-
-    return (
-      leftState.status === rightState.status &&
-      leftState.ignoreAccents === rightState.ignoreAccents &&
-      leftState.error === rightState.error &&
-      areQueryInfosEqual(leftState.queryInfo, rightState.queryInfo) &&
-      areSuggestionResultsEqual(leftState.results, rightState.results) &&
-      areQueryStatePaginationsEqual(leftState.pagination, rightState.pagination)
-    )
-  })
 }
 
 interface SuggestionsPositionArgs {
@@ -284,12 +172,7 @@ export const getViewSyncDecision = <Extra extends Record<string, unknown>>(
     currentCommit.selectionEnd !== previousCommit.selectionEnd
   const configChanged = !areMentionConfigsEqual(previousCommit.config, currentCommit.config)
   const valueChanged = currentCommit.value !== previousCommit.value || configChanged
-  const suggestionsChanged =
-    !areSuggestionsMapsEqual(previousCommit.suggestions, currentCommit.suggestions) ||
-    (!currentCommit.isInlineAutocomplete &&
-      !areSuggestionQueryStatesEqual(previousCommit.queryStates, currentCommit.queryStates))
   const suggestionLayoutInputsChanged =
-    suggestionsChanged ||
     previousCommit.anchorMode !== currentCommit.anchorMode ||
     previousCommit.suggestionsPlacement !== currentCommit.suggestionsPlacement ||
     previousCommit.suggestionsPortalHost !== currentCommit.suggestionsPortalHost ||

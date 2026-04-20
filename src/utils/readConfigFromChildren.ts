@@ -12,6 +12,7 @@ import createMarkupSerializer from './createMarkupSerializer'
 import { isMentionElement } from './isMentionElement'
 import { makeTriggerRegex } from './makeTriggerRegex'
 import PLACEHOLDERS from './placeholders'
+import { stripStatefulRegexFlags } from './regexFlags'
 
 /**
  * Generates a markup template based on the trigger character.
@@ -40,11 +41,6 @@ const appendSerializerMarker = (markup: string, occurrenceIndex: number): string
 
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
-
-const STATEFUL_REGEX_FLAGS_PATTERN = /[gy]/g
-
-const stripStatefulRegexFlags = (flags: string): string =>
-  flags.replaceAll(STATEFUL_REGEX_FLAGS_PATTERN, '')
 
 export const createMentionQueryConfig = (trigger: MentionTrigger): MentionQueryConfig => {
   const regex =

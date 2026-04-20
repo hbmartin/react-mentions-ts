@@ -18,12 +18,12 @@ import type { MentionsInputStatePatch, SetMentionsInputState } from './MentionsI
 import { getSuggestionData } from './MentionsInputSelectors'
 import type {
   InputElement,
-  MentionChildConfig,
   MentionIdentifier,
   MentionOccurrence,
   MentionsInputChangeTrigger,
   MentionsInputProps,
   MentionsInputState,
+  PreparedMentionChildConfig,
   QueryInfo,
   SuggestionDataItem,
 } from './types'
@@ -38,14 +38,14 @@ interface UseMentionsEditingArgs<Extra extends Record<string, unknown>> {
   stateRef: React.RefObject<MentionsInputState<Extra>>
   setState: SetMentionsInputState<Extra>
   inputElementRef: React.RefObject<InputElement | null>
-  getCurrentConfig: () => ReadonlyArray<MentionChildConfig<Extra>>
+  getCurrentConfig: () => ReadonlyArray<PreparedMentionChildConfig<Extra>>
   getCurrentSnapshot: (
     value?: string,
-    config?: ReadonlyArray<MentionChildConfig<Extra>>
+    config?: ReadonlyArray<PreparedMentionChildConfig<Extra>>
   ) => MentionValueSnapshot<Extra>
   cacheSnapshot: (
     value: string,
-    config: ReadonlyArray<MentionChildConfig<Extra>>,
+    config: ReadonlyArray<PreparedMentionChildConfig<Extra>>,
     snapshot: MentionValueSnapshot<Extra>
   ) => MentionValueSnapshot<Extra>
   updateMentionsQueries: (plainTextValue: string, caretPosition: number, value?: string) => void
@@ -101,7 +101,7 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
     (
       previousSnapshot: MentionValueSnapshot<Extra>,
       nextSnapshot: MentionValueSnapshot<Extra>,
-      config: ReadonlyArray<MentionChildConfig<Extra>>
+      config: ReadonlyArray<PreparedMentionChildConfig<Extra>>
     ): MentionOccurrence<Extra>[] => {
       const removedMentions = getRemovedMentions(previousSnapshot.mentions, nextSnapshot.mentions)
 
@@ -121,7 +121,7 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       nextSnapshot: MentionValueSnapshot<Extra>,
       previousValue: string,
       previousSnapshot: MentionValueSnapshot<Extra>,
-      config: ReadonlyArray<MentionChildConfig<Extra>>,
+      config: ReadonlyArray<PreparedMentionChildConfig<Extra>>,
       mentionId?: MentionIdentifier
     ): void => {
       const removedMentions =

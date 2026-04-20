@@ -232,7 +232,7 @@ describe('MentionsInputChildren', () => {
     const [stringTriggerConfig, regexTriggerConfig] = prepareMentionsInputChildren(
       <>
         <Mention trigger="@" data={[]} />
-        <Mention trigger={/(#([\p{L}\d_]*))$/giuy} data={[]} />
+        <Mention trigger={/(#([\p{L}\d_]*))$/iuy} data={[]} />
       </>
     ).config
 
@@ -268,6 +268,10 @@ describe('MentionsInputChildren', () => {
             trigger: undefined,
             serializer,
             displayTransform,
+            query: {
+              regex: /(@(\w*))$/,
+              ignoreAccents: false,
+            },
           } as never,
         ],
         [
@@ -275,6 +279,10 @@ describe('MentionsInputChildren', () => {
             trigger: '@',
             serializer,
             displayTransform,
+            query: {
+              regex: /(@(\w*))$/,
+              ignoreAccents: false,
+            },
           } as never,
         ]
       )

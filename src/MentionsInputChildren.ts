@@ -2,6 +2,7 @@ import React from 'react'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import type { MentionChildConfig, MentionComponentProps, PreparedMentionChildConfig } from './types'
 import { isMentionElement } from './utils/isMentionElement'
+import { stripStatefulRegexFlags } from './utils/regexFlags'
 import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
 
 export interface PreparedMentionsInputChildren<
@@ -10,11 +11,6 @@ export interface PreparedMentionsInputChildren<
   mentionChildren: React.ReactElement<MentionComponentProps<Extra>>[]
   config: PreparedMentionChildConfig<Extra>[]
 }
-
-const STATEFUL_REGEX_FLAGS_PATTERN = /[gy]/g
-
-const stripStatefulRegexFlags = (flags: string): string =>
-  flags.replaceAll(STATEFUL_REGEX_FLAGS_PATTERN, '')
 
 const getTriggerIdentity = (trigger: string | RegExp | undefined): string => {
   const normalizedTrigger = trigger ?? DEFAULT_MENTION_PROPS.trigger
@@ -25,13 +21,11 @@ const getTriggerIdentity = (trigger: string | RegExp | undefined): string => {
 }
 
 const getQueryIdentity = <Extra extends Record<string, unknown>>(
-  config: MentionChildConfig<Extra>
+  config: PreparedMentionChildConfig<Extra>
 ): string => {
-  const query = (config as Partial<PreparedMentionChildConfig<Extra>>).query
+  const { query } = config
 
-  return query === undefined
-    ? 'query:none'
-    : `query:${query.regex.source}/${query.regex.flags}:${query.ignoreAccents ? '1' : '0'}`
+  return `query:${query.regex.source}/${query.regex.flags}:${query.ignoreAccents ? '1' : '0'}`
 }
 
 const getInvalidChildLabel = (child: React.ReactNode): string => {
@@ -99,8 +93,8 @@ export const prepareMentionsInputChildren = <Extra extends Record<string, unknow
 }
 
 export const areMentionConfigsEqual = <Extra extends Record<string, unknown>>(
-  config1: ReadonlyArray<MentionChildConfig<Extra>>,
-  config2: ReadonlyArray<MentionChildConfig<Extra>>
+  config1: ReadonlyArray<PreparedMentionChildConfig<Extra>>,
+  config2: ReadonlyArray<PreparedMentionChildConfig<Extra>>
 ): boolean => {
   if (config1.length !== config2.length) {
     return false
