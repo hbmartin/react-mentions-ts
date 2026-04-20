@@ -1,6 +1,6 @@
 import isPlainObject from './isPlainObject'
 
-export type PlainObject = Record<string, unknown>
+type PlainObject = Record<string, unknown>
 
 export const mergeDeep = <T extends PlainObject, S extends PlainObject>(
   target: T,

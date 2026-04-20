@@ -2,7 +2,6 @@ import type React from 'react'
 import type {
   ChangeEvent,
   KeyboardEvent,
-  MouseEvent,
   ReactElement,
   ReactNode,
   RefObject,
@@ -161,6 +160,11 @@ export interface MentionComponentProps<
   selectionState?: MentionSelectionState
 }
 
+export interface MentionQueryConfig {
+  regex: RegExp
+  ignoreAccents: boolean
+}
+
 export type MentionsInputChangeTriggerType =
   | 'input'
   | 'paste'
@@ -217,10 +221,6 @@ export interface MentionsInputChangeEvent<
   previousValue: string
 }
 
-export type MentionsInputEventData<
-  Extra extends Record<string, unknown> = Record<string, unknown>,
-> = MentionsInputChangeEvent<Extra>
-
 export type MentionsInputChangeHandler<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > = (change: MentionsInputChangeEvent<Extra>) => void
@@ -231,10 +231,6 @@ export type MentionSelectionChangeHandler<
 
 export type MentionsInputKeyDownHandler = (
   event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
-) => void
-
-export type MentionsInputSelectHandler = (
-  event: MouseEvent<HTMLInputElement | HTMLTextAreaElement>
 ) => void
 
 export interface CaretCoordinates {
@@ -376,6 +372,7 @@ export type MentionsInputClassNames = Partial<{
 export type MentionChildConfig<Extra extends Record<string, unknown> = Record<string, unknown>> =
   MentionComponentProps<Extra> & {
     displayTransform: DisplayTransform
+    query: MentionQueryConfig
     serializer: MentionSerializer
   }
 

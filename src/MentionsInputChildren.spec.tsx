@@ -213,6 +213,21 @@ describe('MentionsInputChildren', () => {
     expect(areMentionConfigsEqual(globalConfig, nonGlobalConfig)).toBe(true)
   })
 
+  it('prepares trigger query regex metadata once with normalized flags', () => {
+    const [stringTriggerConfig, regexTriggerConfig] = prepareMentionsInputChildren(
+      <>
+        <Mention trigger="@" data={[]} />
+        <Mention trigger={/(#([\p{L}\d_]*))$/giu} data={[]} />
+      </>
+    ).config
+
+    expect(stringTriggerConfig?.query.regex.test('@ali')).toBe(true)
+    expect(regexTriggerConfig?.query.regex.flags).toContain('i')
+    expect(regexTriggerConfig?.query.regex.flags).toContain('u')
+    expect(regexTriggerConfig?.query.regex.flags).not.toContain('g')
+    expect(regexTriggerConfig?.query.ignoreAccents).toBe(true)
+  })
+
   it('treats raw undefined triggers as the default trigger identity', () => {
     const serializer = createMarkupSerializer('@[__display__](__id__)')
     const displayTransform = (id: string | number, display: string | null) => display ?? String(id)

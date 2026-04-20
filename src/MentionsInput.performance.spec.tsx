@@ -575,6 +575,54 @@ describe('MentionsInput performance', () => {
     expect(metrics.calculateInlineSuggestionPositionCalls).toBe(0)
   })
 
+  it('reports overlay row render counts across focus movement', async () => {
+    const suggestionRenderCounts = new Map<string, number>()
+    const renderSuggestion = (
+      suggestion: (typeof mentionData)[number],
+      _query: string,
+      highlightedDisplay: React.ReactNode
+    ) => {
+      suggestionRenderCounts.set(
+        suggestion.id,
+        (suggestionRenderCounts.get(suggestion.id) ?? 0) + 1
+      )
+      return <span>{highlightedDisplay}</span>
+    }
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger="@" data={mentionData} renderSuggestion={renderSuggestion} />
+      </MentionsInput>
+    )
+
+    const combobox = screen.getByRole('combobox')
+    focusControlAt(combobox, 2)
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(2)
+    })
+
+    suggestionRenderCounts.clear()
+    fireEvent.keyDown(combobox, { key: 'ArrowDown' })
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', { hidden: true })[1]).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+    })
+
+    const metrics = {
+      rowRenderCount: [...suggestionRenderCounts.values()].reduce(
+        (total, count) => total + count,
+        0
+      ),
+    }
+    emitPerformanceMetric('overlay-focus-row-renders', metrics)
+
+    expect(metrics.rowRenderCount).toBeLessThanOrEqual(2)
+  })
+
   it('reports controlled rerender stability counts for unchanged value and config', async () => {
     const deriveSnapshotSpy = vi.spyOn(mentionsInputDerived, 'deriveMentionValueSnapshot')
     const prepareChildrenSpy = vi.spyOn(mentionsInputChildren, 'prepareMentionsInputChildren')

@@ -9,13 +9,7 @@ interface ExampleCardProps {
   actions?: React.ReactNode
 }
 
-export function ExampleCard({
-  title,
-  description,
-  actions,
-  children,
-  className,
-}: ExampleCardProps) {
+function ExampleCard({ title, description, actions, children, className }: ExampleCardProps) {
   const id = title
     .toLowerCase()
     .replace(/\s+/g, '-')

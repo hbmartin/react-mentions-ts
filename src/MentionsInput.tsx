@@ -3,6 +3,7 @@ import { useImperativeHandle } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
+import { buildMentionsInputInputProps, defaultMentionsInputProps } from './MentionsInputInputProps'
 import MeasurementBridge from './MeasurementBridge'
 import MentionsInputView from './MentionsInputView'
 import SuggestionsOverlay from './SuggestionsOverlay'
@@ -10,7 +11,6 @@ import {
   MentionsInputInlineLiveRegion,
   MentionsInputInlineSuggestion,
 } from './MentionsInputInlineSuggestion'
-import { getInputInlineStyle } from './MentionsInputLayout'
 import { getInlineSuggestionAnnouncement } from './MentionsInputSelectors'
 import { useCaretLayout } from './useCaretLayout'
 import { useMentionSelectionChange } from './useMentionSelectionChange'
@@ -25,7 +25,7 @@ import type {
   MentionsInputHandle,
   MentionsInputProps,
 } from './types'
-import { cn, countSuggestions, getSuggestionHtmlId, isNumber, omit } from './utils'
+import { cn, countSuggestions, isNumber } from './utils'
 import { useEventCallback } from './utils/useEventCallback'
 
 const KEY = {
@@ -53,44 +53,6 @@ const inputStyles = cva(
     },
   }
 )
-
-const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
-  'singleLine',
-  'anchorMode',
-  'suggestionsPlacement',
-  'a11ySuggestionsListLabel',
-  'value',
-  'onKeyDown',
-  'customSuggestionsContainer',
-  'onSelect',
-  'onMentionBlur',
-  'onMentionsChange',
-  'onMentionSelectionChange',
-  'onBlur',
-  'onChange',
-  'suggestionsPortalHost',
-  'inputRef',
-  'inputComponent',
-  'children',
-  'style',
-  'className',
-  'classNames',
-  'suggestionsDisplay',
-  'autoResize',
-]
-
-const defaultMentionsInputProps = {
-  singleLine: false,
-  autoResize: false,
-  anchorMode: 'caret',
-  suggestionsPlacement: 'below',
-  onKeyDown: () => null,
-  onSelect: () => null,
-  suggestionsDisplay: 'overlay',
-  spellCheck: false,
-} satisfies Partial<MentionsInputProps> & {
-  singleLine: boolean
-}
 
 const getSlotClassName = (
   classNames: MentionsInputClassNames | undefined,
@@ -263,70 +225,25 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
   )
 
   const getInputProps = (): InputComponentProps => {
-    const { readOnly, disabled } = props
-    const passthroughProps = omit(
-      props as unknown as Record<string, unknown>,
-      HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps>
-    ) as Partial<InputComponentProps>
-    const baseClassName = getSlotClassName(props.classNames, 'input', inputStyles({ singleLine }))
-    const inputProps: Record<string, unknown> = {
-      ...passthroughProps,
-      className: baseClassName,
-      spellCheck: props.spellCheck ?? defaultMentionsInputProps.spellCheck,
-      value: currentSnapshot.plainText,
+    return buildMentionsInputInputProps<Extra>({
+      props,
+      inputClassName: getSlotClassName(props.classNames, 'input', inputStyles({ singleLine })),
+      plainTextValue: currentSnapshot.plainText,
+      singleLine,
+      isInlineAutocomplete,
+      inlineSuggestion: isInlineAutocomplete ? suggestionsQuery.inlineSuggestionDetails : null,
+      isSuggestionsOpened: suggestionsQuery.isOpened,
+      suggestionsOverlayId: caretLayout.suggestionsOverlayId,
+      inlineAutocompleteLiveRegionId: caretLayout.inlineAutocompleteLiveRegionId,
+      focusIndex: state.focusIndex,
       onScroll: caretLayout.handleInputScroll,
-      'data-slot': 'input',
-      'data-single-line': singleLine ? 'true' : undefined,
-      'data-multi-line': singleLine ? undefined : 'true',
-    }
-    const inlineStyle = getInputInlineStyle(singleLine)
-
-    if (Object.keys(inlineStyle).length > 0) {
-      inputProps.style = inlineStyle
-    }
-
-    if (readOnly !== true && disabled !== true) {
-      Object.assign(inputProps, {
-        onChange: editing.handleChange,
-        onSelect: editing.handleSelect,
-        onKeyDown: handleKeyDown,
-        onBlur: editing.handleBlur,
-        onCompositionStart: editing.handleCompositionStart,
-        onCompositionEnd: editing.handleCompositionEnd,
-      })
-    }
-
-    const inlineAutocomplete = isInlineAutocomplete
-    const inlineSuggestion = inlineAutocomplete ? suggestionsQuery.inlineSuggestionDetails : null
-    const isOverlayOpen = !inlineAutocomplete && suggestionsQuery.isOpened
-    const overlayId = caretLayout.suggestionsOverlayId
-    const hasOverlayId = overlayId !== undefined
-
-    Object.assign(inputProps, {
-      role: 'combobox',
-      'aria-autocomplete': inlineAutocomplete ? 'inline' : 'list',
-      'aria-expanded': inlineAutocomplete ? 'false' : suggestionsQuery.isOpened ? 'true' : 'false',
-      'aria-haspopup': inlineAutocomplete ? undefined : 'listbox',
-      'aria-controls': isOverlayOpen && hasOverlayId ? overlayId : undefined,
-      'aria-activedescendant':
-        isOverlayOpen && hasOverlayId
-          ? getSuggestionHtmlId(overlayId, state.focusIndex)
-          : undefined,
+      onChange: editing.handleChange,
+      onSelect: editing.handleSelect,
+      onKeyDown: handleKeyDown,
+      onBlur: editing.handleBlur,
+      onCompositionStart: editing.handleCompositionStart,
+      onCompositionEnd: editing.handleCompositionEnd,
     })
-
-    if (inlineAutocomplete && inlineSuggestion) {
-      const liveRegionId = caretLayout.inlineAutocompleteLiveRegionId
-      const existingDescribedBy =
-        typeof inputProps['aria-describedby'] === 'string'
-          ? inputProps['aria-describedby']
-          : undefined
-      const describedBy = [existingDescribedBy, liveRegionId]
-        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-        .join(' ')
-      inputProps['aria-describedby'] = describedBy.length > 0 ? describedBy : undefined
-    }
-
-    return inputProps as InputComponentProps
   }
 
   const renderInputControl = (): ReactElement => {

@@ -1,6 +1,6 @@
 import type { MentionChildConfig } from '../types'
 import getPlainText from './getPlainText'
-import mapPlainTextIndex from './mapPlainTextIndex'
+import { mapPlainTextIndices } from './mapPlainTextIndex'
 import spliceString from './spliceString'
 
 interface SelectionChange {
@@ -138,19 +138,21 @@ const applySpliceRange = <Extra extends Record<string, unknown> = Record<string,
   spliceRange: SpliceRange
 ): { newValue: string; willRemoveMention: boolean } => {
   const { insert, spliceStart, spliceEnd } = spliceRange
-  const mappedSpliceStart = ensureNumber(
-    mapPlainTextIndex<Extra>(value, config, spliceStart, 'START'),
-    value.length
-  )
-  const mappedSpliceEnd = ensureNumber(
-    mapPlainTextIndex<Extra>(value, config, spliceEnd, 'END'),
-    value.length
-  )
-  const controlSpliceStart = mapPlainTextIndex<Extra>(value, config, spliceStart, 'NULL')
-  const controlSpliceEnd = mapPlainTextIndex<Extra>(value, config, spliceEnd, 'NULL')
+  const [mappedSpliceStart, mappedSpliceEnd, controlSpliceStart, controlSpliceEnd] =
+    mapPlainTextIndices<Extra>(value, config, [
+      { indexInPlainText: spliceStart, inMarkupCorrection: 'START' },
+      { indexInPlainText: spliceEnd, inMarkupCorrection: 'END' },
+      { indexInPlainText: spliceStart, inMarkupCorrection: 'NULL' },
+      { indexInPlainText: spliceEnd, inMarkupCorrection: 'NULL' },
+    ])
 
   return {
-    newValue: spliceString(value, mappedSpliceStart, mappedSpliceEnd, insert),
+    newValue: spliceString(
+      value,
+      ensureNumber(mappedSpliceStart, value.length),
+      ensureNumber(mappedSpliceEnd, value.length),
+      insert
+    ),
     willRemoveMention: controlSpliceStart === null || controlSpliceEnd === null,
   }
 }

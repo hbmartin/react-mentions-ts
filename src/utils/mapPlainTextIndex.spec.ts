@@ -1,5 +1,5 @@
 import createMarkupSerializer from './createMarkupSerializer'
-import mapPlainTextIndex from './mapPlainTextIndex'
+import mapPlainTextIndex, { mapPlainTextIndices } from './mapPlainTextIndex'
 
 describe('#mapPlainTextIndex', () => {
   const userMarkup = '@[__display__](user:__id__)'
@@ -119,5 +119,28 @@ describe('#mapPlainTextIndex', () => {
     const plainText = 'Hi John Doe'
     const result = mapPlainTextIndex(value, config, plainText.length, 'END')
     expect(result).toEqual(value.length)
+  })
+
+  it('maps multiple plain-text indices in one call with equivalent results', () => {
+    const requests = [
+      { indexInPlainText: plainText.indexOf('John Doe'), inMarkupCorrection: 'START' as const },
+      {
+        indexInPlainText: plainText.indexOf('joe@smoe.com') + 3,
+        inMarkupCorrection: 'END' as const,
+      },
+      {
+        indexInPlainText: plainText.indexOf('joe@smoe.com') + 3,
+        inMarkupCorrection: 'NULL' as const,
+      },
+      { indexInPlainText: plainText.indexOf('...'), inMarkupCorrection: 'START' as const },
+      { indexInPlainText: null, inMarkupCorrection: 'START' as const },
+      { indexInPlainText: undefined, inMarkupCorrection: 'START' as const },
+    ]
+
+    expect(mapPlainTextIndices(value, config, requests)).toEqual(
+      requests.map(({ indexInPlainText, inMarkupCorrection }) =>
+        mapPlainTextIndex(value, config, indexInPlainText, inMarkupCorrection)
+      )
+    )
   })
 })

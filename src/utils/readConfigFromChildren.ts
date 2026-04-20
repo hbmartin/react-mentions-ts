@@ -1,9 +1,16 @@
 import React, { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import type { MentionChildConfig, MentionComponentProps, MentionSerializer } from '../types'
+import type {
+  MentionChildConfig,
+  MentionComponentProps,
+  MentionQueryConfig,
+  MentionSerializer,
+  MentionTrigger,
+} from '../types'
 import { DEFAULT_MENTION_PROPS } from '../MentionDefaultProps'
 import createMarkupSerializer from './createMarkupSerializer'
 import { isMentionElement } from './isMentionElement'
+import { makeTriggerRegex } from './makeTriggerRegex'
 import PLACEHOLDERS from './placeholders'
 
 /**
@@ -33,6 +40,19 @@ const appendSerializerMarker = (markup: string, occurrenceIndex: number): string
 
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
+
+export const createMentionQueryConfig = (trigger: MentionTrigger): MentionQueryConfig => {
+  const regex =
+    typeof trigger === 'string'
+      ? makeTriggerRegex(trigger)
+      : // eslint-disable-next-line security/detect-non-literal-regexp -- reconstructing a vetted RegExp to strip 'g'
+        new RegExp(trigger.source, trigger.flags.replaceAll('g', ''))
+
+  return {
+    regex,
+    ignoreAccents: regex.flags.includes('u'),
+  }
+}
 
 export const collectMentionElements = <Extra extends Record<string, unknown>>(
   children: ReactNode
@@ -95,6 +115,7 @@ const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<s
       ...props,
       trigger,
       displayTransform,
+      query: createMentionQueryConfig(trigger),
       serializer,
     } satisfies MentionChildConfig<Extra>
   })

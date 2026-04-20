@@ -10,10 +10,69 @@ import {
   getHighlighterViewPatch,
   getInputInlineStyle,
   getTextareaResizePatch,
+  getViewSyncDecision,
   mergePendingViewSync,
 } from './MentionsInputLayout'
 
 describe('MentionsInputLayout', () => {
+  const defaultCaretPosition = { left: 0, top: 0 }
+  const createViewSyncCommit = (
+    overrides: Partial<Parameters<typeof getViewSyncDecision>[1]> = {}
+  ): Parameters<typeof getViewSyncDecision>[1] => ({
+    value: 'Hello',
+    config: [],
+    autoResize: false,
+    selectionStart: 0,
+    selectionEnd: 0,
+    generatedId: 'mentions-test',
+    caretPosition: defaultCaretPosition,
+    pendingSelectionUpdate: false,
+    ...overrides,
+  })
+
+  it('derives an initial view-sync decision that flushes layout immediately', () => {
+    expect(getViewSyncDecision(null, createViewSyncCommit())).toEqual({
+      flags: {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      flushNow: true,
+    })
+  })
+
+  it('derives focused view-sync flags for value, selection, and pending selection changes', () => {
+    const previousCommit = createViewSyncCommit()
+
+    expect(
+      getViewSyncDecision(previousCommit, createViewSyncCommit({ value: 'Hello world' }))
+    ).toEqual({
+      flags: {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      flushNow: false,
+    })
+    expect(
+      getViewSyncDecision(previousCommit, createViewSyncCommit({ selectionStart: 3 }))
+    ).toEqual({
+      flags: {
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      flushNow: false,
+    })
+    expect(
+      getViewSyncDecision(previousCommit, createViewSyncCommit({ pendingSelectionUpdate: true }))
+    ).toEqual({
+      flags: {
+        restoreSelection: true,
+      },
+      flushNow: false,
+    })
+  })
+
   it('calculates fixed suggestions positioning when rendered in a portal', () => {
     const highlighter = document.createElement('div')
     const suggestions = document.createElement('div')

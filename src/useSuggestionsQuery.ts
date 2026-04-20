@@ -39,7 +39,6 @@ import {
   getSubstringIndex,
   mapPlainTextIndex,
 } from './utils'
-import { makeTriggerRegex } from './utils/makeTriggerRegex'
 import { useEventCallback } from './utils/useEventCallback'
 
 interface ActiveSuggestionQuery<Extra extends Record<string, unknown>> {
@@ -63,16 +62,6 @@ interface UseSuggestionsQueryArgs<Extra extends Record<string, unknown>> {
 type PreparedConfig<Extra extends Record<string, unknown>> = ReadonlyArray<
   MentionChildConfig<Extra>
 >
-
-const resolveTriggerRegex = (trigger: string | RegExp): RegExp => {
-  if (typeof trigger === 'string') {
-    return makeTriggerRegex(trigger)
-  }
-
-  const flags = trigger.flags.replaceAll('g', '')
-  // eslint-disable-next-line security/detect-non-literal-regexp -- reconstructing a vetted RegExp to strip 'g'
-  return new RegExp(trigger.source, flags)
-}
 
 const getLoadingQueryStates = <Extra extends Record<string, unknown>>(
   activeQueries: ReadonlyArray<ActiveSuggestionQuery<Extra>>,
@@ -165,38 +154,40 @@ export const useSuggestionsQuery = <Extra extends Record<string, unknown>>(
       )
       const substring = plainTextValue.slice(substringStartIndex, caretPosition)
 
-      return mentionChildren.flatMap((mentionChild, childIndex) => {
-        const triggerProp = mentionChild.props.trigger ?? '@'
-        const regex = resolveTriggerRegex(triggerProp)
+      const activeQueries: ActiveSuggestionQuery<Extra>[] = []
+
+      for (const [childIndex, childConfig] of config.entries()) {
+        const mentionChild = mentionChildren[childIndex]
+        const { regex, ignoreAccents } = childConfig.query
         const match = substring.match(regex)
 
         if (match === null) {
-          return []
+          continue
         }
         const replacementRange = match[1]
         const query = match[2]
 
         if (typeof replacementRange !== 'string' || typeof query !== 'string') {
-          return []
+          continue
         }
 
         const matchIndex = match.index ?? 0
         const querySequenceStart =
           substringStartIndex + substring.indexOf(replacementRange, matchIndex)
-        return [
-          {
+        activeQueries.push({
+          childIndex,
+          queryInfo: {
             childIndex,
-            queryInfo: {
-              childIndex,
-              query,
-              querySequenceStart,
-              querySequenceEnd: querySequenceStart + replacementRange.length,
-            },
-            mentionChild,
-            ignoreAccents: regex.flags.includes('u'),
+            query,
+            querySequenceStart,
+            querySequenceEnd: querySequenceStart + replacementRange.length,
           },
-        ]
-      })
+          mentionChild,
+          ignoreAccents,
+        })
+      }
+
+      return activeQueries
     }
   )
 
