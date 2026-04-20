@@ -385,6 +385,16 @@ describe('MentionsInput', () => {
     expect(textarea.tagName).toBe('TEXTAREA')
   })
 
+  it('defaults to an empty input value when value is omitted.', () => {
+    render(
+      <MentionsInput>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    expect(screen.getByRole('combobox')).toHaveValue('')
+  })
+
   it('should disable spell checking on the textarea by default.', () => {
     render(
       <MentionsInput value="">
@@ -421,6 +431,36 @@ describe('MentionsInput', () => {
 
     const textarea = screen.getByDisplayValue('')
     expect(textarea).toHaveAttribute('spellcheck', 'true')
+  })
+
+  it('omits editing handlers when the input is read-only or disabled.', () => {
+    const onChange = vi.fn()
+    const onMentionsChange = vi.fn()
+    const { rerender } = render(
+      <MentionsInput value="fixed" readOnly onChange={onChange} onMentionsChange={onMentionsChange}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const readOnlyInput = screen.getByRole('combobox')
+    fireEvent.change(readOnlyInput, { target: { value: 'changed' } })
+
+    expect(readOnlyInput).toHaveAttribute('readonly')
+    expect(onChange).not.toHaveBeenCalled()
+    expect(onMentionsChange).not.toHaveBeenCalled()
+
+    rerender(
+      <MentionsInput value="fixed" disabled onChange={onChange} onMentionsChange={onMentionsChange}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const disabledInput = screen.getByRole('combobox')
+    fireEvent.change(disabledInput, { target: { value: 'changed' } })
+
+    expect(disabledInput).toBeDisabled()
+    expect(onChange).not.toHaveBeenCalled()
+    expect(onMentionsChange).not.toHaveBeenCalled()
   })
 
   it('should render a regular input when singleLine is set to true.', () => {
@@ -681,6 +721,20 @@ describe('MentionsInput', () => {
     })
 
     fireEvent.keyDown(textarea, { key: 'a' })
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes through handled overlay keys while suggestions are closed.', () => {
+    const onKeyDown = vi.fn()
+    render(
+      <MentionsInput value="plain" onKeyDown={onKeyDown}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.keyDown(textarea, { key: 'Enter', keyCode: 13 })
 
     expect(onKeyDown).toHaveBeenCalledTimes(1)
   })
@@ -3723,6 +3777,19 @@ describe('MentionsInput', () => {
       expect(combobox).not.toHaveAttribute('aria-describedby')
     })
 
+    it('passes inline keydown through when no inline suggestion is available', async () => {
+      const onKeyDown = vi.fn()
+      const combobox = renderInlineMentionsInput({ onKeyDown }, '@zz')
+
+      await waitFor(() => {
+        expect(screen.getByRole('status')).toHaveTextContent('No inline suggestions available')
+      })
+
+      fireEvent.keyDown(combobox, { key: 'ArrowRight', keyCode: 39 })
+
+      expect(onKeyDown).toHaveBeenCalledTimes(1)
+    })
+
     it('keeps inline completion visible while the next async query loads.', async () => {
       interface DeferredResult {
         resolve: (value: Array<{ id: string; display: string }>) => void
@@ -3809,6 +3876,57 @@ describe('MentionsInput', () => {
       expect(payload.mentions).toHaveLength(1)
       expect(payload.mentions[0]).toMatchObject({ id: 'alice' })
       expect(payload.mentionId).toBe('alice')
+      expect(payload.trigger.type).toBe('mention-add')
+    })
+
+    it('passes Shift+Tab through instead of accepting the inline suggestion', async () => {
+      const onKeyDown = vi.fn()
+      const onMentionsChange = vi.fn()
+      const textbox = renderInlineMentionsInput({ onKeyDown, onMentionsChange })
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeInTheDocument()
+      })
+
+      fireEvent.keyDown(textbox, { key: 'Tab', keyCode: 9, shiftKey: true })
+
+      expect(onKeyDown).toHaveBeenCalledTimes(1)
+      expect(onMentionsChange).not.toHaveBeenCalled()
+      expect(textbox).toHaveValue('@ali')
+    })
+
+    it('passes default inline keys through while an inline suggestion is available', async () => {
+      const onKeyDown = vi.fn()
+      const textbox = renderInlineMentionsInput({ onKeyDown })
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeInTheDocument()
+      })
+
+      fireEvent.keyDown(textbox, { key: 'a', keyCode: 65 })
+
+      expect(onKeyDown).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      ['Enter', 13],
+      ['ArrowRight', 39],
+    ])('can accept the inline suggestion with %s', async (key, keyCode) => {
+      const onMentionsChange = vi.fn()
+      const textbox = renderInlineMentionsInput({ onMentionsChange })
+
+      await waitFor(() => {
+        expect(screen.getByText('ce')).toBeInTheDocument()
+      })
+
+      fireEvent.keyDown(textbox, { key, keyCode })
+
+      await waitFor(() => {
+        expect(onMentionsChange).toHaveBeenCalled()
+      })
+
+      const payload = getLastMentionsChange(onMentionsChange)
+      expect(payload.value).toBe('@[Alice](alice)')
       expect(payload.trigger.type).toBe('mention-add')
     })
 
