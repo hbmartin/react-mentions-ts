@@ -246,13 +246,20 @@ export const applyErroredQueryResult = <Extra extends Record<string, unknown>>(
   error: unknown,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
+  if (!Object.hasOwn(currentQueryStates, childIndex)) {
+    return {
+      suggestions: currentSuggestions,
+      queryStates: currentQueryStates,
+      focusIndex,
+    }
+  }
+
+  const currentQueryState = currentQueryStates[childIndex]
   const suggestions = Object.fromEntries(
     Object.entries(currentSuggestions).filter(([key]) => Number(key) !== childIndex)
   ) as SuggestionsMap<Extra>
   const suggestionsCount = countSuggestions(suggestions)
-  const ignoreAccents = Object.hasOwn(currentQueryStates, childIndex)
-    ? (currentQueryStates[childIndex].ignoreAccents ?? false)
-    : false
+  const ignoreAccents = currentQueryState.ignoreAccents ?? false
 
   return {
     suggestions,
