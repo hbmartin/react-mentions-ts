@@ -22,12 +22,12 @@ import {
 } from './MentionsInputQueryState'
 import type { MentionsInputStatePatch, SetMentionsInputState } from './MentionsInputState'
 import type {
-  MentionChildConfig,
   MentionComponentProps,
   MentionPageCursor,
   MentionsInputProps,
   MentionsInputState,
   NormalizedMentionDataPage,
+  PreparedMentionChildConfig,
   QueryInfo,
   SuggestionQueryState,
   SuggestionQueryStateMap,
@@ -60,7 +60,7 @@ interface UseSuggestionsQueryArgs<Extra extends Record<string, unknown>> {
 }
 
 type PreparedConfig<Extra extends Record<string, unknown>> = ReadonlyArray<
-  MentionChildConfig<Extra>
+  PreparedMentionChildConfig<Extra>
 >
 
 const getLoadingQueryStates = <Extra extends Record<string, unknown>>(

@@ -78,6 +78,60 @@ const mergeDescribedBy = (
   return describedBy.length > 0 ? describedBy : undefined
 }
 
+interface BuildComboboxAriaPropsArgs {
+  existingDescribedBy: unknown
+  isInlineAutocomplete: boolean
+  hasInlineSuggestion: boolean
+  isSuggestionsOpened: boolean
+  suggestionsOverlayId?: string
+  inlineAutocompleteLiveRegionId?: string
+  focusIndex: number
+}
+
+const getAriaExpanded = (
+  isInlineAutocomplete: boolean,
+  isSuggestionsOpened: boolean
+): 'true' | 'false' => {
+  if (isInlineAutocomplete) {
+    return 'false'
+  }
+
+  return isSuggestionsOpened ? 'true' : 'false'
+}
+
+const buildComboboxAriaProps = ({
+  existingDescribedBy,
+  isInlineAutocomplete,
+  hasInlineSuggestion,
+  isSuggestionsOpened,
+  suggestionsOverlayId,
+  inlineAutocompleteLiveRegionId,
+  focusIndex,
+}: BuildComboboxAriaPropsArgs): Record<string, unknown> => {
+  const isOverlayOpen = !isInlineAutocomplete && isSuggestionsOpened
+  const hasOverlayId = suggestionsOverlayId !== undefined
+  const ariaProps: Record<string, unknown> = {
+    role: 'combobox',
+    'aria-autocomplete': isInlineAutocomplete ? 'inline' : 'list',
+    'aria-expanded': getAriaExpanded(isInlineAutocomplete, isSuggestionsOpened),
+    'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
+    'aria-controls': isOverlayOpen && hasOverlayId ? suggestionsOverlayId : undefined,
+    'aria-activedescendant':
+      isOverlayOpen && hasOverlayId
+        ? getSuggestionHtmlId(suggestionsOverlayId, focusIndex)
+        : undefined,
+  }
+
+  if (isInlineAutocomplete && hasInlineSuggestion) {
+    ariaProps['aria-describedby'] = mergeDescribedBy(
+      existingDescribedBy,
+      inlineAutocompleteLiveRegionId
+    )
+  }
+
+  return ariaProps
+}
+
 export const buildMentionsInputInputProps = <
   Extra extends Record<string, unknown> = Record<string, unknown>,
 >({
@@ -131,27 +185,18 @@ export const buildMentionsInputInputProps = <
     })
   }
 
-  const isOverlayOpen = !isInlineAutocomplete && isSuggestionsOpened
-  const hasOverlayId = suggestionsOverlayId !== undefined
-
-  Object.assign(inputProps, {
-    role: 'combobox',
-    'aria-autocomplete': isInlineAutocomplete ? 'inline' : 'list',
-    'aria-expanded': isInlineAutocomplete ? 'false' : isSuggestionsOpened ? 'true' : 'false',
-    'aria-haspopup': isInlineAutocomplete ? undefined : 'listbox',
-    'aria-controls': isOverlayOpen && hasOverlayId ? suggestionsOverlayId : undefined,
-    'aria-activedescendant':
-      isOverlayOpen && hasOverlayId
-        ? getSuggestionHtmlId(suggestionsOverlayId, focusIndex)
-        : undefined,
-  })
-
-  if (isInlineAutocomplete && inlineSuggestion) {
-    inputProps['aria-describedby'] = mergeDescribedBy(
-      inputProps['aria-describedby'],
-      inlineAutocompleteLiveRegionId
-    )
-  }
+  Object.assign(
+    inputProps,
+    buildComboboxAriaProps({
+      existingDescribedBy: inputProps['aria-describedby'],
+      isInlineAutocomplete,
+      hasInlineSuggestion: inlineSuggestion !== null,
+      isSuggestionsOpened,
+      suggestionsOverlayId,
+      inlineAutocompleteLiveRegionId,
+      focusIndex,
+    })
+  )
 
   return inputProps as InputComponentProps
 }

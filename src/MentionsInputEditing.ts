@@ -38,6 +38,13 @@ export interface InputChangeResult<
   shouldRestoreSelection: boolean
 }
 
+const ensureNumber = (value: number | null | undefined, fallback: number): number => {
+  if (typeof value === 'number') {
+    return value
+  }
+  return fallback
+}
+
 export const getMarkupSelectionRange = <Extra extends Record<string, unknown>>(
   value: string,
   config: ReadonlyArray<MentionChildConfig<Extra>>,
@@ -46,7 +53,7 @@ export const getMarkupSelectionRange = <Extra extends Record<string, unknown>>(
 ): MarkupSelectionRange => {
   const safeSelectionStart = selectionStart ?? 0
   const safeSelectionEnd = selectionEnd ?? safeSelectionStart
-  const [markupStartIndex, markupEndIndex] = mapPlainTextIndices(value, config, [
+  const [mappedMarkupStartIndex, mappedMarkupEndIndex] = mapPlainTextIndices(value, config, [
     { indexInPlainText: safeSelectionStart, inMarkupCorrection: 'START' },
     { indexInPlainText: safeSelectionEnd, inMarkupCorrection: 'END' },
   ])
@@ -54,8 +61,8 @@ export const getMarkupSelectionRange = <Extra extends Record<string, unknown>>(
   return {
     safeSelectionStart,
     safeSelectionEnd,
-    markupStartIndex: markupStartIndex as number,
-    markupEndIndex: markupEndIndex as number,
+    markupStartIndex: ensureNumber(mappedMarkupStartIndex, value.length),
+    markupEndIndex: ensureNumber(mappedMarkupEndIndex, value.length),
   }
 }
 

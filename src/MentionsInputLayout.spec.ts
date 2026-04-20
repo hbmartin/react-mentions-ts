@@ -13,17 +13,48 @@ import {
   getViewSyncDecision,
   mergePendingViewSync,
 } from './MentionsInputLayout'
+import type { PreparedMentionChildConfig } from './types'
 
 describe('MentionsInputLayout', () => {
   const defaultCaretPosition = { left: 0, top: 0 }
+  const defaultQueryInfo = {
+    childIndex: 0,
+    query: 'a',
+    querySequenceStart: 0,
+    querySequenceEnd: 2,
+  }
+  const defaultMentionQuery = {
+    regex: /(@([\w]*))$/,
+    ignoreAccents: false,
+  }
+  const createMentionConfig = (
+    query: PreparedMentionChildConfig['query'] = defaultMentionQuery
+  ): PreparedMentionChildConfig => ({
+    trigger: '@',
+    data: [],
+    displayTransform: (_id, display) => display ?? '',
+    serializer: {
+      id: '@[__display__](__id__)',
+      insert: ({ id, display }) => `@[${display}](${String(id)})`,
+      findAll: () => [],
+    },
+    query,
+  })
   const createViewSyncCommit = (
     overrides: Partial<Parameters<typeof getViewSyncDecision>[1]> = {}
   ): Parameters<typeof getViewSyncDecision>[1] => ({
     value: 'Hello',
     config: [],
     autoResize: false,
+    singleLine: false,
+    anchorMode: 'caret',
+    suggestionsPlacement: 'below',
+    suggestionsPortalHost: undefined,
+    isInlineAutocomplete: false,
     selectionStart: 0,
     selectionEnd: 0,
+    suggestions: {},
+    queryStates: {},
     generatedId: 'mentions-test',
     caretPosition: defaultCaretPosition,
     pendingSelectionUpdate: false,
@@ -68,6 +99,73 @@ describe('MentionsInputLayout', () => {
     ).toEqual({
       flags: {
         restoreSelection: true,
+      },
+      flushNow: false,
+    })
+  })
+
+  it('treats query config changes as value-affecting view sync changes', () => {
+    const previousCommit = createViewSyncCommit({
+      config: [createMentionConfig()],
+    })
+    const currentCommit = createViewSyncCommit({
+      config: [
+        createMentionConfig({
+          regex: /(@([\p{L}\d_]*))$/u,
+          ignoreAccents: true,
+        }),
+      ],
+    })
+
+    expect(getViewSyncDecision(previousCommit, currentCommit)).toEqual({
+      flags: {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      flushNow: false,
+    })
+  })
+
+  it.each([
+    {
+      field: 'suggestions',
+      overrides: { suggestions: { 0: { queryInfo: defaultQueryInfo, results: [] } } },
+    },
+    {
+      field: 'queryStates',
+      overrides: {
+        queryStates: {
+          0: {
+            queryInfo: defaultQueryInfo,
+            results: [],
+            status: 'loading',
+          },
+        },
+      },
+    },
+    { field: 'anchorMode', overrides: { anchorMode: 'left' } },
+    { field: 'suggestionsPlacement', overrides: { suggestionsPlacement: 'above' } },
+    { field: 'suggestionsPortalHost', overrides: { suggestionsPortalHost: document.body } },
+    { field: 'isInlineAutocomplete', overrides: { isInlineAutocomplete: true } },
+  ] as const)('remeasures suggestions and inline layout when $field changes', ({ overrides }) => {
+    expect(getViewSyncDecision(createViewSyncCommit(), createViewSyncCommit(overrides))).toEqual({
+      flags: {
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      flushNow: false,
+    })
+  })
+
+  it('syncs scroll and remeasures layout when single-line mode changes', () => {
+    expect(
+      getViewSyncDecision(createViewSyncCommit(), createViewSyncCommit({ singleLine: true }))
+    ).toEqual({
+      flags: {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
       },
       flushNow: false,
     })

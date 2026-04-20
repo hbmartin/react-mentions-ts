@@ -19,9 +19,9 @@ import type { PendingViewSync, ViewSyncCommit, ViewSyncPatch } from './MentionsI
 import type { SetMentionsInputState } from './MentionsInputState'
 import type {
   InputElement,
-  MentionChildConfig,
   MentionsInputProps,
   MentionsInputState,
+  PreparedMentionChildConfig,
 } from './types'
 import { useEventCallback } from './utils/useEventCallback'
 
@@ -44,7 +44,7 @@ interface UseCaretLayoutArgs<Extra extends Record<string, unknown>> {
   stateRef: React.RefObject<MentionsInputState<Extra>>
   setState: SetMentionsInputState<Extra>
   value: string
-  config: ReadonlyArray<MentionChildConfig<Extra>>
+  config: ReadonlyArray<PreparedMentionChildConfig<Extra>>
   isInlineAutocomplete: boolean
   hasInlineSuggestion: () => boolean
 }
@@ -490,14 +490,21 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
   }, [args.state.highlighterRecomputeVersion, scheduleHighlighterRecompute])
 
   useLayoutEffect(() => {
-    const { props, state, value, config } = argsRef.current
+    const { props, state, value, config, isInlineAutocomplete } = argsRef.current
     const previousCommit = previousCommitRef.current
     const currentCommit: ViewSyncCommit<Extra> = {
       value,
       config: [...config],
       autoResize: props.autoResize,
+      singleLine: props.singleLine,
+      anchorMode: props.anchorMode,
+      suggestionsPlacement: props.suggestionsPlacement,
+      suggestionsPortalHost: props.suggestionsPortalHost,
+      isInlineAutocomplete,
       selectionStart: state.selectionStart,
       selectionEnd: state.selectionEnd,
+      suggestions: state.suggestions,
+      queryStates: state.queryStates,
       generatedId: state.generatedId,
       caretPosition: state.caretPosition,
       pendingSelectionUpdate: state.pendingSelectionUpdate,

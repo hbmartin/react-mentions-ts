@@ -372,8 +372,13 @@ export type MentionsInputClassNames = Partial<{
 export type MentionChildConfig<Extra extends Record<string, unknown> = Record<string, unknown>> =
   MentionComponentProps<Extra> & {
     displayTransform: DisplayTransform
-    query: MentionQueryConfig
     serializer: MentionSerializer
   }
+
+export type PreparedMentionChildConfig<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> = MentionChildConfig<Extra> & {
+  query: MentionQueryConfig
+}
 
 export type InputElement = HTMLInputElement | HTMLTextAreaElement
