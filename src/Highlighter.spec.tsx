@@ -368,6 +368,41 @@ describe('Highlighter', () => {
     expect(renderedMentions).toHaveLength(2)
   })
 
+  it('keeps unaffected substring spans stable when only the caret moves', () => {
+    const value = 'Hello @[John](user1) and goodbye'
+    const getSuffixSpan = (container: HTMLElement): HTMLSpanElement | undefined =>
+      [...container.querySelectorAll('span')].find(
+        (element): element is HTMLSpanElement => element.textContent === ' and goodbye'
+      )
+
+    const { container, rerender } = render(
+      <Highlighter
+        selectionStart={1}
+        selectionEnd={1}
+        value={value}
+        onCaretPositionChange={vi.fn()}
+      >
+        <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+      </Highlighter>
+    )
+
+    const suffixSpan = getSuffixSpan(container)
+    expect(suffixSpan).toBeDefined()
+
+    rerender(
+      <Highlighter
+        selectionStart={3}
+        selectionEnd={3}
+        value={value}
+        onCaretPositionChange={vi.fn()}
+      >
+        <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+      </Highlighter>
+    )
+
+    expect(getSuffixSpan(container)).toBe(suffixSpan)
+  })
+
   it('does not emit a redundant caret update when recomputing the same position', async () => {
     const onCaretPositionChange = vi.fn()
     const rafCallbacks: FrameRequestCallback[] = []
