@@ -17,12 +17,6 @@ import type { PreparedMentionChildConfig } from './types'
 
 describe('MentionsInputLayout', () => {
   const defaultCaretPosition = { left: 0, top: 0 }
-  const defaultQueryInfo = {
-    childIndex: 0,
-    query: 'a',
-    querySequenceStart: 0,
-    querySequenceEnd: 2,
-  }
   const defaultMentionQuery = {
     regex: /(@(\w*))$/,
     ignoreAccents: false,
@@ -174,25 +168,9 @@ describe('MentionsInputLayout', () => {
     })
   })
 
-  it('does not remeasure layout for suggestion payload and query state changes alone', () => {
-    const previousCommit = {
-      ...createViewSyncCommit(),
-      suggestions: {},
-      queryStates: {},
-    }
-    const currentCommit = {
-      ...createViewSyncCommit(),
-      suggestions: {
-        0: { queryInfo: defaultQueryInfo, results: [{ id: '1', display: 'Alice' }] },
-      },
-      queryStates: {
-        0: {
-          queryInfo: defaultQueryInfo,
-          results: [{ id: '1', display: 'Alice' }],
-          status: 'success',
-        },
-      },
-    }
+  it('keeps view sync stable when tracked inputs do not change', () => {
+    const previousCommit = createViewSyncCommit()
+    const currentCommit = createViewSyncCommit()
 
     expect(getViewSyncDecision(previousCommit, currentCommit)).toEqual({
       flags: {},

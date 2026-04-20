@@ -162,6 +162,20 @@ const report = (api, fileInfo, message) => {
   api.report(`[react-mentions-ts codemod] ${fileInfo.path}: ${message}`)
 }
 
+const collectNamedBinding = (state, exportedName, localName = exportedName) => {
+  if (exportedName === 'MentionsInput') {
+    state.mentionInputNames.add(localName)
+  }
+
+  if (exportedName === 'Mention') {
+    state.mentionNames.add(localName)
+  }
+
+  if (HELPER_EXPORTS.has(exportedName)) {
+    state.helperLocals.set(exportedName, localName)
+  }
+}
+
 const collectImportBindings = (declaration, state) => {
   state.hasReactMentionsReference = true
   state.hasReactMentionsImport = true
@@ -178,18 +192,7 @@ const collectImportBindings = (declaration, state) => {
 
     const exportedName = specifier.imported?.name ?? specifier.imported?.value
     const localName = specifier.local?.name ?? exportedName
-
-    if (exportedName === 'MentionsInput') {
-      state.mentionInputNames.add(localName)
-    }
-
-    if (exportedName === 'Mention') {
-      state.mentionNames.add(localName)
-    }
-
-    if (HELPER_EXPORTS.has(exportedName)) {
-      state.helperLocals.set(exportedName, localName)
-    }
+    collectNamedBinding(state, exportedName, localName)
   }
 }
 
@@ -213,18 +216,7 @@ const collectRequireBindings = (declarator, state) => {
 
     const exportedName = property.key.name ?? property.key.value
     const localName = property.value?.name ?? exportedName
-
-    if (exportedName === 'MentionsInput') {
-      state.mentionInputNames.add(localName)
-    }
-
-    if (exportedName === 'Mention') {
-      state.mentionNames.add(localName)
-    }
-
-    if (HELPER_EXPORTS.has(exportedName)) {
-      state.helperLocals.set(exportedName, localName)
-    }
+    collectNamedBinding(state, exportedName, localName)
   }
 }
 
