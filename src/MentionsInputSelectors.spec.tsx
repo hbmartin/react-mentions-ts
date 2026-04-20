@@ -17,6 +17,7 @@ import {
   getMentionChildren,
   getPreferredQueryState,
   getSuggestionData,
+  getSuggestionsLayoutKey,
   getSuggestionQueryStateEntries,
   getSuggestionsStatusContent,
   getSuggestionsStatusContentForMentionChildren,
@@ -91,6 +92,63 @@ describe('MentionsInputSelectors', () => {
       [2, queryStates[2]],
     ])
     expect(getPreferredQueryState(queryStates as never)).toBe(queryStates[0])
+  })
+
+  it('changes suggestions layout keys for render-affecting suggestion signals', () => {
+    const queryInfo = suggestions[0].queryInfo
+    const alice = { id: 'alice', display: 'Alice' }
+    const baseArgs = {
+      suggestions: {
+        0: {
+          queryInfo,
+          results: [alice],
+        },
+      },
+      queryStates: {
+        0: {
+          queryInfo,
+          results: [alice],
+          status: 'success' as const,
+        },
+      },
+      isLoading: false,
+      statusType: null,
+      hasInlineSuggestion: false,
+    }
+    const baseKey = getSuggestionsLayoutKey(baseArgs)
+
+    expect(getSuggestionsLayoutKey({ ...baseArgs, isLoading: true })).not.toBe(baseKey)
+    expect(getSuggestionsLayoutKey({ ...baseArgs, statusType: 'empty' })).not.toBe(baseKey)
+    expect(getSuggestionsLayoutKey({ ...baseArgs, hasInlineSuggestion: true })).not.toBe(baseKey)
+    expect(
+      getSuggestionsLayoutKey({
+        ...baseArgs,
+        suggestions: {
+          0: {
+            queryInfo: { ...queryInfo, query: 'Bo' },
+            results: [alice],
+          },
+        },
+        queryStates: {
+          0: {
+            queryInfo: { ...queryInfo, query: 'Bo' },
+            results: [alice],
+            status: 'success' as const,
+          },
+        },
+      })
+    ).not.toBe(baseKey)
+    expect(
+      getSuggestionsLayoutKey({
+        ...baseArgs,
+        suggestions: {
+          0: {
+            queryInfo,
+            results: [{ id: 'alice', display: 'Alice', detail: 'Different row body' }],
+          },
+        },
+      })
+    ).not.toBe(baseKey)
   })
 
   it('normalizes suggestion data and falls back to the first focused suggestion', () => {

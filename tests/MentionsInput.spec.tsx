@@ -2,17 +2,20 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import type { Mock, MockInstance } from 'vitest'
-import * as utils from './utils'
-import * as mentionsInputLayout from './MentionsInputLayout'
-import * as readConfigFromChildrenModule from './utils/readConfigFromChildren'
-import { makeTriggerRegex } from './utils/makeTriggerRegex'
-import { Mention, MentionsInput } from './index'
-import { getFocusedSuggestionEntryForMentionChildren } from './MentionsInputSelectors'
-import { useCaretLayout } from './useCaretLayout'
-import { useMentionValueSnapshot } from './useMentionValueSnapshot'
-import { useMentionsEditing } from './useMentionsEditing'
-import { useMentionsInputState } from './MentionsInputState'
-import { useSuggestionsQuery } from './useSuggestionsQuery'
+import * as utils from '../src/utils'
+import * as mentionsInputLayout from '../src/MentionsInputLayout'
+import * as readConfigFromChildrenModule from '../src/utils/readConfigFromChildren'
+import { makeTriggerRegex } from '../src/utils/makeTriggerRegex'
+import { Mention, MentionsInput } from '../src/index'
+import {
+  getFocusedSuggestionEntryForMentionChildren,
+  getSuggestionsLayoutKey,
+} from '../src/MentionsInputSelectors'
+import { useCaretLayout } from '../src/useCaretLayout'
+import { useMentionValueSnapshot } from '../src/useMentionValueSnapshot'
+import { useMentionsEditing } from '../src/useMentionsEditing'
+import { useMentionsInputState } from '../src/MentionsInputState'
+import { useSuggestionsQuery } from '../src/useSuggestionsQuery'
 import type {
   InputElement,
   MentionsInputChangeEvent,
@@ -20,7 +23,7 @@ import type {
   MentionsInputProps,
   MentionSearchContext,
   MentionSerializer,
-} from './types'
+} from '../src/types'
 
 const data = [
   { id: 'first', value: 'First entry' },
@@ -107,6 +110,7 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
       getCurrentConfig,
       isInlineAutocomplete,
     })
+    const hasInlineSuggestion = suggestionsQuery.inlineSuggestionDetails !== null
     const caretLayout = useCaretLayout({
       props,
       state,
@@ -115,13 +119,17 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
       value,
       config,
       isInlineAutocomplete,
-      hasInlineSuggestion: suggestionsQuery.inlineSuggestionDetails !== null,
-      suggestionsLayoutKey:
-        suggestionsDisplay === 'inline'
-          ? null
-          : `${utils.countSuggestions(state.suggestions).toString()}:${
-              suggestionsQuery.suggestionsStatusContent.statusType ?? 'none'
-            }`,
+      hasInlineSuggestion,
+      getHasInlineSuggestion: () => suggestionsQuery.getInlineSuggestionDetails() !== null,
+      suggestionsLayoutKey: isInlineAutocomplete
+        ? null
+        : getSuggestionsLayoutKey({
+            suggestions: state.suggestions,
+            queryStates: state.queryStates,
+            isLoading: suggestionsQuery.isLoading,
+            statusType: suggestionsQuery.suggestionsStatusContent.statusType,
+            hasInlineSuggestion,
+          }),
     })
     const editing = useMentionsEditing({
       props,
@@ -4648,6 +4656,60 @@ describe('MentionsInput', () => {
 
       expect(didUpdate).toBe(true)
       expect(instance.state.inlineSuggestionPosition).toBeNull()
+      unmount()
+    })
+
+    it('measures inline suggestions from current state during a view-sync flush', () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@a" suggestionsDisplay="inline">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const control = document.createElement('div')
+      const highlighter = document.createElement('div')
+      const caret = document.createElement('span')
+
+      caret.setAttribute('data-mentions-caret', 'true')
+      highlighter.style.lineHeight = '20px'
+      highlighter.append(caret)
+      control.append(highlighter)
+      document.body.append(control)
+
+      Object.defineProperty(control, 'getBoundingClientRect', {
+        value: () => ({ left: 2, top: 3, right: 0, bottom: 0, width: 0, height: 0 }),
+      })
+      Object.defineProperty(caret, 'getBoundingClientRect', {
+        value: () => ({ left: 12, top: 18, right: 0, bottom: 0, width: 0, height: 4 }),
+      })
+
+      instance.highlighterElement = highlighter
+      instance.state.selectionStart = 2
+      instance.state.selectionEnd = 2
+      instance.state.suggestions = {
+        0: {
+          queryInfo: {
+            childIndex: 0,
+            query: 'a',
+            querySequenceStart: 0,
+            querySequenceEnd: 2,
+          },
+          results: [{ id: 'alice', display: 'Alice' }],
+        },
+      }
+
+      act(() => {
+        instance.requestViewSync({ measureInline: true }, { flushNow: true })
+      })
+
+      expect(instance.state.inlineSuggestionPosition).toMatchObject({
+        left: 10,
+        top: 15,
+      })
+
+      control.remove()
       unmount()
     })
 

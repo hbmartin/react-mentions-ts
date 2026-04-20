@@ -2,31 +2,44 @@
 
 import { readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const distDir = new URL('../dist/', import.meta.url)
-const sourceMapCommentPattern = /\n\/\/# sourceMappingURL=.*\.map\s*$/u
+const distPath = fileURLToPath(distDir)
+const sourceMapCommentPattern = /\r?\n\/\/# sourceMappingURL=.*\.map\s*$/u
+const outputExtensions = ['.js', '.cjs', '.mjs', '.d.ts', '.d.cts', '.d.mts']
 
-for (const fileName of await readdir(distDir)) {
-  const filePath = join(distDir.pathname, fileName)
+const cleanSourceMaps = async (directoryPath) => {
+  const entries = await readdir(directoryPath, { withFileTypes: true })
 
-  if (fileName.endsWith('.map')) {
-    await rm(filePath)
-    continue
-  }
+  for (const entry of entries) {
+    const filePath = join(directoryPath, entry.name)
 
-  if (
-    !fileName.endsWith('.js') &&
-    !fileName.endsWith('.cjs') &&
-    !fileName.endsWith('.d.ts') &&
-    !fileName.endsWith('.d.cts')
-  ) {
-    continue
-  }
+    if (entry.isDirectory()) {
+      await cleanSourceMaps(filePath)
+      continue
+    }
 
-  const contents = await readFile(filePath, 'utf8')
-  const nextContents = contents.replace(sourceMapCommentPattern, '\n')
+    if (!entry.isFile()) {
+      continue
+    }
 
-  if (nextContents !== contents) {
-    await writeFile(filePath, nextContents)
+    if (entry.name.endsWith('.map')) {
+      await rm(filePath)
+      continue
+    }
+
+    if (!outputExtensions.some((extension) => entry.name.endsWith(extension))) {
+      continue
+    }
+
+    const contents = await readFile(filePath, 'utf8')
+    const nextContents = contents.replace(sourceMapCommentPattern, '\n')
+
+    if (nextContents !== contents) {
+      await writeFile(filePath, nextContents)
+    }
   }
 }
+
+await cleanSourceMaps(distPath)

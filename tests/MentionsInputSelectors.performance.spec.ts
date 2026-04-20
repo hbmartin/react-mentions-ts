@@ -1,6 +1,6 @@
-import * as selectors from './MentionsInputSelectors'
-import { emitPerformanceMetric } from './test/performance'
-import getSubstringIndex from './utils/getSubstringIndex'
+import * as selectors from '../src/MentionsInputSelectors'
+import getSubstringIndex from '../src/utils/getSubstringIndex'
+import { emitPerformanceMetric } from './performance'
 
 describe('MentionsInputSelectors performance', () => {
   it('reports array-provider scan counts with maxSuggestions early matches', async () => {

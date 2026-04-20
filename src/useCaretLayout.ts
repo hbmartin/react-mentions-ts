@@ -47,6 +47,7 @@ interface UseCaretLayoutArgs<Extra extends Record<string, unknown>> {
   config: ReadonlyArray<PreparedMentionChildConfig<Extra>>
   isInlineAutocomplete: boolean
   hasInlineSuggestion: boolean
+  getHasInlineSuggestion: () => boolean
   suggestionsLayoutKey: string | null
 }
 
@@ -239,7 +240,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
       return true
     }
 
-    const nextPosition = argsRef.current.hasInlineSuggestion
+    const nextPosition = argsRef.current.getHasInlineSuggestion()
       ? calculateInlineSuggestionPosition({ highlighter: highlighterElementRef.current })
       : null
 
