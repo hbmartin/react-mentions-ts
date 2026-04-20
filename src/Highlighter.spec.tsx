@@ -368,6 +368,28 @@ describe('Highlighter', () => {
     expect(renderedMentions).toHaveLength(2)
   })
 
+  it('renders a caret marker after a trailing mention', async () => {
+    const onCaretPositionChange = vi.fn()
+    const { container } = render(
+      <Highlighter
+        selectionStart={5}
+        selectionEnd={5}
+        value="@[Alice](alice)"
+        onCaretPositionChange={onCaretPositionChange}
+      >
+        <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+      </Highlighter>
+    )
+
+    const caret = container.querySelector('[data-mentions-caret]')
+    expect(caret).not.toBeNull()
+    expect(caret?.previousElementSibling?.textContent).toBe('Alice')
+
+    await waitFor(() => {
+      expect(onCaretPositionChange).toHaveBeenCalled()
+    })
+  })
+
   it('keeps unaffected substring spans stable when only the caret moves', () => {
     const value = 'Hello @[John](user1) and goodbye'
     const getSuffixSpan = (container: HTMLElement): HTMLSpanElement | undefined =>

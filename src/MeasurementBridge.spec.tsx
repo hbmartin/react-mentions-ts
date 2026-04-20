@@ -151,47 +151,50 @@ describe('MeasurementBridge', () => {
     }
   })
 
-  it('skips viewport listener registration when no owner or global window is available', () => {
-    const requestViewSync = vi.fn()
-    const addListener = vi.spyOn(globalThis, 'addEventListener')
-    const originalReflectGet = Reflect.get
-    const reflectGetSpy = vi
-      .spyOn(Reflect, 'get')
-      .mockImplementation((target: object, propertyKey: PropertyKey, receiver?: unknown) => {
-        if (target === globalThis && propertyKey === 'window') {
-          return undefined
-        }
+  it.each([undefined, null])(
+    'skips viewport listener registration when global window fallback is %s',
+    (globalWindow) => {
+      const requestViewSync = vi.fn()
+      const addListener = vi.spyOn(globalThis, 'addEventListener')
+      const originalReflectGet = Reflect.get
+      const reflectGetSpy = vi
+        .spyOn(Reflect, 'get')
+        .mockImplementation((target: object, propertyKey: PropertyKey, receiver?: unknown) => {
+          if (target === globalThis && propertyKey === 'window') {
+            return globalWindow
+          }
 
-        if (target === null || target === undefined) {
-          return undefined
-        }
+          if (target === null || target === undefined) {
+            return undefined
+          }
 
-        return receiver === undefined
-          ? originalReflectGet(target, propertyKey)
-          : originalReflectGet(target, propertyKey, receiver)
-      })
+          return receiver === undefined
+            ? originalReflectGet(target, propertyKey)
+            : originalReflectGet(target, propertyKey, receiver)
+        })
 
-    try {
-      render(
-        <MeasurementBridge
-          container={null}
-          highlighter={null}
-          input={null}
-          suggestions={null}
-          requestViewSync={requestViewSync}
-        />
-      )
+      try {
+        render(
+          <MeasurementBridge
+            container={null}
+            highlighter={null}
+            input={null}
+            suggestions={null}
+            requestViewSync={requestViewSync}
+          />
+        )
 
-      expect(requestViewSync).toHaveBeenCalledWith({
-        syncScroll: true,
-        measureSuggestions: true,
-        measureInline: true,
-      })
-      expect(addListener).not.toHaveBeenCalledWith('resize', expect.any(Function))
-      expect(addListener).not.toHaveBeenCalledWith('orientationchange', expect.any(Function))
-    } finally {
-      addListener.mockRestore()
-      reflectGetSpy.mockRestore()
+        expect(requestViewSync).toHaveBeenCalledWith({
+          syncScroll: true,
+          measureSuggestions: true,
+          measureInline: true,
+        })
+        expect(addListener).not.toHaveBeenCalledWith('resize', expect.any(Function))
+        expect(addListener).not.toHaveBeenCalledWith('orientationchange', expect.any(Function))
+      } finally {
+        addListener.mockRestore()
+        reflectGetSpy.mockRestore()
+      }
     }
-  })
+  )
 })

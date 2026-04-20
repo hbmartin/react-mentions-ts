@@ -29,7 +29,8 @@ const getOwnerWindow = (...elements: Array<Element | null>): Window | undefined 
     }
   }
 
-  return Reflect.get(globalThis, 'window') as Window | undefined
+  const globalWindow = Reflect.get(globalThis, 'window') as Window | null | undefined
+  return globalWindow ?? undefined
 }
 
 const MeasurementBridge = ({

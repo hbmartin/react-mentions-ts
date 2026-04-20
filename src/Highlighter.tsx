@@ -361,6 +361,23 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
     )
   })
 
+  if (
+    isNumber(caretPositionInMarkup) &&
+    caretPositionInMarkup === value.length &&
+    segments.at(-1)?.type === 'mention'
+  ) {
+    resultComponents.push(
+      <HighlighterCaret
+        className={caretClass}
+        key="caret:trailing-mention"
+        measureKey={`trailing:${value.length.toString()}`}
+        onCaretPositionChange={onCaretPositionChange}
+        recomputeVersion={recomputeVersion}
+        singleLine={singleLine}
+      />
+    )
+  }
+
   // append a space to ensure the last text line has the correct height
   resultComponents.push(' ')
 
