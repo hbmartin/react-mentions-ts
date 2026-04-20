@@ -54,6 +54,23 @@ interface ControlledMentionsFixtureProps {
   readonly initialValue?: string
 }
 
+interface CompositionInputChange {
+  readonly data: string
+  readonly nextPlainTextValue: string
+  readonly selectionEndAfter: number
+  readonly selectionStartBefore: number
+}
+
+interface CompositionBoundaryCase extends CompositionInputChange {
+  readonly expectedMarkupValue: string
+  readonly expectedMentionId?: string
+  readonly expectedPlainTextValue: string
+  readonly expectedSelectionStart: number
+  readonly expectedTriggerType: string
+  readonly initialValue: string
+  readonly name: string
+}
+
 interface LastChangeState {
   readonly triggerType: string
   readonly plainTextValue: string
@@ -167,6 +184,23 @@ const dispatchComposingInput = (input: HTMLTextAreaElement, data: string): void 
       isComposing: true,
     })
   )
+}
+
+const dispatchCompositionInputChange = async (
+  input: HTMLTextAreaElement,
+  { data, nextPlainTextValue, selectionEndAfter, selectionStartBefore }: CompositionInputChange
+): Promise<void> => {
+  input.focus()
+  input.setSelectionRange(selectionStartBefore, selectionStartBefore)
+  dispatchSelect(input)
+
+  await expectSelection(selectionStartBefore)
+
+  input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }))
+  setNativeValue(input, nextPlainTextValue)
+  input.setSelectionRange(selectionEndAfter, selectionEndAfter)
+  dispatchComposingInput(input, data)
+  input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data }))
 }
 
 describe('MentionsInput browser caret and IME behavior', () => {
@@ -283,34 +317,90 @@ describe('MentionsInput browser caret and IME behavior', () => {
     await expectSelection('Hello '.length + 'x'.length)
   })
 
-  it('preserves mention markup while composing a dead-key character near a mention', async () => {
-    await renderBrowser(<ControlledMentionsFixture initialValue="Hi @[First entry](first) cafe" />)
+  it.each([
+    {
+      name: 'before a mention start',
+      initialValue: 'Hi @[First entry](first)!',
+      data: '\u65B0',
+      nextPlainTextValue: 'Hi \u65B0First entry!',
+      selectionStartBefore: 'Hi '.length,
+      selectionEndAfter: 'Hi \u65B0'.length,
+      expectedMarkupValue: 'Hi \u65B0@[First entry](first)!',
+      expectedPlainTextValue: 'Hi \u65B0First entry!',
+      expectedSelectionStart: 'Hi \u65B0'.length,
+      expectedTriggerType: 'input',
+    },
+    {
+      name: 'after a mention end',
+      initialValue: 'Hi @[First entry](first)!',
+      data: '\u65B0',
+      nextPlainTextValue: 'Hi First entry\u65B0!',
+      selectionStartBefore: 'Hi First entry'.length,
+      selectionEndAfter: 'Hi First entry\u65B0'.length,
+      expectedMarkupValue: 'Hi @[First entry](first)\u65B0!',
+      expectedPlainTextValue: 'Hi First entry\u65B0!',
+      expectedSelectionStart: 'Hi First entry\u65B0'.length,
+      expectedTriggerType: 'input',
+    },
+    {
+      name: 'inside mention display text',
+      initialValue: 'Hi @[First entry](first)!',
+      data: '\u65B0',
+      nextPlainTextValue: 'Hi Fi\u65B0rst entry!',
+      selectionStartBefore: 'Hi Fi'.length,
+      selectionEndAfter: 'Hi Fi\u65B0'.length,
+      expectedMarkupValue: 'Hi \u65B0!',
+      expectedMentionId: 'first',
+      expectedPlainTextValue: 'Hi \u65B0!',
+      expectedSelectionStart: 'Hi \u65B0'.length,
+      expectedTriggerType: 'mention-remove',
+    },
+    {
+      name: 'near an existing mention with decomposed text',
+      initialValue: 'Hi @[First entry](first) cafe',
+      data: '\u0301',
+      nextPlainTextValue: 'Hi First entry cafe\u0301',
+      selectionStartBefore: 'Hi First entry cafe'.length,
+      selectionEndAfter: 'Hi First entry cafe\u0301'.length,
+      expectedMarkupValue: 'Hi @[First entry](first) cafe\u0301',
+      expectedPlainTextValue: 'Hi First entry cafe\u0301',
+      expectedSelectionStart: 'Hi First entry cafe\u0301'.length,
+      expectedTriggerType: 'input',
+    },
+  ] satisfies CompositionBoundaryCase[])(
+    'applies composition input at mention boundaries: $name',
+    async ({
+      data,
+      expectedMarkupValue,
+      expectedMentionId = '',
+      expectedPlainTextValue,
+      expectedSelectionStart,
+      expectedTriggerType,
+      initialValue,
+      nextPlainTextValue,
+      selectionEndAfter,
+      selectionStartBefore,
+    }) => {
+      await renderBrowser(<ControlledMentionsFixture initialValue={initialValue} />)
 
-    const composer = await getComposer()
-    const basePlainText = 'Hi First entry cafe'
-    const composedPlainText = `${basePlainText}\u0301`
-    composer.focus()
-    composer.setSelectionRange(basePlainText.length, basePlainText.length)
-    dispatchSelect(composer)
+      const composer = await getComposer()
+      await dispatchCompositionInputChange(composer, {
+        data,
+        nextPlainTextValue,
+        selectionEndAfter,
+        selectionStartBefore,
+      })
 
-    await expectSelection(basePlainText.length)
-
-    composer.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }))
-    setNativeValue(composer, composedPlainText)
-    composer.setSelectionRange(composedPlainText.length, composedPlainText.length)
-    dispatchComposingInput(composer, '\u0301')
-    composer.dispatchEvent(
-      new CompositionEvent('compositionend', { bubbles: true, data: '\u0301' })
-    )
-
-    await expect.element(page.getByTestId('trigger-type')).toHaveTextContent('input')
-    await expect
-      .element(page.getByTestId('markup-value'))
-      .toHaveTextContent('Hi @[First entry](first) cafe\u0301')
-    await expect.element(page.getByTestId('plain-value')).toHaveTextContent(composedPlainText)
-    await expect
-      .element(page.getByRole('combobox', { name: 'Composer' }))
-      .toHaveValue(composedPlainText)
-    await expectSelection(composedPlainText.length)
-  })
+      await expect.element(page.getByTestId('trigger-type')).toHaveTextContent(expectedTriggerType)
+      await expect.element(page.getByTestId('markup-value')).toHaveTextContent(expectedMarkupValue)
+      await expect
+        .element(page.getByTestId('plain-value'))
+        .toHaveTextContent(expectedPlainTextValue)
+      await expect.element(page.getByTestId('mention-id')).toHaveTextContent(expectedMentionId)
+      await expect
+        .element(page.getByRole('combobox', { name: 'Composer' }))
+        .toHaveValue(expectedPlainTextValue)
+      await expectSelection(expectedSelectionStart)
+    }
+  )
 })

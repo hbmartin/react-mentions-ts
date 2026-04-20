@@ -122,4 +122,101 @@ describe('MentionsInputEditing', () => {
     expect(result.nextSelectionStart).toBe(plainTextValue.length)
     expect(result.nextSelectionEnd).toBe(plainTextValue.length)
   })
+
+  it.each([
+    {
+      name: 'before a mention start',
+      value: 'Hi @[Walter White](user:walter)!',
+      plainTextValue: 'Hi \u65B0Walter White!',
+      selectionStartBefore: 'Hi '.length,
+      selectionEndBefore: 'Hi '.length,
+      selectionEndAfter: 'Hi \u65B0'.length,
+      trackedSelectionEnd: 'Hi '.length,
+      insertedText: '\u65B0',
+      expectedValue: 'Hi \u65B0@[Walter White](user:walter)!',
+      expectedPlainText: 'Hi \u65B0Walter White!',
+      expectedSelection: 'Hi \u65B0'.length,
+      shouldRestoreSelection: false,
+      expectedMentionCount: 1,
+    },
+    {
+      name: 'after a mention end',
+      value: 'Hi @[Walter White](user:walter)!',
+      plainTextValue: 'Hi Walter White\u65B0!',
+      selectionStartBefore: 'Hi Walter White'.length,
+      selectionEndBefore: 'Hi Walter White'.length,
+      selectionEndAfter: 'Hi Walter White\u65B0'.length,
+      trackedSelectionEnd: 'Hi Walter White'.length,
+      insertedText: '\u65B0',
+      expectedValue: 'Hi @[Walter White](user:walter)\u65B0!',
+      expectedPlainText: 'Hi Walter White\u65B0!',
+      expectedSelection: 'Hi Walter White\u65B0'.length,
+      shouldRestoreSelection: false,
+      expectedMentionCount: 1,
+    },
+    {
+      name: 'inside mention display text',
+      value: 'Hi @[Walter White](user:walter)!',
+      plainTextValue: 'Hi Wa\u65B0lter White!',
+      selectionStartBefore: 'Hi Wa'.length,
+      selectionEndBefore: 'Hi Wa'.length,
+      selectionEndAfter: 'Hi Wa\u65B0'.length,
+      trackedSelectionEnd: 'Hi Wa'.length,
+      insertedText: '\u65B0',
+      expectedValue: 'Hi \u65B0!',
+      expectedPlainText: 'Hi \u65B0!',
+      expectedSelection: 'Hi \u65B0'.length,
+      shouldRestoreSelection: true,
+      expectedMentionCount: 0,
+    },
+    {
+      name: 'near an existing mention with decomposed text',
+      value: 'Hi @[Walter White](user:walter) cafe',
+      plainTextValue: 'Hi Walter White cafe\u0301',
+      selectionStartBefore: 'Hi Walter White cafe'.length,
+      selectionEndBefore: 'Hi Walter White cafe'.length,
+      selectionEndAfter: 'Hi Walter White cafe\u0301'.length,
+      trackedSelectionEnd: 'Hi Walter White cafe'.length,
+      insertedText: '\u0301',
+      expectedValue: 'Hi @[Walter White](user:walter) cafe\u0301',
+      expectedPlainText: 'Hi Walter White cafe\u0301',
+      expectedSelection: 'Hi Walter White cafe\u0301'.length,
+      shouldRestoreSelection: false,
+      expectedMentionCount: 1,
+    },
+  ])(
+    'applies composition input at mention boundaries: $name',
+    ({
+      value,
+      plainTextValue,
+      selectionStartBefore,
+      selectionEndBefore,
+      selectionEndAfter,
+      trackedSelectionEnd,
+      insertedText,
+      expectedValue,
+      expectedPlainText,
+      expectedSelection,
+      shouldRestoreSelection,
+      expectedMentionCount,
+    }) => {
+      const result = applyInputChangeToMentionsValue(
+        value,
+        plainTextValue,
+        config,
+        selectionStartBefore,
+        selectionEndBefore,
+        selectionEndAfter,
+        trackedSelectionEnd,
+        insertedText
+      )
+
+      expect(result.value).toBe(expectedValue)
+      expect(result.snapshot.plainText).toBe(expectedPlainText)
+      expect(result.snapshot.mentions).toHaveLength(expectedMentionCount)
+      expect(result.shouldRestoreSelection).toBe(shouldRestoreSelection)
+      expect(result.nextSelectionStart).toBe(expectedSelection)
+      expect(result.nextSelectionEnd).toBe(expectedSelection)
+    }
+  )
 })

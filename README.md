@@ -24,6 +24,7 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
   - [Async Data Loading](#async-data-loading)
 - [More Examples](#more-examples)
 - [Advanced Usage](#advanced-usage)
+- [Package & Tree Shaking](#package--tree-shaking)
 - [Styling](#styling)
 - [Testing](#testing)
 - [FAQ & Gotchas](#faq--gotchas)
@@ -498,6 +499,24 @@ import { MentionsInput, Mention } from 'react-mentions-ts'
 ```
 
 No dynamic imports or `next/dynamic` wrappers are needed.
+
+## Package & Tree Shaking
+
+The package is published as side-effect free, and the release evidence is repeatable:
+
+```bash
+pnpm tree-shake:report
+```
+
+The report command rebuilds `dist`, runs `npx publint --pack npm`, requires `"sideEffects": false`, inspects `npm pack --dry-run --json`, and bundles small Vite consumer fixtures against `dist/index.js`.
+
+Current verified behavior:
+
+- A fixture that imports only `Mention` and `getSubstringIndex` must not retain `LoadingIndicator`, `SuggestionsOverlay`, or inline-suggestion markers.
+- A fixture that imports `MentionsInput` currently retains overlay, loading, and inline-suggestion markers because those branches are statically imported by the orchestration shell.
+- The npm pack check prints the tarball filename, packed size, unpacked size, and file count so publish contents stay visible.
+
+Maintainer follow-up opportunities are `LoadingIndicator`, `SuggestionsOverlay`, and the inline-suggestion UI/selector path. Those can be split or lazy-loaded in a future packaging change for consumers that never use those branches. This is not a consumer setup requirement; apps can keep importing `MentionsInput` normally, including in SSR frameworks, without `next/dynamic` wrappers.
 
 ## Styling
 

@@ -390,6 +390,90 @@ describe('Highlighter', () => {
     })
   })
 
+  it('remeasures a trailing mention caret when same-length mention markup changes', async () => {
+    const onCaretPositionChange = vi.fn()
+    const rafCallbacks: FrameRequestCallback[] = []
+    const originalRAF = globalThis.requestAnimationFrame
+    const originalCAF = globalThis.cancelAnimationFrame
+
+    setFrameApi('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb)
+      return rafCallbacks.length
+    })
+    setFrameApi('cancelAnimationFrame', () => undefined)
+
+    try {
+      const { container, rerender } = render(
+        <Highlighter
+          selectionStart={5}
+          selectionEnd={5}
+          value="@[Alice](alice)"
+          onCaretPositionChange={onCaretPositionChange}
+        >
+          <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+        </Highlighter>
+      )
+
+      const applyCaretMetrics = (left: number, previousTop: number, previousHeight: number) => {
+        const caret = container.querySelector('[data-mentions-caret]') as HTMLSpanElement
+        const previous = caret.previousElementSibling as HTMLSpanElement
+
+        Object.defineProperty(caret, 'offsetLeft', { configurable: true, value: left })
+        Object.defineProperty(previous, 'offsetTop', { configurable: true, value: previousTop })
+        Object.defineProperty(previous, 'offsetHeight', {
+          configurable: true,
+          value: previousHeight,
+        })
+      }
+
+      applyCaretMetrics(10, 20, 5)
+
+      for (const callback of rafCallbacks.splice(0)) {
+        callback(0)
+      }
+
+      await waitFor(() => {
+        expect(onCaretPositionChange).toHaveBeenLastCalledWith({ left: 10, top: 25 })
+      })
+
+      onCaretPositionChange.mockClear()
+
+      rerender(
+        <Highlighter
+          selectionStart={5}
+          selectionEnd={5}
+          value="@[Margo](margo)"
+          onCaretPositionChange={onCaretPositionChange}
+        >
+          <Mention trigger="@" data={[]} markup="@[__display__](__id__)" />
+        </Highlighter>
+      )
+
+      expect(rafCallbacks).toHaveLength(1)
+      applyCaretMetrics(30, 40, 7)
+
+      for (const callback of rafCallbacks.splice(0)) {
+        callback(0)
+      }
+
+      await waitFor(() => {
+        expect(onCaretPositionChange).toHaveBeenLastCalledWith({ left: 30, top: 47 })
+      })
+    } finally {
+      if (originalRAF) {
+        setFrameApi('requestAnimationFrame', originalRAF)
+      } else {
+        delete (globalThis as typeof globalThis & Record<string, unknown>).requestAnimationFrame
+      }
+
+      if (originalCAF) {
+        setFrameApi('cancelAnimationFrame', originalCAF)
+      } else {
+        delete (globalThis as typeof globalThis & Record<string, unknown>).cancelAnimationFrame
+      }
+    }
+  })
+
   it('keeps unaffected substring spans stable when only the caret moves', () => {
     const value = 'Hello @[John](user1) and goodbye'
     const getSuffixSpan = (container: HTMLElement): HTMLSpanElement | undefined =>
