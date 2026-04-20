@@ -39,6 +39,14 @@ export const DEFAULT_EMPTY_SUGGESTIONS_MESSAGE = 'No suggestions found'
 export const DEFAULT_ERROR_SUGGESTIONS_MESSAGE = 'Unable to load suggestions'
 export const INLINE_AUTOCOMPLETE_FALLBACK_ANNOUNCEMENT = 'No inline suggestions available'
 
+interface SuggestionsLayoutKeyArgs<Extra extends Record<string, unknown>> {
+  suggestions: SuggestionsMap<Extra>
+  queryStates: SuggestionQueryStateMap<Extra>
+  isLoading: boolean
+  statusType: SuggestionsStatusContent['statusType']
+  hasInlineSuggestion: boolean
+}
+
 interface SearchableSuggestionItem<Extra extends Record<string, unknown>> {
   item: MentionDataItem<Extra>
   searchableDisplay: string
@@ -49,6 +57,8 @@ type CachedSearchableSuggestionItems = Array<SearchableSuggestionItem<Record<str
 
 const plainSearchCache = new WeakMap<CachedMentionDataItems, CachedSearchableSuggestionItems>()
 const accentSearchCache = new WeakMap<CachedMentionDataItems, CachedSearchableSuggestionItems>()
+const suggestionLayoutIdentities = new WeakMap<object, number>()
+let nextSuggestionLayoutIdentity = 0
 
 const getCachedSearchableItems = <Extra extends Record<string, unknown>>(
   items: ReadonlyArray<MentionDataItem<Extra>>,
@@ -135,6 +145,76 @@ export const getSuggestionData = <Extra extends Record<string, unknown>>(
     id: suggestion.id,
     display: suggestion.display ?? String(suggestion.id),
   }
+}
+
+const getObjectLayoutIdentity = (value: object): number => {
+  const cachedIdentity = suggestionLayoutIdentities.get(value)
+  if (cachedIdentity !== undefined) {
+    return cachedIdentity
+  }
+
+  nextSuggestionLayoutIdentity += 1
+  suggestionLayoutIdentities.set(value, nextSuggestionLayoutIdentity)
+  return nextSuggestionLayoutIdentity
+}
+
+const getSuggestionLayoutIdentity = <Extra extends Record<string, unknown>>(
+  suggestion: SuggestionDataItem<Extra>
+): string => {
+  const { id, display } = getSuggestionData(suggestion)
+  const objectIdentity =
+    typeof suggestion === 'object' ? getObjectLayoutIdentity(suggestion) : 'primitive'
+
+  return `${typeof id}:${String(id)}:${display}:${String(objectIdentity)}`
+}
+
+const formatQueryInfoLayoutKey = (queryInfo: QueryInfo): string =>
+  [
+    queryInfo.childIndex.toString(),
+    queryInfo.query,
+    queryInfo.querySequenceStart.toString(),
+    queryInfo.querySequenceEnd.toString(),
+  ].join(',')
+
+export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
+  suggestions,
+  queryStates,
+  isLoading,
+  statusType,
+  hasInlineSuggestion,
+}: SuggestionsLayoutKeyArgs<Extra>): string => {
+  const suggestionParts = Object.entries(suggestions)
+    .map(([key, value]) => [Number(key), value] as const)
+    .filter(([key]) => Number.isInteger(key))
+    .toSorted(([left], [right]) => left - right)
+    .map(
+      ([childIndex, value]) =>
+        `${childIndex.toString()}|${formatQueryInfoLayoutKey(value.queryInfo)}|${value.results
+          .map(getSuggestionLayoutIdentity)
+          .join(',')}`
+    )
+
+  const queryStateParts = getSuggestionQueryStateEntries(queryStates).map(
+    ([childIndex, queryState]) =>
+      [
+        childIndex.toString(),
+        formatQueryInfoLayoutKey(queryState.queryInfo),
+        queryState.status,
+        queryState.results.length.toString(),
+        queryState.pagination?.isLoading === true ? 'page-loading' : 'page-idle',
+        queryState.pagination?.hasMore === true ? 'has-more' : 'no-more',
+        queryState.error === undefined ? 'no-error' : 'error',
+        queryState.pagination?.error === undefined ? 'no-page-error' : 'page-error',
+      ].join('|')
+  )
+
+  return [
+    isLoading ? 'loading' : 'idle',
+    statusType ?? 'none',
+    hasInlineSuggestion ? 'inline' : 'no-inline',
+    suggestionParts.join(';'),
+    queryStateParts.join(';'),
+  ].join('::')
 }
 
 export const getFlattenedSuggestions = <Extra extends Record<string, unknown>>(

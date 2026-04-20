@@ -11,7 +11,7 @@ import {
   MentionsInputInlineLiveRegion,
   MentionsInputInlineSuggestion,
 } from './MentionsInputInlineSuggestion'
-import { getInlineSuggestionAnnouncement } from './MentionsInputSelectors'
+import { getInlineSuggestionAnnouncement, getSuggestionsLayoutKey } from './MentionsInputSelectors'
 import { useCaretLayout } from './useCaretLayout'
 import { useMentionSelectionChange } from './useMentionSelectionChange'
 import { useMentionValueSnapshot } from './useMentionValueSnapshot'
@@ -97,6 +97,16 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
     getCurrentConfig,
     isInlineAutocomplete,
   })
+  const hasInlineSuggestion = suggestionsQuery.inlineSuggestionDetails !== null
+  const suggestionsLayoutKey = isInlineAutocomplete
+    ? null
+    : getSuggestionsLayoutKey({
+        suggestions: state.suggestions,
+        queryStates: state.queryStates,
+        isLoading: suggestionsQuery.isLoading,
+        statusType: suggestionsQuery.suggestionsStatusContent.statusType,
+        hasInlineSuggestion,
+      })
 
   const caretLayout = useCaretLayout<Extra>({
     props,
@@ -106,12 +116,9 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
     value,
     config,
     isInlineAutocomplete,
-    hasInlineSuggestion: suggestionsQuery.inlineSuggestionDetails !== null,
-    suggestionsLayoutKey: isInlineAutocomplete
-      ? null
-      : `${countSuggestions(state.suggestions).toString()}:${
-          suggestionsQuery.suggestionsStatusContent.statusType ?? 'none'
-        }`,
+    hasInlineSuggestion,
+    getHasInlineSuggestion: () => suggestionsQuery.getInlineSuggestionDetails() !== null,
+    suggestionsLayoutKey,
   })
 
   const editing = useMentionsEditing<Extra>({

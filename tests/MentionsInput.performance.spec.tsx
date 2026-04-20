@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import MentionsInput from './MentionsInput'
-import Mention from './Mention'
-import * as mentionsInputChildren from './MentionsInputChildren'
-import * as mentionsInputDerived from './MentionsInputDerived'
-import * as mentionsInputEditing from './MentionsInputEditing'
-import * as mentionsInputLayout from './MentionsInputLayout'
-import * as utils from './utils'
-import { createRenderCounter, emitPerformanceMetric } from './test/performance'
-import type { MentionsInputChangeHandler } from './types'
+import MentionsInput from '../src/MentionsInput'
+import Mention from '../src/Mention'
+import * as mentionsInputChildren from '../src/MentionsInputChildren'
+import * as mentionsInputDerived from '../src/MentionsInputDerived'
+import * as mentionsInputEditing from '../src/MentionsInputEditing'
+import * as mentionsInputLayout from '../src/MentionsInputLayout'
+import * as utils from '../src/utils'
+import { createRenderCounter, emitPerformanceMetric } from './performance'
+import type { MentionsInputChangeHandler } from '../src/types'
 
 const mentionData = [
   { id: 'alice', display: 'Alice' },
