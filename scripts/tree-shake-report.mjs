@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { build } from 'vite'
 
 const root = process.cwd()
@@ -119,18 +120,19 @@ const main = async () => {
 
   const packReport = readPackReport()
   const tmp = await mkdtemp(join(tmpdir(), 'react-mentions-ts-tree-shake-'))
+  const distEntrySpecifier = pathToFileURL(distEntry).href
   const fixtures = [
     {
       name: 'mention-utility-only',
       description: 'Mention + utility only',
-      source: `import { Mention, getSubstringIndex } from ${JSON.stringify(distEntry)}
+      source: `import { Mention, getSubstringIndex } from ${JSON.stringify(distEntrySpecifier)}
 console.log(Mention, getSubstringIndex('abc', 'b', 0))
 `,
     },
     {
       name: 'mentions-input',
       description: 'MentionsInput shell',
-      source: `import { Mention, MentionsInput } from ${JSON.stringify(distEntry)}
+      source: `import { Mention, MentionsInput } from ${JSON.stringify(distEntrySpecifier)}
 console.log(Mention, MentionsInput)
 `,
     },

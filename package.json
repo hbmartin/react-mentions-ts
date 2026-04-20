@@ -42,9 +42,11 @@
     "lint:rule-counts": "oxlint src --format json | jq '[.diagnostics[].code] | group_by(.) | map({ rule: .[0], count: length }) | sort_by(-.count)'",
     "lint:all-rules": "node ./scripts/write-oxlint-all-rules.mjs",
     "publint": "npx publint --pack npm",
+    "size": "size-limit",
+    "size:check": "pnpm build && pnpm size",
     "tree-shake:report": "pnpm build && npx publint --pack npm && node ./scripts/tree-shake-report.mjs",
     "types:lint": "npm_config_cache=.npm-cache attw --pack .",
-    "ci:verify": "pnpm lint && pnpm typecheck && pnpm build && npx publint --pack npm && pnpm types:lint",
+    "ci:verify": "pnpm lint && pnpm typecheck && pnpm build && pnpm size && npx publint --pack npm && pnpm types:lint",
     "dev": "node ./scripts/dev-with-wdyr.mjs",
     "demo": "vite --config demo/vite.config.ts",
     "preview": "vite preview --config demo/vite.config.ts",
@@ -58,6 +60,20 @@
     "knip": "knip --strict",
     "fta": "fta src"
   },
+  "size-limit": [
+    {
+      "name": "esm",
+      "path": "dist/index.js",
+      "limit": "30 kB",
+      "gzip": true
+    },
+    {
+      "name": "cjs",
+      "path": "dist/index.cjs",
+      "limit": "30 kB",
+      "gzip": true
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hbmartin/react-mentions-ts.git"
@@ -100,6 +116,7 @@
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
     "@microsoft/api-extractor": "^7.58.6",
+    "@size-limit/file": "12.1.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -145,6 +162,7 @@
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "rimraf": "^6.1.3",
+    "size-limit": "12.1.0",
     "tailwind-merge": "^3.5.0",
     "ts-node": "^10.9.2",
     "tsdown": "^0.21.9",

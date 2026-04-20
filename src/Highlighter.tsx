@@ -370,7 +370,7 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
       <HighlighterCaret
         className={caretClass}
         key="caret:trailing-mention"
-        measureKey={`trailing:${value}`}
+        measureKey={value}
         onCaretPositionChange={onCaretPositionChange}
         recomputeVersion={recomputeVersion}
         singleLine={singleLine}
