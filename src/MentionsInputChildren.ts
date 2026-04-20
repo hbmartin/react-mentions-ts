@@ -1,6 +1,6 @@
 import React from 'react'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
-import type { MentionChildConfig, MentionComponentProps } from './types'
+import type { MentionChildConfig, MentionComponentProps, PreparedMentionChildConfig } from './types'
 import { isMentionElement } from './utils/isMentionElement'
 import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
 
@@ -8,15 +8,30 @@ export interface PreparedMentionsInputChildren<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
   mentionChildren: React.ReactElement<MentionComponentProps<Extra>>[]
-  config: MentionChildConfig<Extra>[]
+  config: PreparedMentionChildConfig<Extra>[]
 }
+
+const STATEFUL_REGEX_FLAGS_PATTERN = /[gy]/g
+
+const stripStatefulRegexFlags = (flags: string): string =>
+  flags.replaceAll(STATEFUL_REGEX_FLAGS_PATTERN, '')
 
 const getTriggerIdentity = (trigger: string | RegExp | undefined): string => {
   const normalizedTrigger = trigger ?? DEFAULT_MENTION_PROPS.trigger
 
   return typeof normalizedTrigger === 'string'
     ? `str:${normalizedTrigger}`
-    : `re:${normalizedTrigger.source}/${normalizedTrigger.flags.replaceAll('g', '')}`
+    : `re:${normalizedTrigger.source}/${stripStatefulRegexFlags(normalizedTrigger.flags)}`
+}
+
+const getQueryIdentity = <Extra extends Record<string, unknown>>(
+  config: MentionChildConfig<Extra>
+): string => {
+  const query = (config as Partial<PreparedMentionChildConfig<Extra>>).query
+
+  return query === undefined
+    ? 'query:none'
+    : `query:${query.regex.source}/${query.regex.flags}:${query.ignoreAccents ? '1' : '0'}`
 }
 
 const getInvalidChildLabel = (child: React.ReactNode): string => {
@@ -97,7 +112,8 @@ export const areMentionConfigsEqual = <Extra extends Record<string, unknown>>(
     return (
       getTriggerIdentity(leftConfig.trigger) === getTriggerIdentity(rightConfig.trigger) &&
       leftConfig.serializer.id === rightConfig.serializer.id &&
-      leftConfig.displayTransform === rightConfig.displayTransform
+      leftConfig.displayTransform === rightConfig.displayTransform &&
+      getQueryIdentity(leftConfig) === getQueryIdentity(rightConfig)
     )
   })
 }

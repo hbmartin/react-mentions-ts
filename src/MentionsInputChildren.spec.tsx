@@ -213,11 +213,26 @@ describe('MentionsInputChildren', () => {
     expect(areMentionConfigsEqual(globalConfig, nonGlobalConfig)).toBe(true)
   })
 
+  it('normalizes regex trigger identities by stripping sticky flags', () => {
+    const stickyConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger={/(@([a-z]*))$/iy} data={[]} />
+      </>
+    ).config
+    const nonStickyConfig = prepareMentionsInputChildren(
+      <>
+        <Mention trigger={/(@([a-z]*))$/i} data={[]} />
+      </>
+    ).config
+
+    expect(areMentionConfigsEqual(stickyConfig, nonStickyConfig)).toBe(true)
+  })
+
   it('prepares trigger query regex metadata once with normalized flags', () => {
     const [stringTriggerConfig, regexTriggerConfig] = prepareMentionsInputChildren(
       <>
         <Mention trigger="@" data={[]} />
-        <Mention trigger={/(#([\p{L}\d_]*))$/giu} data={[]} />
+        <Mention trigger={/(#([\p{L}\d_]*))$/giuy} data={[]} />
       </>
     ).config
 
@@ -225,7 +240,21 @@ describe('MentionsInputChildren', () => {
     expect(regexTriggerConfig?.query.regex.flags).toContain('i')
     expect(regexTriggerConfig?.query.regex.flags).toContain('u')
     expect(regexTriggerConfig?.query.regex.flags).not.toContain('g')
+    expect(regexTriggerConfig?.query.regex.flags).not.toContain('y')
     expect(regexTriggerConfig?.query.ignoreAccents).toBe(true)
+  })
+
+  it('treats prepared query metadata as part of mention config equality', () => {
+    const config = prepareMentionsInputChildren(<Mention trigger="@" data={[]} />).config
+    const changedQueryConfig = config.map((childConfig) => ({
+      ...childConfig,
+      query: {
+        regex: /(@([a-z]+))$/i,
+        ignoreAccents: childConfig.query.ignoreAccents,
+      },
+    }))
+
+    expect(areMentionConfigsEqual(config, changedQueryConfig)).toBe(false)
   })
 
   it('treats raw undefined triggers as the default trigger identity', () => {

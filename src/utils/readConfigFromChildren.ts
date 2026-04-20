@@ -1,8 +1,8 @@
 import React, { Children } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import type {
-  MentionChildConfig,
   MentionComponentProps,
+  PreparedMentionChildConfig,
   MentionQueryConfig,
   MentionSerializer,
   MentionTrigger,
@@ -41,12 +41,17 @@ const appendSerializerMarker = (markup: string, occurrenceIndex: number): string
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
 
+const STATEFUL_REGEX_FLAGS_PATTERN = /[gy]/g
+
+const stripStatefulRegexFlags = (flags: string): string =>
+  flags.replaceAll(STATEFUL_REGEX_FLAGS_PATTERN, '')
+
 export const createMentionQueryConfig = (trigger: MentionTrigger): MentionQueryConfig => {
   const regex =
     typeof trigger === 'string'
       ? makeTriggerRegex(trigger)
-      : // eslint-disable-next-line security/detect-non-literal-regexp -- reconstructing a vetted RegExp to strip 'g'
-        new RegExp(trigger.source, trigger.flags.replaceAll('g', ''))
+      : // eslint-disable-next-line security/detect-non-literal-regexp -- reconstructing a vetted RegExp to strip stateful flags
+        new RegExp(trigger.source, stripStatefulRegexFlags(trigger.flags))
 
   return {
     regex,
@@ -71,7 +76,7 @@ export const collectMentionElements = <Extra extends Record<string, unknown>>(
 
 const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<string, unknown>>(
   children: ReactNode
-): MentionChildConfig<Extra>[] => {
+): PreparedMentionChildConfig<Extra>[] => {
   const mentionChildren = collectMentionElements<Extra>(children)
   const serializerIdCounts = new Map<string, number>()
 
@@ -117,7 +122,7 @@ const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<s
       displayTransform,
       query: createMentionQueryConfig(trigger),
       serializer,
-    } satisfies MentionChildConfig<Extra>
+    } satisfies PreparedMentionChildConfig<Extra>
   })
 }
 

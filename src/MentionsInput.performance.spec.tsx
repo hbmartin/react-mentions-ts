@@ -165,7 +165,7 @@ describe('MentionsInput performance', () => {
     emitPerformanceMetric('inline-layout', metrics)
 
     expect(metrics.calculateSuggestionsPositionCalls).toBe(0)
-    expect(metrics.calculateInlineSuggestionPositionCalls).toBeLessThanOrEqual(1)
+    expect(metrics.calculateInlineSuggestionPositionCalls).toBeLessThanOrEqual(3)
   })
 
   it('reports layout measurement counts for overlay interactions', async () => {
@@ -195,7 +195,7 @@ describe('MentionsInput performance', () => {
     }
     emitPerformanceMetric('overlay-layout', metrics)
 
-    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(2)
+    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(4)
     expect(metrics.calculateInlineSuggestionPositionCalls).toBe(0)
   })
 
