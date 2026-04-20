@@ -109,19 +109,23 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     props.suggestionsDisplay ?? defaultMentionsInputProps.suggestionsDisplay
   const {
     preparedChildren,
+    currentSnapshot,
     getMentionChildren,
     getCurrentConfig,
     getCurrentSnapshot,
     cacheSnapshot,
   } = useMentionValueSnapshot<Extra>(props.children, props.value)
   const config = preparedChildren.config
+  const mentionChildren = preparedChildren.mentionChildren
 
-  const isInlineAutocomplete = useEventCallback((): boolean => suggestionsDisplay === 'inline')
+  const isInlineAutocomplete = suggestionsDisplay === 'inline'
 
   const suggestionsQuery = useSuggestionsQuery<Extra>({
     props,
+    state,
     stateRef,
     setState,
+    mentionChildren,
     getMentionChildren,
     getCurrentConfig,
     isInlineAutocomplete,
@@ -151,10 +155,11 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     requestHighlighterScrollSync: caretLayout.requestHighlighterScrollSync,
   })
 
-  const { getCurrentMentionSelectionMap } = useMentionSelectionChange<Extra>({
+  const { currentMentionSelectionMap } = useMentionSelectionChange<Extra>({
     props,
     state,
     config,
+    currentSnapshot,
     getCurrentSnapshot,
   })
 
@@ -169,7 +174,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
   })
 
   const handleKeyDown = useEventCallback((event: KeyboardEvent<InputElement>): void => {
-    if (isInlineAutocomplete()) {
+    if (isInlineAutocomplete) {
       const inlineSuggestion = suggestionsQuery.getInlineSuggestionDetails()
       if (!inlineSuggestion) {
         props.onKeyDown?.(event)
@@ -236,10 +241,12 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
       case KEY.RETURN:
       case KEY.TAB: {
         selectFocused()
-        break
+        return
       }
       default:
     }
+
+    props.onKeyDown?.(event)
   })
 
   useImperativeHandle(
@@ -252,7 +259,6 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
 
   const getInputProps = (): InputComponentProps => {
     const { readOnly, disabled } = props
-    const currentSnapshot = getCurrentSnapshot()
     const passthroughProps = omit(
       props as unknown as Record<string, unknown>,
       HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps>
@@ -285,22 +291,16 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
       })
     }
 
-    const inlineAutocomplete = isInlineAutocomplete()
-    const inlineSuggestion = inlineAutocomplete
-      ? suggestionsQuery.getInlineSuggestionDetails()
-      : null
-    const isOverlayOpen = !inlineAutocomplete && suggestionsQuery.isOpened()
-    const overlayId = caretLayout.getSuggestionsOverlayId()
+    const inlineAutocomplete = isInlineAutocomplete
+    const inlineSuggestion = inlineAutocomplete ? suggestionsQuery.inlineSuggestionDetails : null
+    const isOverlayOpen = !inlineAutocomplete && suggestionsQuery.isOpened
+    const overlayId = caretLayout.suggestionsOverlayId
     const hasOverlayId = overlayId !== undefined
 
     Object.assign(inputProps, {
       role: 'combobox',
       'aria-autocomplete': inlineAutocomplete ? 'inline' : 'list',
-      'aria-expanded': inlineAutocomplete
-        ? 'false'
-        : suggestionsQuery.isOpened()
-          ? 'true'
-          : 'false',
+      'aria-expanded': inlineAutocomplete ? 'false' : suggestionsQuery.isOpened ? 'true' : 'false',
       'aria-haspopup': inlineAutocomplete ? undefined : 'listbox',
       'aria-controls': isOverlayOpen && hasOverlayId ? overlayId : undefined,
       'aria-activedescendant':
@@ -310,7 +310,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     })
 
     if (inlineAutocomplete && inlineSuggestion) {
-      const liveRegionId = caretLayout.getInlineAutocompleteLiveRegionId()
+      const liveRegionId = caretLayout.inlineAutocompleteLiveRegionId
       const existingDescribedBy =
         typeof inputProps['aria-describedby'] === 'string'
           ? inputProps['aria-describedby']
@@ -340,7 +340,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
   }
 
   const renderSuggestionsOverlay = (): React.ReactNode | null => {
-    if (isInlineAutocomplete()) {
+    if (isInlineAutocomplete) {
       return null
     }
 
@@ -350,9 +350,8 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
 
     const { position, left, top, right, width } = state.suggestionsPosition
     const portalTarget = caretLayout.resolvePortalHost()
-    const overlayId = caretLayout.getSuggestionsOverlayId()
-    const { statusContent, statusType } = suggestionsQuery.getSuggestionsStatusContent()
-    const mentionChildren = getMentionChildren()
+    const overlayId = caretLayout.suggestionsOverlayId
+    const { statusContent, statusType } = suggestionsQuery.suggestionsStatusContent
 
     const suggestionsNode = (
       <SuggestionsOverlay<Extra>
@@ -384,8 +383,8 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
         onMouseDown={editing.handleSuggestionsMouseDown}
         onMouseEnter={suggestionsQuery.handleSuggestionsMouseEnter}
         onLoadMore={suggestionsQuery.loadMoreSuggestions}
-        isLoading={suggestionsQuery.isLoading()}
-        isOpened={suggestionsQuery.isOpened()}
+        isLoading={suggestionsQuery.isLoading}
+        isOpened={suggestionsQuery.isOpened}
         a11ySuggestionsListLabel={props.a11ySuggestionsListLabel}
       >
         {props.children}
@@ -396,13 +395,13 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
   }
 
   const renderInlineSuggestion = (): React.ReactNode => {
-    if (!isInlineAutocomplete() || !isNumber(state.selectionStart)) {
+    if (!isInlineAutocomplete || !isNumber(state.selectionStart)) {
       return null
     }
 
     return (
       <MentionsInputInlineSuggestion<Extra>
-        inlineSuggestion={suggestionsQuery.getInlineSuggestionDetails()}
+        inlineSuggestion={suggestionsQuery.inlineSuggestionDetails}
         inlineSuggestionPosition={state.inlineSuggestionPosition}
         classNames={props.classNames}
       />
@@ -410,19 +409,19 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
   }
 
   const renderInlineSuggestionLiveRegion = (): React.ReactNode => {
-    if (!isInlineAutocomplete()) {
+    if (!isInlineAutocomplete) {
       return null
     }
 
-    const inlineSuggestion = suggestionsQuery.getInlineSuggestionDetails()
+    const inlineSuggestion = suggestionsQuery.inlineSuggestionDetails
     const announcement = getInlineSuggestionAnnouncement(
       inlineSuggestion,
-      suggestionsQuery.getSuggestionsStatusContent()
+      suggestionsQuery.suggestionsStatusContent
     )
 
     return (
       <MentionsInputInlineLiveRegion
-        id={caretLayout.getInlineAutocompleteLiveRegionId()}
+        id={caretLayout.inlineAutocompleteLiveRegionId}
         announcement={announcement}
       />
     )
@@ -434,7 +433,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
       className={props.classNames?.highlighter}
       substringClassName={props.classNames?.highlighterSubstring}
       caretClassName={props.classNames?.highlighterCaret}
-      mentionChildren={getMentionChildren()}
+      mentionChildren={mentionChildren}
       config={config}
       value={props.value}
       singleLine={singleLine}
@@ -442,7 +441,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
       selectionEnd={state.selectionEnd}
       recomputeVersion={state.highlighterRecomputeVersion}
       onCaretPositionChange={caretLayout.handleCaretPositionChange}
-      mentionSelectionMap={getCurrentMentionSelectionMap()}
+      mentionSelectionMap={currentMentionSelectionMap}
     >
       {props.children}
     </Highlighter>
@@ -475,14 +474,10 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
   )
 }
 
-const MentionsInput = React.forwardRef(MentionsInputInner) as (<
+const MentionsInput = React.forwardRef(MentionsInputInner) as <
   Extra extends Record<string, unknown> = Record<string, unknown>,
 >(
   props: MentionsInputProps<Extra> & React.RefAttributes<MentionsInputHandle>
-) => React.ReactElement | null) & {
-  defaultProps?: typeof defaultMentionsInputProps
-}
-
-MentionsInput.defaultProps = defaultMentionsInputProps
+) => React.ReactElement | null
 
 export default MentionsInput

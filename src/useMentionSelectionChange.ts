@@ -10,12 +10,12 @@ import type {
   MentionsInputState,
 } from './types'
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
-import { useEventCallback } from './utils/useEventCallback'
 
 interface UseMentionSelectionChangeArgs<Extra extends Record<string, unknown>> {
   props: MentionsInputProps<Extra>
   state: MentionsInputState<Extra>
   config: ReadonlyArray<MentionChildConfig<Extra>>
+  currentSnapshot: MentionValueSnapshot<Extra>
   getCurrentSnapshot: (
     value?: string,
     config?: ReadonlyArray<MentionChildConfig<Extra>>
@@ -33,6 +33,7 @@ export const useMentionSelectionChange = <Extra extends Record<string, unknown>>
   props,
   state,
   config,
+  currentSnapshot,
   getCurrentSnapshot,
 }: UseMentionSelectionChangeArgs<Extra>) => {
   const previousCommitRef = useRef<PreviousSelectionCommit<Extra>>({
@@ -42,17 +43,15 @@ export const useMentionSelectionChange = <Extra extends Record<string, unknown>>
     selectionEnd: state.selectionEnd,
   })
 
-  const getCurrentMentionSelectionMap = useEventCallback(
-    (): Record<string, MentionSelectionState> => {
-      const { selectionStart, selectionEnd } = state
-      if (selectionStart === null || selectionEnd === null) {
-        return {}
-      }
-
-      const { mentions } = getCurrentSnapshot(props.value ?? '', config)
-      return getMentionSelectionMap(mentions, config, selectionStart, selectionEnd)
-    }
-  )
+  const currentMentionSelectionMap: Record<string, MentionSelectionState> =
+    state.selectionStart === null || state.selectionEnd === null
+      ? {}
+      : getMentionSelectionMap(
+          currentSnapshot.mentions,
+          config,
+          state.selectionStart,
+          state.selectionEnd
+        )
 
   useEffect(() => {
     const previousCommit = previousCommitRef.current
@@ -62,11 +61,11 @@ export const useMentionSelectionChange = <Extra extends Record<string, unknown>>
     const currentValue = props.value ?? ''
     const configChanged = !areMentionConfigsEqual(previousCommit.config, config)
     const valueChanged = currentValue !== previousCommit.value || configChanged
-    const currentSnapshot = getCurrentSnapshot(currentValue, config)
+    const currentValueSnapshot = getCurrentSnapshot(currentValue, config)
 
     if ((selectionPositionsChanged || valueChanged) && props.onMentionSelectionChange) {
       const currentSelection = computeMentionSelectionDetails<Extra>(
-        currentSnapshot.mentions,
+        currentValueSnapshot.mentions,
         config,
         state.selectionStart,
         state.selectionEnd
@@ -94,7 +93,7 @@ export const useMentionSelectionChange = <Extra extends Record<string, unknown>>
         const selectionMentionIds = currentSelection.selections.map((selection) => selection.id)
         const selectionContext = createMentionSelectionContext(
           currentValue,
-          currentSnapshot,
+          currentValueSnapshot,
           selectionMentionIds
         )
         props.onMentionSelectionChange(currentSelection.selections, selectionContext)
@@ -110,6 +109,6 @@ export const useMentionSelectionChange = <Extra extends Record<string, unknown>>
   })
 
   return {
-    getCurrentMentionSelectionMap,
+    currentMentionSelectionMap,
   }
 }

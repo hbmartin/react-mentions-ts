@@ -45,7 +45,7 @@ interface UseCaretLayoutArgs<Extra extends Record<string, unknown>> {
   setState: SetMentionsInputState<Extra>
   value: string
   config: ReadonlyArray<MentionChildConfig<Extra>>
-  isInlineAutocomplete: () => boolean
+  isInlineAutocomplete: boolean
   hasInlineSuggestion: () => boolean
 }
 
@@ -59,6 +59,16 @@ interface PreviousCommit<Extra extends Record<string, unknown>> {
   caretPosition: MentionsInputState<Extra>['caretPosition']
 }
 
+const getExplicitId = (id: unknown): string | null =>
+  typeof id === 'string' && id.trim().length > 0 ? id.trim() : null
+
+const isDocumentLike = (value: unknown): value is Document =>
+  typeof value === 'object' &&
+  value !== null &&
+  'nodeType' in value &&
+  (value as { nodeType: number }).nodeType === 9 &&
+  'body' in value
+
 export const useCaretLayout = <Extra extends Record<string, unknown>>(
   args: UseCaretLayoutArgs<Extra>
 ) => {
@@ -69,9 +79,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
   const inputElementRef = useRef<InputElement | null>(null)
   const highlighterElementRef = useRef<HTMLDivElement | null>(null)
   const suggestionsElementRef = useRef<HTMLDivElement | null>(null)
-  const defaultSuggestionsPortalHostRef = useRef<HTMLElement | null>(
-    typeof document === 'undefined' ? null : document.body
-  )
+  const defaultSuggestionsPortalHostRef = useRef<HTMLElement | null>(null)
   const pendingViewSyncRef = useRef<PendingViewSync>(createPendingViewSync())
   const isFlushingViewSyncRef = useRef(false)
   const scrollSyncFrameRef = useRef<number | null>(null)
@@ -91,42 +99,31 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
     }
   )
 
-  const getExplicitId = useEventCallback((): string | null => {
-    const { id } = argsRef.current.props
-    return typeof id === 'string' && id.trim().length > 0 ? id.trim() : null
-  })
+  const explicitId = getExplicitId(args.props.id)
+  const baseId = explicitId ?? args.state.generatedId
+  const suggestionsOverlayId = baseId === null ? undefined : `${baseId}-suggestions`
+  const inlineAutocompleteLiveRegionId = baseId === null ? undefined : `${baseId}-inline-live`
 
   const ensureGeneratedId = useEventCallback((): void => {
-    if (getExplicitId() !== null || argsRef.current.stateRef.current.generatedId !== null) {
+    if (
+      getExplicitId(argsRef.current.props.id) !== null ||
+      argsRef.current.stateRef.current.generatedId !== null
+    ) {
       return
     }
 
     argsRef.current.setState({ generatedId: createGeneratedId() })
   })
 
-  const getBaseId = useEventCallback(
-    (): string | null => getExplicitId() ?? argsRef.current.stateRef.current.generatedId
-  )
-
-  const getSuggestionsOverlayId = useEventCallback((): string | undefined => {
-    const baseId = getBaseId()
-    return baseId === null ? undefined : `${baseId}-suggestions`
-  })
-
-  const getInlineAutocompleteLiveRegionId = useEventCallback((): string | undefined => {
-    const baseId = getBaseId()
-    return baseId === null ? undefined : `${baseId}-inline-live`
-  })
-
   const shouldMeasureSuggestions = useEventCallback(
     (): boolean =>
-      !argsRef.current.isInlineAutocomplete() &&
+      !argsRef.current.isInlineAutocomplete &&
       typeof argsRef.current.stateRef.current.selectionStart === 'number'
   )
 
   const shouldMeasureInline = useEventCallback(
     (): boolean =>
-      argsRef.current.isInlineAutocomplete() &&
+      argsRef.current.isInlineAutocomplete &&
       typeof argsRef.current.stateRef.current.selectionStart === 'number'
   )
 
@@ -137,15 +134,15 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
       return null
     }
 
-    if (typeof Document !== 'undefined' && suggestionsPortalHost instanceof Document) {
+    if (isDocumentLike(suggestionsPortalHost)) {
       return suggestionsPortalHost.body
     }
 
     if (suggestionsPortalHost) {
-      return suggestionsPortalHost as Element
+      return suggestionsPortalHost
     }
 
-    return defaultSuggestionsPortalHostRef.current
+    return inputElementRef.current?.ownerDocument.body ?? defaultSuggestionsPortalHostRef.current
   })
 
   const resolveViewSyncFlags = useEventCallback(
@@ -242,7 +239,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
   const updateInlineSuggestionPosition = useEventCallback((): boolean => {
     const { stateRef, setState } = argsRef.current
 
-    if (!argsRef.current.isInlineAutocomplete()) {
+    if (!argsRef.current.isInlineAutocomplete) {
       if (stateRef.current.inlineSuggestionPosition === null) {
         return false
       }
@@ -469,6 +466,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
 
   const setInputRef = useEventCallback((element: InputElement | null): void => {
     inputElementRef.current = element
+    defaultSuggestionsPortalHostRef.current = element?.ownerDocument.body ?? null
     const { inputRef } = argsRef.current.props
     if (typeof inputRef === 'function') {
       inputRef(element)
@@ -565,15 +563,46 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
       generatedId: state.generatedId,
       caretPosition: state.caretPosition,
     }
-  })
+  }, [
+    args.config,
+    args.isInlineAutocomplete,
+    args.props.anchorMode,
+    args.props.autoResize,
+    args.props.singleLine,
+    args.props.suggestionsPlacement,
+    args.props.suggestionsPortalHost,
+    args.state.caretPosition,
+    args.state.focusIndex,
+    args.state.generatedId,
+    args.state.pendingSelectionUpdate,
+    args.state.queryStates,
+    args.state.selectionEnd,
+    args.state.selectionStart,
+    args.state.suggestions,
+    args.value,
+    ensureGeneratedId,
+    flushPendingViewSync,
+    requestViewSync,
+  ])
 
   useEffect(() => {
-    document.addEventListener('scroll', handleDocumentScroll, true)
+    const ownerDocument = inputElementRef.current?.ownerDocument
+
+    if (ownerDocument === undefined) {
+      return undefined
+    }
+
+    ownerDocument.addEventListener('scroll', handleDocumentScroll, true)
 
     return () => {
-      document.removeEventListener('scroll', handleDocumentScroll, true)
+      ownerDocument.removeEventListener('scroll', handleDocumentScroll, true)
     }
-  }, [handleDocumentScroll])
+  }, [
+    args.props.inputComponent,
+    args.props.singleLine,
+    args.state.generatedId,
+    handleDocumentScroll,
+  ])
 
   return {
     containerElementRef,
@@ -587,8 +616,8 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
     setInputRef,
     setHighlighterElement,
     setSuggestionsElement,
-    getSuggestionsOverlayId,
-    getInlineAutocompleteLiveRegionId,
+    suggestionsOverlayId,
+    inlineAutocompleteLiveRegionId,
     ensureGeneratedIdIfNeeded: ensureGeneratedId,
     resolvePortalHost,
     requestViewSync,

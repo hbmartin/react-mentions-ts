@@ -51,11 +51,13 @@ interface ActiveSuggestionQuery<Extra extends Record<string, unknown>> {
 
 interface UseSuggestionsQueryArgs<Extra extends Record<string, unknown>> {
   props: MentionsInputProps<Extra>
+  state: MentionsInputState<Extra>
   stateRef: React.RefObject<MentionsInputState<Extra>>
   setState: SetMentionsInputState<Extra>
+  mentionChildren: React.ReactElement<MentionComponentProps<Extra>>[]
   getMentionChildren: () => React.ReactElement<MentionComponentProps<Extra>>[]
   getCurrentConfig: () => PreparedConfig<Extra>
-  isInlineAutocomplete: () => boolean
+  isInlineAutocomplete: boolean
 }
 
 type PreparedConfig<Extra extends Record<string, unknown>> = ReadonlyArray<
@@ -228,7 +230,7 @@ export const useSuggestionsQuery = <Extra extends Record<string, unknown>>(
             queryInfo,
             page,
             prevState.focusIndex,
-            argsRef.current.isInlineAutocomplete()
+            argsRef.current.isInlineAutocomplete
           )
         )
       } catch (error) {
@@ -455,7 +457,7 @@ export const useSuggestionsQuery = <Extra extends Record<string, unknown>>(
   )
 
   const loadMoreSuggestions = useEventCallback((): void => {
-    if (argsRef.current.isInlineAutocomplete()) {
+    if (argsRef.current.isInlineAutocomplete) {
       return
     }
 
@@ -520,7 +522,7 @@ export const useSuggestionsQuery = <Extra extends Record<string, unknown>>(
   )
 
   const getInlineSuggestionDetails = useEventCallback((): InlineSuggestionDetails<Extra> | null =>
-    argsRef.current.isInlineAutocomplete()
+    argsRef.current.isInlineAutocomplete
       ? getInlineSuggestionDetailsForMentionChildren<Extra>(
           argsRef.current.getMentionChildren(),
           argsRef.current.stateRef.current.suggestions,
@@ -530,7 +532,7 @@ export const useSuggestionsQuery = <Extra extends Record<string, unknown>>(
   )
 
   const canApplyInlineSuggestion = useEventCallback((): boolean => {
-    if (!argsRef.current.isInlineAutocomplete()) {
+    if (!argsRef.current.isInlineAutocomplete) {
       return false
     }
 
@@ -560,22 +562,29 @@ export const useSuggestionsQuery = <Extra extends Record<string, unknown>>(
     )
   )
 
-  const isLoading = useEventCallback(
-    (): boolean =>
-      argsRef.current.getMentionChildren().some((child) => child.props.isLoading === true) ||
-      getSuggestionQueryStateEntries(argsRef.current.stateRef.current.queryStates).some(
-        ([, queryState]) =>
-          queryState.status === 'loading' || queryState.pagination?.isLoading === true
+  const inlineSuggestionDetails = args.isInlineAutocomplete
+    ? getInlineSuggestionDetailsForMentionChildren<Extra>(
+        args.mentionChildren,
+        args.state.suggestions,
+        args.state.focusIndex
       )
+    : null
+  const suggestionsStatusContent = getSuggestionsStatusContentForMentionChildren<Extra>(
+    args.mentionChildren,
+    args.state.suggestions,
+    args.state.queryStates
   )
-
-  const isOpened = useEventCallback(
-    (): boolean =>
-      typeof argsRef.current.stateRef.current.selectionStart === 'number' &&
-      (countSuggestions(argsRef.current.stateRef.current.suggestions) !== 0 ||
-        isLoading() ||
-        getSuggestionsStatusContent().statusType !== null)
-  )
+  const isLoading =
+    args.mentionChildren.some((child) => child.props.isLoading === true) ||
+    getSuggestionQueryStateEntries(args.state.queryStates).some(
+      ([, queryState]) =>
+        queryState.status === 'loading' || queryState.pagination?.isLoading === true
+    )
+  const isOpened =
+    typeof args.state.selectionStart === 'number' &&
+    (countSuggestions(args.state.suggestions) !== 0 ||
+      isLoading ||
+      suggestionsStatusContent.statusType !== null)
 
   useEffect(() => clearPendingSuggestionRequests, [clearPendingSuggestionRequests])
 
@@ -597,9 +606,11 @@ export const useSuggestionsQuery = <Extra extends Record<string, unknown>>(
     getFocusedSuggestionEntry,
     getSuggestionData,
     getInlineSuggestionDetails,
+    inlineSuggestionDetails,
     canApplyInlineSuggestion,
     getPreferredQueryState,
     getSuggestionsStatusContent,
+    suggestionsStatusContent,
     isLoading,
     isOpened,
   }

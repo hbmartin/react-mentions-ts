@@ -78,6 +78,7 @@ const INTERNAL_KEY = {
   ESC: 'Escape',
   UP: 'ArrowUp',
   DOWN: 'ArrowDown',
+  RIGHT: 'ArrowRight',
 } as const
 
 const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, MentionsInputProps>(
@@ -85,17 +86,23 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
     const { state, stateRef, setState } = useMentionsInputState()
     const value = props.value ?? ''
     const suggestionsDisplay = props.suggestionsDisplay ?? 'overlay'
-    const { getMentionChildren, getCurrentConfig, getCurrentSnapshot, cacheSnapshot } =
-      useMentionValueSnapshot(props.children, props.value)
-    const config = getCurrentConfig()
-    const isInlineAutocomplete = React.useCallback(
-      (): boolean => suggestionsDisplay === 'inline',
-      [suggestionsDisplay]
-    )
+    const {
+      preparedChildren,
+      currentSnapshot,
+      getMentionChildren,
+      getCurrentConfig,
+      getCurrentSnapshot,
+      cacheSnapshot,
+    } = useMentionValueSnapshot(props.children, props.value)
+    const config = preparedChildren.config
+    const mentionChildren = preparedChildren.mentionChildren
+    const isInlineAutocomplete = suggestionsDisplay === 'inline'
     const suggestionsQuery = useSuggestionsQuery({
       props,
+      state,
       stateRef,
       setState,
+      mentionChildren,
       getMentionChildren,
       getCurrentConfig,
       isInlineAutocomplete,
@@ -126,7 +133,7 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
     const selectFocused = React.useCallback((): void => {
       const entry = getFocusedSuggestionEntryForMentionChildren(
         getMentionChildren(),
-        stateRef.current.queryStates,
+        stateRef.current.suggestions,
         stateRef.current.focusIndex
       )
       if (entry === null) {
@@ -139,18 +146,41 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
 
     const handleKeyDown = React.useCallback(
       (event: React.KeyboardEvent<InputElement>): void => {
-        props.onKeyDown?.(event)
-
         if (suggestionsDisplay === 'inline') {
-          if (
-            (event.key === INTERNAL_KEY.TAB ||
-              event.key === INTERNAL_KEY.RETURN ||
-              event.key === 'ArrowRight') &&
-            suggestionsQuery.canApplyInlineSuggestion()
-          ) {
-            event.preventDefault()
-            selectFocused()
+          const inlineSuggestion = suggestionsQuery.getInlineSuggestionDetails()
+          if (inlineSuggestion === null) {
+            props.onKeyDown?.(event)
+            return
           }
+
+          switch (event.key) {
+            case INTERNAL_KEY.ESC: {
+              if (utils.countSuggestions(stateRef.current.suggestions) > 0) {
+                event.preventDefault()
+                event.stopPropagation()
+                suggestionsQuery.shiftFocus(1)
+                return
+              }
+              break
+            }
+            case INTERNAL_KEY.RETURN:
+            case INTERNAL_KEY.TAB:
+            case INTERNAL_KEY.RIGHT: {
+              if (
+                (event.key === INTERNAL_KEY.TAB && event.shiftKey) ||
+                !suggestionsQuery.canApplyInlineSuggestion()
+              ) {
+                break
+              }
+              event.preventDefault()
+              event.stopPropagation()
+              selectFocused()
+              return
+            }
+            default:
+          }
+
+          props.onKeyDown?.(event)
           return
         }
 
@@ -158,7 +188,19 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
           utils.countSuggestions(stateRef.current.suggestions) === 0 ||
           caretLayout.suggestionsElementRef.current === null
         ) {
+          props.onKeyDown?.(event)
           return
+        }
+
+        if (
+          event.key === INTERNAL_KEY.ESC ||
+          event.key === INTERNAL_KEY.DOWN ||
+          event.key === INTERNAL_KEY.UP ||
+          event.key === INTERNAL_KEY.RETURN ||
+          event.key === INTERNAL_KEY.TAB
+        ) {
+          event.preventDefault()
+          event.stopPropagation()
         }
 
         switch (event.key) {
@@ -177,10 +219,12 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
           case INTERNAL_KEY.RETURN:
           case INTERNAL_KEY.TAB: {
             selectFocused()
-            break
+            return
           }
           default:
         }
+
+        props.onKeyDown?.(event)
       },
       [
         caretLayout.suggestionsElementRef,
@@ -303,8 +347,6 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
       return handle
     })
 
-    const snapshot = getCurrentSnapshot()
-
     return (
       <div ref={caretLayout.setContainerElement}>
         <div data-slot="highlighter" ref={caretLayout.setHighlighterElement} />
@@ -314,7 +356,7 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
           aria-expanded="false"
           ref={caretLayout.setInputRef}
           role="combobox"
-          value={snapshot.plainText}
+          value={currentSnapshot.plainText}
           onBlur={editing.handleBlur}
           onChange={editing.handleChange}
           onCompositionEnd={editing.handleCompositionEnd}
@@ -328,7 +370,6 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
 ) as typeof MentionsInput
 
 const PublicMentionsInput = MentionsInput
-MentionsInputInternalsHarness.defaultProps = MentionsInput.defaultProps
 
 describe('MentionsInput', () => {
   it('should render a textarea by default.', () => {
@@ -545,6 +586,45 @@ describe('MentionsInput', () => {
     })
   })
 
+  it('refreshes suggestions immediately after ordinary input changes.', async () => {
+    let value = ''
+    const handleChange = vi.fn(
+      (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        value = event.target.value
+        renderResult.rerender(
+          <MentionsInput value={value} onChange={handleChange}>
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+        )
+      }
+    )
+    const renderResult = render(
+      <MentionsInput value={value} onChange={handleChange}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(0, 0)
+    fireEvent.change(textarea, {
+      target: {
+        value: '@',
+        selectionStart: 1,
+        selectionEnd: 1,
+      },
+      nativeEvent: {
+        data: '@',
+        isComposing: false,
+      },
+    })
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+  })
+
   it('should be possible to navigate through the suggestions with the up and down arrows.', async () => {
     render(
       <MentionsInput value="@">
@@ -580,6 +660,29 @@ describe('MentionsInput', () => {
     suggestions = screen.getAllByRole('option', { hidden: true })
     expect(suggestions[0]).toHaveAttribute('aria-selected', 'true')
     expect(suggestions[1]).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('forwards unhandled keydown events while overlay suggestions are open.', async () => {
+    const onKeyDown = vi.fn()
+    render(
+      <MentionsInput value="@" onKeyDown={onKeyDown}>
+        <Mention trigger="@" data={data} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(1, 1)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions.length).toBeGreaterThan(0)
+    })
+
+    fireEvent.keyDown(textarea, { key: 'a' })
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1)
   })
 
   it('should update the focused suggestion when hovering over items.', async () => {
@@ -1974,6 +2077,38 @@ describe('MentionsInput', () => {
       expect(suggestionsNode).toBeTruthy()
       expect(suggestionsNode?.parentElement).toBe(document.body)
     })
+  })
+
+  it("defaults the suggestions portal to the input element's owner document.", async () => {
+    const iframe = document.createElement('iframe')
+    document.body.append(iframe)
+    const iframeDocument = iframe.contentDocument
+    expect(iframeDocument).not.toBeNull()
+    const root = iframeDocument!.createElement('div')
+    iframeDocument!.body.append(root)
+    const renderResult = render(
+      <MentionsInput value="@">
+        <Mention trigger="@" data={data} />
+      </MentionsInput>,
+      { container: root }
+    )
+
+    try {
+      const textarea = root.querySelector('[data-slot="input"]') as HTMLTextAreaElement | null
+      expect(textarea).not.toBeNull()
+      fireEvent.focus(textarea!)
+      textarea!.setSelectionRange(1, 1)
+      fireEvent.select(textarea!)
+
+      await waitFor(() => {
+        const suggestionsNode = iframeDocument!.body.querySelector('[data-slot="suggestions"]')
+        expect(suggestionsNode).toBeTruthy()
+        expect(suggestionsNode?.ownerDocument).toBe(iframeDocument)
+      })
+    } finally {
+      renderResult.unmount()
+      iframe.remove()
+    }
   })
 
   it('should accept a custom markup string', () => {
@@ -3857,9 +3992,30 @@ describe('MentionsInput', () => {
   describe('internal behaviors', () => {
     const MentionsInput = MentionsInputInternalsHarness
 
-    it('exposes null-returning defaults for keydown and select handlers.', () => {
-      expect(MentionsInput.defaultProps?.onKeyDown?.()).toBeNull()
-      expect(MentionsInput.defaultProps?.onSelect?.()).toBeNull()
+    it('keeps keydown and select handlers optional.', () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const event = {
+        key: 'x',
+        shiftKey: false,
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      }
+
+      expect(() => {
+        act(() => {
+          instance.handleKeyDown(event)
+          instance.selectFocused()
+        })
+      }).not.toThrow()
+
+      unmount()
     })
 
     it('updates scroll flags when handling document scroll.', () => {

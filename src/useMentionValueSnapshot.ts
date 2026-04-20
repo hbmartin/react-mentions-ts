@@ -1,15 +1,10 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import type { PreparedMentionsInputChildren } from './MentionsInputChildren'
 import { areMentionConfigsEqual, prepareMentionsInputChildren } from './MentionsInputChildren'
 import type { MentionValueSnapshot } from './MentionsInputDerived'
 import { deriveMentionValueSnapshot } from './MentionsInputDerived'
 import type { MentionChildConfig, MentionsInputProps } from './types'
 import { useEventCallback } from './utils/useEventCallback'
-
-interface PreparedChildrenCache<Extra extends Record<string, unknown>> {
-  source: MentionsInputProps<Extra>['children']
-  value: PreparedMentionsInputChildren<Extra>
-}
 
 interface SnapshotCache<Extra extends Record<string, unknown>> {
   value: string
@@ -21,40 +16,33 @@ export const useMentionValueSnapshot = <Extra extends Record<string, unknown>>(
   children: MentionsInputProps<Extra>['children'],
   value: string | undefined
 ) => {
-  const preparedChildrenCacheRef = useRef<PreparedChildrenCache<Extra> | null>(null)
   const snapshotCacheRef = useRef<SnapshotCache<Extra> | null>(null)
+  const preparedChildren = useMemo(() => prepareMentionsInputChildren<Extra>(children), [children])
+  const currentValue = value ?? ''
+  const currentSnapshot = useMemo(() => {
+    const cachedSnapshot = snapshotCacheRef.current
+
+    if (
+      cachedSnapshot?.value === currentValue &&
+      areMentionConfigsEqual(preparedChildren.config, cachedSnapshot.config)
+    ) {
+      return cachedSnapshot.snapshot
+    }
+
+    return deriveMentionValueSnapshot<Extra>(currentValue, preparedChildren.config)
+  }, [currentValue, preparedChildren.config])
 
   const getPreparedChildren = useEventCallback(
     (
       nextChildren: MentionsInputProps<Extra>['children'] = children
     ): PreparedMentionsInputChildren<Extra> => {
-      if (preparedChildrenCacheRef.current?.source === nextChildren) {
-        return preparedChildrenCacheRef.current.value
-      }
-
-      const preparedChildren = prepareMentionsInputChildren<Extra>(nextChildren)
-
       if (nextChildren === children) {
-        preparedChildrenCacheRef.current = {
-          source: nextChildren,
-          value: preparedChildren,
-        }
+        return preparedChildren
       }
 
-      return preparedChildren
+      return prepareMentionsInputChildren<Extra>(nextChildren)
     }
   )
-
-  const preparedChildren = getPreparedChildren(children)
-  const initialValue = value ?? ''
-
-  if (snapshotCacheRef.current === null) {
-    snapshotCacheRef.current = {
-      value: initialValue,
-      config: [...preparedChildren.config],
-      snapshot: deriveMentionValueSnapshot<Extra>(initialValue, preparedChildren.config),
-    }
-  }
 
   const cacheSnapshot = useEventCallback(
     (
@@ -71,15 +59,19 @@ export const useMentionValueSnapshot = <Extra extends Record<string, unknown>>(
     }
   )
 
-  const getCurrentConfig = useEventCallback(() => getPreparedChildren(children).config)
+  const getCurrentConfig = useEventCallback(() => preparedChildren.config)
 
-  const getMentionChildren = useEventCallback(() => getPreparedChildren(children).mentionChildren)
+  const getMentionChildren = useEventCallback(() => preparedChildren.mentionChildren)
 
   const getCurrentSnapshot = useEventCallback(
     (
-      nextValue: string = value ?? '',
+      nextValue: string = currentValue,
       config: ReadonlyArray<MentionChildConfig<Extra>> = getCurrentConfig()
     ): MentionValueSnapshot<Extra> => {
+      if (nextValue === currentValue && areMentionConfigsEqual(config, preparedChildren.config)) {
+        return currentSnapshot
+      }
+
       const cachedSnapshot = snapshotCacheRef.current
 
       if (
@@ -95,6 +87,7 @@ export const useMentionValueSnapshot = <Extra extends Record<string, unknown>>(
 
   return {
     preparedChildren,
+    currentSnapshot,
     getPreparedChildren,
     getMentionChildren,
     getCurrentConfig,

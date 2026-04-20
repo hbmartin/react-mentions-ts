@@ -151,11 +151,8 @@ describe('MeasurementBridge', () => {
     }
   })
 
-  it('skips viewport listener registration when window lookup is unavailable', () => {
+  it('skips viewport listener registration when no owner or global window is available', () => {
     const requestViewSync = vi.fn()
-    const container = document.createElement('div')
-    const highlighter = document.createElement('div')
-    const suggestions = document.createElement('div')
     const addListener = vi.spyOn(globalThis, 'addEventListener')
     const originalReflectGet = Reflect.get
     const reflectGetSpy = vi
@@ -177,10 +174,10 @@ describe('MeasurementBridge', () => {
     try {
       render(
         <MeasurementBridge
-          container={container}
-          highlighter={highlighter}
+          container={null}
+          highlighter={null}
           input={null}
-          suggestions={suggestions}
+          suggestions={null}
           requestViewSync={requestViewSync}
         />
       )

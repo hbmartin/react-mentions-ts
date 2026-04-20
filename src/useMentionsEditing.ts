@@ -343,6 +343,7 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       getCurrentSnapshot,
       cacheSnapshot,
       updateMentionsQueries,
+      clearSuggestions,
       requestHighlighterScrollSync,
     } = argsRef.current
     const native = event.nativeEvent
@@ -387,12 +388,18 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
         prevState.pendingSelectionUpdate || inputChangeResult.shouldRestoreSelection,
     }))
 
-    if (
-      nativeEvent.isComposing === true &&
-      inputChangeResult.nextSelectionStart === inputChangeResult.nextSelectionEnd &&
-      inputElementRef.current !== null
-    ) {
-      updateMentionsQueries(inputElementRef.current.value, inputChangeResult.nextSelectionStart)
+    if (inputChangeResult.nextSelectionStart === inputChangeResult.nextSelectionEnd) {
+      const querySource =
+        nativeEvent.isComposing === true && inputElementRef.current !== null
+          ? inputElementRef.current.value
+          : inputChangeResult.snapshot.plainText
+      updateMentionsQueries(
+        querySource,
+        inputChangeResult.nextSelectionStart,
+        inputChangeResult.value
+      )
+    } else {
+      clearSuggestions()
     }
 
     executeOnChange(
