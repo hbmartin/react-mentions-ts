@@ -229,6 +229,89 @@ describe('MentionsInputLayout', () => {
     }
   })
 
+  it('uses the portal host document viewport when the portal host belongs to another document', () => {
+    const highlighter = document.createElement('div')
+    const suggestions = document.createElement('div')
+    const container = document.createElement('div')
+    const portalDocument = document.implementation.createHTMLDocument('portal')
+    const originalInnerHeight = globalThis.innerHeight
+    const originalInnerWidth = globalThis.innerWidth
+    const originalClientHeight = document.documentElement.clientHeight
+    const originalClientWidth = document.documentElement.clientWidth
+
+    highlighter.style.fontSize = '16px'
+    suggestions.style.marginLeft = '0px'
+    suggestions.style.marginTop = '0px'
+
+    Object.defineProperty(globalThis, 'innerHeight', { value: 600, configurable: true })
+    Object.defineProperty(globalThis, 'innerWidth', { value: 600, configurable: true })
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      value: 600,
+      configurable: true,
+    })
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: 600,
+      configurable: true,
+    })
+    Object.defineProperty(portalDocument.documentElement, 'clientHeight', {
+      value: 120,
+      configurable: true,
+    })
+    Object.defineProperty(portalDocument.documentElement, 'clientWidth', {
+      value: 140,
+      configurable: true,
+    })
+    Object.defineProperty(highlighter, 'getBoundingClientRect', {
+      value: () => ({
+        left: 130,
+        top: 80,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(highlighter, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(suggestions, 'offsetHeight', { value: 40, configurable: true })
+    Object.defineProperty(container, 'offsetWidth', { value: 220, configurable: true })
+
+    try {
+      const position = calculateSuggestionsPosition({
+        caretPosition: { left: 24, top: 32 },
+        suggestionsPlacement: 'auto',
+        anchorMode: 'caret',
+        resolvedPortalHost: portalDocument.body,
+        suggestions,
+        highlighter,
+        container,
+      })
+
+      expect(position).toEqual({
+        left: 0,
+        position: 'fixed',
+        top: 56,
+        width: 140,
+      })
+    } finally {
+      Object.defineProperty(globalThis, 'innerHeight', {
+        value: originalInnerHeight,
+        configurable: true,
+      })
+      Object.defineProperty(globalThis, 'innerWidth', {
+        value: originalInnerWidth,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientHeight', {
+        value: originalClientHeight,
+        configurable: true,
+      })
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        value: originalClientWidth,
+        configurable: true,
+      })
+    }
+  })
+
   it('supports explicit above placement in a portal and prefers window dimensions when larger', () => {
     const highlighter = document.createElement('div')
     const suggestions = document.createElement('div')
@@ -460,6 +543,75 @@ describe('MentionsInputLayout', () => {
     expect(calculateInlineSuggestionPosition({ highlighter })).toMatchObject({
       left: 22,
       top: 18,
+    })
+  })
+
+  it('uses the last inline client rect when preceding text wraps', () => {
+    const control = document.createElement('div')
+    const highlighter = document.createElement('div')
+    const previousText = document.createElement('span')
+    const caret = document.createElement('span')
+    const firstLineRect = {
+      left: 20,
+      top: 20,
+      right: 70,
+      bottom: 36,
+      width: 50,
+      height: 16,
+    }
+    const lastLineRect = {
+      left: 20,
+      top: 48,
+      right: 74,
+      bottom: 64,
+      width: 54,
+      height: 16,
+    }
+
+    caret.dataset.mentionsCaret = 'true'
+    highlighter.append(previousText, caret)
+    control.append(highlighter)
+
+    Object.defineProperty(control, 'getBoundingClientRect', {
+      value: () => ({
+        left: 20,
+        top: 10,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(previousText, 'getBoundingClientRect', {
+      value: () => ({
+        left: 20,
+        top: 20,
+        right: 74,
+        bottom: 64,
+        width: 54,
+        height: 44,
+      }),
+    })
+    Object.defineProperty(previousText, 'getClientRects', {
+      value: () => ({
+        length: 2,
+        item: (index: number) => (index === 0 ? firstLineRect : lastLineRect),
+      }),
+    })
+    Object.defineProperty(caret, 'getBoundingClientRect', {
+      value: () => ({
+        left: 74,
+        top: 64,
+        right: 74,
+        bottom: 64,
+        width: 0,
+        height: 0,
+      }),
+    })
+
+    expect(calculateInlineSuggestionPosition({ highlighter })).toMatchObject({
+      left: 54,
+      top: 38,
     })
   })
 

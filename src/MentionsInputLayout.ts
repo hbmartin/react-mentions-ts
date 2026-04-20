@@ -53,6 +53,19 @@ const INLINE_TYPOGRAPHY_STYLE_PROPS = [
   'wordSpacing',
 ] as const
 
+const getLastClientRect = (element: Element | null): DOMRect | undefined => {
+  if (element === null) {
+    return undefined
+  }
+
+  const rects = element.getClientRects()
+  if (rects.length > 0) {
+    return rects.item(rects.length - 1) ?? undefined
+  }
+
+  return element.getBoundingClientRect()
+}
+
 interface HighlighterViewPatch {
   scrollLeft: number
   scrollTop: number
@@ -181,11 +194,11 @@ export const calculateSuggestionsPosition = ({
     left: caretOffsetParentRect.left + (anchorToLeft ? 0 : caretPosition.left),
     top: caretOffsetParentRect.top + caretPosition.top,
   }
-  const ownerDocument = highlighter.ownerDocument
-  const ownerWindow = ownerDocument.defaultView
+  const viewportDocument = (resolvedPortalHost ?? highlighter).ownerDocument
+  const viewportWindow = viewportDocument.defaultView
   const viewportHeight = Math.max(
-    ownerDocument.documentElement.clientHeight,
-    ownerWindow?.innerHeight ?? 0
+    viewportDocument.documentElement.clientHeight,
+    viewportWindow?.innerHeight ?? 0
   )
   const desiredWidth = highlighter.offsetWidth
 
@@ -193,8 +206,8 @@ export const calculateSuggestionsPosition = ({
 
   if (resolvedPortalHost) {
     const viewportWidth = Math.max(
-      ownerDocument.documentElement.clientWidth,
-      ownerWindow?.innerWidth ?? 0
+      viewportDocument.documentElement.clientWidth,
+      viewportWindow?.innerWidth ?? 0
     )
     const width = Math.min(desiredWidth, viewportWidth)
     position.width = width
@@ -263,7 +276,7 @@ export const calculateInlineSuggestionPosition = ({
   const controlElement = highlighter.parentElement
   const controlRect = controlElement?.getBoundingClientRect()
   const caretRect = caretElement?.getBoundingClientRect()
-  const previousInlineBoxRect = caretElement?.previousElementSibling?.getBoundingClientRect()
+  const previousInlineBoxRect = getLastClientRect(caretElement?.previousElementSibling ?? null)
 
   if (!caretRect || !controlElement || !controlRect) {
     return null
