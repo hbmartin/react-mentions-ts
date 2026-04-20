@@ -1,0 +1,600 @@
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import type React from 'react'
+import {
+  applyHighlighterViewPatch,
+  applyTextareaResizePatch,
+  areInlineSuggestionPositionsEqual,
+  areSuggestionsPositionsEqual,
+  calculateInlineSuggestionPosition,
+  calculateSuggestionsPosition,
+  createPendingViewSync,
+  createViewSyncPatch,
+  getHighlighterViewPatch,
+  getTextareaResizePatch,
+  hasPendingViewSync,
+  mergePendingViewSync,
+} from './MentionsInputLayout'
+import type { PendingViewSync, ViewSyncPatch } from './MentionsInputLayout'
+import { areMentionConfigsEqual } from './MentionsInputChildren'
+import type { SetMentionsInputState } from './MentionsInputState'
+import type {
+  InputElement,
+  MentionChildConfig,
+  MentionsInputProps,
+  MentionsInputState,
+} from './types'
+import { useEventCallback } from './utils/useEventCallback'
+
+let generatedIdCounter = 0
+
+const createGeneratedId = (): string => {
+  const cryptoObject = (globalThis as { crypto?: Crypto }).crypto
+
+  if (typeof cryptoObject?.randomUUID === 'function') {
+    return `mentions-${cryptoObject.randomUUID()}`
+  }
+
+  generatedIdCounter += 1
+  return `mentions-${generatedIdCounter.toString()}`
+}
+
+interface UseCaretLayoutArgs<Extra extends Record<string, unknown>> {
+  props: MentionsInputProps<Extra>
+  state: MentionsInputState<Extra>
+  stateRef: React.RefObject<MentionsInputState<Extra>>
+  setState: SetMentionsInputState<Extra>
+  value: string
+  config: ReadonlyArray<MentionChildConfig<Extra>>
+  isInlineAutocomplete: () => boolean
+  hasInlineSuggestion: () => boolean
+}
+
+interface PreviousCommit<Extra extends Record<string, unknown>> {
+  value: string
+  config: MentionChildConfig<Extra>[]
+  autoResize: boolean | undefined
+  selectionStart: number | null
+  selectionEnd: number | null
+  generatedId: string | null
+  caretPosition: MentionsInputState<Extra>['caretPosition']
+}
+
+export const useCaretLayout = <Extra extends Record<string, unknown>>(
+  args: UseCaretLayoutArgs<Extra>
+) => {
+  const argsRef = useRef(args)
+  argsRef.current = args
+
+  const containerElementRef = useRef<HTMLDivElement | null>(null)
+  const inputElementRef = useRef<InputElement | null>(null)
+  const highlighterElementRef = useRef<HTMLDivElement | null>(null)
+  const suggestionsElementRef = useRef<HTMLDivElement | null>(null)
+  const defaultSuggestionsPortalHostRef = useRef<HTMLElement | null>(
+    typeof document === 'undefined' ? null : document.body
+  )
+  const pendingViewSyncRef = useRef<PendingViewSync>(createPendingViewSync())
+  const isFlushingViewSyncRef = useRef(false)
+  const scrollSyncFrameRef = useRef<number | null>(null)
+  const autoResizeFrameRef = useRef<number | null>(null)
+  const didUnmountRef = useRef(false)
+  const pendingHighlighterRecomputeRef = useRef(false)
+  const queuedHighlighterRecomputeRef = useRef(false)
+  const previousCommitRef = useRef<PreviousCommit<Extra> | null>(null)
+
+  const cancelScheduledFrame = useEventCallback(
+    (frameRef: React.RefObject<number | null>): void => {
+      const frame = frameRef.current
+      if (frame !== null && typeof globalThis.cancelAnimationFrame === 'function') {
+        globalThis.cancelAnimationFrame(frame)
+      }
+      frameRef.current = null
+    }
+  )
+
+  const getExplicitId = useEventCallback((): string | null => {
+    const { id } = argsRef.current.props
+    return typeof id === 'string' && id.trim().length > 0 ? id.trim() : null
+  })
+
+  const ensureGeneratedId = useEventCallback((): void => {
+    if (getExplicitId() !== null || argsRef.current.stateRef.current.generatedId !== null) {
+      return
+    }
+
+    argsRef.current.setState({ generatedId: createGeneratedId() })
+  })
+
+  const getBaseId = useEventCallback(
+    (): string | null => getExplicitId() ?? argsRef.current.stateRef.current.generatedId
+  )
+
+  const getSuggestionsOverlayId = useEventCallback((): string | undefined => {
+    const baseId = getBaseId()
+    return baseId === null ? undefined : `${baseId}-suggestions`
+  })
+
+  const getInlineAutocompleteLiveRegionId = useEventCallback((): string | undefined => {
+    const baseId = getBaseId()
+    return baseId === null ? undefined : `${baseId}-inline-live`
+  })
+
+  const shouldMeasureSuggestions = useEventCallback(
+    (): boolean =>
+      !argsRef.current.isInlineAutocomplete() &&
+      typeof argsRef.current.stateRef.current.selectionStart === 'number'
+  )
+
+  const shouldMeasureInline = useEventCallback(
+    (): boolean =>
+      argsRef.current.isInlineAutocomplete() &&
+      typeof argsRef.current.stateRef.current.selectionStart === 'number'
+  )
+
+  const resolvePortalHost = useEventCallback((): Element | null => {
+    const { suggestionsPortalHost } = argsRef.current.props
+
+    if (suggestionsPortalHost === null) {
+      return null
+    }
+
+    if (typeof Document !== 'undefined' && suggestionsPortalHost instanceof Document) {
+      return suggestionsPortalHost.body
+    }
+
+    if (suggestionsPortalHost) {
+      return suggestionsPortalHost as Element
+    }
+
+    return defaultSuggestionsPortalHostRef.current
+  })
+
+  const resolveViewSyncFlags = useEventCallback(
+    (flags: Partial<PendingViewSync>): Partial<PendingViewSync> => {
+      const nextFlags: Partial<PendingViewSync> = {}
+
+      if (flags.restoreSelection === true) {
+        nextFlags.restoreSelection = true
+      }
+      if (flags.syncScroll === true) {
+        nextFlags.syncScroll = true
+      }
+      if (flags.recomputeHighlighter === true) {
+        nextFlags.recomputeHighlighter = true
+      }
+      if (flags.measureSuggestions === true && shouldMeasureSuggestions()) {
+        nextFlags.measureSuggestions = true
+      }
+      if (flags.measureInline === true && shouldMeasureInline()) {
+        nextFlags.measureInline = true
+      }
+
+      return nextFlags
+    }
+  )
+
+  const updateHighlighterScroll = useEventCallback((): boolean =>
+    applyHighlighterViewPatch(
+      highlighterElementRef.current,
+      getHighlighterViewPatch(inputElementRef.current, highlighterElementRef.current)
+    )
+  )
+
+  const resetTextareaHeight = useEventCallback((): boolean => {
+    const { props } = argsRef.current
+    const inputElement = inputElementRef.current
+
+    if (!(inputElement instanceof HTMLTextAreaElement)) {
+      return false
+    }
+
+    const resizePatch = getTextareaResizePatch(inputElement, {
+      singleLine: props.singleLine,
+      autoResize: props.autoResize,
+    })
+    const didUpdate = applyTextareaResizePatch(inputElement, resizePatch)
+
+    if (
+      props.singleLine === true ||
+      props.autoResize !== true ||
+      typeof globalThis.requestAnimationFrame !== 'function'
+    ) {
+      cancelScheduledFrame(autoResizeFrameRef)
+      return didUpdate
+    }
+
+    cancelScheduledFrame(autoResizeFrameRef)
+
+    autoResizeFrameRef.current = globalThis.requestAnimationFrame(() => {
+      autoResizeFrameRef.current = null
+      applyTextareaResizePatch(
+        inputElementRef.current,
+        getTextareaResizePatch(inputElementRef.current, {
+          singleLine: argsRef.current.props.singleLine,
+          autoResize: argsRef.current.props.autoResize,
+        })
+      )
+    })
+
+    return didUpdate
+  })
+
+  const updateSuggestionsPosition = useEventCallback((): boolean => {
+    const { props, stateRef, setState } = argsRef.current
+    const position =
+      calculateSuggestionsPosition({
+        caretPosition: stateRef.current.caretPosition,
+        suggestionsPlacement: props.suggestionsPlacement ?? 'below',
+        anchorMode: props.anchorMode ?? 'caret',
+        resolvedPortalHost: resolvePortalHost(),
+        suggestions: suggestionsElementRef.current,
+        highlighter: highlighterElementRef.current,
+        container: containerElementRef.current,
+      }) ?? {}
+
+    if (areSuggestionsPositionsEqual(position, stateRef.current.suggestionsPosition)) {
+      return false
+    }
+
+    setState({ suggestionsPosition: position })
+    return true
+  })
+
+  const updateInlineSuggestionPosition = useEventCallback((): boolean => {
+    const { stateRef, setState } = argsRef.current
+
+    if (!argsRef.current.isInlineAutocomplete()) {
+      if (stateRef.current.inlineSuggestionPosition === null) {
+        return false
+      }
+
+      setState({ inlineSuggestionPosition: null })
+      return true
+    }
+
+    const nextPosition = argsRef.current.hasInlineSuggestion()
+      ? calculateInlineSuggestionPosition({ highlighter: highlighterElementRef.current })
+      : null
+
+    if (
+      areInlineSuggestionPositionsEqual(stateRef.current.inlineSuggestionPosition, nextPosition)
+    ) {
+      return false
+    }
+
+    setState({ inlineSuggestionPosition: nextPosition })
+    return true
+  })
+
+  const scheduleHighlighterRecompute = useEventCallback((): void => {
+    if (didUnmountRef.current) {
+      return
+    }
+
+    if (pendingHighlighterRecomputeRef.current) {
+      queuedHighlighterRecomputeRef.current = true
+      return
+    }
+
+    pendingHighlighterRecomputeRef.current = true
+    argsRef.current.setState((prevState) => ({
+      highlighterRecomputeVersion: prevState.highlighterRecomputeVersion + 1,
+    }))
+  })
+
+  const setSelection = useEventCallback(
+    (selectionStart: number | null, selectionEnd: number | null): void => {
+      if (selectionStart === null || selectionEnd === null) {
+        return
+      }
+
+      const element = inputElementRef.current
+      if (!element) {
+        return
+      }
+
+      let selectionApplied = false
+      if (typeof element.setSelectionRange === 'function') {
+        element.setSelectionRange(selectionStart, selectionEnd)
+        selectionApplied = true
+      } else if ('createTextRange' in element) {
+        const range = (
+          element as unknown as {
+            createTextRange: () => {
+              collapse: (value: boolean) => void
+              moveEnd: (unit: string, value: number) => void
+              moveStart: (unit: string, value: number) => void
+              select: () => void
+            }
+          }
+        ).createTextRange()
+        range.collapse(true)
+        range.moveEnd('character', selectionEnd)
+        range.moveStart('character', selectionStart)
+        range.select()
+        selectionApplied = true
+      }
+
+      if (selectionApplied) {
+        requestHighlighterScrollSync()
+      }
+    }
+  )
+
+  const flushPendingViewSync = useEventCallback((): ViewSyncPatch => {
+    if (
+      didUnmountRef.current ||
+      isFlushingViewSyncRef.current ||
+      !hasPendingViewSync(pendingViewSyncRef.current)
+    ) {
+      return createViewSyncPatch()
+    }
+
+    if (scrollSyncFrameRef.current !== null) {
+      cancelScheduledFrame(scrollSyncFrameRef)
+    }
+
+    isFlushingViewSyncRef.current = true
+
+    try {
+      const pendingViewSync = pendingViewSyncRef.current
+      pendingViewSyncRef.current = createPendingViewSync()
+      const patch = createViewSyncPatch()
+      const { stateRef, setState } = argsRef.current
+
+      if (pendingViewSync.restoreSelection && stateRef.current.pendingSelectionUpdate) {
+        setState({ pendingSelectionUpdate: false })
+        setSelection(stateRef.current.selectionStart, stateRef.current.selectionEnd)
+        patch.restoredSelection = true
+      }
+
+      let layoutDidChange = false
+
+      if (pendingViewSync.syncScroll) {
+        patch.syncedScroll = true
+        layoutDidChange = updateHighlighterScroll() || layoutDidChange
+        layoutDidChange = resetTextareaHeight() || layoutDidChange
+      }
+
+      if (pendingViewSync.measureSuggestions) {
+        patch.measuredSuggestions = updateSuggestionsPosition()
+      }
+
+      if (pendingViewSync.measureInline) {
+        patch.measuredInline = updateInlineSuggestionPosition()
+      }
+
+      if (pendingViewSync.recomputeHighlighter || layoutDidChange) {
+        scheduleHighlighterRecompute()
+        patch.recomputedHighlighter = true
+      }
+
+      return patch
+    } finally {
+      isFlushingViewSyncRef.current = false
+    }
+  })
+
+  const requestViewSync = useEventCallback(
+    (
+      flags: Partial<PendingViewSync>,
+      options: {
+        flushNow?: boolean
+      } = {}
+    ): void => {
+      const filteredFlags = resolveViewSyncFlags(flags)
+      pendingViewSyncRef.current = mergePendingViewSync(pendingViewSyncRef.current, filteredFlags)
+
+      if (!hasPendingViewSync(pendingViewSyncRef.current)) {
+        return
+      }
+
+      if (options.flushNow === true) {
+        flushPendingViewSync()
+        return
+      }
+
+      if (typeof globalThis.requestAnimationFrame !== 'function') {
+        flushPendingViewSync()
+        return
+      }
+
+      if (scrollSyncFrameRef.current !== null) {
+        return
+      }
+
+      scrollSyncFrameRef.current = globalThis.requestAnimationFrame(() => {
+        scrollSyncFrameRef.current = null
+        flushPendingViewSync()
+      })
+    }
+  )
+
+  const requestHighlighterScrollSync = useEventCallback((): void => {
+    requestViewSync({
+      syncScroll: true,
+      measureSuggestions: true,
+      measureInline: true,
+    })
+  })
+
+  const handleCaretPositionChange = useEventCallback(
+    (position: MentionsInputState<Extra>['caretPosition']): void => {
+      argsRef.current.setState({ caretPosition: position })
+      requestViewSync({
+        measureSuggestions: true,
+        measureInline: true,
+      })
+    }
+  )
+
+  const handleInputScroll = useEventCallback((): void => {
+    requestViewSync(
+      {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      { flushNow: true }
+    )
+  })
+
+  const handleDocumentScroll = useEventCallback((): void => {
+    if (!shouldMeasureSuggestions() && !shouldMeasureInline()) {
+      return
+    }
+
+    requestViewSync({
+      measureSuggestions: true,
+      measureInline: true,
+    })
+  })
+
+  const setContainerElement = useEventCallback((element: HTMLDivElement | null): void => {
+    containerElementRef.current = element
+  })
+
+  const setHighlighterElement = useEventCallback((element: HTMLDivElement | null): void => {
+    highlighterElementRef.current = element
+  })
+
+  const setSuggestionsElement = useEventCallback((element: HTMLDivElement | null): void => {
+    suggestionsElementRef.current = element
+  })
+
+  const setInputRef = useEventCallback((element: InputElement | null): void => {
+    inputElementRef.current = element
+    const { inputRef } = argsRef.current.props
+    if (typeof inputRef === 'function') {
+      inputRef(element)
+    } else if (inputRef !== null && inputRef !== undefined) {
+      ;(inputRef as React.RefObject<InputElement | null>).current = element
+    }
+  })
+
+  useLayoutEffect(() => {
+    if (!pendingHighlighterRecomputeRef.current) {
+      return
+    }
+
+    pendingHighlighterRecomputeRef.current = false
+    if (queuedHighlighterRecomputeRef.current) {
+      queuedHighlighterRecomputeRef.current = false
+      scheduleHighlighterRecompute()
+    }
+  }, [args.state.highlighterRecomputeVersion, scheduleHighlighterRecompute])
+
+  useLayoutEffect(() => {
+    const { props, state, value, config } = argsRef.current
+    const previousCommit = previousCommitRef.current
+
+    if (previousCommit === null) {
+      ensureGeneratedId()
+      requestViewSync(
+        {
+          syncScroll: true,
+          measureSuggestions: true,
+          measureInline: true,
+        },
+        { flushNow: true }
+      )
+    } else {
+      const selectionPositionsChanged =
+        state.selectionStart !== previousCommit.selectionStart ||
+        state.selectionEnd !== previousCommit.selectionEnd
+      const configChanged = !areMentionConfigsEqual(previousCommit.config, config)
+      const valueChanged = value !== previousCommit.value || configChanged
+
+      ensureGeneratedId()
+
+      if (state.pendingSelectionUpdate) {
+        requestViewSync({ restoreSelection: true })
+      }
+
+      if (valueChanged || previousCommit.autoResize !== props.autoResize) {
+        requestViewSync({
+          syncScroll: true,
+          measureSuggestions: true,
+          measureInline: true,
+        })
+      }
+
+      if (selectionPositionsChanged) {
+        requestViewSync({
+          measureSuggestions: true,
+          measureInline: true,
+        })
+      }
+
+      if (
+        previousCommit.generatedId !== state.generatedId ||
+        previousCommit.caretPosition !== state.caretPosition
+      ) {
+        requestViewSync({
+          measureSuggestions: true,
+          measureInline: true,
+        })
+      }
+
+      flushPendingViewSync()
+    }
+
+    previousCommitRef.current = {
+      value,
+      config: [...config],
+      autoResize: props.autoResize,
+      selectionStart: state.selectionStart,
+      selectionEnd: state.selectionEnd,
+      generatedId: state.generatedId,
+      caretPosition: state.caretPosition,
+    }
+  })
+
+  useLayoutEffect(
+    () => () => {
+      didUnmountRef.current = true
+      cancelScheduledFrame(scrollSyncFrameRef)
+      cancelScheduledFrame(autoResizeFrameRef)
+      pendingHighlighterRecomputeRef.current = false
+      queuedHighlighterRecomputeRef.current = false
+    },
+    [cancelScheduledFrame]
+  )
+
+  useEffect(() => {
+    document.addEventListener('scroll', handleDocumentScroll, true)
+
+    return () => {
+      document.removeEventListener('scroll', handleDocumentScroll, true)
+    }
+  }, [handleDocumentScroll])
+
+  return {
+    containerElementRef,
+    inputElementRef,
+    highlighterElementRef,
+    suggestionsElementRef,
+    pendingViewSyncRef,
+    scrollSyncFrameRef,
+    autoResizeFrameRef,
+    setContainerElement,
+    setInputRef,
+    setHighlighterElement,
+    setSuggestionsElement,
+    getSuggestionsOverlayId,
+    getInlineAutocompleteLiveRegionId,
+    ensureGeneratedIdIfNeeded: ensureGeneratedId,
+    resolvePortalHost,
+    requestViewSync,
+    flushPendingViewSync,
+    resetTextareaHeight,
+    updateInlineSuggestionPosition,
+    handleCaretPositionChange,
+    scheduleHighlighterRecompute,
+    updateSuggestionsPosition,
+    updateHighlighterScroll,
+    requestHighlighterScrollSync,
+    handleInputScroll,
+    handleDocumentScroll,
+    setSelection,
+  }
+}

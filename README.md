@@ -198,7 +198,7 @@ Attach a ref to `MentionsInput` when you need to programmatically insert text at
 
 ```tsx
 import { useRef, useState } from 'react'
-import { Mention, MentionsInput } from 'react-mentions-ts'
+import { Mention, MentionsInput, type MentionsInputHandle } from 'react-mentions-ts'
 
 const users = [
   { id: 'walter', display: 'Walter White' },
@@ -206,7 +206,7 @@ const users = [
 ]
 
 function ImperativeApiExample() {
-  const mentionsRef = useRef<MentionsInput>(null)
+  const mentionsRef = useRef<MentionsInputHandle>(null)
   const [value, setValue] = useState('')
 
   const handleInsertText = () => {

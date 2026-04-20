@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
-    "types": ["node", "vitest/globals", "vitest/jsdom", "@testing-library/jest-dom"]
+    "types": ["node", "vitest/globals", "vitest/jsdom", "vitest/browser", "@testing-library/jest-dom"]
   },
   "include": [
     "src/**/*.spec.ts",
