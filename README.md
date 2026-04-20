@@ -660,6 +660,38 @@ This library is a TypeScript rewrite of [react-mentions](https://github.com/sign
 + import { MentionsInput, Mention } from 'react-mentions-ts'
 ```
 
+### Automated Codemod
+
+The package ships a [jscodeshift](https://github.com/facebook/jscodeshift) transform that handles most of the mechanical renames. After installing `react-mentions-ts`, run it against your source tree:
+
+```bash
+npx jscodeshift \
+  --parser=tsx \
+  --extensions=tsx,ts,jsx,js \
+  --transform=node_modules/react-mentions-ts/codemods/react-mentions-to-react-mentions-ts.cjs \
+  src
+```
+
+What the codemod rewrites automatically:
+
+- Updates ESM `import` and CommonJS `require` statements (including namespace and destructured forms) from `react-mentions` to `react-mentions-ts`.
+- Renames `onChange` → `onMentionsChange` on `MentionsInput`. Inline arrow/function handlers have their positional parameters (`event`, `newValue`, `newPlainTextValue`, `mentions`) converted to the object payload; if the handler body references the event parameter, a `const event = trigger.nativeEvent` alias is prepended so existing code keeps working.
+- Renames `onBlur` → `onMentionBlur` on `MentionsInput`.
+- Rewrites `onAdd` on `Mention` from positional arguments (`id`, `display`, `startPos`, `endPos`) to the object payload.
+- Consolidates `allowSuggestionsAboveCursor` / `forceSuggestionsAboveCursor` into `suggestionsPlacement="auto"` / `"above"`.
+- Removes `allowSpaceInQuery` and `ignoreAccents` from `MentionsInput` and moves them onto each child `Mention`'s `trigger` via `makeTriggerRegex('@', { … })`, auto-importing the helper.
+- Removes the separate `regex` prop and wraps static `markup` strings with `createMarkupSerializer(...)`, auto-importing the helper.
+- When `onChange` or `onAdd` is passed as a bare identifier or member expression (e.g. `onChange={this.handleChange}`), wraps it in an adapter that calls the existing handler with the legacy positional arguments so the original implementation keeps working until you migrate it by hand.
+
+The following cases are reported via `api.report(...)` (printed by jscodeshift) and must be migrated by hand:
+
+- `data` providers that use the legacy `(query, callback) => …` signature must be rewritten to return an array or a promise (the codemod flags inline `data` functions that declare two or more parameters so you can confirm).
+- Dynamic values for `allowSpaceInQuery`, `ignoreAccents`, `allowSuggestionsAboveCursor`, or `forceSuggestionsAboveCursor` (e.g. `allowSpaceInQuery={someFlag}`) — these are removed with a warning and the equivalent trigger regex must be wired up manually.
+- `Mention` elements using `regex` when `markup` is missing or dynamic.
+- Callback attributes whose value is not an inline function, identifier, or member expression.
+
+Review the diff and run your test suite after applying it.
+
 ### Renamed Props
 
 | react-mentions                                           | react-mentions-ts                                                                                   | Notes                                                                                                                           |

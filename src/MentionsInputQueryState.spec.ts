@@ -350,24 +350,29 @@ describe('MentionsInputQueryState', () => {
     expect(nextState.focusIndex).toBe(0)
   })
 
-  it('defaults failed query metadata when no current query state exists', () => {
-    const nextState = applyErroredQueryResult(
-      {
-        1: {
-          queryInfo: { ...queryInfo, childIndex: 1 },
-          results: [{ id: 'preserved', display: 'Preserved' }],
-        },
+  it('ignores stale errored query results without current query state', () => {
+    const suggestions = {
+      1: {
+        queryInfo: { ...queryInfo, childIndex: 1 },
+        results: [{ id: 'preserved', display: 'Preserved' }],
       },
-      {},
+    }
+    const queryStates = {}
+
+    const nextState = applyErroredQueryResult(
+      suggestions,
+      queryStates,
       0,
       queryInfo,
       new Error('boom'),
       0
     )
 
-    expect(nextState.suggestions[1]?.results).toHaveLength(1)
-    expect(nextState.focusIndex).toBe(0)
-    expect(nextState.queryStates[0]?.ignoreAccents).toBe(false)
+    expect(nextState).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 0,
+    })
   })
 
   it('defaults failed query accent metadata when the current query state omits it', () => {
