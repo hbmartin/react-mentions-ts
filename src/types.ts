@@ -266,6 +266,10 @@ export type InputComponent =
       InputComponentProps & React.RefAttributes<HTMLInputElement | HTMLTextAreaElement>
     >
 
+export interface MentionsInputHandle {
+  insertText: (text: string) => void
+}
+
 export interface MentionsInputProps<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > extends Omit<

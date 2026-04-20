@@ -364,22 +364,18 @@ describe('MentionsInput performance', () => {
     expect(firstRequest.signal.aborted).toBe(true)
     expect(secondRequest.signal.aborted).toBe(false)
 
-    const instance = ref.current as { replaceSuggestions: (...args: unknown[]) => void }
-    const replaceSuggestionsSpy = vi.spyOn(instance, 'replaceSuggestions')
-
     firstRequest.resolve([{ id: 'alice', display: 'Alice' }])
     await flushMicrotasks()
 
-    const staleResultApplications = replaceSuggestionsSpy.mock.calls.length
+    const staleResultApplications = screen.queryByText('Alice') === null ? 0 : 1
 
     secondRequest.resolve([{ id: 'albert', display: 'Albert' }])
 
     await waitFor(() => {
-      expect(replaceSuggestionsSpy.mock.calls.length).toBeGreaterThan(staleResultApplications)
+      expect(screen.getByText('Albert')).toBeInTheDocument()
     })
 
-    const freshResultApplications =
-      replaceSuggestionsSpy.mock.calls.length - staleResultApplications
+    const freshResultApplications = screen.queryByText('Albert') === null ? 0 : 1
     const metrics = {
       staleResultApplications,
       freshResultApplications,
@@ -388,8 +384,6 @@ describe('MentionsInput performance', () => {
 
     expect(metrics.staleResultApplications).toBe(0)
     expect(metrics.freshResultApplications).toBe(1)
-
-    replaceSuggestionsSpy.mockRestore()
   })
 
   it('reports long-document caret mapping counts', async () => {
@@ -621,17 +615,16 @@ describe('MentionsInput performance', () => {
   })
 
   it('reports suggestion measurement counts for scroll and resize events', async () => {
-    const ref = React.createRef<any>()
-
     const requestAnimationFrameSpy = vi
       .spyOn(globalThis, 'requestAnimationFrame')
       .mockImplementation((callback: FrameRequestCallback) => {
         callback(0)
         return 1
       })
+    const overlayPositionSpy = vi.spyOn(mentionsInputLayout, 'calculateSuggestionsPosition')
 
     render(
-      <MentionsInput ref={ref} value="@a">
+      <MentionsInput value="@a">
         <Mention trigger="@" data={mentionData} />
       </MentionsInput>
     )
@@ -644,25 +637,19 @@ describe('MentionsInput performance', () => {
         expect(screen.getAllByRole('option', { hidden: true }).length).toBeGreaterThan(0)
       })
 
-      const instance = ref.current as { updateSuggestionsPosition: () => boolean }
-      const updateSuggestionsPositionSpy = vi
-        .spyOn(instance, 'updateSuggestionsPosition')
-        .mockImplementation(() => true)
-
-      updateSuggestionsPositionSpy.mockClear()
+      overlayPositionSpy.mockClear()
 
       fireEvent.scroll(combobox, { target: { scrollTop: 24 } })
       fireEvent(globalThis, new Event('resize'))
 
       const metrics = {
-        updateSuggestionsPositionCalls: updateSuggestionsPositionSpy.mock.calls.length,
+        updateSuggestionsPositionCalls: overlayPositionSpy.mock.calls.length,
       }
       emitPerformanceMetric('suggestions-measurement-events', metrics)
 
       expect(metrics.updateSuggestionsPositionCalls).toBeLessThanOrEqual(3)
-
-      updateSuggestionsPositionSpy.mockRestore()
     } finally {
+      overlayPositionSpy.mockRestore()
       requestAnimationFrameSpy.mockRestore()
     }
   })

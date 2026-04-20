@@ -2,6 +2,7 @@ export { default as MentionsInput } from './MentionsInput'
 export { default as Mention } from './Mention'
 export type {
   MentionsInputProps,
+  MentionsInputHandle,
   MentionsInputClassNames,
   MentionComponentProps,
   MentionDataItem,

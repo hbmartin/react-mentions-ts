@@ -6,5 +6,11 @@
     "moduleResolution": "Bundler",
     "types": ["node"]
   },
-  "include": ["eslint.config.ts", "vitest.config.ts", "demo/vite.config.ts", "scripts/**/*.ts"]
+  "include": [
+    "eslint.config.ts",
+    "vitest.config.ts",
+    "vitest.browser.config.ts",
+    "demo/vite.config.ts",
+    "scripts/**/*.ts"
+  ]
 }
