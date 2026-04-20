@@ -181,13 +181,21 @@ export const calculateSuggestionsPosition = ({
     left: caretOffsetParentRect.left + (anchorToLeft ? 0 : caretPosition.left),
     top: caretOffsetParentRect.top + caretPosition.top,
   }
-  const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+  const ownerDocument = highlighter.ownerDocument
+  const ownerWindow = ownerDocument.defaultView
+  const viewportHeight = Math.max(
+    ownerDocument.documentElement.clientHeight,
+    ownerWindow?.innerHeight ?? 0
+  )
   const desiredWidth = highlighter.offsetWidth
 
   const position: SuggestionsPosition = {}
 
   if (resolvedPortalHost) {
-    const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
+    const viewportWidth = Math.max(
+      ownerDocument.documentElement.clientWidth,
+      ownerWindow?.innerWidth ?? 0
+    )
     const width = Math.min(desiredWidth, viewportWidth)
     position.width = width
     position.position = 'fixed'

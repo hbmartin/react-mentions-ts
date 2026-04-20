@@ -21,6 +21,17 @@ const SUGGESTIONS_ONLY_FLAGS: Partial<PendingViewSync> = {
   measureSuggestions: true,
 }
 
+const getOwnerWindow = (...elements: Array<Element | null>): Window | undefined => {
+  for (const element of elements) {
+    const ownerWindow = element?.ownerDocument.defaultView
+    if (ownerWindow !== undefined && ownerWindow !== null) {
+      return ownerWindow
+    }
+  }
+
+  return Reflect.get(globalThis, 'window') as Window | undefined
+}
+
 const MeasurementBridge = ({
   container,
   highlighter,
@@ -37,9 +48,9 @@ const MeasurementBridge = ({
   })
 
   const observe = useEventCallback((element: Element | null, callback: () => void) => {
-    const resizeObserverConstructor = Reflect.get(globalThis, 'ResizeObserver') as
-      | typeof ResizeObserver
-      | undefined
+    const resizeObserverConstructor =
+      element?.ownerDocument.defaultView?.ResizeObserver ??
+      (Reflect.get(globalThis, 'ResizeObserver') as typeof ResizeObserver | undefined)
 
     if (!element || resizeObserverConstructor === undefined) {
       return undefined
@@ -78,7 +89,7 @@ const MeasurementBridge = ({
   )
 
   useLayoutEffect(() => {
-    const windowObject = Reflect.get(globalThis, 'window') as Window | undefined
+    const windowObject = getOwnerWindow(input, container, highlighter, suggestions)
 
     if (windowObject === undefined) {
       return undefined
@@ -95,7 +106,7 @@ const MeasurementBridge = ({
       windowObject.removeEventListener('resize', handleViewportChange)
       windowObject.removeEventListener('orientationchange', handleViewportChange)
     }
-  }, [requestAllMeasurements])
+  }, [container, highlighter, input, requestAllMeasurements, suggestions])
 
   useLayoutEffect(() => {
     if (!input) {
