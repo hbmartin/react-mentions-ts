@@ -42,6 +42,7 @@
     "lint:rule-counts": "oxlint src --format json | jq '[.diagnostics[].code] | group_by(.) | map({ rule: .[0], count: length }) | sort_by(-.count)'",
     "lint:all-rules": "node ./scripts/write-oxlint-all-rules.mjs",
     "publint": "npx publint --pack npm",
+    "tree-shake:report": "pnpm build && npx publint --pack npm && node ./scripts/tree-shake-report.mjs",
     "types:lint": "npm_config_cache=.npm-cache attw --pack .",
     "ci:verify": "pnpm lint && pnpm typecheck && pnpm build && npx publint --pack npm && pnpm types:lint",
     "dev": "node ./scripts/dev-with-wdyr.mjs",

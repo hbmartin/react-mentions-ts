@@ -1,5 +1,5 @@
-import type { KeyboardEvent } from 'react'
-import React, { useImperativeHandle } from 'react'
+import type { KeyboardEvent, ReactElement, ReactNode, Ref } from 'react'
+import { useImperativeHandle } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
@@ -98,10 +98,15 @@ const getSlotClassName = (
   baseClass: string
 ): string => cn(baseClass, classNames?.[slot])
 
-const MentionsInputInner = <Extra extends Record<string, unknown> = Record<string, unknown>>(
-  props: MentionsInputProps<Extra>,
-  ref: React.ForwardedRef<MentionsInputHandle>
-) => {
+type MentionsInputComponentProps<Extra extends Record<string, unknown> = Record<string, unknown>> =
+  MentionsInputProps<Extra> & {
+    ref?: Ref<MentionsInputHandle>
+  }
+
+const MentionsInput = <Extra extends Record<string, unknown> = Record<string, unknown>>({
+  ref,
+  ...props
+}: MentionsInputComponentProps<Extra>): ReactElement | null => {
   const { state, stateRef, setState } = useMentionsInputState<Extra>()
   const value = props.value ?? ''
   const singleLine = props.singleLine ?? defaultMentionsInputProps.singleLine
@@ -324,7 +329,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     return inputProps as InputComponentProps
   }
 
-  const renderInputControl = (): React.ReactElement => {
+  const renderInputControl = (): ReactElement => {
     const CustomInput = props.inputComponent
     const inputProps = getInputProps()
 
@@ -339,7 +344,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     return <CustomInput ref={caretLayout.setInputRef} {...inputProps} />
   }
 
-  const renderSuggestionsOverlay = (): React.ReactNode | null => {
+  const renderSuggestionsOverlay = (): ReactNode | null => {
     if (isInlineAutocomplete) {
       return null
     }
@@ -394,7 +399,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     return portalTarget ? createPortal(suggestionsNode, portalTarget) : suggestionsNode
   }
 
-  const renderInlineSuggestion = (): React.ReactNode => {
+  const renderInlineSuggestion = (): ReactNode => {
     if (!isInlineAutocomplete || !isNumber(state.selectionStart)) {
       return null
     }
@@ -408,7 +413,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     )
   }
 
-  const renderInlineSuggestionLiveRegion = (): React.ReactNode => {
+  const renderInlineSuggestionLiveRegion = (): ReactNode => {
     if (!isInlineAutocomplete) {
       return null
     }
@@ -427,7 +432,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     )
   }
 
-  const renderHighlighter = (): React.ReactElement => (
+  const renderHighlighter = (): ReactElement => (
     <Highlighter
       containerRef={caretLayout.setHighlighterElement}
       className={props.classNames?.highlighter}
@@ -447,7 +452,7 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     </Highlighter>
   )
 
-  const renderMeasurementBridge = (): React.ReactElement => (
+  const renderMeasurementBridge = (): ReactElement => (
     <MeasurementBridge
       container={caretLayout.containerElementRef.current}
       highlighter={caretLayout.highlighterElementRef.current}
@@ -473,11 +478,5 @@ const MentionsInputInner = <Extra extends Record<string, unknown> = Record<strin
     />
   )
 }
-
-const MentionsInput = React.forwardRef(MentionsInputInner) as <
-  Extra extends Record<string, unknown> = Record<string, unknown>,
->(
-  props: MentionsInputProps<Extra> & React.RefAttributes<MentionsInputHandle>
-) => React.ReactElement | null
 
 export default MentionsInput
