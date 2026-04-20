@@ -239,7 +239,7 @@ const rewritePackageReferences = (root, j, state) => {
   })
 
   root.find(j.CallExpression).forEach((path) => {
-    if (getRequireSource(path.value) !== REACT_MENTIONS_PACKAGE) {
+    if (!isRequireFromReactMentions(path.value)) {
       return
     }
 

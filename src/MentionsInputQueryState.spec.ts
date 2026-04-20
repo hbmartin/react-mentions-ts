@@ -235,6 +235,46 @@ describe('MentionsInputQueryState', () => {
     expect(nextState.queryStates[0]?.pagination?.isLoading).toBe(true)
   })
 
+  it('ignores page lifecycle updates before pagination exists for the current query', () => {
+    const suggestions = {
+      0: {
+        queryInfo,
+        results: [{ id: 'first', display: 'First' }],
+      },
+    }
+    const queryStates = {
+      0: {
+        queryInfo,
+        results: [{ id: 'first', display: 'First' }],
+        status: 'success' as const,
+        ignoreAccents: false,
+      },
+    }
+    const page = {
+      items: [{ id: 'stale', display: 'Stale' }],
+      nextCursor: null,
+      hasMore: false,
+      paginated: true,
+    }
+    const error = new Error('stale')
+
+    expect(applyLoadingPageResult(suggestions, queryStates, 0, 2)).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
+    })
+    expect(applySuccessfulPageResult(suggestions, queryStates, 0, queryInfo, page, 2)).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
+    })
+    expect(applyErroredPageResult(suggestions, queryStates, 0, error, 2)).toEqual({
+      suggestions,
+      queryStates,
+      focusIndex: 2,
+    })
+  })
+
   it('appends page results and records the next cursor', () => {
     const nextState = applySuccessfulPageResult(
       {
@@ -277,6 +317,82 @@ describe('MentionsInputQueryState', () => {
       hasMore: false,
       isLoading: false,
     })
+  })
+
+  it('starts paginated page results from an empty suggestion bucket when needed', () => {
+    const nextState = applySuccessfulPageResult(
+      {},
+      {
+        0: {
+          queryInfo,
+          results: [],
+          status: 'success',
+          ignoreAccents: false,
+          pagination: {
+            nextCursor: 'cursor-2',
+            hasMore: true,
+            isLoading: true,
+          },
+        },
+      },
+      0,
+      queryInfo,
+      {
+        items: [{ id: 'first', display: 'First' }],
+        nextCursor: null,
+        hasMore: false,
+        paginated: true,
+      },
+      0
+    )
+
+    expect(nextState.suggestions[0]?.results).toEqual([{ id: 'first', display: 'First' }])
+    expect(nextState.focusIndex).toBe(0)
+  })
+
+  it('defaults failed query metadata when no current query state exists', () => {
+    const nextState = applyErroredQueryResult(
+      {
+        1: {
+          queryInfo: { ...queryInfo, childIndex: 1 },
+          results: [{ id: 'preserved', display: 'Preserved' }],
+        },
+      },
+      {},
+      0,
+      queryInfo,
+      new Error('boom'),
+      0
+    )
+
+    expect(nextState.suggestions[1]?.results).toHaveLength(1)
+    expect(nextState.focusIndex).toBe(0)
+    expect(nextState.queryStates[0]?.ignoreAccents).toBe(false)
+  })
+
+  it('defaults failed query accent metadata when the current query state omits it', () => {
+    const nextState = applyErroredQueryResult(
+      {
+        0: {
+          queryInfo,
+          results: [{ id: 'first', display: 'First' }],
+        },
+      },
+      {
+        0: {
+          queryInfo,
+          results: [],
+          status: 'loading',
+        },
+      },
+      0,
+      queryInfo,
+      new Error('boom'),
+      0
+    )
+
+    expect(nextState.suggestions[0]).toBeUndefined()
+    expect(nextState.queryStates[0]?.ignoreAccents).toBe(false)
   })
 
   it('ignores page lifecycle updates after query state has been cleared', () => {

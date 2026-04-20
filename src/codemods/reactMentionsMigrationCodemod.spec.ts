@@ -137,6 +137,41 @@ describe('react-mentions-to-react-mentions-ts codemod', () => {
     expect(output).toContain('allowSpaceInQuery: true')
   })
 
+  it('collects existing react-mentions-ts CommonJS bindings before migrating JSX', () => {
+    const { output, reports } = applyCodemod(`
+      const { MentionsInput, Mention } = require('react-mentions-ts')
+      const ReactMentions = require('react-mentions-ts')
+
+      exports.Destructured = function Destructured({ users }) {
+        return (
+          <MentionsInput value="" allowSpaceInQuery>
+            <Mention data={users} />
+          </MentionsInput>
+        )
+      }
+
+      exports.Namespaced = function Namespaced({ users }) {
+        return (
+          <ReactMentions.MentionsInput value="" ignoreAccents>
+            <ReactMentions.Mention trigger="#" data={users} />
+          </ReactMentions.MentionsInput>
+        )
+      }
+    `)
+
+    const compactOutput = output.replaceAll(/\s+/g, ' ')
+
+    expect(reports).toEqual([])
+    expect(compactOutput).toContain(
+      "const { MentionsInput, Mention, makeTriggerRegex } = require('react-mentions-ts')"
+    )
+    expect(output).toContain("const ReactMentions = require('react-mentions-ts')")
+    expect(output).toContain("trigger={makeTriggerRegex('@', {")
+    expect(output).toContain("trigger={makeTriggerRegex('#', {")
+    expect(output).toContain('allowSpaceInQuery: true')
+    expect(output).toContain('ignoreAccents: true')
+  })
+
   it('adds a separate helper import for namespace ESM imports', () => {
     const { output, reports } = applyCodemod(`
       import * as ReactMentions from 'react-mentions'
