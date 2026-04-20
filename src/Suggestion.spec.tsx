@@ -1,5 +1,5 @@
 import React from 'react'
-import { render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import Suggestion from './Suggestion'
 
 const queryInfo = {
@@ -174,5 +174,35 @@ describe('Suggestion', () => {
     expect(highlightedElements[0]).toHaveTextContent('Ada')
     expect(highlightedElements[1]).toHaveTextContent('Love')
     expect(container.textContent).toBe('Ada Lovelace')
+  })
+
+  it('selects suggestions with Enter and Space while ignoring other keys', () => {
+    const onSelect = vi.fn()
+    const { container } = render(
+      <Suggestion
+        id="suggestion-keyboard"
+        index={0}
+        query="test"
+        queryInfo={queryInfo}
+        suggestion={{ id: '1', display: 'Keyboard Suggestion' }}
+        onSelect={onSelect}
+        onMouseEnter={vi.fn()}
+      />
+    )
+
+    const suggestionItem = container.querySelector('li[role="option"]') as HTMLLIElement
+
+    fireEvent.keyDown(suggestionItem, { key: 'Escape' })
+    expect(onSelect).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(suggestionItem, { key: 'Enter' })
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: '1' }),
+      expect.objectContaining({ query: 'test' })
+    )
+
+    fireEvent.keyDown(suggestionItem, { key: ' ' })
+    expect(onSelect).toHaveBeenCalledTimes(2)
   })
 })

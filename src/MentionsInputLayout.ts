@@ -41,6 +41,8 @@ export interface ViewSyncCommit<Extra extends Record<string, unknown> = Record<s
   suggestionsPlacement: 'auto' | 'above' | 'below' | undefined
   suggestionsPortalHost: Element | Document | null | undefined
   isInlineAutocomplete: boolean
+  hasInlineSuggestion: boolean
+  suggestionsLayoutKey: string | null
   selectionStart: number | null
   selectionEnd: number | null
   generatedId: string | null
@@ -177,6 +179,11 @@ export const getViewSyncDecision = <Extra extends Record<string, unknown>>(
     previousCommit.suggestionsPlacement !== currentCommit.suggestionsPlacement ||
     previousCommit.suggestionsPortalHost !== currentCommit.suggestionsPortalHost ||
     previousCommit.isInlineAutocomplete !== currentCommit.isInlineAutocomplete
+  const suggestionsContentLayoutChanged =
+    previousCommit.suggestionsLayoutKey !== currentCommit.suggestionsLayoutKey
+  const inlineSuggestionVisibilityChanged =
+    currentCommit.isInlineAutocomplete &&
+    previousCommit.hasInlineSuggestion !== currentCommit.hasInlineSuggestion
   const flags: Partial<PendingViewSync> = {}
 
   if (currentCommit.pendingSelectionUpdate) {
@@ -202,6 +209,14 @@ export const getViewSyncDecision = <Extra extends Record<string, unknown>>(
 
   if (suggestionLayoutInputsChanged) {
     flags.measureSuggestions = true
+    flags.measureInline = true
+  }
+
+  if (suggestionsContentLayoutChanged) {
+    flags.measureSuggestions = true
+  }
+
+  if (inlineSuggestionVisibilityChanged) {
     flags.measureInline = true
   }
 

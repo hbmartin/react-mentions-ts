@@ -196,13 +196,14 @@
       "**/node_modules/**",
       "**/dist/**",
       "**/coverage/**",
-      "**/tests/**",
-      "**/.next/**",
       "**/*.json",
-      "**/*.tsx",
-      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
       "**/*.css",
-      "**/*.md"
+      "**/*.yml",
+      "**/*.md",
+      "**/declaration/**/*",
+      "**/demo/**/*"
     ],
     "absolute": false
   }

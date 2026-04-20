@@ -115,7 +115,13 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
       value,
       config,
       isInlineAutocomplete,
-      hasInlineSuggestion: () => suggestionsQuery.getInlineSuggestionDetails() !== null,
+      hasInlineSuggestion: suggestionsQuery.inlineSuggestionDetails !== null,
+      suggestionsLayoutKey:
+        suggestionsDisplay === 'inline'
+          ? null
+          : `${utils.countSuggestions(state.suggestions).toString()}:${
+              suggestionsQuery.suggestionsStatusContent.statusType ?? 'none'
+            }`,
     })
     const editing = useMentionsEditing({
       props,

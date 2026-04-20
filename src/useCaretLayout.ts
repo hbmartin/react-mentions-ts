@@ -46,7 +46,8 @@ interface UseCaretLayoutArgs<Extra extends Record<string, unknown>> {
   value: string
   config: ReadonlyArray<PreparedMentionChildConfig<Extra>>
   isInlineAutocomplete: boolean
-  hasInlineSuggestion: () => boolean
+  hasInlineSuggestion: boolean
+  suggestionsLayoutKey: string | null
 }
 
 const getExplicitId = (id: unknown): string | null =>
@@ -238,7 +239,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
       return true
     }
 
-    const nextPosition = argsRef.current.hasInlineSuggestion()
+    const nextPosition = argsRef.current.hasInlineSuggestion
       ? calculateInlineSuggestionPosition({ highlighter: highlighterElementRef.current })
       : null
 
@@ -490,7 +491,15 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
   }, [args.state.highlighterRecomputeVersion, scheduleHighlighterRecompute])
 
   useLayoutEffect(() => {
-    const { props, state, value, config, isInlineAutocomplete } = argsRef.current
+    const {
+      props,
+      state,
+      value,
+      config,
+      isInlineAutocomplete,
+      hasInlineSuggestion,
+      suggestionsLayoutKey,
+    } = argsRef.current
     const previousCommit = previousCommitRef.current
     const currentCommit: ViewSyncCommit<Extra> = {
       value,
@@ -501,6 +510,8 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
       suggestionsPlacement: props.suggestionsPlacement,
       suggestionsPortalHost: props.suggestionsPortalHost,
       isInlineAutocomplete,
+      hasInlineSuggestion,
+      suggestionsLayoutKey,
       selectionStart: state.selectionStart,
       selectionEnd: state.selectionEnd,
       generatedId: state.generatedId,
@@ -519,6 +530,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
     previousCommitRef.current = currentCommit
   }, [
     args.config,
+    args.hasInlineSuggestion,
     args.isInlineAutocomplete,
     args.props.anchorMode,
     args.props.autoResize,
@@ -530,6 +542,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
     args.state.pendingSelectionUpdate,
     args.state.selectionEnd,
     args.state.selectionStart,
+    args.suggestionsLayoutKey,
     args.value,
     ensureGeneratedId,
     flushPendingViewSync,

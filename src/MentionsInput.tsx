@@ -106,7 +106,12 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
     value,
     config,
     isInlineAutocomplete,
-    hasInlineSuggestion: () => suggestionsQuery.getInlineSuggestionDetails() !== null,
+    hasInlineSuggestion: suggestionsQuery.inlineSuggestionDetails !== null,
+    suggestionsLayoutKey: isInlineAutocomplete
+      ? null
+      : `${countSuggestions(state.suggestions).toString()}:${
+          suggestionsQuery.suggestionsStatusContent.statusType ?? 'none'
+        }`,
   })
 
   const editing = useMentionsEditing<Extra>({
