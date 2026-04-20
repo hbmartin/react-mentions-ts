@@ -205,6 +205,40 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
     (event: ClipboardEvent): boolean => !!event.clipboardData
   )
 
+  const prepareClipboardMutation = useEventCallback((event: ClipboardEvent) => {
+    const {
+      props,
+      stateRef,
+      setState,
+      inputElementRef,
+      getCurrentConfig,
+      getCurrentSnapshot,
+      cacheSnapshot,
+    } = argsRef.current
+
+    if (event.target !== inputElementRef.current) {
+      return null
+    }
+    if (!supportsClipboardActions(event) || !event.clipboardData) {
+      return null
+    }
+
+    event.preventDefault()
+
+    const valueText = props.value ?? ''
+    const config = getCurrentConfig()
+
+    return {
+      clipboardData: event.clipboardData,
+      stateRef,
+      setState,
+      cacheSnapshot,
+      valueText,
+      config,
+      previousSnapshot: getCurrentSnapshot(valueText, config),
+    }
+  })
+
   const saveSelectionToClipboard = useEventCallback((event: ClipboardEvent): void => {
     const input = argsRef.current.inputElementRef.current
     if (!input || !event.clipboardData) {
@@ -230,48 +264,30 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
   })
 
   const handlePaste = useEventCallback((event: ClipboardEvent): void => {
-    const {
-      props,
-      stateRef,
-      setState,
-      inputElementRef,
-      getCurrentConfig,
-      getCurrentSnapshot,
-      cacheSnapshot,
-    } = argsRef.current
-
-    if (event.target !== inputElementRef.current) {
-      return
-    }
-    if (!supportsClipboardActions(event) || !event.clipboardData) {
+    const mutation = prepareClipboardMutation(event)
+    if (!mutation) {
       return
     }
 
-    event.preventDefault()
-
-    const valueText = props.value ?? ''
-    const pastedMentions = event.clipboardData.getData('text/react-mentions')
-    const pastedData = event.clipboardData.getData('text/plain')
-    const config = getCurrentConfig()
-    const previousSnapshot = getCurrentSnapshot(valueText, config)
     const pasteResult = applyPasteToMentionsValue<Extra>(
-      valueText,
-      config,
-      stateRef.current.selectionStart,
-      stateRef.current.selectionEnd,
-      pastedMentions || pastedData
+      mutation.valueText,
+      mutation.config,
+      mutation.stateRef.current.selectionStart,
+      mutation.stateRef.current.selectionEnd,
+      mutation.clipboardData.getData('text/react-mentions') ||
+        mutation.clipboardData.getData('text/plain')
     )
-    cacheSnapshot(pasteResult.value, config, pasteResult.snapshot)
+    mutation.cacheSnapshot(pasteResult.value, mutation.config, pasteResult.snapshot)
 
     executeOnChange(
       { type: 'paste', nativeEvent: event },
       pasteResult.value,
       pasteResult.snapshot,
-      valueText,
-      previousSnapshot,
-      config
+      mutation.valueText,
+      mutation.previousSnapshot,
+      mutation.config
     )
-    setState({
+    mutation.setState({
       selectionStart: pasteResult.nextSelectionStart,
       selectionEnd: pasteResult.nextSelectionStart,
       pendingSelectionUpdate: true,
@@ -291,38 +307,21 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
   })
 
   const handleCut = useEventCallback((event: ClipboardEvent): void => {
-    const {
-      props,
-      stateRef,
-      setState,
-      inputElementRef,
-      getCurrentConfig,
-      getCurrentSnapshot,
-      cacheSnapshot,
-    } = argsRef.current
-
-    if (event.target !== inputElementRef.current) {
+    const mutation = prepareClipboardMutation(event)
+    if (!mutation) {
       return
     }
-    if (!supportsClipboardActions(event) || !event.clipboardData) {
-      return
-    }
-
-    event.preventDefault()
     saveSelectionToClipboard(event)
 
-    const valueText = props.value ?? ''
-    const config = getCurrentConfig()
-    const previousSnapshot = getCurrentSnapshot(valueText, config)
     const cutResult = applyCutToMentionsValue<Extra>(
-      valueText,
-      config,
-      stateRef.current.selectionStart,
-      stateRef.current.selectionEnd
+      mutation.valueText,
+      mutation.config,
+      mutation.stateRef.current.selectionStart,
+      mutation.stateRef.current.selectionEnd
     )
-    cacheSnapshot(cutResult.value, config, cutResult.snapshot)
+    mutation.cacheSnapshot(cutResult.value, mutation.config, cutResult.snapshot)
 
-    setState({
+    mutation.setState({
       selectionStart: cutResult.nextSelectionStart,
       selectionEnd: cutResult.nextSelectionStart,
       pendingSelectionUpdate: true,
@@ -332,9 +331,9 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       { type: 'cut', nativeEvent: event },
       cutResult.value,
       cutResult.snapshot,
-      valueText,
-      previousSnapshot,
-      config
+      mutation.valueText,
+      mutation.previousSnapshot,
+      mutation.config
     )
   })
 

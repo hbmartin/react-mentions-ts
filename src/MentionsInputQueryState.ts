@@ -23,6 +23,11 @@ export const createClearedSuggestionsState = <
   focusIndex: 0,
 })
 
+type PaginatedSuggestionQueryState<Extra extends Record<string, unknown>> =
+  SuggestionQueryState<Extra> & {
+    pagination: NonNullable<SuggestionQueryState<Extra>['pagination']>
+  }
+
 export const createLoadingQueryState = <Extra extends Record<string, unknown>>(
   queryInfo: QueryInfo,
   ignoreAccents: boolean
@@ -41,6 +46,85 @@ export const isAbortError = (error: unknown): boolean =>
       'name' in error &&
       (error as { name?: string }).name === 'AbortError'
 
+const preserveSuggestionsState = <Extra extends Record<string, unknown>>(
+  currentSuggestions: SuggestionsMap<Extra>,
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  focusIndex: number
+): SuggestionsLifecycleState<Extra> => ({
+  suggestions: currentSuggestions,
+  queryStates: currentQueryStates,
+  focusIndex,
+})
+
+const getCurrentQueryState = <Extra extends Record<string, unknown>>(
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  childIndex: number
+): SuggestionQueryState<Extra> | null =>
+  Object.hasOwn(currentQueryStates, childIndex) ? currentQueryStates[childIndex] : null
+
+const getCurrentPaginatedQueryState = <Extra extends Record<string, unknown>>(
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  childIndex: number
+): PaginatedSuggestionQueryState<Extra> | null => {
+  const currentQueryState = getCurrentQueryState(currentQueryStates, childIndex)
+
+  return currentQueryState?.pagination === undefined
+    ? null
+    : (currentQueryState as PaginatedSuggestionQueryState<Extra>)
+}
+
+const clampFocusIndex = <Extra extends Record<string, unknown>>(
+  suggestions: SuggestionsMap<Extra>,
+  focusIndex: number
+): number => {
+  const suggestionsCount = countSuggestions(suggestions)
+
+  return focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex
+}
+
+const applyPaginationResult = <Extra extends Record<string, unknown>>(
+  currentSuggestions: SuggestionsMap<Extra>,
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  childIndex: number,
+  currentQueryState: PaginatedSuggestionQueryState<Extra>,
+  focusIndex: number,
+  pagination: PaginatedSuggestionQueryState<Extra>['pagination']
+): SuggestionsLifecycleState<Extra> => ({
+  suggestions: currentSuggestions,
+  focusIndex,
+  queryStates: {
+    ...currentQueryStates,
+    [childIndex]: {
+      ...currentQueryState,
+      pagination,
+    },
+  },
+})
+
+const applyPagePaginationResult = <Extra extends Record<string, unknown>>(
+  currentSuggestions: SuggestionsMap<Extra>,
+  currentQueryStates: SuggestionQueryStateMap<Extra>,
+  childIndex: number,
+  focusIndex: number,
+  getPagination: (
+    currentQueryState: PaginatedSuggestionQueryState<Extra>
+  ) => PaginatedSuggestionQueryState<Extra>['pagination']
+): SuggestionsLifecycleState<Extra> => {
+  const currentQueryState = getCurrentPaginatedQueryState(currentQueryStates, childIndex)
+  if (!currentQueryState) {
+    return preserveSuggestionsState(currentSuggestions, currentQueryStates, focusIndex)
+  }
+
+  return applyPaginationResult(
+    currentSuggestions,
+    currentQueryStates,
+    childIndex,
+    currentQueryState,
+    focusIndex,
+    getPagination(currentQueryState)
+  )
+}
+
 export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>>(
   currentSuggestions: SuggestionsMap<Extra>,
   currentQueryStates: SuggestionQueryStateMap<Extra>,
@@ -50,15 +134,11 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
   focusIndex: number,
   inlineAutocomplete: boolean
 ): SuggestionsLifecycleState<Extra> => {
-  if (!Object.hasOwn(currentQueryStates, childIndex)) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
+  const currentQueryState = getCurrentQueryState(currentQueryStates, childIndex)
+  if (!currentQueryState) {
+    return preserveSuggestionsState(currentSuggestions, currentQueryStates, focusIndex)
   }
 
-  const currentQueryState = currentQueryStates[childIndex]
   const results = page.items
   const ignoreAccents = currentQueryState.ignoreAccents ?? false
   const suggestions: SuggestionsMap<Extra> = {
@@ -68,15 +148,11 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
       results,
     },
   }
-  const suggestionsCount = countSuggestions(suggestions)
+  const nextFocusIndex = inlineAutocomplete ? 0 : clampFocusIndex(suggestions, focusIndex)
 
   return {
     suggestions,
-    focusIndex: inlineAutocomplete
-      ? 0
-      : focusIndex >= suggestionsCount
-        ? Math.max(suggestionsCount - 1, 0)
-        : focusIndex,
+    focusIndex: nextFocusIndex,
     queryStates: {
       ...currentQueryStates,
       [childIndex]: {
@@ -102,39 +178,17 @@ export const applyLoadingPageResult = <Extra extends Record<string, unknown>>(
   childIndex: number,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
-  if (!Object.hasOwn(currentQueryStates, childIndex)) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
-  }
-
-  const currentQueryState = currentQueryStates[childIndex]
-
-  if (currentQueryState.pagination === undefined) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
-  }
-
-  return {
-    suggestions: currentSuggestions,
+  return applyPagePaginationResult(
+    currentSuggestions,
+    currentQueryStates,
+    childIndex,
     focusIndex,
-    queryStates: {
-      ...currentQueryStates,
-      [childIndex]: {
-        ...currentQueryState,
-        pagination: {
-          ...currentQueryState.pagination,
-          isLoading: true,
-          error: undefined,
-        },
-      },
-    },
-  }
+    (currentQueryState) => ({
+      ...currentQueryState.pagination,
+      isLoading: true,
+      error: undefined,
+    })
+  )
 }
 
 export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>(
@@ -145,22 +199,9 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
   page: NormalizedMentionDataPage<Extra>,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
-  if (!Object.hasOwn(currentQueryStates, childIndex)) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
-  }
-
-  const currentQueryState = currentQueryStates[childIndex]
-
-  if (currentQueryState.pagination === undefined) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
+  const currentQueryState = getCurrentPaginatedQueryState(currentQueryStates, childIndex)
+  if (!currentQueryState) {
+    return preserveSuggestionsState(currentSuggestions, currentQueryStates, focusIndex)
   }
 
   const previousResults = Object.hasOwn(currentSuggestions, childIndex)
@@ -174,11 +215,10 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
       results,
     },
   }
-  const suggestionsCount = countSuggestions(suggestions)
 
   return {
     suggestions,
-    focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex,
+    focusIndex: clampFocusIndex(suggestions, focusIndex),
     queryStates: {
       ...currentQueryStates,
       [childIndex]: {
@@ -203,39 +243,17 @@ export const applyErroredPageResult = <Extra extends Record<string, unknown>>(
   error: unknown,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
-  if (!Object.hasOwn(currentQueryStates, childIndex)) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
-  }
-
-  const currentQueryState = currentQueryStates[childIndex]
-
-  if (currentQueryState.pagination === undefined) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
-  }
-
-  return {
-    suggestions: currentSuggestions,
+  return applyPagePaginationResult(
+    currentSuggestions,
+    currentQueryStates,
+    childIndex,
     focusIndex,
-    queryStates: {
-      ...currentQueryStates,
-      [childIndex]: {
-        ...currentQueryState,
-        pagination: {
-          ...currentQueryState.pagination,
-          isLoading: false,
-          error,
-        },
-      },
-    },
-  }
+    (currentQueryState) => ({
+      ...currentQueryState.pagination,
+      isLoading: false,
+      error,
+    })
+  )
 }
 
 export const applyErroredQueryResult = <Extra extends Record<string, unknown>>(
@@ -246,24 +264,19 @@ export const applyErroredQueryResult = <Extra extends Record<string, unknown>>(
   error: unknown,
   focusIndex: number
 ): SuggestionsLifecycleState<Extra> => {
-  if (!Object.hasOwn(currentQueryStates, childIndex)) {
-    return {
-      suggestions: currentSuggestions,
-      queryStates: currentQueryStates,
-      focusIndex,
-    }
+  const currentQueryState = getCurrentQueryState(currentQueryStates, childIndex)
+  if (!currentQueryState) {
+    return preserveSuggestionsState(currentSuggestions, currentQueryStates, focusIndex)
   }
 
-  const currentQueryState = currentQueryStates[childIndex]
   const suggestions = Object.fromEntries(
     Object.entries(currentSuggestions).filter(([key]) => Number(key) !== childIndex)
   ) as SuggestionsMap<Extra>
-  const suggestionsCount = countSuggestions(suggestions)
   const ignoreAccents = currentQueryState.ignoreAccents ?? false
 
   return {
     suggestions,
-    focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex,
+    focusIndex: clampFocusIndex(suggestions, focusIndex),
     queryStates: {
       ...currentQueryStates,
       [childIndex]: {
