@@ -51,10 +51,10 @@ describe('MentionsInputLayout', () => {
     suggestionsPlacement: 'below',
     suggestionsPortalHost: undefined,
     isInlineAutocomplete: false,
+    hasInlineSuggestion: false,
+    suggestionsLayoutKey: '0:none',
     selectionStart: 0,
     selectionEnd: 0,
-    suggestions: {},
-    queryStates: {},
     generatedId: 'mentions-test',
     caretPosition: defaultCaretPosition,
     pendingSelectionUpdate: false,
@@ -128,22 +128,6 @@ describe('MentionsInputLayout', () => {
   })
 
   it.each([
-    {
-      field: 'suggestions',
-      overrides: { suggestions: { 0: { queryInfo: defaultQueryInfo, results: [] } } },
-    },
-    {
-      field: 'queryStates',
-      overrides: {
-        queryStates: {
-          0: {
-            queryInfo: defaultQueryInfo,
-            results: [],
-            status: 'loading',
-          },
-        },
-      },
-    },
     { field: 'anchorMode', overrides: { anchorMode: 'left' } },
     { field: 'suggestionsPlacement', overrides: { suggestionsPlacement: 'above' } },
     { field: 'suggestionsPortalHost', overrides: { suggestionsPortalHost: document.body } },
@@ -158,24 +142,57 @@ describe('MentionsInputLayout', () => {
     })
   })
 
-  it('keeps view sync stable when numeric suggestion keys match with different object insertion order', () => {
-    const secondResult = { id: '2', display: 'Second' }
-    const tenthResult = { id: '10', display: 'Tenth' }
-    const secondQueryInfo = { ...defaultQueryInfo, childIndex: 2, query: 'second' }
-    const tenthQueryInfo = { ...defaultQueryInfo, childIndex: 10, query: 'tenth' }
+  it('remeasures overlay layout when the rendered suggestions content shape changes', () => {
+    expect(
+      getViewSyncDecision(
+        createViewSyncCommit(),
+        createViewSyncCommit({ suggestionsLayoutKey: '2:none' })
+      )
+    ).toEqual({
+      flags: {
+        measureSuggestions: true,
+      },
+      flushNow: false,
+    })
+  })
 
-    const previousCommit = createViewSyncCommit({
-      suggestions: {
-        10: { queryInfo: tenthQueryInfo, results: [tenthResult] },
-        2: { queryInfo: secondQueryInfo, results: [secondResult] },
+  it('remeasures inline layout when an inline suggestion appears', () => {
+    expect(
+      getViewSyncDecision(
+        createViewSyncCommit({ isInlineAutocomplete: true, suggestionsLayoutKey: null }),
+        createViewSyncCommit({
+          isInlineAutocomplete: true,
+          hasInlineSuggestion: true,
+          suggestionsLayoutKey: null,
+        })
+      )
+    ).toEqual({
+      flags: {
+        measureInline: true,
       },
+      flushNow: false,
     })
-    const currentCommit = createViewSyncCommit({
+  })
+
+  it('does not remeasure layout for suggestion payload and query state changes alone', () => {
+    const previousCommit = {
+      ...createViewSyncCommit(),
+      suggestions: {},
+      queryStates: {},
+    }
+    const currentCommit = {
+      ...createViewSyncCommit(),
       suggestions: {
-        2: { queryInfo: secondQueryInfo, results: [secondResult] },
-        10: { queryInfo: tenthQueryInfo, results: [tenthResult] },
+        0: { queryInfo: defaultQueryInfo, results: [{ id: '1', display: 'Alice' }] },
       },
-    })
+      queryStates: {
+        0: {
+          queryInfo: defaultQueryInfo,
+          results: [{ id: '1', display: 'Alice' }],
+          status: 'success',
+        },
+      },
+    }
 
     expect(getViewSyncDecision(previousCommit, currentCommit)).toEqual({
       flags: {},

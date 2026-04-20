@@ -831,6 +831,134 @@ describe('SuggestionsOverlay', () => {
     expect(onMouseEnter).toHaveBeenCalledWith(2)
   })
 
+  it('resets duplicate mouse enter suppression when the list mouse leaves', () => {
+    const suggestions = [
+      { id: '1', display: 'First' },
+      { id: '2', display: 'Second' },
+    ]
+    const onMouseEnter = vi.fn()
+
+    const { container } = render(
+      <SuggestionsOverlay
+        id="test-suggestions"
+        suggestions={createSuggestionsMap(suggestions)}
+        focusIndex={0}
+        isOpened
+        onMouseEnter={onMouseEnter}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+    const listItems = container.querySelectorAll('li[role="option"]')
+
+    fireEvent.mouseEnter(listItems[1], { clientX: 20, clientY: 20 })
+    fireEvent.mouseEnter(listItems[1], { clientX: 20, clientY: 20 })
+    expect(onMouseEnter).toHaveBeenCalledTimes(1)
+
+    fireEvent.mouseLeave(list)
+    fireEvent.mouseEnter(listItems[1], { clientX: 20, clientY: 20 })
+
+    expect(onMouseEnter).toHaveBeenCalledTimes(2)
+    expect(onMouseEnter).toHaveBeenLastCalledWith(1)
+  })
+
+  it('clears scroll-induced mouse suppression when the pointer moves over the list', () => {
+    const suggestionsMap = createSuggestionsMap(
+      Array.from({ length: 6 }, (_, index) => ({
+        id: `item-${index}`,
+        display: `Item ${index}`,
+      }))
+    )
+    const onMouseEnter = vi.fn()
+    const getBoundingClientRectMock = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function getBoundingRect(this: HTMLElement) {
+        if (this.dataset.slot === 'suggestions-list') {
+          return {
+            top: 0,
+            bottom: 100,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 100,
+            x: 0,
+            y: 0,
+          }
+        }
+
+        if (this.dataset.focused === 'true') {
+          return {
+            top: 150,
+            bottom: 170,
+            left: 0,
+            right: 0,
+            width: 0,
+            height: 20,
+            x: 0,
+            y: 150,
+          }
+        }
+
+        return {
+          top: 0,
+          bottom: 20,
+          left: 0,
+          right: 0,
+          width: 0,
+          height: 20,
+          x: 0,
+          y: 0,
+        }
+      })
+
+    try {
+      const { container, rerender } = render(
+        <SuggestionsOverlay
+          id="test-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={0}
+          isOpened
+          onMouseEnter={onMouseEnter}
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+      Object.defineProperty(list, 'offsetHeight', { configurable: true, value: 100 })
+      Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 400 })
+      list.scrollTop = 0
+
+      fireEvent.mouseMove(list, { clientX: 20, clientY: 20 })
+
+      rerender(
+        <SuggestionsOverlay
+          id="test-suggestions"
+          suggestions={suggestionsMap}
+          focusIndex={4}
+          isOpened
+          onMouseEnter={onMouseEnter}
+          scrollFocusedIntoView
+        >
+          <Mention trigger="@" data={[]} />
+        </SuggestionsOverlay>
+      )
+
+      fireEvent.mouseMove(list, { clientX: 20, clientY: 40 })
+      fireEvent.mouseEnter(container.querySelectorAll('li[role="option"]')[2], {
+        clientX: 20,
+        clientY: 20,
+      })
+
+      expect(onMouseEnter).toHaveBeenCalledWith(2)
+    } finally {
+      getBoundingClientRectMock.mockRestore()
+    }
+  })
+
   it('resets cached mouse position after closing the overlay.', () => {
     const suggestions = [
       { id: '1', display: 'First' },
@@ -1083,6 +1211,79 @@ describe('SuggestionsOverlay', () => {
     )
 
     expect(handleLoadMore).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not flush deferred load more after loading when the list is no longer near the bottom', () => {
+    const handleLoadMore = vi.fn()
+    const { container, rerender } = render(
+      <SuggestionsOverlay
+        id="loading-load-more-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        isLoading
+        onLoadMore={handleLoadMore}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+    Object.defineProperty(list, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(list, 'clientHeight', { value: 100, configurable: true })
+    list.scrollTop = 60
+    fireEvent.scroll(list)
+    list.scrollTop = 20
+
+    rerender(
+      <SuggestionsOverlay
+        id="loading-load-more-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        onLoadMore={handleLoadMore}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(handleLoadMore).not.toHaveBeenCalled()
+  })
+
+  it('does not defer load more while loading if the list is not near the bottom', () => {
+    const handleLoadMore = vi.fn()
+    const { container, rerender } = render(
+      <SuggestionsOverlay
+        id="loading-load-more-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        isLoading
+        onLoadMore={handleLoadMore}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const list = container.querySelector('ul[role="listbox"]') as HTMLUListElement
+    Object.defineProperty(list, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(list, 'clientHeight', { value: 100, configurable: true })
+    list.scrollTop = 20
+    fireEvent.scroll(list)
+
+    rerender(
+      <SuggestionsOverlay
+        id="loading-load-more-overlay"
+        suggestions={createSuggestionsMap([{ id: '1', display: 'First' }])}
+        focusIndex={0}
+        isOpened
+        onLoadMore={handleLoadMore}
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    expect(handleLoadMore).not.toHaveBeenCalled()
   })
 
   it('passes mouse down events through to the supplied handler', () => {

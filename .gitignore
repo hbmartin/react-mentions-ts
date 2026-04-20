@@ -1,5 +1,6 @@
 /node_modules
 /reports
+/report
 /coverage
 /demo/dist
 /demo/build

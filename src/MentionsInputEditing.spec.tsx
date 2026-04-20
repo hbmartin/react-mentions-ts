@@ -104,6 +104,25 @@ describe('MentionsInputEditing', () => {
     expect(result.nextSelectionEnd).toBe(7)
   })
 
+  it('restores the caret to the mention start when editing inside one without inserted text', () => {
+    const value = 'Hello @[Walter White](user:walter)'
+    const plainTextValue = 'Hello W!'
+    const result = applyInputChangeToMentionsValue(
+      value,
+      plainTextValue,
+      config,
+      7,
+      7,
+      plainTextValue.length,
+      10,
+      undefined
+    )
+
+    expect(result.shouldRestoreSelection).toBe(true)
+    expect(result.nextSelectionStart).toBe(6)
+    expect(result.nextSelectionEnd).toBe(6)
+  })
+
   it('keeps the updated caret when there is no tracked mention range to restore', () => {
     const value = 'Hello @[Walter White](user:walter)'
     const plainTextValue = 'Hello Walter White!'
