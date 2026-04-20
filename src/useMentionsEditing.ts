@@ -1,7 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import type {
   ChangeEvent,
-  CompositionEvent as ReactCompositionEvent,
   FocusEvent as ReactFocusEvent,
   MouseEvent as ReactMouseEvent,
   SyntheticEvent,
@@ -29,6 +28,9 @@ import type {
   SuggestionDataItem,
 } from './types'
 import { getMentionsAndPlainText, mapPlainTextIndex, spliceString } from './utils'
+import { useMentionsComposition } from './useMentionsComposition'
+import type { NativeInputEvent } from './useMentionsComposition'
+import { useMentionsDocumentEvents } from './useMentionsDocumentEvents'
 import { useEventCallback } from './utils/useEventCallback'
 
 interface UseMentionsEditingArgs<Extra extends Record<string, unknown>> {
@@ -49,17 +51,6 @@ interface UseMentionsEditingArgs<Extra extends Record<string, unknown>> {
   updateMentionsQueries: (plainTextValue: string, caretPosition: number, value?: string) => void
   clearSuggestions: (extraPatch?: MentionsInputStatePatch<Extra>) => void
   requestHighlighterScrollSync: () => void
-}
-
-interface SelectionRange {
-  start: number
-  end: number
-}
-
-interface NativeInputEvent {
-  data?: string | null
-  inputType?: string
-  isComposing?: boolean
 }
 
 const getMentionDiffKey = <Extra extends Record<string, unknown>>(
@@ -101,8 +92,10 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
   argsRef.current = args
 
   const suggestionsMouseDownRef = useRef(false)
-  const isComposingRef = useRef(false)
-  const compositionSelectionRef = useRef<SelectionRange | null>(null)
+  const composition = useMentionsComposition({
+    stateRef: args.stateRef,
+    inputElementRef: args.inputElementRef,
+  })
 
   const emitOnRemoveCallbacks = useEventCallback(
     (
@@ -348,7 +341,6 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
   const handleChange = useEventCallback((event: ChangeEvent<InputElement>): void => {
     const {
       props,
-      stateRef,
       setState,
       inputElementRef,
       getCurrentConfig,
@@ -359,57 +351,33 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       requestHighlighterScrollSync,
     } = argsRef.current
     const nativeEvent = event.nativeEvent as NativeInputEvent
-    const wasComposing = isComposingRef.current
-    if (typeof nativeEvent.isComposing === 'boolean') {
-      isComposingRef.current = nativeEvent.isComposing
-    }
     const value = props.value ?? ''
     const newPlainTextValue = event.target.value
-
-    const isCompositionInput =
-      wasComposing ||
-      nativeEvent.isComposing === true ||
-      nativeEvent.inputType === 'insertCompositionText'
-    const compositionSelection = isCompositionInput ? compositionSelectionRef.current : null
-    const trackedSelectionEnd = compositionSelection?.end ?? stateRef.current.selectionEnd
-
-    let selectionStartBefore = compositionSelection?.start ?? stateRef.current.selectionStart
-    if (selectionStartBefore === null) {
-      selectionStartBefore = event.target.selectionStart ?? 0
-    }
-
-    let selectionEndBefore = compositionSelection?.end ?? stateRef.current.selectionEnd
-    if (selectionEndBefore === null) {
-      selectionEndBefore = event.target.selectionEnd ?? selectionStartBefore
-    }
-
-    const selectionEndAfter = event.target.selectionEnd ?? selectionEndBefore
-    const insertedText =
-      typeof nativeEvent.data === 'string'
-        ? nativeEvent.data
-        : newPlainTextValue.slice(selectionStartBefore, selectionEndAfter)
+    const compositionChange = composition.resolveChange(
+      nativeEvent,
+      event.target,
+      newPlainTextValue
+    )
     const config = getCurrentConfig()
     const previousSnapshot = getCurrentSnapshot(value, config)
     const inputChangeResult = applyInputChangeToMentionsValue<Extra>(
       value,
       newPlainTextValue,
       config,
-      selectionStartBefore,
-      selectionEndBefore,
-      selectionEndAfter,
-      trackedSelectionEnd,
-      insertedText
+      compositionChange.selectionStartBefore,
+      compositionChange.selectionEndBefore,
+      compositionChange.selectionEndAfter,
+      compositionChange.trackedSelectionEnd,
+      compositionChange.insertedText
     )
     cacheSnapshot(inputChangeResult.value, config, inputChangeResult.snapshot)
 
-    if (isCompositionInput) {
-      compositionSelectionRef.current = {
-        start:
-          insertedText.length > 0
-            ? Math.max(0, inputChangeResult.nextSelectionStart - insertedText.length)
-            : selectionStartBefore,
-        end: inputChangeResult.nextSelectionEnd,
-      }
+    if (compositionChange.isCompositionInput) {
+      composition.updateSelection(
+        compositionChange,
+        inputChangeResult.nextSelectionStart,
+        inputChangeResult.nextSelectionEnd
+      )
 
       if (
         inputChangeResult.shouldRestoreSelection &&
@@ -490,7 +458,7 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
         })
       }
 
-      if (isComposingRef.current) {
+      if (composition.isComposingRef.current) {
         return
       }
 
@@ -527,27 +495,6 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
 
   const handleSuggestionsMouseDown = useEventCallback((_event: ReactMouseEvent): void => {
     suggestionsMouseDownRef.current = true
-  })
-
-  const handleCompositionStart = useEventCallback(
-    (event?: ReactCompositionEvent<InputElement>): void => {
-      const input = event?.currentTarget ?? argsRef.current.inputElementRef.current
-      const selectionStart =
-        input?.selectionStart ?? argsRef.current.stateRef.current.selectionStart ?? 0
-      const selectionEnd =
-        input?.selectionEnd ?? argsRef.current.stateRef.current.selectionEnd ?? selectionStart
-
-      compositionSelectionRef.current = {
-        start: selectionStart,
-        end: selectionEnd,
-      }
-      isComposingRef.current = true
-    }
-  )
-
-  const handleCompositionEnd = useEventCallback((): void => {
-    isComposingRef.current = false
-    compositionSelectionRef.current = null
   })
 
   const clearSuggestions = useEventCallback((): void => {
@@ -640,24 +587,16 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
     syncSelectionFromInput('selectionchange')
   })
 
-  useEffect(() => {
-    const ownerDocument = argsRef.current.inputElementRef.current?.ownerDocument ?? document
-
-    ownerDocument.addEventListener('copy', handleCopy)
-    ownerDocument.addEventListener('cut', handleCut)
-    ownerDocument.addEventListener('paste', handlePaste)
-    ownerDocument.addEventListener('selectionchange', handleDocumentSelectionChange)
-
-    return () => {
-      ownerDocument.removeEventListener('copy', handleCopy)
-      ownerDocument.removeEventListener('cut', handleCut)
-      ownerDocument.removeEventListener('paste', handlePaste)
-      ownerDocument.removeEventListener('selectionchange', handleDocumentSelectionChange)
-    }
-  }, [handleCopy, handleCut, handlePaste, handleDocumentSelectionChange])
+  useMentionsDocumentEvents({
+    inputElementRef: args.inputElementRef,
+    onCopy: handleCopy,
+    onCut: handleCut,
+    onPaste: handlePaste,
+    onSelectionChange: handleDocumentSelectionChange,
+  })
 
   return {
-    isComposingRef,
+    isComposingRef: composition.isComposingRef,
     insertText,
     executeOnChange,
     handlePaste,
@@ -670,8 +609,8 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
     syncSelectionFromInput,
     handleBlur,
     handleSuggestionsMouseDown,
-    handleCompositionStart,
-    handleCompositionEnd,
+    handleCompositionStart: composition.handleCompositionStart,
+    handleCompositionEnd: composition.handleCompositionEnd,
     clearSuggestions,
     addMention,
   }

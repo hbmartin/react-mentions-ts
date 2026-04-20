@@ -15,7 +15,7 @@ export type MentionsInputStateUpdate<
 export type SetMentionsInputState<Extra extends Record<string, unknown> = Record<string, unknown>> =
   (update: MentionsInputStateUpdate<Extra>) => void
 
-export const createInitialMentionsInputState = <
+const createInitialMentionsInputState = <
   Extra extends Record<string, unknown> = Record<string, unknown>,
 >(): MentionsInputState<Extra> => ({
   focusIndex: 0,

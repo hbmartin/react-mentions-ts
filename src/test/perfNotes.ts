@@ -3,51 +3,51 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-export const PERF_NOTES_REF = 'refs/notes/perf'
-export const PERF_TARGET_REF = 'origin/master'
+const PERF_NOTES_REF = 'refs/notes/perf'
+const PERF_TARGET_REF = 'origin/master'
 export const PERF_COMMAND = 'pnpm test:perf'
-export const PERF_SCHEMA_VERSION = 1
-export const PERF_SUITE = 'react-mentions-ts/perf'
+const PERF_SCHEMA_VERSION = 1
+const PERF_SUITE = 'react-mentions-ts/perf'
 
-export interface PerfNotePayload {
+interface PerfNotePayload {
   command: string
   metrics: Record<string, Record<string, number | string>>
   schemaVersion: number
   suite: string
 }
 
-export interface PerfRegression {
+interface PerfRegression {
   baseline: number
   candidate: number
   metric: string
   scenario: string
 }
 
-export interface PerfComparisonSkippedMetric {
+interface PerfComparisonSkippedMetric {
   metric: string
   reason: 'baseline-missing-or-non-numeric'
   scenario: string
 }
 
-export interface PerfComparisonError {
+interface PerfComparisonError {
   metric: string
   reason: 'candidate-missing-or-non-numeric'
   scenario: string
 }
 
-export interface PerfComparisonResult {
+interface PerfComparisonResult {
   errors: PerfComparisonError[]
   regressions: PerfRegression[]
   skipped: PerfComparisonSkippedMetric[]
 }
 
-export interface BaselineLookupResult {
+interface BaselineLookupResult {
   baselineCommit: string | null
   mergeBase: string
   note: PerfNotePayload | null
 }
 
-export interface CheckPerfAgainstBaselineResult {
+interface CheckPerfAgainstBaselineResult {
   baselineCommit: string | null
   baselineNote: PerfNotePayload | null
   candidateNote: PerfNotePayload
@@ -80,7 +80,7 @@ interface CommandArgumentParseState {
   quote: '"' | "'" | null
 }
 
-export const PERF_COMPARISON_MANIFEST = [
+const PERF_COMPARISON_MANIFEST = [
   ['array-provider-scan-count', 'scanCount'],
   ['accent-provider-scan-count', 'scanCount'],
   ['controlled-keystroke', 'getPlainTextCalls'],

@@ -217,12 +217,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     }
   )
 
-  const handleMouseEnterAtIndex = useEventCallback((index: number) => {
-    return (event: React.MouseEvent<HTMLLIElement>) => {
-      handleMouseEnter(index, event)
-    }
-  })
-
   const handleListMouseLeave = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(() => {
     lastMouseEnterPosition.current = null
     lastMousePosition.current = null
@@ -247,32 +241,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   const flattenedSuggestions = useMemo<FlattenedSuggestion<Extra>[]>(() => {
     return flattenSuggestions(mentionChildren, suggestions)
   }, [mentionChildren, suggestions])
-
-  const suggestionEntries = useMemo(() => {
-    return flattenedSuggestions.map(({ result: suggestionItem, queryInfo }, index) => {
-      const isFocused = index === focusIndex
-      const { childIndex, query } = queryInfo
-      const renderSuggestionFromChild =
-        childRenderSuggestions[childIndex] ?? DEFAULT_MENTION_PROPS.renderSuggestion
-
-      return {
-        key: `${childIndex.toString()}-${suggestionItem.id}`,
-        suggestionItem,
-        isFocused,
-        renderSuggestionFromChild,
-        onClick: () => selectSuggestion(suggestionItem, queryInfo),
-        onMouseEnterHandler: handleMouseEnterAtIndex(index),
-        query,
-        index,
-      }
-    })
-  }, [
-    childRenderSuggestions,
-    focusIndex,
-    flattenedSuggestions,
-    handleMouseEnterAtIndex,
-    selectSuggestion,
-  ])
 
   const handleListMouseDown = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(
     (event) => {
@@ -324,36 +292,32 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         onMouseMove={handleListMouseMove}
         onScroll={handleListScroll}
       >
-        {suggestionEntries.map(
-          ({
-            key,
-            suggestionItem,
-            query,
-            index,
-            isFocused,
-            renderSuggestionFromChild,
-            onClick,
-            onMouseEnterHandler,
-          }) => (
+        {flattenedSuggestions.map(({ result: suggestionItem, queryInfo }, index) => {
+          const { childIndex, query } = queryInfo
+          const renderSuggestionFromChild =
+            childRenderSuggestions[childIndex] ?? DEFAULT_MENTION_PROPS.renderSuggestion
+
+          return (
             <Suggestion<Extra>
               className={itemClassName}
               focusedClassName={focusedItemClassName}
               displayClassName={displayClassName}
               highlightClassName={highlightClassName}
-              key={key}
+              key={`${childIndex.toString()}-${suggestionItem.id}`}
               id={
                 id === undefined ? `suggestion-${index.toString()}` : getSuggestionHtmlId(id, index)
               }
               query={query}
+              queryInfo={queryInfo}
               index={index}
               renderSuggestion={renderSuggestionFromChild}
               suggestion={suggestionItem}
-              focused={isFocused}
-              onClick={onClick}
-              onMouseEnter={onMouseEnterHandler}
+              focused={index === focusIndex}
+              onSelect={selectSuggestion}
+              onMouseEnter={handleMouseEnter}
             />
           )
-        )}
+        })}
       </ul>
     )
 

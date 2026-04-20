@@ -1,13 +1,15 @@
 import React from 'react'
 import { cn } from './utils'
-import type { MentionRenderSuggestion, SuggestionDataItem } from './types'
+import type { MentionRenderSuggestion, QueryInfo, SuggestionDataItem } from './types'
+import { useEventCallback } from './utils/useEventCallback'
 
 interface SuggestionProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
   readonly id: string
   readonly focused?: boolean
   readonly index: number
-  readonly onClick: () => void
-  readonly onMouseEnter: React.MouseEventHandler<HTMLLIElement>
+  readonly onSelect: (suggestion: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => void
+  readonly onMouseEnter: (index: number, event: React.MouseEvent<HTMLLIElement>) => void
+  readonly queryInfo: QueryInfo
   readonly query: string
   readonly renderSuggestion?: MentionRenderSuggestion<Extra> | null
   readonly suggestion: SuggestionDataItem<Extra>
@@ -22,12 +24,13 @@ const suggestionItemBase =
 const suggestionDisplayStyles = 'inline-block'
 const suggestionHighlightStyles = 'font-semibold text-primary'
 
-function Suggestion<Extra extends Record<string, unknown> = Record<string, unknown>>({
+function SuggestionComponent<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
   focused,
   index,
-  onClick,
   onMouseEnter,
+  onSelect,
+  queryInfo,
   query,
   renderSuggestion,
   suggestion,
@@ -36,11 +39,27 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
   displayClassName,
   highlightClassName,
 }: SuggestionProps<Extra>) {
-  const rest = { onClick, onMouseEnter }
   const isFocused = focused === true
   const itemClassName = cn(suggestionItemBase, className, isFocused ? focusedClassName : undefined)
   const displayClassNameResolved = cn(suggestionDisplayStyles, displayClassName)
   const highlightClassNameResolved = cn(suggestionHighlightStyles, highlightClassName)
+
+  const handleClick = useEventCallback((): void => {
+    onSelect(suggestion, queryInfo)
+  })
+
+  const handleKeyDown = useEventCallback((event: React.KeyboardEvent<HTMLLIElement>): void => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return
+    }
+
+    event.preventDefault()
+    onSelect(suggestion, queryInfo)
+  })
+
+  const handleMouseEnter = useEventCallback((event: React.MouseEvent<HTMLLIElement>): void => {
+    onMouseEnter(index, event)
+  })
 
   const getDisplay = (): string => {
     const { id: suggestionId, display } = suggestion
@@ -93,11 +112,15 @@ function Suggestion<Extra extends Record<string, unknown> = Record<string, unkno
       className={itemClassName}
       data-slot="suggestion-item"
       data-focused={isFocused ? 'true' : undefined}
-      {...rest}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      onMouseEnter={handleMouseEnter}
     >
       {renderContent()}
     </li>
   )
 }
+
+const Suggestion = React.memo(SuggestionComponent) as typeof SuggestionComponent
 
 export default Suggestion

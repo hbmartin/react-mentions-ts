@@ -143,7 +143,7 @@ export const getFlattenedSuggestions = <Extra extends Record<string, unknown>>(
 ): FlattenedSuggestion<Extra>[] =>
   flattenSuggestions<Extra>(getMentionChildren(children), suggestions)
 
-export const getFlattenedSuggestionsForMentionChildren = <Extra extends Record<string, unknown>>(
+const getFlattenedSuggestionsForMentionChildren = <Extra extends Record<string, unknown>>(
   mentionChildren: ReadonlyArray<React.ReactElement<MentionComponentProps<Extra>>>,
   suggestions: SuggestionsMap<Extra>
 ): FlattenedSuggestion<Extra>[] => flattenSuggestions<Extra>(mentionChildren, suggestions)

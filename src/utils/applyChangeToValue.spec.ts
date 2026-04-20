@@ -452,8 +452,8 @@ describe('#applyChangeToValue', () => {
 
   it('falls back to value-length splice points when plain-text mapping is unavailable', () => {
     const mapSpy = vi
-      .spyOn(mapPlainTextIndexModule, 'default')
-      .mockReturnValue(undefined as unknown as number)
+      .spyOn(mapPlainTextIndexModule, 'mapPlainTextIndices')
+      .mockReturnValue([undefined, undefined, undefined, undefined])
 
     try {
       const result = applyChangeToValue(

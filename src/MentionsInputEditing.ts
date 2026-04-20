@@ -3,7 +3,7 @@ import {
   applyChangeToValue,
   findStartOfMentionInPlainText,
   getPlainText,
-  mapPlainTextIndex,
+  mapPlainTextIndices,
   spliceString,
 } from './utils'
 import type { MentionValueSnapshot } from './MentionsInputDerived'
@@ -46,12 +46,16 @@ export const getMarkupSelectionRange = <Extra extends Record<string, unknown>>(
 ): MarkupSelectionRange => {
   const safeSelectionStart = selectionStart ?? 0
   const safeSelectionEnd = selectionEnd ?? safeSelectionStart
+  const [markupStartIndex, markupEndIndex] = mapPlainTextIndices(value, config, [
+    { indexInPlainText: safeSelectionStart, inMarkupCorrection: 'START' },
+    { indexInPlainText: safeSelectionEnd, inMarkupCorrection: 'END' },
+  ])
 
   return {
     safeSelectionStart,
     safeSelectionEnd,
-    markupStartIndex: mapPlainTextIndex(value, config, safeSelectionStart, 'START') as number,
-    markupEndIndex: mapPlainTextIndex(value, config, safeSelectionEnd, 'END') as number,
+    markupStartIndex: markupStartIndex as number,
+    markupEndIndex: markupEndIndex as number,
   }
 }
 

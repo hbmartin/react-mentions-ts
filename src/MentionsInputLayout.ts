@@ -3,9 +3,11 @@ import type {
   CaretCoordinates,
   InlineSuggestionPosition,
   InputElement,
+  MentionChildConfig,
   MentionsInputAnchorMode,
   SuggestionsPosition,
 } from './types'
+import { areMentionConfigsEqual } from './MentionsInputChildren'
 
 export interface PendingViewSync {
   restoreSelection: boolean
@@ -28,6 +30,22 @@ export interface MentionsDomRefs {
   highlighter: HTMLDivElement | null
   input: InputElement | null
   suggestions: HTMLDivElement | null
+}
+
+export interface ViewSyncCommit<Extra extends Record<string, unknown> = Record<string, unknown>> {
+  value: string
+  config: MentionChildConfig<Extra>[]
+  autoResize: boolean | undefined
+  selectionStart: number | null
+  selectionEnd: number | null
+  generatedId: string | null
+  caretPosition: CaretCoordinates | null
+  pendingSelectionUpdate: boolean
+}
+
+export interface ViewSyncDecision {
+  flags: Partial<PendingViewSync>
+  flushNow: boolean
 }
 
 interface SuggestionsPositionArgs {
@@ -128,6 +146,57 @@ export const mergePendingViewSync = (
   measureInline: current.measureInline || next.measureInline === true,
   recomputeHighlighter: current.recomputeHighlighter || next.recomputeHighlighter === true,
 })
+
+export const getViewSyncDecision = <Extra extends Record<string, unknown>>(
+  previousCommit: ViewSyncCommit<Extra> | null,
+  currentCommit: ViewSyncCommit<Extra>
+): ViewSyncDecision => {
+  if (previousCommit === null) {
+    return {
+      flags: {
+        syncScroll: true,
+        measureSuggestions: true,
+        measureInline: true,
+      },
+      flushNow: true,
+    }
+  }
+
+  const selectionPositionsChanged =
+    currentCommit.selectionStart !== previousCommit.selectionStart ||
+    currentCommit.selectionEnd !== previousCommit.selectionEnd
+  const configChanged = !areMentionConfigsEqual(previousCommit.config, currentCommit.config)
+  const valueChanged = currentCommit.value !== previousCommit.value || configChanged
+  const flags: Partial<PendingViewSync> = {}
+
+  if (currentCommit.pendingSelectionUpdate) {
+    flags.restoreSelection = true
+  }
+
+  if (valueChanged || previousCommit.autoResize !== currentCommit.autoResize) {
+    flags.syncScroll = true
+    flags.measureSuggestions = true
+    flags.measureInline = true
+  }
+
+  if (selectionPositionsChanged) {
+    flags.measureSuggestions = true
+    flags.measureInline = true
+  }
+
+  if (
+    previousCommit.generatedId !== currentCommit.generatedId ||
+    previousCommit.caretPosition !== currentCommit.caretPosition
+  ) {
+    flags.measureSuggestions = true
+    flags.measureInline = true
+  }
+
+  return {
+    flags,
+    flushNow: false,
+  }
+}
 
 export const createViewSyncPatch = (): ViewSyncPatch => ({
   restoredSelection: false,

@@ -9,13 +9,13 @@ import {
   calculateSuggestionsPosition,
   createPendingViewSync,
   createViewSyncPatch,
+  getViewSyncDecision,
   getHighlighterViewPatch,
   getTextareaResizePatch,
   hasPendingViewSync,
   mergePendingViewSync,
 } from './MentionsInputLayout'
-import type { PendingViewSync, ViewSyncPatch } from './MentionsInputLayout'
-import { areMentionConfigsEqual } from './MentionsInputChildren'
+import type { PendingViewSync, ViewSyncCommit, ViewSyncPatch } from './MentionsInputLayout'
 import type { SetMentionsInputState } from './MentionsInputState'
 import type {
   InputElement,
@@ -49,16 +49,6 @@ interface UseCaretLayoutArgs<Extra extends Record<string, unknown>> {
   hasInlineSuggestion: () => boolean
 }
 
-interface PreviousCommit<Extra extends Record<string, unknown>> {
-  value: string
-  config: MentionChildConfig<Extra>[]
-  autoResize: boolean | undefined
-  selectionStart: number | null
-  selectionEnd: number | null
-  generatedId: string | null
-  caretPosition: MentionsInputState<Extra>['caretPosition']
-}
-
 const getExplicitId = (id: unknown): string | null =>
   typeof id === 'string' && id.trim().length > 0 ? id.trim() : null
 
@@ -87,7 +77,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
   const didUnmountRef = useRef(false)
   const pendingHighlighterRecomputeRef = useRef(false)
   const queuedHighlighterRecomputeRef = useRef(false)
-  const previousCommitRef = useRef<PreviousCommit<Extra> | null>(null)
+  const previousCommitRef = useRef<ViewSyncCommit<Extra> | null>(null)
 
   const cancelScheduledFrame = useEventCallback(
     (frameRef: React.RefObject<number | null>): void => {
@@ -502,59 +492,7 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
   useLayoutEffect(() => {
     const { props, state, value, config } = argsRef.current
     const previousCommit = previousCommitRef.current
-
-    if (previousCommit === null) {
-      ensureGeneratedId()
-      requestViewSync(
-        {
-          syncScroll: true,
-          measureSuggestions: true,
-          measureInline: true,
-        },
-        { flushNow: true }
-      )
-    } else {
-      const selectionPositionsChanged =
-        state.selectionStart !== previousCommit.selectionStart ||
-        state.selectionEnd !== previousCommit.selectionEnd
-      const configChanged = !areMentionConfigsEqual(previousCommit.config, config)
-      const valueChanged = value !== previousCommit.value || configChanged
-
-      ensureGeneratedId()
-
-      if (state.pendingSelectionUpdate) {
-        requestViewSync({ restoreSelection: true })
-      }
-
-      if (valueChanged || previousCommit.autoResize !== props.autoResize) {
-        requestViewSync({
-          syncScroll: true,
-          measureSuggestions: true,
-          measureInline: true,
-        })
-      }
-
-      if (selectionPositionsChanged) {
-        requestViewSync({
-          measureSuggestions: true,
-          measureInline: true,
-        })
-      }
-
-      if (
-        previousCommit.generatedId !== state.generatedId ||
-        previousCommit.caretPosition !== state.caretPosition
-      ) {
-        requestViewSync({
-          measureSuggestions: true,
-          measureInline: true,
-        })
-      }
-
-      flushPendingViewSync()
-    }
-
-    previousCommitRef.current = {
+    const currentCommit: ViewSyncCommit<Extra> = {
       value,
       config: [...config],
       autoResize: props.autoResize,
@@ -562,7 +500,18 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
       selectionEnd: state.selectionEnd,
       generatedId: state.generatedId,
       caretPosition: state.caretPosition,
+      pendingSelectionUpdate: state.pendingSelectionUpdate,
     }
+    const decision = getViewSyncDecision(previousCommit, currentCommit)
+
+    ensureGeneratedId()
+    requestViewSync(decision.flags, { flushNow: decision.flushNow })
+
+    if (!decision.flushNow) {
+      flushPendingViewSync()
+    }
+
+    previousCommitRef.current = currentCommit
   }, [
     args.config,
     args.isInlineAutocomplete,
