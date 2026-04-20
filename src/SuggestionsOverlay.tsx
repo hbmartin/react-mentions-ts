@@ -59,6 +59,11 @@ const listStyles =
   'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
 const loadMoreThresholdPx = 48
 
+const isNearLoadMoreThreshold = (list: HTMLUListElement): boolean => {
+  const remainingScrollDistance = list.scrollHeight - list.scrollTop - list.clientHeight
+  return remainingScrollDistance <= loadMoreThresholdPx
+}
+
 interface MousePosition {
   readonly clientX: number
   readonly clientY: number
@@ -121,6 +126,9 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
 }: SuggestionsOverlayProps<Extra>) {
   const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null)
   const lastMouseEnterPosition = useRef<MousePosition | null>(null)
+  const lastMousePosition = useRef<MousePosition | null>(null)
+  const suppressedMouseEnterPosition = useRef<MousePosition | null>(null)
+  const pendingLoadMoreRef = useRef(false)
   const mentionChildren = useMemo(
     () => mentionChildrenProp ?? collectMentionElements(children),
     [children, mentionChildrenProp]
@@ -139,6 +147,9 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   useEffect(() => {
     if (!isOpened) {
       lastMouseEnterPosition.current = null
+      lastMousePosition.current = null
+      suppressedMouseEnterPosition.current = null
+      pendingLoadMoreRef.current = false
     }
   }, [isOpened])
 
@@ -157,10 +168,19 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     const scrollTop = ulElement.scrollTop
     const childTop = childRect.top - topContainer + scrollTop
     const childBottom = childRect.bottom - topContainer + scrollTop
+    const suppressStationaryMouseEnter = (): void => {
+      const currentMousePosition = lastMousePosition.current ?? lastMouseEnterPosition.current
+
+      if (currentMousePosition !== null) {
+        suppressedMouseEnterPosition.current = currentMousePosition
+      }
+    }
 
     if (childTop < scrollTop) {
+      suppressStationaryMouseEnter()
       ulElement.scrollTop = childTop
     } else if (childBottom > scrollTop + ulElement.offsetHeight) {
+      suppressStationaryMouseEnter()
       ulElement.scrollTop = childBottom - ulElement.offsetHeight
     }
   }, [focusIndex, scrollFocusedIntoView, ulElement])
@@ -177,11 +197,21 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   const handleMouseEnter = useEventCallback(
     (index: number, event: React.MouseEvent<HTMLLIElement>) => {
       const nextMousePosition = { clientX: event.clientX, clientY: event.clientY }
+      lastMousePosition.current = nextMousePosition
+
+      if (
+        suppressedMouseEnterPosition.current !== null &&
+        !didMousePositionChange(suppressedMouseEnterPosition.current, nextMousePosition)
+      ) {
+        lastMouseEnterPosition.current = nextMousePosition
+        return
+      }
 
       if (!didMousePositionChange(lastMouseEnterPosition.current, nextMousePosition)) {
         return
       }
 
+      suppressedMouseEnterPosition.current = null
       lastMouseEnterPosition.current = nextMousePosition
       onMouseEnter?.(index)
     }
@@ -195,7 +225,24 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
 
   const handleListMouseLeave = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(() => {
     lastMouseEnterPosition.current = null
+    lastMousePosition.current = null
+    suppressedMouseEnterPosition.current = null
   })
+
+  const handleListMouseMove = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(
+    (event) => {
+      const nextMousePosition = { clientX: event.clientX, clientY: event.clientY }
+
+      if (
+        suppressedMouseEnterPosition.current !== null &&
+        didMousePositionChange(suppressedMouseEnterPosition.current, nextMousePosition)
+      ) {
+        suppressedMouseEnterPosition.current = null
+      }
+
+      lastMousePosition.current = nextMousePosition
+    }
+  )
 
   const flattenedSuggestions = useMemo<FlattenedSuggestion<Extra>[]>(() => {
     return flattenSuggestions(mentionChildren, suggestions)
@@ -233,15 +280,32 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     }
   )
 
-  const handleListScroll = useEventCallback<React.UIEventHandler<HTMLUListElement>>((event) => {
-    if (isLoading === true) {
+  const flushPendingLoadMore = useEventCallback(() => {
+    if (isLoading === true || !pendingLoadMoreRef.current || ulElement === null) {
       return
     }
 
-    const list = event.currentTarget
-    const remainingScrollDistance = list.scrollHeight - list.scrollTop - list.clientHeight
+    pendingLoadMoreRef.current = false
+    if (isNearLoadMoreThreshold(ulElement)) {
+      onLoadMore?.()
+    }
+  })
 
-    if (remainingScrollDistance <= loadMoreThresholdPx) {
+  useLayoutEffect(() => {
+    flushPendingLoadMore()
+  }, [flushPendingLoadMore, isLoading, ulElement])
+
+  const handleListScroll = useEventCallback<React.UIEventHandler<HTMLUListElement>>((event) => {
+    const list = event.currentTarget
+
+    if (isLoading === true) {
+      if (isNearLoadMoreThreshold(list)) {
+        pendingLoadMoreRef.current = true
+      }
+      return
+    }
+
+    if (isNearLoadMoreThreshold(list)) {
       onLoadMore?.()
     }
   })
@@ -257,6 +321,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         data-slot="suggestions-list"
         onMouseDown={handleListMouseDown}
         onMouseLeave={handleListMouseLeave}
+        onMouseMove={handleListMouseMove}
         onScroll={handleListScroll}
       >
         {suggestionEntries.map(

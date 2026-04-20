@@ -44,6 +44,15 @@ interface InlineSuggestionPositionArgs {
   highlighter: HTMLDivElement | null
 }
 
+const INLINE_TYPOGRAPHY_STYLE_PROPS = [
+  'fontFamily',
+  'fontSize',
+  'letterSpacing',
+  'lineHeight',
+  'textTransform',
+  'wordSpacing',
+] as const
+
 interface HighlighterViewPatch {
   scrollLeft: number
   scrollTop: number
@@ -246,14 +255,39 @@ export const calculateInlineSuggestionPosition = ({
   const controlElement = highlighter.parentElement
   const controlRect = controlElement?.getBoundingClientRect()
   const caretRect = caretElement?.getBoundingClientRect()
+  const previousInlineBoxRect = caretElement?.previousElementSibling?.getBoundingClientRect()
 
-  if (!caretRect || !controlRect) {
+  if (!caretRect || !controlElement || !controlRect) {
     return null
   }
 
+  const controlBorderLeft = getComputedStyleLengthProp(controlElement, 'border-left-width')
+  const controlBorderTop = getComputedStyleLengthProp(controlElement, 'border-top-width')
+  const lineHeight = getComputedStyleLengthProp(highlighter, 'line-height')
+  const inlineLeadingOffset =
+    previousInlineBoxRect === undefined || lineHeight <= previousInlineBoxRect.height
+      ? 0
+      : (lineHeight - previousInlineBoxRect.height) / 2
+  const typographyStyle: Pick<
+    InlineSuggestionPosition,
+    'fontFamily' | 'fontSize' | 'letterSpacing' | 'lineHeight' | 'textTransform' | 'wordSpacing'
+  > = {}
+
+  for (const styleProperty of INLINE_TYPOGRAPHY_STYLE_PROPS) {
+    const value = highlighter.style[styleProperty]
+    if (value.length > 0) {
+      typographyStyle[styleProperty] = value
+    }
+  }
+
   return {
-    left: caretRect.left - controlRect.left,
-    top: caretRect.top - controlRect.top,
+    left: caretRect.left - controlRect.left - controlBorderLeft,
+    top:
+      (previousInlineBoxRect?.top ?? caretRect.top) -
+      controlRect.top -
+      controlBorderTop -
+      inlineLeadingOffset,
+    ...typographyStyle,
   }
 }
 
@@ -270,7 +304,15 @@ export const areSuggestionsPositionsEqual = (
 export const areInlineSuggestionPositionsEqual = (
   left: InlineSuggestionPosition | null,
   right: InlineSuggestionPosition | null
-): boolean => left?.left === right?.left && left?.top === right?.top
+): boolean =>
+  left?.left === right?.left &&
+  left?.top === right?.top &&
+  left?.fontFamily === right?.fontFamily &&
+  left?.fontSize === right?.fontSize &&
+  left?.letterSpacing === right?.letterSpacing &&
+  left?.lineHeight === right?.lineHeight &&
+  left?.textTransform === right?.textTransform &&
+  left?.wordSpacing === right?.wordSpacing
 
 export const getHighlighterViewPatch = (
   input: InputElement | null,

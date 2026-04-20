@@ -407,13 +407,175 @@ describe('MentionsInputLayout', () => {
       }),
     })
 
-    expect(calculateInlineSuggestionPosition({ highlighter })).toEqual({
+    expect(calculateInlineSuggestionPosition({ highlighter })).toMatchObject({
       left: 22,
       top: 18,
     })
     expect(areInlineSuggestionPositionsEqual({ left: 22, top: 18 }, { left: 22, top: 18 })).toBe(
       true
     )
+  })
+
+  it('aligns inline suggestion top with the current text line', () => {
+    const control = document.createElement('div')
+    const highlighter = document.createElement('div')
+    const previousText = document.createElement('span')
+    const caret = document.createElement('span')
+
+    caret.dataset.mentionsCaret = 'true'
+    highlighter.append(previousText, caret)
+    control.append(highlighter)
+
+    Object.defineProperty(control, 'getBoundingClientRect', {
+      value: () => ({
+        left: 20,
+        top: 10,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(previousText, 'getBoundingClientRect', {
+      value: () => ({
+        left: 20,
+        top: 28,
+        right: 42,
+        bottom: 44,
+        width: 22,
+        height: 16,
+      }),
+    })
+    Object.defineProperty(caret, 'getBoundingClientRect', {
+      value: () => ({
+        left: 42,
+        top: 44,
+        right: 42,
+        bottom: 44,
+        width: 0,
+        height: 0,
+      }),
+    })
+
+    expect(calculateInlineSuggestionPosition({ highlighter })).toMatchObject({
+      left: 22,
+      top: 18,
+    })
+  })
+
+  it('carries input typography metrics from the synced highlighter to inline suggestions', () => {
+    const control = document.createElement('div')
+    const highlighter = document.createElement('div')
+    const previousText = document.createElement('span')
+    const caret = document.createElement('span')
+
+    highlighter.style.fontFamily = 'Inter, sans-serif'
+    highlighter.style.fontSize = '16px'
+    highlighter.style.letterSpacing = '0.02em'
+    highlighter.style.lineHeight = '26px'
+    highlighter.style.textTransform = 'uppercase'
+    highlighter.style.wordSpacing = '1px'
+
+    caret.dataset.mentionsCaret = 'true'
+    highlighter.append(previousText, caret)
+    control.append(highlighter)
+
+    Object.defineProperty(control, 'getBoundingClientRect', {
+      value: () => ({
+        left: 20,
+        top: 10,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(previousText, 'getBoundingClientRect', {
+      value: () => ({
+        left: 20,
+        top: 28,
+        right: 42,
+        bottom: 44,
+        width: 22,
+        height: 16,
+      }),
+    })
+    Object.defineProperty(caret, 'getBoundingClientRect', {
+      value: () => ({
+        left: 42,
+        top: 44,
+        right: 42,
+        bottom: 44,
+        width: 0,
+        height: 0,
+      }),
+    })
+
+    expect(calculateInlineSuggestionPosition({ highlighter })).toEqual({
+      left: 22,
+      top: 13,
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '16px',
+      letterSpacing: '0.02em',
+      lineHeight: '26px',
+      textTransform: 'uppercase',
+      wordSpacing: '1px',
+    })
+    expect(
+      areInlineSuggestionPositionsEqual(
+        { left: 22, top: 18, lineHeight: '24px' },
+        { left: 22, top: 18, lineHeight: '26px' }
+      )
+    ).toBe(false)
+  })
+
+  it('positions inline suggestions from the control padding edge', () => {
+    const control = document.createElement('div')
+    const highlighter = document.createElement('div')
+    const previousText = document.createElement('span')
+    const caret = document.createElement('span')
+
+    control.style.borderLeftWidth = '2px'
+    control.style.borderTopWidth = '3px'
+    caret.dataset.mentionsCaret = 'true'
+    highlighter.append(previousText, caret)
+    control.append(highlighter)
+
+    Object.defineProperty(control, 'getBoundingClientRect', {
+      value: () => ({
+        left: 20,
+        top: 10,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+      }),
+    })
+    Object.defineProperty(previousText, 'getBoundingClientRect', {
+      value: () => ({
+        left: 24,
+        top: 30,
+        right: 42,
+        bottom: 44,
+        width: 18,
+        height: 14,
+      }),
+    })
+    Object.defineProperty(caret, 'getBoundingClientRect', {
+      value: () => ({
+        left: 42,
+        top: 44,
+        right: 42,
+        bottom: 44,
+        width: 0,
+        height: 0,
+      }),
+    })
+
+    expect(calculateInlineSuggestionPosition({ highlighter })).toEqual({
+      left: 20,
+      top: 17,
+    })
   })
 
   it('merges pending view-sync flags without dropping prior work', () => {

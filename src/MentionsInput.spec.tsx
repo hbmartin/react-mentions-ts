@@ -1329,6 +1329,88 @@ describe('MentionsInput', () => {
     })
   })
 
+  it('replays a near-bottom scroll made while matching mention children are still loading.', async () => {
+    interface SuggestionPage {
+      items: Array<{ id: string; display: string }>
+      nextCursor: string | null
+    }
+
+    let resolveSecondInitial: (value: SuggestionPage) => void = () => undefined
+
+    const firstAsyncData = vi.fn(async (_query: string, context: MentionSearchContext) =>
+      context.reason === 'page'
+        ? {
+            items: [{ id: 'first-page-2', display: 'First Page 2' }],
+            nextCursor: null,
+          }
+        : {
+            items: [{ id: 'first-page-1', display: 'First Page 1' }],
+            nextCursor: 'first-cursor-2',
+          }
+    )
+    const secondAsyncData = vi.fn((_query: string, context: MentionSearchContext) => {
+      if (context.reason === 'page') {
+        return Promise.resolve({
+          items: [{ id: 'second-page-2', display: 'Second Page 2' }],
+          nextCursor: null,
+        })
+      }
+
+      return new Promise<SuggestionPage>((resolve) => {
+        resolveSecondInitial = resolve
+      })
+    })
+
+    render(
+      <MentionsInput value="@a">
+        <Mention trigger={/(@([a-z]*))$/} data={firstAsyncData} />
+        <Mention trigger={/(@([a-z]*))$/} data={secondAsyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('First Page 1')).toBeInTheDocument()
+      expect(document.querySelector('[data-slot="suggestions"]')).toHaveAttribute(
+        'aria-busy',
+        'true'
+      )
+    })
+
+    scrollSuggestionsNearBottom()
+
+    expect(
+      firstAsyncData.mock.calls.filter(([, context]) => context.reason === 'page')
+    ).toHaveLength(0)
+
+    await act(async () => {
+      resolveSecondInitial({
+        items: [{ id: 'second-page-1', display: 'Second Page 1' }],
+        nextCursor: 'second-cursor-2',
+      })
+    })
+
+    await waitFor(() => {
+      expect(firstAsyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ cursor: 'first-cursor-2', reason: 'page' })
+      )
+      expect(secondAsyncData).toHaveBeenCalledWith(
+        'a',
+        expect.objectContaining({ cursor: 'second-cursor-2', reason: 'page' })
+      )
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('First Page 2')).toBeInTheDocument()
+      expect(screen.getByText('Second Page 2')).toBeInTheDocument()
+    })
+  })
+
   it('replaces the latest query range when selecting a preserved async suggestion.', async () => {
     interface DeferredResult {
       resolve: (value: Array<{ id: string; display: string }>) => void

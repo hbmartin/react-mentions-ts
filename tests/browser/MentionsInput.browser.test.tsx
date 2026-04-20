@@ -9,6 +9,47 @@ const users = [
   { id: 'second', display: 'Second entry' },
 ]
 
+const browserLayoutStyles = `
+.relative { position: relative; }
+.block { display: block; }
+.w-full { width: 100%; }
+.box-border { box-sizing: border-box; }
+`
+
+const inlineTypographyStyles = `
+${browserLayoutStyles}
+.inline-control {
+  border: 1px solid transparent;
+  display: inline-block;
+  line-height: 16px;
+  position: relative;
+}
+.inline-highlighter,
+.inline-input {
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  line-height: 34px;
+  padding: 8px 12px;
+  width: 320px;
+}
+.inline-input {
+  background: white;
+  color: black;
+  display: block;
+  position: relative;
+}
+.inline-suggestion {
+  color: rgb(100 116 139);
+  line-height: 16px;
+  pointer-events: none;
+  position: absolute;
+  white-space: pre;
+}
+`
+
 interface ControlledMentionsFixtureProps {
   readonly initialValue?: string
 }
@@ -51,6 +92,30 @@ function ControlledMentionsFixture({ initialValue = '' }: ControlledMentionsFixt
       <output data-testid="id-value">{lastChange.idValue}</output>
       <output data-testid="trigger-type">{lastChange.triggerType}</output>
       <output data-testid="mention-id">{lastChange.mentionId}</output>
+    </section>
+  )
+}
+
+function InlineAutocompleteFixture() {
+  const [value, setValue] = useState('')
+
+  return (
+    <section>
+      <style>{inlineTypographyStyles}</style>
+      <MentionsInput
+        aria-label="Inline composer"
+        value={value}
+        onMentionsChange={({ value: nextValue }) => setValue(nextValue)}
+        suggestionsDisplay="inline"
+        classNames={{
+          control: 'inline-control',
+          highlighter: 'inline-highlighter',
+          input: 'inline-input',
+          inlineSuggestion: 'inline-suggestion',
+        }}
+      >
+        <Mention trigger="@" data={users} />
+      </MentionsInput>
     </section>
   )
 }
@@ -124,6 +189,80 @@ describe('MentionsInput browser caret and IME behavior', () => {
     await expect.element(page.getByTestId('mention-id')).toHaveTextContent('first')
     await expect.element(composerLocator).toHaveValue('First entry')
     await expectSelection('First entry'.length)
+  })
+
+  it('positions portal suggestions near the composer after Strict Mode effect replay', async () => {
+    await renderBrowser(
+      <React.StrictMode>
+        <main>
+          <style>{browserLayoutStyles}</style>
+          <div style={{ height: 1200 }} aria-hidden="true" />
+          <ControlledMentionsFixture />
+          <div style={{ height: 2400 }} aria-hidden="true" />
+        </main>
+      </React.StrictMode>
+    )
+
+    const composerLocator = page.getByRole('combobox', { name: 'Composer' })
+    await userEvent.type(composerLocator, '@fi')
+
+    const option = page.getByRole('option', { name: 'First entry' })
+    await expect.element(option).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const composer = await getComposer()
+        const optionElement = await option.findElement()
+        const composerRect = composer.getBoundingClientRect()
+        const optionRect = optionElement.getBoundingClientRect()
+
+        const distanceFromComposer = optionRect.top - composerRect.bottom
+
+        return distanceFromComposer > -100 && distanceFromComposer < 200
+      })
+      .toBe(true)
+  })
+
+  it('keeps inline autocomplete typography aligned with the measured input text', async () => {
+    await renderBrowser(<InlineAutocompleteFixture />)
+
+    const composerLocator = page.getByRole('combobox', { name: 'Inline composer' })
+    await userEvent.type(composerLocator, '@fi')
+
+    await expect
+      .poll(async () => {
+        const inlineElement = document.querySelector<HTMLElement>('[data-slot="inline-suggestion"]')
+        const highlighter = document.querySelector<HTMLElement>('[data-slot="highlighter"]')
+        const highlighterText = highlighter?.querySelector<HTMLElement>('span')
+
+        if (
+          inlineElement === null ||
+          highlighter === null ||
+          highlighterText === null ||
+          highlighterText === undefined
+        ) {
+          return null
+        }
+
+        const inlineRect = inlineElement.getBoundingClientRect()
+        const textRect = highlighterText.getBoundingClientRect()
+        const highlighterLineHeight = getComputedStyle(highlighter).lineHeight
+        const leadingOffset = Math.max(
+          0,
+          (Number.parseFloat(highlighterLineHeight) - textRect.height) / 2
+        )
+
+        return {
+          inlineLineHeight: getComputedStyle(inlineElement).lineHeight,
+          highlighterLineHeight,
+          leadingAdjustedTop: Math.abs(inlineRect.top - textRect.top + leadingOffset) < 0.5,
+        }
+      })
+      .toEqual({
+        inlineLineHeight: '34px',
+        highlighterLineHeight: '34px',
+        leadingAdjustedTop: true,
+      })
   })
 
   it('restores the caret when real typing edits inside mention text', async () => {

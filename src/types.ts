@@ -252,7 +252,10 @@ export interface SuggestionsPosition {
   width?: number
 }
 
-export interface InlineSuggestionPosition {
+export interface InlineSuggestionPosition extends Pick<
+  React.CSSProperties,
+  'fontFamily' | 'fontSize' | 'letterSpacing' | 'lineHeight' | 'textTransform' | 'wordSpacing'
+> {
   left: number
   top: number
 }
