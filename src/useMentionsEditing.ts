@@ -56,6 +56,12 @@ interface SelectionRange {
   end: number
 }
 
+interface NativeInputEvent {
+  data?: string | null
+  inputType?: string
+  isComposing?: boolean
+}
+
 const getMentionDiffKey = <Extra extends Record<string, unknown>>(
   mention: MentionOccurrence<Extra>
 ): string => JSON.stringify([mention.childIndex, String(mention.id), mention.display])
@@ -352,19 +358,14 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       clearSuggestions,
       requestHighlighterScrollSync,
     } = argsRef.current
-    const native = event.nativeEvent
+    const nativeEvent = event.nativeEvent as NativeInputEvent
     const wasComposing = isComposingRef.current
-    if ('isComposing' in native && typeof native.isComposing === 'boolean') {
-      isComposingRef.current = native.isComposing
+    if (typeof nativeEvent.isComposing === 'boolean') {
+      isComposingRef.current = nativeEvent.isComposing
     }
     const value = props.value ?? ''
     const newPlainTextValue = event.target.value
 
-    const nativeEvent = event.nativeEvent as unknown as ReactCompositionEvent<InputElement> & {
-      data?: string | null
-      inputType?: string
-      isComposing?: boolean
-    }
     const isCompositionInput =
       wasComposing ||
       nativeEvent.isComposing === true ||
