@@ -3,12 +3,12 @@ import type { PreparedMentionsInputChildren } from './MentionsInputChildren'
 import { areMentionConfigsEqual, prepareMentionsInputChildren } from './MentionsInputChildren'
 import type { MentionValueSnapshot } from './MentionsInputDerived'
 import { deriveMentionValueSnapshot } from './MentionsInputDerived'
-import type { MentionChildConfig, MentionsInputProps } from './types'
+import type { MentionsInputProps, PreparedMentionChildConfig } from './types'
 import { useEventCallback } from './utils/useEventCallback'
 
 interface SnapshotCache<Extra extends Record<string, unknown>> {
   value: string
-  config: MentionChildConfig<Extra>[]
+  config: PreparedMentionChildConfig<Extra>[]
   snapshot: MentionValueSnapshot<Extra>
 }
 
@@ -47,7 +47,7 @@ export const useMentionValueSnapshot = <Extra extends Record<string, unknown>>(
   const cacheSnapshot = useEventCallback(
     (
       nextValue: string,
-      config: ReadonlyArray<MentionChildConfig<Extra>>,
+      config: ReadonlyArray<PreparedMentionChildConfig<Extra>>,
       snapshot: MentionValueSnapshot<Extra>
     ): MentionValueSnapshot<Extra> => {
       snapshotCacheRef.current = {
@@ -66,7 +66,7 @@ export const useMentionValueSnapshot = <Extra extends Record<string, unknown>>(
   const getCurrentSnapshot = useEventCallback(
     (
       nextValue: string = currentValue,
-      config: ReadonlyArray<MentionChildConfig<Extra>> = getCurrentConfig()
+      config: ReadonlyArray<PreparedMentionChildConfig<Extra>> = getCurrentConfig()
     ): MentionValueSnapshot<Extra> => {
       if (nextValue === currentValue && areMentionConfigsEqual(config, preparedChildren.config)) {
         return currentSnapshot

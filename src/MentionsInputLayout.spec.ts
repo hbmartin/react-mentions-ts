@@ -24,7 +24,7 @@ describe('MentionsInputLayout', () => {
     querySequenceEnd: 2,
   }
   const defaultMentionQuery = {
-    regex: /(@([\w]*))$/,
+    regex: /(@(\w*))$/,
     ignoreAccents: false,
   }
   const createMentionConfig = (
@@ -154,6 +154,31 @@ describe('MentionsInputLayout', () => {
         measureSuggestions: true,
         measureInline: true,
       },
+      flushNow: false,
+    })
+  })
+
+  it('keeps view sync stable when numeric suggestion keys match with different object insertion order', () => {
+    const secondResult = { id: '2', display: 'Second' }
+    const tenthResult = { id: '10', display: 'Tenth' }
+    const secondQueryInfo = { ...defaultQueryInfo, childIndex: 2, query: 'second' }
+    const tenthQueryInfo = { ...defaultQueryInfo, childIndex: 10, query: 'tenth' }
+
+    const previousCommit = createViewSyncCommit({
+      suggestions: {
+        10: { queryInfo: tenthQueryInfo, results: [tenthResult] },
+        2: { queryInfo: secondQueryInfo, results: [secondResult] },
+      },
+    })
+    const currentCommit = createViewSyncCommit({
+      suggestions: {
+        2: { queryInfo: secondQueryInfo, results: [secondResult] },
+        10: { queryInfo: tenthQueryInfo, results: [tenthResult] },
+      },
+    })
+
+    expect(getViewSyncDecision(previousCommit, currentCommit)).toEqual({
+      flags: {},
       flushNow: false,
     })
   })

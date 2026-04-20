@@ -373,6 +373,8 @@ export type MentionChildConfig<Extra extends Record<string, unknown> = Record<st
   MentionComponentProps<Extra> & {
     displayTransform: DisplayTransform
     serializer: MentionSerializer
+    /** Retained as optional for source-level compatibility; prepared configs always include query metadata. */
+    query?: MentionQueryConfig
   }
 
 export type PreparedMentionChildConfig<

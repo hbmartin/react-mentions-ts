@@ -33,8 +33,9 @@
   "sideEffects": false,
   "scripts": {
     "clean": "rimraf dist",
-    "build": "pnpm clean && tsdown --config tsdown.config.ts",
+    "build": "pnpm clean && tsdown --config tsdown.config.ts && node ./scripts/remove-dist-source-maps.mjs",
     "build:demo": "vite build --config demo/vite.config.ts",
+    "dupes": "jscpd",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
@@ -120,7 +121,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/jscodeshift": "^17.3.0",
-    "@types/node": "^24.12.2",
+    "@types/node": "^22",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
@@ -150,6 +151,7 @@
     "globals": "^17.5.0",
     "jiti": "^2.6.1",
     "jscodeshift": "^17.3.0",
+    "jscpd": "^4.0.9",
     "jsdom": "^29.0.2",
     "jsonc-eslint-parser": "^3.1.0",
     "knip": "^6.5.0",
@@ -180,9 +182,28 @@
     "node": ">=22"
   },
   "resolutions": {
-    "@types/node": "^24"
+    "@types/node": "^22"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "jscpd": {
+    "threshold": 0,
+    "reporters": [
+      "markdown"
+    ],
+    "ignore": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/coverage/**",
+      "**/tests/**",
+      "**/.next/**",
+      "**/*.json",
+      "**/*.tsx",
+      "**/*.test.ts",
+      "**/*.css",
+      "**/*.md"
+    ],
+    "absolute": false
   }
 }

@@ -21,22 +21,25 @@ try {
   payload = JSON.parse(result.stdout)
 } catch {
   process.stdout.write(result.stdout)
-  process.exit(exitCode)
 }
 
-const diagnostics = Array.isArray(payload.diagnostics) ? payload.diagnostics : []
-const counts = new Map()
+if (payload === undefined) {
+  process.exitCode = exitCode
+} else {
+  const diagnostics = Array.isArray(payload.diagnostics) ? payload.diagnostics : []
+  const counts = new Map()
 
-for (const diagnostic of diagnostics) {
-  const code = typeof diagnostic.code === 'string' ? diagnostic.code : 'unknown'
-  counts.set(code, (counts.get(code) ?? 0) + 1)
-}
+  for (const diagnostic of diagnostics) {
+    const code = typeof diagnostic.code === 'string' ? diagnostic.code : 'unknown'
+    counts.set(code, (counts.get(code) ?? 0) + 1)
+  }
 
-const ruleCounts = [...counts]
-  .map(([rule, count]) => ({ rule, count }))
-  .toSorted((left, right) => right.count - left.count || left.rule.localeCompare(right.rule))
+  const ruleCounts = [...counts]
+    .map(([rule, count]) => ({ rule, count }))
+    .toSorted((left, right) => right.count - left.count || left.rule.localeCompare(right.rule))
 
-process.stdout.write(`${JSON.stringify(ruleCounts, null, 2)}\n`)
-if (exitCode !== 0) {
-  process.exit(exitCode)
+  process.stdout.write(`${JSON.stringify(ruleCounts, null, 2)}\n`)
+  if (exitCode !== 0) {
+    process.exitCode = exitCode
+  }
 }

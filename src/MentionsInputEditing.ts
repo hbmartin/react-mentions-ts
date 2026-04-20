@@ -1,4 +1,5 @@
 import type { MentionChildConfig } from './types'
+import ensureNumber from './utils/ensureNumber'
 import {
   applyChangeToValue,
   findStartOfMentionInPlainText,
@@ -36,13 +37,6 @@ export interface InputChangeResult<
 > extends PasteResult<Extra> {
   nextSelectionEnd: number
   shouldRestoreSelection: boolean
-}
-
-const ensureNumber = (value: number | null | undefined, fallback: number): number => {
-  if (typeof value === 'number') {
-    return value
-  }
-  return fallback
 }
 
 export const getMarkupSelectionRange = <Extra extends Record<string, unknown>>(

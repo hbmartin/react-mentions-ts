@@ -4,27 +4,27 @@ import { createMentionSelectionContext, deriveMentionValueSnapshot } from './Men
 import type { MentionValueSnapshot } from './MentionsInputDerived'
 import { computeMentionSelectionDetails, getMentionSelectionMap } from './MentionsInputSelection'
 import type {
-  MentionChildConfig,
   MentionSelectionState,
   MentionsInputProps,
   MentionsInputState,
+  PreparedMentionChildConfig,
 } from './types'
 import { areMentionSelectionsEqual } from './utils/areMentionSelectionsEqual'
 
 interface UseMentionSelectionChangeArgs<Extra extends Record<string, unknown>> {
   props: MentionsInputProps<Extra>
   state: MentionsInputState<Extra>
-  config: ReadonlyArray<MentionChildConfig<Extra>>
+  config: ReadonlyArray<PreparedMentionChildConfig<Extra>>
   currentSnapshot: MentionValueSnapshot<Extra>
   getCurrentSnapshot: (
     value?: string,
-    config?: ReadonlyArray<MentionChildConfig<Extra>>
+    config?: ReadonlyArray<PreparedMentionChildConfig<Extra>>
   ) => MentionValueSnapshot<Extra>
 }
 
 interface PreviousSelectionCommit<Extra extends Record<string, unknown>> {
   value: string
-  config: MentionChildConfig<Extra>[]
+  config: PreparedMentionChildConfig<Extra>[]
   selectionStart: number | null
   selectionEnd: number | null
 }
