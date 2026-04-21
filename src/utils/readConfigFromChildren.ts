@@ -39,6 +39,18 @@ const appendSerializerMarker = (markup: string, occurrenceIndex: number): string
   return `${markup}|${occurrenceIndex.toString()}`
 }
 
+const resolveSerializerKey = <Extra extends Record<string, unknown>>(
+  child: ReactElement<MentionComponentProps<Extra>>
+): string => {
+  const { markup, trigger } = child.props
+
+  if (markup === undefined) {
+    return generateMarkupForTrigger(trigger)
+  }
+
+  return typeof markup === 'string' ? markup : markup.id
+}
+
 const isReactFragment = (child: unknown): child is ReactElement<{ children?: ReactNode }> =>
   React.isValidElement(child) && child.type === React.Fragment
 
@@ -71,19 +83,12 @@ export const collectMentionElements = <Extra extends Record<string, unknown>>(
   })
 
 const readConfigFromChildren = <Extra extends Record<string, unknown> = Record<string, unknown>>(
-  children: ReactNode
+  mentionChildren: ReadonlyArray<ReactElement<MentionComponentProps<Extra>>>
 ): PreparedMentionChildConfig<Extra>[] => {
-  const mentionChildren = collectMentionElements<Extra>(children)
   const serializerIdCounts = new Map<string, number>()
 
   for (const child of mentionChildren) {
-    const serializerId =
-      child.props.markup === undefined
-        ? generateMarkupForTrigger(child.props.trigger)
-        : typeof child.props.markup === 'string'
-          ? child.props.markup
-          : child.props.markup.id
-
+    const serializerId = resolveSerializerKey(child)
     serializerIdCounts.set(serializerId, (serializerIdCounts.get(serializerId) ?? 0) + 1)
   }
 

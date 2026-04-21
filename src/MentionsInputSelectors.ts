@@ -125,11 +125,19 @@ export const getMentionChild = <Extra extends Record<string, unknown>>(
 
 export const getSuggestionQueryStateEntries = <Extra extends Record<string, unknown>>(
   queryStates: SuggestionQueryStateMap<Extra>
-): ReadonlyArray<readonly [number, SuggestionQueryState<Extra>]> =>
-  Object.entries(queryStates)
-    .map(([key, value]) => [Number(key), value] as const)
-    .filter(([key]) => Number.isInteger(key))
-    .toSorted(([left], [right]) => left - right)
+): ReadonlyArray<readonly [number, SuggestionQueryState<Extra>]> => {
+  const entries: Array<readonly [number, SuggestionQueryState<Extra>]> = []
+
+  for (const key of Object.keys(queryStates)) {
+    const childIndex = Number(key)
+    if (Number.isInteger(childIndex)) {
+      entries.push([childIndex, queryStates[childIndex]] as const)
+    }
+  }
+
+  entries.sort(([left], [right]) => left - right)
+  return entries
+}
 
 export const getSuggestionData = <Extra extends Record<string, unknown>>(
   suggestion: SuggestionDataItem<Extra>
@@ -183,22 +191,43 @@ export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
   statusType,
   hasInlineSuggestion,
 }: SuggestionsLayoutKeyArgs<Extra>): string => {
-  const suggestionParts = Object.entries(suggestions)
-    .map(([key, value]) => [Number(key), value] as const)
-    .filter(([key]) => Number.isInteger(key))
-    .toSorted(([left], [right]) => left - right)
-    .map(
-      ([childIndex, value]) =>
-        [
-          childIndex,
-          formatQueryInfoLayoutKey(value.queryInfo),
-          value.results.map((item) => getSuggestionLayoutIdentity(item)),
-        ] as const
-    )
+  const suggestionParts: Array<
+    readonly [
+      number,
+      ReturnType<typeof formatQueryInfoLayoutKey>,
+      Array<ReturnType<typeof getSuggestionLayoutIdentity>>,
+    ]
+  > = []
+  for (const key of Object.keys(suggestions)) {
+    const childIndex = Number(key)
+    if (Number.isInteger(childIndex)) {
+      const value = suggestions[childIndex]
+      suggestionParts.push([
+        childIndex,
+        formatQueryInfoLayoutKey(value.queryInfo),
+        value.results.map((item) => getSuggestionLayoutIdentity(item)),
+      ] as const)
+    }
+  }
+  suggestionParts.sort(([left], [right]) => left - right)
 
-  const queryStateParts = getSuggestionQueryStateEntries(queryStates).map(
-    ([childIndex, queryState]) =>
-      [
+  const queryStateParts: Array<
+    readonly [
+      number,
+      ReturnType<typeof formatQueryInfoLayoutKey>,
+      SuggestionQueryState<Extra>['status'],
+      number,
+      'page-loading' | 'page-idle',
+      'has-more' | 'no-more',
+      'no-error' | 'error',
+      'no-page-error' | 'page-error',
+    ]
+  > = []
+  for (const key of Object.keys(queryStates)) {
+    const childIndex = Number(key)
+    if (Number.isInteger(childIndex)) {
+      const queryState = queryStates[childIndex]
+      queryStateParts.push([
         childIndex,
         formatQueryInfoLayoutKey(queryState.queryInfo),
         queryState.status,
@@ -207,8 +236,10 @@ export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
         queryState.pagination?.hasMore === true ? 'has-more' : 'no-more',
         queryState.error === undefined ? 'no-error' : 'error',
         queryState.pagination?.error === undefined ? 'no-page-error' : 'page-error',
-      ] as const
-  )
+      ] as const)
+    }
+  }
+  queryStateParts.sort(([left], [right]) => left - right)
 
   return JSON.stringify([
     isLoading ? 'loading' : 'idle',
