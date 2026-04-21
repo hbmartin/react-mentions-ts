@@ -153,6 +153,14 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     }
   }, [isOpened])
 
+  const suppressStationaryMouseEnter = useEventCallback((): void => {
+    const currentMousePosition = lastMousePosition.current ?? lastMouseEnterPosition.current
+
+    if (currentMousePosition !== null) {
+      suppressedMouseEnterPosition.current = currentMousePosition
+    }
+  })
+
   useLayoutEffect(() => {
     if (!ulElement || ulElement.offsetHeight >= ulElement.scrollHeight || !scrollFocusedIntoView) {
       return
@@ -168,13 +176,6 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     const scrollTop = ulElement.scrollTop
     const childTop = childRect.top - topContainer + scrollTop
     const childBottom = childRect.bottom - topContainer + scrollTop
-    const suppressStationaryMouseEnter = (): void => {
-      const currentMousePosition = lastMousePosition.current ?? lastMouseEnterPosition.current
-
-      if (currentMousePosition !== null) {
-        suppressedMouseEnterPosition.current = currentMousePosition
-      }
-    }
 
     if (childTop < scrollTop) {
       suppressStationaryMouseEnter()
@@ -183,7 +184,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       suppressStationaryMouseEnter()
       ulElement.scrollTop = childBottom - ulElement.offsetHeight
     }
-  }, [focusIndex, scrollFocusedIntoView, ulElement])
+  }, [focusIndex, scrollFocusedIntoView, suppressStationaryMouseEnter, ulElement])
 
   const overlayClassName = cn(overlayStyles(), className)
   const listClassNameResolved = cn(listStyles, listClassName)
@@ -366,20 +367,18 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     )
   }
 
-  const mergedStyle = useMemo<CSSProperties>(() => {
-    const overlayStyle: CSSProperties = {
-      position: position ?? 'absolute',
-      ...(left === undefined ? {} : { left }),
-      ...(right === undefined ? {} : { right }),
-      ...(top === undefined ? {} : { top }),
-      ...(width === undefined ? {} : { width }),
-    }
-
-    return styleProp === undefined ? overlayStyle : { ...overlayStyle, ...styleProp }
-  }, [left, position, right, styleProp, top, width])
-
   if (!isOpened) {
     return null
+  }
+
+  // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop -- overlay div is not memoized; useMemo is unnecessary for this primitive style object.
+  const mergedStyle: CSSProperties = {
+    position: position ?? 'absolute',
+    ...(left === undefined ? {} : { left }),
+    ...(right === undefined ? {} : { right }),
+    ...(top === undefined ? {} : { top }),
+    ...(width === undefined ? {} : { width }),
+    ...(styleProp === undefined ? {} : styleProp),
   }
 
   return (

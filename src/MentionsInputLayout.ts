@@ -452,11 +452,14 @@ export const getHighlighterViewPatch = (
   let typography: Array<{ property: string; value: string }> = []
   if (typeof globalThis.getComputedStyle === 'function') {
     const computed = globalThis.getComputedStyle(input)
+    const getStyleValue =
+      typeof computed.getPropertyValue === 'function'
+        ? computed.getPropertyValue.bind(computed)
+        : (property: string) =>
+            (computed as unknown as Record<string, string | undefined>)[property] ?? ''
+
     typography = TYPOGRAPHIC_STYLE_PROPS.flatMap((property) => {
-      const value =
-        typeof computed.getPropertyValue === 'function'
-          ? computed.getPropertyValue(property)
-          : ((computed as unknown as Record<string, string | undefined>)[property] ?? '')
+      const value = getStyleValue(property)
 
       return value ? [{ property, value }] : []
     })

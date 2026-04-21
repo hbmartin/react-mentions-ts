@@ -24,18 +24,19 @@ export const mapPlainTextIndices = <
   const results: Array<number | null | undefined> = requests.map(({ indexInPlainText }) =>
     typeof indexInPlainText === 'number' ? undefined : indexInPlainText
   )
-  const pendingMappings = requests
-    .map(({ indexInPlainText, inMarkupCorrection }, resultIndex) =>
+  const pendingMappings: PendingPlainTextIndexMapping[] = requests.flatMap(
+    ({ indexInPlainText, inMarkupCorrection }, resultIndex) =>
       typeof indexInPlainText === 'number'
-        ? {
-            indexInPlainText,
-            inMarkupCorrection: inMarkupCorrection ?? 'START',
-            resultIndex,
-          }
-        : null
-    )
-    .filter((mapping): mapping is PendingPlainTextIndexMapping => mapping !== null)
-    .toSorted((left, right) => left.indexInPlainText - right.indexInPlainText)
+        ? [
+            {
+              indexInPlainText,
+              inMarkupCorrection: inMarkupCorrection ?? 'START',
+              resultIndex,
+            },
+          ]
+        : []
+  )
+  pendingMappings.sort((left, right) => left.indexInPlainText - right.indexInPlainText)
 
   if (pendingMappings.length === 0) {
     return results

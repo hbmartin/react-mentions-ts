@@ -72,25 +72,21 @@ function SuggestionComponent<Extra extends Record<string, unknown> = Record<stri
   }
 
   const renderHighlightedDisplay = (display: string): React.ReactNode => {
-    return suggestion.highlights === undefined || suggestion.highlights.length === 0 ? (
+    const highlights = suggestion.highlights
+
+    return highlights === undefined || highlights.length === 0 ? (
       <span className={displayClassNameResolved}>{display}</span>
     ) : (
       <span className={displayClassNameResolved} key={`highlighted-display-${id}`}>
-        {suggestion.highlights.map((highlight, index) => (
+        {highlights.map((highlight, index) => (
           <React.Fragment key={`highlight-${highlight.start}-${highlight.end}`}>
-            {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              display.slice(index > 0 ? suggestion.highlights![index - 1].end : 0, highlight.start)
-            }
+            {display.slice(index > 0 ? highlights[index - 1].end : 0, highlight.start)}
             <b className={highlightClassNameResolved}>
               {display.slice(highlight.start, highlight.end)}
             </b>
           </React.Fragment>
         ))}
-        {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          display.slice(suggestion.highlights.at(-1)!.end)
-        }
+        {display.slice(highlights.at(-1)?.end ?? 0)}
       </span>
     )
   }

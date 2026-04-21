@@ -100,6 +100,18 @@ interface HighlighterCaretProps {
   readonly singleLine: boolean
 }
 
+const measureCaretOffset = (caretElement: HTMLSpanElement): CaretCoordinates => {
+  const previousElement = caretElement.previousElementSibling as HTMLSpanElement | null
+
+  return {
+    left: caretElement.offsetLeft,
+    top:
+      previousElement === null
+        ? caretElement.offsetTop
+        : previousElement.offsetTop + previousElement.offsetHeight,
+  }
+}
+
 const HighlighterCaret = React.memo(function HighlighterCaret({
   className,
   measureKey,
@@ -128,14 +140,8 @@ const HighlighterCaret = React.memo(function HighlighterCaret({
     }
 
     const measure = () => {
-      const offsetLeft = caretElement.offsetLeft
-      const offsetTop =
-        caretElement.previousElementSibling === null
-          ? caretElement.offsetTop
-          : (caretElement.previousElementSibling as HTMLSpanElement).offsetTop +
-            (caretElement.previousElementSibling as HTMLSpanElement).offsetHeight
-
-      updatePosition(offsetLeft, offsetTop)
+      const { left, top } = measureCaretOffset(caretElement)
+      updatePosition(left, top)
     }
 
     const rafId =
@@ -302,7 +308,7 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
   mentionSelectionMap,
 }: HighlighterProps<Extra>) {
   const mentionChildren = useMemo(
-    () => mentionChildrenProp ?? collectMentionElements(children),
+    () => mentionChildrenProp ?? collectMentionElements<Extra>(children),
     [children, mentionChildrenProp]
   )
   const config: MentionChildConfig<Extra>[] = useMemo(
