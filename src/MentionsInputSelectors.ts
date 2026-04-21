@@ -192,7 +192,7 @@ export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
         [
           childIndex,
           formatQueryInfoLayoutKey(value.queryInfo),
-          value.results.map(getSuggestionLayoutIdentity),
+          value.results.map((item) => getSuggestionLayoutIdentity(item)),
         ] as const
     )
 
