@@ -187,6 +187,10 @@ describe('MentionsInput performance', () => {
       expect(options.length).toBeGreaterThan(0)
     })
 
+    await waitFor(() => {
+      expect(overlayPositionSpy.mock.calls.length).toBeGreaterThan(0)
+    })
+
     const openedOverlayPositionCalls = overlayPositionSpy.mock.calls.length
 
     fireEvent.keyDown(combobox, { key: 'ArrowDown' })

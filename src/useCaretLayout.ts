@@ -209,15 +209,29 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
 
   const updateSuggestionsPosition = useEventCallback((): boolean => {
     const { props, stateRef, setState } = argsRef.current
+    const caretPosition = stateRef.current.caretPosition
+    const suggestions = suggestionsElementRef.current
+    const highlighter = highlighterElementRef.current
+    const container = containerElementRef.current
+
+    if (!caretPosition || !suggestions || !highlighter || !container) {
+      if (areSuggestionsPositionsEqual({}, stateRef.current.suggestionsPosition)) {
+        return false
+      }
+
+      setState({ suggestionsPosition: {} })
+      return true
+    }
+
     const position =
       calculateSuggestionsPosition({
-        caretPosition: stateRef.current.caretPosition,
+        caretPosition,
         suggestionsPlacement: props.suggestionsPlacement ?? 'below',
         anchorMode: props.anchorMode ?? 'caret',
         resolvedPortalHost: resolvePortalHost(),
-        suggestions: suggestionsElementRef.current,
-        highlighter: highlighterElementRef.current,
-        container: containerElementRef.current,
+        suggestions,
+        highlighter,
+        container,
       }) ?? {}
 
     if (areSuggestionsPositionsEqual(position, stateRef.current.suggestionsPosition)) {
