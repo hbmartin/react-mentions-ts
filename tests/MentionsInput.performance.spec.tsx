@@ -187,6 +187,8 @@ describe('MentionsInput performance', () => {
       expect(options.length).toBeGreaterThan(0)
     })
 
+    const openedOverlayPositionCalls = overlayPositionSpy.mock.calls.length
+
     fireEvent.keyDown(combobox, { key: 'ArrowDown' })
 
     const metrics = {
@@ -195,7 +197,9 @@ describe('MentionsInput performance', () => {
     }
     emitPerformanceMetric('overlay-layout', metrics)
 
-    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(3)
+    expect(openedOverlayPositionCalls).toBeLessThanOrEqual(2)
+    expect(metrics.calculateSuggestionsPositionCalls).toBe(openedOverlayPositionCalls)
+    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(2)
     expect(metrics.calculateInlineSuggestionPositionCalls).toBe(0)
   })
 
