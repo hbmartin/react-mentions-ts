@@ -160,21 +160,21 @@ const getObjectLayoutIdentity = (value: object): number => {
 
 const getSuggestionLayoutIdentity = <Extra extends Record<string, unknown>>(
   suggestion: SuggestionDataItem<Extra>
-): string => {
+) => {
   const { id, display } = getSuggestionData(suggestion)
   const objectIdentity =
     typeof suggestion === 'object' ? getObjectLayoutIdentity(suggestion) : 'primitive'
 
-  return `${typeof id}:${String(id)}:${display}:${String(objectIdentity)}`
+  return [typeof id, String(id), display, objectIdentity] as const
 }
 
-const formatQueryInfoLayoutKey = (queryInfo: QueryInfo): string =>
+const formatQueryInfoLayoutKey = (queryInfo: QueryInfo) =>
   [
-    queryInfo.childIndex.toString(),
+    queryInfo.childIndex,
     queryInfo.query,
-    queryInfo.querySequenceStart.toString(),
-    queryInfo.querySequenceEnd.toString(),
-  ].join(',')
+    queryInfo.querySequenceStart,
+    queryInfo.querySequenceEnd,
+  ] as const
 
 export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
   suggestions,
@@ -189,32 +189,34 @@ export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
     .toSorted(([left], [right]) => left - right)
     .map(
       ([childIndex, value]) =>
-        `${childIndex.toString()}|${formatQueryInfoLayoutKey(value.queryInfo)}|${value.results
-          .map(getSuggestionLayoutIdentity)
-          .join(',')}`
+        [
+          childIndex,
+          formatQueryInfoLayoutKey(value.queryInfo),
+          value.results.map(getSuggestionLayoutIdentity),
+        ] as const
     )
 
   const queryStateParts = getSuggestionQueryStateEntries(queryStates).map(
     ([childIndex, queryState]) =>
       [
-        childIndex.toString(),
+        childIndex,
         formatQueryInfoLayoutKey(queryState.queryInfo),
         queryState.status,
-        queryState.results.length.toString(),
+        queryState.results.length,
         queryState.pagination?.isLoading === true ? 'page-loading' : 'page-idle',
         queryState.pagination?.hasMore === true ? 'has-more' : 'no-more',
         queryState.error === undefined ? 'no-error' : 'error',
         queryState.pagination?.error === undefined ? 'no-page-error' : 'page-error',
-      ].join('|')
+      ] as const
   )
 
-  return [
+  return JSON.stringify([
     isLoading ? 'loading' : 'idle',
     statusType ?? 'none',
     hasInlineSuggestion ? 'inline' : 'no-inline',
-    suggestionParts.join(';'),
-    queryStateParts.join(';'),
-  ].join('::')
+    suggestionParts,
+    queryStateParts,
+  ])
 }
 
 export const getFlattenedSuggestions = <Extra extends Record<string, unknown>>(

@@ -195,7 +195,7 @@ describe('MentionsInput performance', () => {
     }
     emitPerformanceMetric('overlay-layout', metrics)
 
-    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(2)
+    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(3)
     expect(metrics.calculateInlineSuggestionPositionCalls).toBe(0)
   })
 

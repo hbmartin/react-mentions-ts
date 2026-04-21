@@ -4875,7 +4875,7 @@ describe('MentionsInput', () => {
       const highlighter = document.createElement('div')
       const caret = document.createElement('span')
 
-      caret.setAttribute('data-mentions-caret', 'true')
+      caret.dataset.mentionsCaret = 'true'
       highlighter.style.lineHeight = '20px'
       highlighter.append(caret)
       control.append(highlighter)
