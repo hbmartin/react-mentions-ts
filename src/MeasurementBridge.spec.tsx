@@ -4,7 +4,7 @@ import type { Mock } from 'vitest'
 import MeasurementBridge from './MeasurementBridge'
 
 describe('MeasurementBridge', () => {
-  it('requests view sync from mount, observers, scroll, and viewport listeners, then cleans up', async () => {
+  it('requests view sync from mount, observers, and viewport listeners, then cleans up', async () => {
     const requestViewSync = vi.fn()
     const container = document.createElement('div')
     const highlighter = document.createElement('div')
@@ -83,10 +83,6 @@ describe('MeasurementBridge', () => {
         for (const observer of observers) {
           observer.callback()
         }
-      })
-
-      act(() => {
-        input.dispatchEvent(new Event('scroll'))
       })
 
       act(() => {

@@ -427,7 +427,11 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
     )
   })
 
-  const handleDocumentScroll = useEventCallback((): void => {
+  const handleDocumentScroll = useEventCallback((event?: Event): void => {
+    if (event?.target === inputElementRef.current) {
+      return
+    }
+
     if (!shouldMeasureSuggestions() && !shouldMeasureInline()) {
       return
     }
@@ -448,12 +452,6 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
 
   const setSuggestionsElement = useEventCallback((element: HTMLDivElement | null): void => {
     suggestionsElementRef.current = element
-
-    if (element !== null) {
-      requestViewSync({
-        measureSuggestions: true,
-      })
-    }
   })
 
   const setInputRef = useEventCallback((element: InputElement | null): void => {

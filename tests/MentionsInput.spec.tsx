@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import type { Mock, MockInstance } from 'vitest'
 import * as utils from '../src/utils'
+import * as mentionsInputEditing from '../src/MentionsInputEditing'
 import * as mentionsInputLayout from '../src/MentionsInputLayout'
 import * as readConfigFromChildrenModule from '../src/utils/readConfigFromChildren'
 import { makeTriggerRegex } from '../src/utils/makeTriggerRegex'
@@ -265,13 +266,17 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
           scheduleHighlighterRecompute: caretLayout.scheduleHighlighterRecompute,
           ensureGeneratedIdIfNeeded: caretLayout.ensureGeneratedIdIfNeeded,
           replaceSuggestions: suggestionsQuery.replaceSuggestions,
+          getActiveSuggestionQueries: suggestionsQuery.getActiveSuggestionQueries,
           scheduleSuggestionQuery: suggestionsQuery.scheduleSuggestionQuery,
           updateSuggestions: suggestionsQuery.updateSuggestions,
+          updatePageSuggestions: suggestionsQuery.updatePageSuggestions,
           updateMentionsQueries: suggestionsQuery.updateMentionsQueries,
           clearSuggestions: suggestionsQuery.clearSuggestions,
+          loadMoreSuggestions: suggestionsQuery.loadMoreSuggestions,
           shiftFocus: suggestionsQuery.shiftFocus,
           selectFocused,
           addMention: editing.addMention,
+          executeOnChange: editing.executeOnChange,
           canApplyInlineSuggestion: suggestionsQuery.canApplyInlineSuggestion,
           getPreferredQueryState: suggestionsQuery.getPreferredQueryState,
           handleKeyDown,
@@ -284,6 +289,7 @@ const MentionsInputInternalsHarness = React.forwardRef<MentionsInputHandle, Ment
           handleDocumentScroll: caretLayout.handleDocumentScroll,
           handleCompositionStart: editing.handleCompositionStart,
           handleCompositionEnd: editing.handleCompositionEnd,
+          handleSuggestionsMouseDown: editing.handleSuggestionsMouseDown,
         },
         {}
       ) as MentionsInputHandle & Record<string, unknown>
@@ -4270,6 +4276,105 @@ describe('MentionsInput', () => {
       unmount()
     })
 
+    it('falls back to state selections when inserting without a mounted input.', () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const onMentionsChange = vi.fn()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="Hello" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+
+      act(() => {
+        instance.setState({ selectionStart: 5, selectionEnd: 5 })
+      })
+
+      act(() => {
+        instance.inputElement = null
+        instance.insertText('!')
+      })
+
+      const payload = getLastMentionsChange(onMentionsChange)
+      expect(payload.trigger.type).toBe('insert-text')
+      expect(payload.value).toBe('Hello!')
+      expect(instance.state.selectionStart).toBe(6)
+      expect(instance.state.selectionEnd).toBe(6)
+
+      unmount()
+    })
+
+    it('uses fallback clipboard selection bounds when DOM selection fields are null.', () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="Hello">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const setData = vi.fn()
+
+      instance.inputElement = {
+        value: 'Hello',
+        selectionStart: null,
+        selectionEnd: null,
+      }
+
+      act(() => {
+        instance.saveSelectionToClipboard({
+          clipboardData: { setData },
+        })
+      })
+
+      expect(setData).toHaveBeenCalledWith('text/plain', '')
+      expect(setData).toHaveBeenCalledWith('text/react-mentions', '')
+
+      unmount()
+    })
+
+    it('falls back when a removed mention has no matching child config.', () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const onMentionsChange = vi.fn()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@[Ghost](ghost)" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+
+      act(() => {
+        instance.executeOnChange(
+          { type: 'input' },
+          '',
+          { mentions: [], plainText: '', idValue: '' },
+          '@[Ghost](ghost)',
+          {
+            mentions: [
+              {
+                id: 'ghost',
+                display: 'Ghost',
+                childIndex: 99,
+                index: 0,
+                plainTextIndex: 0,
+              },
+            ],
+            plainText: 'Ghost',
+            idValue: 'ghost',
+          },
+          []
+        )
+      })
+
+      const payload = getLastMentionsChange(onMentionsChange)
+      expect(payload.trigger.type).toBe('mention-remove')
+      expect(payload.mentionId).toBe('ghost')
+
+      unmount()
+    })
+
     it('preserves composing diacritics when controlled reconciliation re-runs mismatch recovery', async () => {
       const ref = React.createRef<MentionsInputHandle>()
       const onMentionsChange = vi.fn()
@@ -4347,6 +4452,77 @@ describe('MentionsInput', () => {
           getPlainTextSpy.mockRestore()
         }
       } finally {
+        unmount()
+      }
+    })
+
+    it('restores composing selections and clears suggestions for range change results.', () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const onMentionsChange = vi.fn()
+      const inputChangeSpy = vi
+        .spyOn(mentionsInputEditing, 'applyInputChangeToMentionsValue')
+        .mockReturnValueOnce({
+          value: 'Hxllo',
+          snapshot: {
+            mentions: [],
+            plainText: 'Hxllo',
+            idValue: 'Hxllo',
+          },
+          nextSelectionStart: 1,
+          nextSelectionEnd: 2,
+          shouldRestoreSelection: true,
+        })
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="Hello" onMentionsChange={onMentionsChange}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      try {
+        const instance = ref.current as unknown as any
+        const textarea = screen.getByRole<HTMLTextAreaElement>('combobox')
+        const setSelectionRangeSpy = vi.spyOn(textarea, 'setSelectionRange')
+
+        textarea.value = 'Hxllo'
+        textarea.setSelectionRange(1, 2)
+
+        act(() => {
+          instance.setState({
+            selectionStart: 1,
+            selectionEnd: 1,
+            suggestions: {
+              0: {
+                queryInfo: {
+                  childIndex: 0,
+                  query: 'h',
+                  querySequenceStart: 0,
+                  querySequenceEnd: 2,
+                },
+                results: [{ id: 'hello', display: 'Hello' }],
+              },
+            },
+          })
+        })
+
+        act(() => {
+          instance.handleChange({
+            target: textarea,
+            currentTarget: textarea,
+            nativeEvent: {
+              isComposing: true,
+              data: 'x',
+            },
+          } as React.ChangeEvent<HTMLTextAreaElement>)
+        })
+
+        expect(inputChangeSpy).toHaveBeenCalled()
+        expect(setSelectionRangeSpy).toHaveBeenCalledWith(1, 2)
+        expect(instance.state.suggestions).toEqual({})
+        expect(getLastMentionsChange(onMentionsChange).value).toBe('Hxllo')
+
+        setSelectionRangeSpy.mockRestore()
+      } finally {
+        inputChangeSpy.mockRestore()
         unmount()
       }
     })
@@ -4659,6 +4835,33 @@ describe('MentionsInput', () => {
       unmount()
     })
 
+    it('preserves selection when blur follows a suggestions mouse down.', () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const onMentionBlur = vi.fn()
+      const onBlur = vi.fn()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@a" onBlur={onBlur} onMentionBlur={onMentionBlur}>
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const input = screen.getByRole('combobox')
+
+      act(() => {
+        instance.setState({ selectionStart: 1, selectionEnd: 1 })
+        instance.handleSuggestionsMouseDown({})
+      })
+      fireEvent.blur(input)
+
+      expect(instance.state.selectionStart).toBe(1)
+      expect(instance.state.selectionEnd).toBe(1)
+      expect(onMentionBlur).toHaveBeenCalledWith(expect.anything(), true)
+      expect(onBlur).toHaveBeenCalled()
+
+      unmount()
+    })
+
     it('measures inline suggestions from current state during a view-sync flush', () => {
       const ref = React.createRef<MentionsInputHandle>()
       const { unmount } = render(
@@ -4787,6 +4990,10 @@ describe('MentionsInput', () => {
           preventDefault,
         })
         instance.handlePaste({
+          target: textarea,
+          preventDefault,
+        })
+        instance.handleCopy({
           target: textarea,
           preventDefault,
         })
@@ -5014,6 +5221,152 @@ describe('MentionsInput', () => {
         vi.useRealTimers()
         unmount()
       }
+    })
+
+    it('ignores stale and aborted pagination updates.', async () => {
+      const ref = React.createRef<MentionsInputHandle>()
+      const { unmount } = render(
+        <MentionsInput ref={ref} value="@a">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      )
+
+      const instance = ref.current as unknown as any
+      const queryInfo = {
+        childIndex: 0,
+        query: 'a',
+        querySequenceStart: 0,
+        querySequenceEnd: 2,
+      }
+
+      act(() => {
+        instance.setState({
+          suggestions: {
+            0: {
+              queryInfo,
+              results: [{ id: 'alice', display: 'Alice' }],
+            },
+          },
+          queryStates: {
+            0: {
+              queryInfo,
+              results: [{ id: 'alice', display: 'Alice' }],
+              status: 'success',
+              pagination: {
+                nextCursor: 'next',
+                hasMore: true,
+                isLoading: false,
+              },
+            },
+          },
+        })
+      })
+
+      // eslint-disable-next-line require-atomic-updates -- this intentionally forces the pending page result stale.
+      instance._queryId = 2
+      await act(async () => {
+        await instance.updatePageSuggestions(
+          1,
+          0,
+          queryInfo,
+          Promise.resolve({
+            items: [{ id: 'bob', display: 'Bob' }],
+            nextCursor: null,
+            hasMore: false,
+            paginated: true,
+          }),
+          new AbortController()
+        )
+      })
+      expect(instance.state.suggestions[0].results).toHaveLength(1)
+
+      await act(async () => {
+        await instance.updatePageSuggestions(
+          2,
+          0,
+          queryInfo,
+          Promise.resolve().then(() => {
+            throw new DOMException('stale page', 'AbortError')
+          }),
+          new AbortController()
+        )
+      })
+      expect(instance.state.queryStates[0].pagination.error).toBeUndefined()
+
+      unmount()
+    })
+
+    it('skips load-more pagination for inline mode and invalid query states.', () => {
+      const inlineRef = React.createRef<MentionsInputHandle>()
+      const overlayRef = React.createRef<MentionsInputHandle>()
+      const pageProvider = vi.fn(() => new Promise<never>(() => {}))
+      const { unmount } = render(
+        <>
+          <MentionsInput ref={inlineRef} value="@a" suggestionsDisplay="inline">
+            <Mention trigger="@" data={data} />
+          </MentionsInput>
+          <MentionsInput ref={overlayRef} value="@a">
+            <Mention trigger="@" data={pageProvider} />
+          </MentionsInput>
+        </>
+      )
+
+      const queryInfo = {
+        childIndex: 0,
+        query: 'a',
+        querySequenceStart: 0,
+        querySequenceEnd: 2,
+      }
+      const inlineInstance = inlineRef.current as unknown as any
+      const overlayInstance = overlayRef.current as unknown as any
+      const validQueryState = {
+        queryInfo,
+        results: [{ id: 'alice', display: 'Alice' }],
+        status: 'success',
+        pagination: {
+          nextCursor: 'next',
+          hasMore: true,
+          isLoading: false,
+        },
+      }
+
+      act(() => {
+        inlineInstance.setState({
+          queryStates: {
+            0: validQueryState,
+          },
+        })
+        inlineInstance.loadMoreSuggestions()
+      })
+      expect(inlineInstance._queryAbortControllers.size).toBe(0)
+
+      act(() => {
+        overlayInstance.setState({
+          queryStates: {
+            0: { ...validQueryState, status: 'loading' },
+            1: { ...validQueryState, pagination: undefined },
+            5: { ...validQueryState, queryInfo: { ...queryInfo, childIndex: 5 } },
+          },
+        })
+        overlayInstance.loadMoreSuggestions()
+      })
+      expect(overlayInstance._queryAbortControllers.size).toBe(0)
+
+      act(() => {
+        overlayInstance.setState({
+          queryStates: {
+            0: validQueryState,
+          },
+        })
+      })
+
+      act(() => {
+        overlayInstance.loadMoreSuggestions()
+        overlayInstance.loadMoreSuggestions()
+      })
+      expect(pageProvider).toHaveBeenCalledTimes(1)
+
+      unmount()
     })
 
     it('clears suggestions with no active queries and covers addMention guard branches', () => {
