@@ -195,7 +195,7 @@ describe('MentionsInput performance', () => {
     }
     emitPerformanceMetric('overlay-layout', metrics)
 
-    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(4)
+    expect(metrics.calculateSuggestionsPositionCalls).toBeLessThanOrEqual(2)
     expect(metrics.calculateInlineSuggestionPositionCalls).toBe(0)
   })
 
@@ -695,7 +695,7 @@ describe('MentionsInput performance', () => {
       }
       emitPerformanceMetric('suggestions-measurement-events', metrics)
 
-      expect(metrics.updateSuggestionsPositionCalls).toBeLessThanOrEqual(3)
+      expect(metrics.updateSuggestionsPositionCalls).toBeLessThanOrEqual(2)
     } finally {
       overlayPositionSpy.mockRestore()
       requestAnimationFrameSpy.mockRestore()

@@ -295,14 +295,11 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
   })
 
   const handleCopy = useEventCallback((event: ClipboardEvent): void => {
-    if (event.target !== argsRef.current.inputElementRef.current) {
-      return
-    }
-    if (!supportsClipboardActions(event)) {
+    const mutation = prepareClipboardMutation(event)
+    if (!mutation) {
       return
     }
 
-    event.preventDefault()
     saveSelectionToClipboard(event)
   })
 
@@ -449,6 +446,10 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       const selectionChanged =
         selectionStart !== stateRef.current.selectionStart ||
         selectionEnd !== stateRef.current.selectionEnd
+
+      if (reason === 'selectionchange' && !selectionChanged) {
+        return
+      }
 
       if (selectionChanged) {
         setState({

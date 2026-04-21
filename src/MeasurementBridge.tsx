@@ -109,22 +109,6 @@ const MeasurementBridge = ({
     }
   }, [container, highlighter, input, requestAllMeasurements, suggestions])
 
-  useLayoutEffect(() => {
-    if (!input) {
-      return undefined
-    }
-
-    const handleScroll = () => {
-      requestAllMeasurements()
-    }
-
-    input.addEventListener('scroll', handleScroll, { passive: true })
-
-    return () => {
-      input.removeEventListener('scroll', handleScroll)
-    }
-  }, [input, requestAllMeasurements])
-
   return null
 }
 
