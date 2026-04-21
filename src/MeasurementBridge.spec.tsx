@@ -95,6 +95,14 @@ describe('MeasurementBridge', () => {
       })
       expect(requestViewSync.mock.calls.length).toBeGreaterThan(4)
 
+      const callsBeforeInputScroll = requestViewSync.mock.calls.length
+
+      act(() => {
+        input.dispatchEvent(new Event('scroll'))
+      })
+
+      expect(requestViewSync).toHaveBeenCalledTimes(callsBeforeInputScroll)
+
       unmount()
 
       await waitFor(() => {

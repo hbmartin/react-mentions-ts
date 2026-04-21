@@ -151,6 +151,56 @@ describe('MentionsInputSelectors', () => {
     ).not.toBe(baseKey)
   })
 
+  it('keeps separator-heavy suggestion values structured in layout keys', () => {
+    const queryInfo = {
+      childIndex: 0,
+      query: 'Al,|;::',
+      querySequenceStart: 0,
+      querySequenceEnd: 8,
+    }
+    const row = {
+      id: '1:2|3;4,5::6',
+      display: 'A:B|C;D,E::F',
+    }
+    const key = getSuggestionsLayoutKey({
+      suggestions: {
+        0: {
+          queryInfo,
+          results: [row],
+        },
+      },
+      queryStates: {
+        0: {
+          queryInfo,
+          results: [row],
+          status: 'success' as const,
+        },
+      },
+      isLoading: false,
+      statusType: null,
+      hasInlineSuggestion: false,
+    })
+
+    expect(JSON.parse(key)).toEqual([
+      'idle',
+      'none',
+      'no-inline',
+      [[0, [0, 'Al,|;::', 0, 8], [['string', '1:2|3;4,5::6', 'A:B|C;D,E::F', expect.any(Number)]]]],
+      [
+        [
+          0,
+          [0, 'Al,|;::', 0, 8],
+          'success',
+          1,
+          'page-idle',
+          'no-more',
+          'no-error',
+          'no-page-error',
+        ],
+      ],
+    ])
+  })
+
   it('normalizes suggestion data and falls back to the first focused suggestion', () => {
     expect(getSuggestionData('alice')).toEqual({
       id: 'alice',
