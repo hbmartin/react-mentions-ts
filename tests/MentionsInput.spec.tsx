@@ -4167,7 +4167,11 @@ describe('MentionsInput', () => {
       const instance = ref.current as unknown as any
       instance.suggestionsElement = document.createElement('div')
       act(() => {
-        instance.setState({ selectionStart: 0, selectionEnd: 0 })
+        instance.setState({
+          selectionStart: 0,
+          selectionEnd: 0,
+          caretPosition: { left: 0, top: 0 },
+        })
       })
       const updateSpy = vi.spyOn(mentionsInputLayout, 'calculateSuggestionsPosition')
       const raf = vi
@@ -4222,7 +4226,11 @@ describe('MentionsInput', () => {
       const instance = ref.current as unknown as any
       instance.suggestionsElement = document.createElement('div')
       act(() => {
-        instance.setState({ selectionStart: 0, selectionEnd: 0 })
+        instance.setState({
+          selectionStart: 0,
+          selectionEnd: 0,
+          caretPosition: { left: 0, top: 0 },
+        })
       })
       const updateSpy = vi.spyOn(mentionsInputLayout, 'calculateSuggestionsPosition')
       const originalRAF = globalThis.requestAnimationFrame
