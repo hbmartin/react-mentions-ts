@@ -37,6 +37,7 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
 
 - **Flexible Triggers** — any character, string, or custom `RegExp` (`@`, `#`, `:`, or your own)
 - **Async Data Loading** — real-time filtering with debouncing, `AbortSignal` cancellation, and cursor pagination
+- **Grouped Suggestions** — return page sections for GitHub-style Users/Teams suggestion lists
 - **Caret Aware** — detect when the caret overlaps mentions and style them via `data-mention-selection`
 - **Inline Autocomplete** — ghost-text hints accepted with Tab, Enter, or arrow keys
 - **Tailwind v4 Ready** — first-class support for Tailwind CSS v4 utility styling
@@ -319,6 +320,31 @@ const fetchUsersPage = async (
 ;<Mention trigger="@" data={fetchUsersPage} debounceMs={150} />
 ```
 
+Providers may return grouped sections instead of flat `items`. Section labels render as non-focusable headers, while keyboard navigation and `renderSuggestion` indexes still count only selectable suggestions:
+
+```tsx
+import type { MentionDataPage } from 'react-mentions-ts'
+
+type DirectoryEntry = { id: string; display: string }
+
+const fetchDirectory = async (query: string): Promise<MentionDataPage<DirectoryEntry>> => ({
+  sections: [
+    {
+      id: 'users',
+      label: 'Users',
+      items: await searchUsers(query),
+    },
+    {
+      id: 'teams',
+      label: 'Teams',
+      items: await searchTeams(query),
+    },
+  ],
+})
+
+;<Mention trigger="@" data={fetchDirectory} />
+```
+
 Redux-Saga and similar async layers can bridge pagination by returning a promise from `data` and resolving it from the saga:
 
 ```tsx
@@ -345,6 +371,7 @@ The [live demo](https://hbmartin.github.io/react-mentions-ts/) includes many rea
 | **Caret Mention States**  | Style mentions based on caret overlap via `data-mention-selection` attributes               |
 | **Inline Autocomplete**   | Ghost-text completions accepted with Tab, Enter, or arrow keys                              |
 | **Async GitHub Mentions** | Live GitHub API search with debouncing, cancellation, and stale-result suppression          |
+| **Grouped Suggestions**   | One `@` provider rendering grouped Users and Teams sections                                 |
 | **Emoji Support**         | Mix people mentions with emoji search powered by a JSON data source                         |
 | **Suggestions Portal**    | Render suggestions anywhere in the DOM for modals, drawers, or fixed toolbars               |
 | **Custom Container**      | Wrap suggestions in bespoke UI chrome — badges, headlines, or analytics                     |
@@ -715,6 +742,7 @@ Review the diff and run your test suite after applying it.
 | ------------------------------------------ | -------------------------------------------------------------------- |
 | Async data via Promises with `AbortSignal` | `data` accepts `(query, { signal, cursor, reason }) => Promise<...>` |
 | Cursor-paginated async suggestions         | Return `{ items, nextCursor, hasMore }` from `data`                  |
+| Grouped async suggestions                  | Return `{ sections: [{ label, items }] }` from `data`                |
 | Debounced async queries                    | `debounceMs` on `Mention`                                            |
 | Cap suggestion count                       | `maxSuggestions` on `Mention`                                        |
 | Caret-aware mention styling                | `onMentionSelectionChange`, `data-mention-selection` attribute       |

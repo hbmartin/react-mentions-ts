@@ -99,6 +99,73 @@ describe('SuggestionsOverlay', () => {
     expect(listItems[2]).toContain('Alpha 1')
   })
 
+  it('renders grouped section headers without changing selectable indexes', () => {
+    const onMouseEnter = vi.fn()
+    const onSelect = vi.fn()
+    const alice = { id: 'alice', display: 'Alice' }
+    const adam = { id: 'adam', display: 'Adam' }
+    const frontend = { id: 'frontend', display: 'Frontend Team' }
+    const suggestionsMap: SuggestionsMap = {
+      0: {
+        queryInfo: {
+          childIndex: 0,
+          query: 'a',
+          querySequenceStart: 0,
+          querySequenceEnd: 2,
+        },
+        results: [alice, adam, frontend],
+        sections: [
+          {
+            key: 'label:Users',
+            label: 'Users',
+            results: [alice, adam],
+          },
+          {
+            key: 'label:Teams',
+            label: 'Teams',
+            results: [frontend],
+          },
+        ],
+      },
+    }
+
+    const { container } = render(
+      <SuggestionsOverlay
+        id="grouped-suggestions"
+        suggestions={suggestionsMap}
+        focusIndex={1}
+        isOpened
+        onMouseEnter={onMouseEnter}
+        onSelect={onSelect}
+        sectionClassName="custom-section"
+        sectionLabelClassName="custom-section-label"
+      >
+        <Mention trigger="@" data={[]} />
+      </SuggestionsOverlay>
+    )
+
+    const sections = container.querySelectorAll('[data-slot="suggestion-section"]')
+    expect(sections).toHaveLength(2)
+    expect(sections[0]).toHaveTextContent('Users')
+    expect(sections[0]).toHaveAttribute('role', 'presentation')
+    expect(sections[0]).not.toHaveAttribute('role', 'option')
+    expect(sections[0]).toHaveClass('custom-section')
+    expect(sections[0].querySelector('[data-slot="suggestion-section-label"]')).toHaveClass(
+      'custom-section-label'
+    )
+
+    const listItems = container.querySelectorAll('li[role="option"]')
+    expect(listItems).toHaveLength(3)
+    expect([...listItems].map((item) => item.dataset.suggestionIndex)).toEqual(['0', '1', '2'])
+    expect(listItems[1]).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.mouseEnter(listItems[2], { clientX: 10, clientY: 50 })
+    expect(onMouseEnter).toHaveBeenCalledWith(2)
+
+    fireEvent.click(listItems[2])
+    expect(onSelect).toHaveBeenCalledWith(frontend, expect.objectContaining({ query: 'a' }))
+  })
+
   it('scrolls the focused suggestion into view when requested', () => {
     const longSuggestions = Array.from({ length: 6 }, (_, index) => ({
       id: `item-${index}`,

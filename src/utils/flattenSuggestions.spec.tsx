@@ -1,6 +1,6 @@
 import React from 'react'
 import type { SuggestionDataItem, SuggestionsMap } from '../types'
-import flattenSuggestions from './flattenSuggestions'
+import flattenSuggestions, { flattenSuggestionRenderEntries } from './flattenSuggestions'
 
 const createSuggestion = (id: string, display?: string): SuggestionDataItem => ({
   id,
@@ -66,5 +66,38 @@ describe('#flattenSuggestions', () => {
   it('returns an empty array when no suggestions are provided', () => {
     const flattened = flattenSuggestions([<div key="0" />], undefined)
     expect(flattened).toEqual([])
+  })
+
+  it('emits section headers without counting them as selectable suggestion indexes', () => {
+    const children = [<div key="0" />]
+    const alice = createSuggestion('alice')
+    const adam = createSuggestion('adam')
+    const frontend = createSuggestion('frontend')
+    const suggestions: SuggestionsMap = {
+      0: {
+        queryInfo: createQueryInfo(0),
+        results: [alice, adam, frontend],
+        sections: [
+          {
+            key: 'label:Users',
+            label: 'Users',
+            results: [alice, adam],
+          },
+          {
+            key: 'label:Teams',
+            label: 'Teams',
+            results: [frontend],
+          },
+        ],
+      },
+    }
+
+    const flattened = flattenSuggestions(children, suggestions)
+    const renderEntries = flattenSuggestionRenderEntries(children, suggestions)
+
+    expect(flattened.map((entry) => entry.result.id)).toEqual(['alice', 'adam', 'frontend'])
+    expect(
+      renderEntries.map((entry) => (entry.type === 'section' ? entry.label : entry.index))
+    ).toEqual(['Users', 0, 1, 'Teams', 2])
   })
 })
