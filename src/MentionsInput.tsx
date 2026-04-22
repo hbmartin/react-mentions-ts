@@ -296,6 +296,8 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
         statusContent={statusContent}
         statusType={statusType}
         listClassName={props.classNames?.suggestionsList}
+        sectionClassName={props.classNames?.suggestionSection}
+        sectionLabelClassName={props.classNames?.suggestionSectionLabel}
         itemClassName={props.classNames?.suggestionItem}
         focusedItemClassName={props.classNames?.suggestionItemFocused}
         displayClassName={props.classNames?.suggestionDisplay}

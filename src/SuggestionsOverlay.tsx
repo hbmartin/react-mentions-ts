@@ -4,7 +4,12 @@ import { cva } from 'class-variance-authority'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
-import { cn, flattenSuggestions, getSuggestionHtmlId } from './utils'
+import {
+  cn,
+  flattenSuggestionRenderEntries,
+  flattenSuggestions,
+  getSuggestionHtmlId,
+} from './utils'
 import { useEventCallback } from './utils/useEventCallback'
 import type {
   MentionComponentProps,
@@ -35,6 +40,8 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly mentionChildren?: React.ReactElement<MentionComponentProps<Extra>>[]
   readonly className?: string
   readonly listClassName?: string
+  readonly sectionClassName?: string
+  readonly sectionLabelClassName?: string
   readonly itemClassName?: string
   readonly focusedItemClassName?: string
   readonly displayClassName?: string
@@ -57,6 +64,8 @@ const overlayStyles = cva(
 )
 const listStyles =
   'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
+const sectionStyles = cva('select-none px-4 py-2 text-xs font-semibold text-muted-foreground')
+const sectionLabelStyles = cva('block')
 const loadMoreThresholdPx = 48
 
 const isNearLoadMoreThreshold = (list: HTMLUListElement): boolean => {
@@ -89,6 +98,24 @@ const statusStyles = cva('px-4 py-2.5 text-left text-sm leading-relaxed', {
   },
 })
 
+interface SuggestionSectionHeaderProps {
+  readonly label: React.ReactNode
+  readonly className?: string
+  readonly labelClassName?: string
+}
+
+const SuggestionSectionHeader = ({
+  label,
+  className,
+  labelClassName,
+}: SuggestionSectionHeaderProps) => (
+  <li role="presentation" className={cn(sectionStyles(), className)} data-slot="suggestion-section">
+    <span className={cn(sectionLabelStyles(), labelClassName)} data-slot="suggestion-section-label">
+      {label}
+    </span>
+  </li>
+)
+
 function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
   suggestions = {},
@@ -108,6 +135,8 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   mentionChildren: mentionChildrenProp,
   className,
   listClassName,
+  sectionClassName,
+  sectionLabelClassName,
   itemClassName,
   focusedItemClassName,
   displayClassName,
@@ -166,7 +195,9 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
       return
     }
 
-    const focusedChild = ulElement.children.item(focusIndex)
+    const focusedChild = ulElement.querySelector<HTMLElement>(
+      '[data-slot="suggestion-item"][data-focused="true"]'
+    )
     if (!focusedChild) {
       return
     }
@@ -243,6 +274,10 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     return flattenSuggestions(mentionChildren, suggestions)
   }, [mentionChildren, suggestions])
 
+  const flattenedSuggestionRenderEntries = useMemo(() => {
+    return flattenSuggestionRenderEntries(mentionChildren, suggestions)
+  }, [mentionChildren, suggestions])
+
   const handleListMouseDown = useEventCallback<React.MouseEventHandler<HTMLUListElement>>(
     (event) => {
       onMouseDown?.(event)
@@ -293,7 +328,19 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         onMouseMove={handleListMouseMove}
         onScroll={handleListScroll}
       >
-        {flattenedSuggestions.map(({ result: suggestionItem, queryInfo }, index) => {
+        {flattenedSuggestionRenderEntries.map((entry) => {
+          if (entry.type === 'section') {
+            return (
+              <SuggestionSectionHeader
+                key={entry.key}
+                label={entry.label}
+                className={sectionClassName}
+                labelClassName={sectionLabelClassName}
+              />
+            )
+          }
+
+          const { result: suggestionItem, queryInfo, index } = entry
           const { childIndex, query } = queryInfo
           const renderSuggestionFromChild =
             childRenderSuggestions[childIndex] ?? DEFAULT_MENTION_PROPS.renderSuggestion
@@ -304,7 +351,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
               focusedClassName={focusedItemClassName}
               displayClassName={displayClassName}
               highlightClassName={highlightClassName}
-              key={`${childIndex.toString()}-${suggestionItem.id}`}
+              key={entry.key}
               id={
                 id === undefined ? `suggestion-${index.toString()}` : getSuggestionHtmlId(id, index)
               }
