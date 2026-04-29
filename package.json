@@ -20,7 +20,10 @@
       }
     },
     "./package.json": "./package.json",
-    "./styles/tailwind.css": "./styles/tailwind.css"
+    "./styles/tailwind.css": {
+      "types": "./styles/tailwind.css.d.ts",
+      "default": "./styles/tailwind.css"
+    }
   },
   "files": [
     "codemods",
