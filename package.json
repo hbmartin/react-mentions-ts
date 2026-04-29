@@ -19,6 +19,7 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./styles/tailwind.css": "./styles/tailwind.css",
     "./package.json": "./package.json"
   },
   "files": [
