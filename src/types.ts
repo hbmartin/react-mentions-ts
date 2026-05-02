@@ -34,6 +34,23 @@ export type MentionDataItem<Extra extends Record<string, unknown> = Record<strin
 export type SuggestionDataItem<Extra extends Record<string, unknown> = Record<string, unknown>> =
   MentionDataItem<Extra>
 
+export interface MentionDataSection<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> {
+  id?: MentionIdentifier
+  label: ReactNode
+  items: ReadonlyArray<MentionDataItem<Extra>>
+}
+
+export interface SuggestionSection<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> {
+  key: string
+  id?: MentionIdentifier
+  label: ReactNode
+  results: SuggestionDataItem<Extra>[]
+}
+
 type MaybePromise<T> = T | Promise<T>
 
 export type MentionSearchReason = 'query' | 'page'
@@ -45,11 +62,20 @@ export interface MentionSearchContext {
   reason: MentionSearchReason
 }
 
-export interface MentionDataPage<Extra extends Record<string, unknown> = Record<string, unknown>> {
-  items: ReadonlyArray<MentionDataItem<Extra>>
+interface MentionDataPageBase {
   nextCursor?: MentionPageCursor | null
   hasMore?: boolean
 }
+
+export type MentionDataPage<Extra extends Record<string, unknown> = Record<string, unknown>> =
+  | (MentionDataPageBase & {
+      items: ReadonlyArray<MentionDataItem<Extra>>
+      sections?: never
+    })
+  | (MentionDataPageBase & {
+      items?: never
+      sections: ReadonlyArray<MentionDataSection<Extra>>
+    })
 
 export type MentionDataProviderResult<
   Extra extends Record<string, unknown> = Record<string, unknown>,
@@ -59,6 +85,7 @@ export interface NormalizedMentionDataPage<
   Extra extends Record<string, unknown> = Record<string, unknown>,
 > {
   items: MentionDataItem<Extra>[]
+  sections?: SuggestionSection<Extra>[]
   nextCursor: MentionPageCursor | null
   hasMore: boolean
   paginated: boolean
@@ -93,6 +120,7 @@ export interface SuggestionQueryState<
 > {
   queryInfo: QueryInfo
   results: SuggestionDataItem<Extra>[]
+  sections?: SuggestionSection<Extra>[]
   status: 'loading' | 'success' | 'error'
   ignoreAccents?: boolean
   error?: unknown
@@ -114,6 +142,7 @@ export type SuggestionsMap<Extra extends Record<string, unknown> = Record<string
     {
       queryInfo: QueryInfo
       results: SuggestionDataItem<Extra>[]
+      sections?: SuggestionSection<Extra>[]
     }
   >
 
@@ -353,6 +382,10 @@ export type MentionsInputClassNames = Partial<{
   suggestionsStatus: string
   /** The ul element that contains the list of suggestion items */
   suggestionsList: string
+  /** The non-focusable li element that labels a grouped suggestion section */
+  suggestionSection: string
+  /** The span element that wraps the grouped suggestion section label */
+  suggestionSectionLabel: string
   /** The li element for each individual suggestion item */
   suggestionItem: string
   /** Additional class applied to the currently focused/highlighted suggestion item */
