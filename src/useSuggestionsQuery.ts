@@ -71,9 +71,13 @@ const getLoadingQueryStates = <Extra extends Record<string, unknown>>(
     const previousResults = Object.hasOwn(nextSuggestions, activeQuery.childIndex)
       ? nextSuggestions[activeQuery.childIndex].results
       : []
+    const previousSections = Object.hasOwn(nextSuggestions, activeQuery.childIndex)
+      ? nextSuggestions[activeQuery.childIndex].sections
+      : undefined
     queryStates[activeQuery.childIndex] = {
       ...createLoadingQueryState<Extra>(activeQuery.queryInfo, activeQuery.ignoreAccents),
       results: previousResults,
+      ...(previousSections === undefined ? {} : { sections: previousSections }),
     }
     return queryStates
   }, {})
@@ -95,6 +99,9 @@ const getPreservedSuggestions = <Extra extends Record<string, unknown>>(
     nextSuggestions[activeQuery.childIndex] = {
       queryInfo: activeQuery.queryInfo,
       results: previousSuggestion.results,
+      ...(previousSuggestion.sections === undefined
+        ? {}
+        : { sections: previousSuggestion.sections }),
     }
 
     return nextSuggestions
