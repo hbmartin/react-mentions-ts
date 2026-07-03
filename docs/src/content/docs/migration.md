@@ -50,7 +50,7 @@ Review the diff and run your test suite after applying it.
 ## Renamed props
 
 | react-mentions                                           | react-mentions-ts                                                                                   | Notes                                                                                     |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `onChange(event, newValue, newPlainTextValue, mentions)` | `onMentionsChange({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue })` | Receives a single object instead of positional arguments                                  |
 | `onBlur(event, clickedSuggestion)`                       | `onMentionBlur(event, clickedSuggestion)`                                                           | Renamed to avoid shadowing the native `onBlur` (which is also available)                  |
 | `allowSuggestionsAboveCursor`                            | `suggestionsPlacement="auto"`                                                                       | Use `'auto'`, `'above'`, or `'below'` instead of two separate booleans                    |
@@ -60,8 +60,8 @@ Review the diff and run your test suite after applying it.
 
 ## Replaced props
 
-| react-mentions              | react-mentions-ts                        | Notes                                                                                                                                                                              |
-| --------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| react-mentions              | react-mentions-ts                        | Notes                                                                                                                                                              |
+| --------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `markup` (string) + `regex` | `markup` (string \| `MentionSerializer`) | The separate `regex` prop is removed. Pass a `MentionSerializer` for custom parsing, or use `createMarkupSerializer(template)` to convert a legacy template string |
 
 ## New features (no react-mentions equivalent)
