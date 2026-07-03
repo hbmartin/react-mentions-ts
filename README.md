@@ -367,6 +367,45 @@ The `__display__` placeholder stores the visible text and `__id__` stores the me
 
 You can customize the template via the `markup` prop on `Mention`, or pass a `MentionSerializer` for full control (see below).
 
+### Rendering Saved Values
+
+Once a markup value has been stored (in your database, a message feed, etc.), use `MentionsText` to display it with mentions highlighted — the read-only counterpart to `MentionsInput`:
+
+```tsx
+import { MentionsText } from 'react-mentions-ts'
+
+// value: 'Hey @[Walter White](walter), are you there?'
+<MentionsText value={message.value} />
+// renders: Hey <strong data-mention-id="walter">Walter White</strong>, are you there?
+```
+
+`MentionsText` accepts the same `markup` (a template string, a `MentionSerializer`, or an array of either for multi-trigger values) and `displayTransform` you used when creating the value, plus a `renderMention` callback for custom mention elements:
+
+```tsx
+<MentionsText
+  value={message.value}
+  markup={['@[__display__](__id__)', '#[__display__](__id__)']}
+  mentionClassName="text-primary font-medium"
+  renderMention={(mention) => <a href={`/users/${mention.id}`}>@{mention.display}</a>}
+/>
+```
+
+For non-React targets (HTML emails, notifications) or custom rendering pipelines, the lower-level helpers are also exported:
+
+```ts
+import { parseMentionsMarkup, renderMentionsToReact } from 'react-mentions-ts'
+
+parseMentionsMarkup('Hey @[Walter White](walter)!')
+// [
+//   { type: 'text', text: 'Hey ', index: 0, plainTextIndex: 0 },
+//   { type: 'mention', id: 'walter', display: 'Walter White', markup: '@[Walter White](walter)', ... },
+//   { type: 'text', text: '!', ... },
+// ]
+
+renderMentionsToReact(value, { mentionClassName: 'mention' })
+// ReactNode[] — the array MentionsText renders internally
+```
+
 ### `makeTriggerRegex`
 
 A utility that builds a properly anchored regex from a trigger string. Useful when you need spaces in queries or accent-insensitive matching without hand-rolling a regex.

@@ -1,5 +1,14 @@
 export { default as MentionsInput } from './MentionsInput'
 export { default as Mention } from './Mention'
+export { default as MentionsText } from './MentionsText'
+export type { MentionsTextProps } from './MentionsText'
+export { parseMentionsMarkup, renderMentionsToReact } from './renderMentionsMarkup'
+export type {
+  MentionsTextMention,
+  MentionsTextSegment,
+  ParseMentionsMarkupOptions,
+  RenderMentionsOptions,
+} from './renderMentionsMarkup'
 export type {
   MentionsInputProps,
   MentionsInputHandle,
