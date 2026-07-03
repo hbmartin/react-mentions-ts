@@ -17,3 +17,7 @@ npm-debug.log*
 .npm-cache
 /reviews_triage
 triage_decisions.db
+/.stryker-tmp
+docs/node_modules
+docs/dist
+docs/.astro
