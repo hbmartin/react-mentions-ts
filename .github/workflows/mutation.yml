@@ -6,6 +6,9 @@ on:
     # Weekly, Monday 06:00 UTC — mutation runs are too slow for every push
     - cron: '0 6 * * 1'
 
+permissions:
+  contents: read
+
 jobs:
   mutation:
     runs-on: ubuntu-latest

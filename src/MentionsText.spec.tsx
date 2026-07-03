@@ -126,6 +126,7 @@ describe('renderMentionsToReact', () => {
     const link = container.querySelector('a')
     expect(link).toHaveAttribute('href', '/users/walter')
     expect(link).toHaveTextContent('@Walter White')
+    expect(link?.parentElement).toBe(container.firstElementChild)
     expect(container.querySelector('strong')).toBeNull()
   })
 })

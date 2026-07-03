@@ -153,6 +153,22 @@ describe('MentionsInput form integration', () => {
     expect(formData.get('message')).toBe('draft')
   })
 
+  it('does not submit the hidden input when disabled', () => {
+    render(
+      <form data-testid="form">
+        <MentionsInput defaultValue="disabled draft" disabled name="message">
+          <Mention trigger="@" data={data} />
+        </MentionsInput>
+      </form>
+    )
+
+    const hiddenInput = document.querySelector<HTMLInputElement>('input[name="message"]')
+    expect(hiddenInput).toBeDisabled()
+
+    const formData = new FormData(screen.getByTestId<HTMLFormElement>('form'))
+    expect(formData.has('message')).toBe(false)
+  })
+
   it('restores defaultValue when the form is reset', () => {
     render(
       <form data-testid="form">

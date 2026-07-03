@@ -934,7 +934,7 @@ describe('MentionsInputLayout', () => {
     const getComputedStyleSpy = vi.spyOn(globalThis, 'getComputedStyle').mockReturnValue({
       getPropertyValue: (property: string) =>
         property === 'line-height' ? '24px' : property === 'letter-spacing' ? '0.08em' : '',
-    } as unknown as CSSStyleDeclaration)
+    })
 
     try {
       const patch = getHighlighterViewPatch(input, highlighter)
@@ -1282,7 +1282,7 @@ describe('MentionsInputLayout', () => {
       applyTextareaResizePatch(document.createElement('input'), {
         height: '12px',
         overflowY: 'hidden',
-      } as never)
+      })
     ).toBe(false)
     expect(
       applyTextareaResizePatch(textArea, {

@@ -18,7 +18,6 @@ const visuallyHiddenStyles: CSSProperties = {
   padding: 0,
   border: 0,
   margin: -1,
-  clip: 'rect(0 0 0 0)',
   clipPath: 'inset(50%)',
   overflow: 'hidden',
   whiteSpace: 'nowrap',

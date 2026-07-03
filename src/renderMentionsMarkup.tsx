@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import type { DisplayTransform, MentionChildConfig, MentionSerializer } from './types'
 import createMarkupSerializer from './utils/createMarkupSerializer'
@@ -109,7 +109,7 @@ export const renderMentionsToReact = (
     const key = `${segment.index.toString()}-${segment.id}`
 
     if (renderMention) {
-      return <span key={key}>{renderMention(mention)}</span>
+      return <Fragment key={key}>{renderMention(mention)}</Fragment>
     }
 
     return (

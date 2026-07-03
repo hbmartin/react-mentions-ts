@@ -39,8 +39,8 @@ describe('MentionsInputInputProps', () => {
   it('keeps default event handlers as no-op callbacks', async () => {
     const { defaultMentionsInputProps } = await import('./MentionsInputInputProps')
 
-    expect(defaultMentionsInputProps.onKeyDown?.(undefined as never)).toBeNull()
-    expect(defaultMentionsInputProps.onSelect?.(undefined as never)).toBeNull()
+    expect(defaultMentionsInputProps.onKeyDown?.(undefined)).toBeNull()
+    expect(defaultMentionsInputProps.onSelect?.(undefined)).toBeNull()
   })
 
   it('omits aria-describedby for inline suggestions when there is no description source', async () => {

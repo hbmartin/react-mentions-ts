@@ -50,8 +50,7 @@ const MeasurementBridge = ({
 
   const observe = useEventCallback((element: Element | null, callback: () => void) => {
     const resizeObserverConstructor =
-      element?.ownerDocument.defaultView?.ResizeObserver ??
-      (Reflect.get(globalThis, 'ResizeObserver') as typeof ResizeObserver | undefined)
+      element?.ownerDocument.defaultView?.ResizeObserver ?? globalThis.ResizeObserver
 
     if (!element || resizeObserverConstructor === undefined) {
       return undefined

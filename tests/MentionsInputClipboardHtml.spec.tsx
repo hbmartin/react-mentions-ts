@@ -80,6 +80,30 @@ describe('MentionsInput clipboard HTML fidelity', () => {
     expect(getLastMentionsChange(onMentionsChange).value).toBe(`@[Second](second) ${value}`)
   })
 
+  it('falls back to plain text when HTML mention markup does not match the visible text', () => {
+    const onMentionsChange = vi.fn()
+    const textarea = renderInput(onMentionsChange)
+    textarea.setSelectionRange(0, 0)
+
+    firePaste(textarea, {
+      'text/html': '<span data-react-mentions="@[Third](third)">Second</span>',
+      'text/plain': 'Second',
+    })
+
+    const change = getLastMentionsChange(onMentionsChange)
+    expect(change.value).toBe(`Second${value}`)
+    expect(change.mentions.map((mention) => mention.id)).toEqual(['first'])
+  })
+
+  it('ignores paste events without clipboard data', () => {
+    const onMentionsChange = vi.fn()
+    const textarea = renderInput(onMentionsChange)
+    const event = new Event('paste', { bubbles: true })
+
+    expect(() => fireEvent(textarea, event)).not.toThrow()
+    expect(onMentionsChange).not.toHaveBeenCalled()
+  })
+
   it('falls back to plain text for foreign HTML', () => {
     const onMentionsChange = vi.fn()
     const textarea = renderInput(onMentionsChange)

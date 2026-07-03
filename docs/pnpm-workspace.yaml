@@ -1,0 +1,10 @@
+packages:
+  - .
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+
+overrides:
+  '@emnapi/runtime': 1.11.1
+  picomatch: 4.0.4

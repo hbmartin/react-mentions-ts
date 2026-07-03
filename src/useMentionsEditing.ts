@@ -57,18 +57,41 @@ interface UseMentionsEditingArgs<Extra extends Record<string, unknown>> {
   requestHighlighterScrollSync: () => void
 }
 
-const readPastedMentionsMarkup = (clipboardData: Pick<DataTransfer, 'getData'>): string => {
+const getTrustedClipboardMarkup = <Extra extends Record<string, unknown>>(
+  markup: string,
+  plainText: string,
+  config: ReadonlyArray<PreparedMentionChildConfig<Extra>>
+): string | null => {
+  if (markup.length === 0) {
+    return null
+  }
+
+  return getMentionsAndPlainText(markup, config).plainText === plainText ? markup : null
+}
+
+const readPastedMentionsMarkup = <Extra extends Record<string, unknown>>(
+  clipboardData: Pick<DataTransfer, 'getData'> | null | undefined,
+  config: ReadonlyArray<PreparedMentionChildConfig<Extra>>
+): string => {
+  if (!clipboardData) {
+    return ''
+  }
+
+  const plainText = clipboardData.getData('text/plain')
   const customPayload = clipboardData.getData('text/react-mentions')
   if (customPayload.length > 0) {
     return customPayload
   }
 
   const htmlMarkup = extractMentionsMarkupFromHtml(clipboardData.getData('text/html'))
-  if (htmlMarkup !== null && htmlMarkup.length > 0) {
-    return htmlMarkup
+  if (htmlMarkup !== null) {
+    const trustedHtmlMarkup = getTrustedClipboardMarkup(htmlMarkup, plainText, config)
+    if (trustedHtmlMarkup !== null) {
+      return trustedHtmlMarkup
+    }
   }
 
-  return clipboardData.getData('text/plain')
+  return plainText
 }
 
 const getMentionDiffKey = <Extra extends Record<string, unknown>>(
@@ -292,7 +315,7 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       mutation.config,
       mutation.stateRef.current.selectionStart,
       mutation.stateRef.current.selectionEnd,
-      readPastedMentionsMarkup(mutation.clipboardData)
+      readPastedMentionsMarkup(mutation.clipboardData, mutation.config)
     )
     mutation.cacheSnapshot(pasteResult.value, mutation.config, pasteResult.snapshot)
 

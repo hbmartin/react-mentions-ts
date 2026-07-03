@@ -218,7 +218,7 @@ describe('MentionsInputSelectors', () => {
     expect(getFocusedSuggestionEntry(<>{mentionChildren}</>, {}, 0)).toBeNull()
     expect(getFocusedSuggestionEntryForMentionChildren(mentionChildren, {}, 0)).toBeNull()
     expect(getFlattenedSuggestions(<>{mentionChildren}</>, suggestions)).toHaveLength(1)
-    expect(getPreferredQueryState({} as never)).toBeNull()
+    expect(getPreferredQueryState({})).toBeNull()
   })
 
   it('computes inline suggestion remainders and details', () => {
