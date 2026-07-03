@@ -136,6 +136,7 @@
     "@vitest/coverage-v8": "^4.1.5",
     "@vitest/eslint-plugin": "^1.6.16",
     "@welldone-software/why-did-you-render": "^10.0.1",
+    "axe-core": "^4.12.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint": "^10.3.0",
