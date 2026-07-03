@@ -10,7 +10,7 @@
 
 A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.
 
-### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/)
+### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/) · [Read the docs](https://hbmartin.github.io/react-mentions-ts/docs/)
 
 ## Table of Contents
 

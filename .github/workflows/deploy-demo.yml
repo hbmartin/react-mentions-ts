@@ -1,4 +1,4 @@
-name: Deploy Demo to GitHub Pages
+name: Deploy Demo & Docs to GitHub Pages
 
 on:
   push:
@@ -42,6 +42,15 @@ jobs:
 
       - name: Build demo
         run: pnpm build:demo --base=/react-mentions-ts/
+
+      - name: Install docs dependencies
+        run: pnpm install --dir docs --frozen-lockfile
+
+      - name: Build docs
+        run: pnpm --dir docs build
+
+      - name: Merge docs into Pages artifact
+        run: cp -r docs/dist demo/dist/docs
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
