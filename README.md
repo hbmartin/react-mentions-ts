@@ -729,6 +729,9 @@ The default template `@[__display__](__id__)` uses `)` as a terminator. Either s
 **Async requests aren't cancelling.**
 You must forward the `signal` from `MentionSearchContext` into `fetch` (or your HTTP client's equivalent). Without it, stale responses will race and overwrite the active query's results.
 
+**Does native undo (Ctrl+Z / Cmd+Z) work?**
+Partially — and this is a platform limitation of DOM inputs, not something the library can override. Undo works per keystroke for plain typing, but whenever the value is rewritten programmatically (selecting a suggestion, `insertText()`, or an external `value` change), the browser invalidates the textarea's undo stack, so Ctrl+Z right after inserting a mention is a no-op. What the library does guarantee — enforced by the browser suite in [`tests/browser/MentionsInputUndo.browser.test.tsx`](tests/browser/MentionsInputUndo.browser.test.tsx) — is that undo/redo can never desynchronize the markup value from the visible text or leave a partially-deleted mention. If your app needs full undo/redo across mention insertions, keep a history of markup values in your own state and restore them via the `value` prop.
+
 **What happens to mentions on copy & paste?**
 Copying or cutting a selection writes three clipboard flavors: `text/plain` (the visible text), `text/react-mentions` (the raw markup), and `text/html` (mentions as `<strong data-mention-id>` elements, with the raw markup carried on a wrapper attribute). Pasting into another `MentionsInput` restores full mention structure — via the custom type when available, or the HTML payload when an app strips custom clipboard types. Pasting into other applications gets the plain text or styled HTML.
 
