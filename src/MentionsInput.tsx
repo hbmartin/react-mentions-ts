@@ -420,7 +420,9 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
       return null
     }
 
-    return <input type="hidden" name={props.name} value={value} readOnly />
+    return (
+      <input type="hidden" name={props.name} value={value} readOnly disabled={props.disabled} />
+    )
   }
 
   const renderMeasurementBridge = (): ReactElement => (

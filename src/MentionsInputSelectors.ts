@@ -76,7 +76,7 @@ const getCachedSearchableItems = <Extra extends Record<string, unknown>>(
     item,
     searchableDisplay: item.display ?? String(item.id),
   }))
-  cache.set(cacheKey, searchableItems as CachedSearchableSuggestionItems)
+  cache.set(cacheKey, searchableItems)
 
   return searchableItems
 }

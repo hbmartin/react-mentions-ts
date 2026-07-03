@@ -200,5 +200,5 @@ export const buildMentionsInputInputProps = <
     })
   )
 
-  return inputProps as InputComponentProps
+  return inputProps
 }

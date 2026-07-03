@@ -89,4 +89,4 @@ Customize the inline hint appearance via the `classNames` prop:
 | `inlineSuggestionPrefix` | The already-typed portion (hidden with `sr-only`) |
 | `inlineSuggestionSuffix` | The remaining suggestion shown after the caret    |
 
-See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for a full styling example.
+See [demo/src/examples/MentionSelection.tsx](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/MentionSelection.tsx) and [demo/src/examples/mentionsClassNames.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/mentionsClassNames.ts) for full styling examples.

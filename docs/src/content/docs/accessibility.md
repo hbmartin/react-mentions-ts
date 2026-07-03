@@ -6,7 +6,7 @@ description: WAI-ARIA combobox semantics, expected screen-reader behavior, and t
 `MentionsInput` implements the [WAI-ARIA editable combobox with list autocomplete pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/):
 
 - The input has `role="combobox"` with `aria-autocomplete="list"` (or `"inline"` when `suggestionsDisplay="inline"`), `aria-haspopup="listbox"`, and `aria-expanded` reflecting whether suggestions are open.
-- The open suggestions overlay is a `role="listbox"` (labeled via `a11ySuggestionsListLabel`) whose focused `role="option"` is referenced by `aria-activedescendant`, so focus never leaves the input while navigating with the arrow keys.
+- The open suggestions overlay is a `role="listbox"` (labeled via `a11ySuggestionsListLabel`) referenced by `aria-controls`, and its focused `role="option"` is referenced by `aria-activedescendant`, so focus never leaves the input while navigating with the arrow keys.
 - Inline autocomplete announces the current completion through a visually hidden live region referenced by `aria-describedby`.
 - Remember to give the input an accessible name — pass `aria-label` or associate a `<label>` yourself.
 

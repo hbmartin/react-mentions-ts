@@ -18,9 +18,7 @@ export const useMentionsDocumentEvents = ({
   onSelectionChange,
 }: UseMentionsDocumentEventsArgs): void => {
   useEffect(() => {
-    const ownerDocument =
-      inputElementRef.current?.ownerDocument ??
-      (Reflect.get(globalThis, 'document') as Document | undefined)
+    const ownerDocument = inputElementRef.current?.ownerDocument ?? globalThis.document
 
     if (ownerDocument === undefined) {
       return undefined
