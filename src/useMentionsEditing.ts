@@ -28,6 +28,10 @@ import type {
   SuggestionDataItem,
 } from './types'
 import { getMentionsAndPlainText, mapPlainTextIndex, spliceString } from './utils'
+import {
+  buildMentionsClipboardHtml,
+  extractMentionsMarkupFromHtml,
+} from './utils/mentionsClipboard'
 import { useMentionsComposition } from './useMentionsComposition'
 import type { NativeInputEvent } from './useMentionsComposition'
 import { useMentionsDocumentEvents } from './useMentionsDocumentEvents'
@@ -51,6 +55,20 @@ interface UseMentionsEditingArgs<Extra extends Record<string, unknown>> {
   updateMentionsQueries: (plainTextValue: string, caretPosition: number, value?: string) => void
   clearSuggestions: (extraPatch?: MentionsInputStatePatch<Extra>) => void
   requestHighlighterScrollSync: () => void
+}
+
+const readPastedMentionsMarkup = (clipboardData: Pick<DataTransfer, 'getData'>): string => {
+  const customPayload = clipboardData.getData('text/react-mentions')
+  if (customPayload.length > 0) {
+    return customPayload
+  }
+
+  const htmlMarkup = extractMentionsMarkupFromHtml(clipboardData.getData('text/html'))
+  if (htmlMarkup !== null && htmlMarkup.length > 0) {
+    return htmlMarkup
+  }
+
+  return clipboardData.getData('text/plain')
 }
 
 const getMentionDiffKey = <Extra extends Record<string, unknown>>(
@@ -256,11 +274,11 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       selectionEnd
     )
 
+    const markupFragment = valueText.slice(markupStartIndex, markupEndIndex)
+
     event.clipboardData.setData('text/plain', input.value.slice(selectionStart, selectionEnd))
-    event.clipboardData.setData(
-      'text/react-mentions',
-      valueText.slice(markupStartIndex, markupEndIndex)
-    )
+    event.clipboardData.setData('text/react-mentions', markupFragment)
+    event.clipboardData.setData('text/html', buildMentionsClipboardHtml(markupFragment, config))
   })
 
   const handlePaste = useEventCallback((event: ClipboardEvent): void => {
@@ -274,8 +292,7 @@ export const useMentionsEditing = <Extra extends Record<string, unknown>>(
       mutation.config,
       mutation.stateRef.current.selectionStart,
       mutation.stateRef.current.selectionEnd,
-      mutation.clipboardData.getData('text/react-mentions') ||
-        mutation.clipboardData.getData('text/plain')
+      readPastedMentionsMarkup(mutation.clipboardData)
     )
     mutation.cacheSnapshot(pasteResult.value, mutation.config, pasteResult.snapshot)
 

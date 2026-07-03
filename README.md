@@ -41,6 +41,7 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
 - **Inline Autocomplete** — ghost-text hints accepted with Tab, Enter, or arrow keys
 - **Tailwind v4 Ready** — first-class support for Tailwind CSS v4 utility styling
 - **TypeScript First** — written in TypeScript with complete type definitions
+- **Clipboard Fidelity** — copy/cut/paste preserves mentions via `text/react-mentions` and `text/html` clipboard payloads, even across apps
 - **Accessible** — built with ARIA labels and keyboard navigation
 - **SSR Compatible** — works with Next.js and other SSR frameworks
 - **Mobile Friendly** — touch-optimized for mobile devices
@@ -713,6 +714,9 @@ The default template `@[__display__](__id__)` uses `)` as a terminator. Either s
 
 **Async requests aren't cancelling.**
 You must forward the `signal` from `MentionSearchContext` into `fetch` (or your HTTP client's equivalent). Without it, stale responses will race and overwrite the active query's results.
+
+**What happens to mentions on copy & paste?**
+Copying or cutting a selection writes three clipboard flavors: `text/plain` (the visible text), `text/react-mentions` (the raw markup), and `text/html` (mentions as `<strong data-mention-id>` elements, with the raw markup carried on a wrapper attribute). Pasting into another `MentionsInput` restores full mention structure — via the custom type when available, or the HTML payload when an app strips custom clipboard types. Pasting into other applications gets the plain text or styled HTML.
 
 **`onBlur` isn't firing with the expected signature.**
 The native `onBlur` is unchanged. For the library-specific callback that also reports whether focus moved to a suggestion, use `onMentionBlur(event, clickedSuggestion)`.
