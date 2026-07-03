@@ -66,6 +66,12 @@ interface BuildMentionsInputInputPropsArgs<
   onCompositionEnd: InputComponentProps['onCompositionEnd']
 }
 
+type MentionsInputElementProps = InputComponentProps & {
+  'data-multi-line'?: 'true'
+  'data-single-line'?: 'true'
+  'data-slot': 'input'
+}
+
 const mergeDescribedBy = (
   existingDescribedBy: unknown,
   liveRegionId: string | undefined
@@ -160,7 +166,7 @@ export const buildMentionsInputInputProps = <
     props as unknown as Record<string, unknown>,
     HANDLED_PROPS as ReadonlyArray<keyof MentionsInputProps>
   ) as Partial<InputComponentProps>
-  const inputProps: Record<string, unknown> = {
+  const inputProps: MentionsInputElementProps = {
     ...passthroughProps,
     className: inputClassName,
     spellCheck: props.spellCheck ?? defaultMentionsInputProps.spellCheck,
