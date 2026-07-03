@@ -163,7 +163,9 @@ The `MentionsInput` component supports the following props:
 
 | Prop name                  | Type                                                                                       | Default value  | Description                                                                                                                                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| value                      | string                                                                                     | `''`           | The value containing markup for mentions                                                                                                                                                                               |
+| value                      | string                                                                                     | `''`           | The value containing markup for mentions (omit for uncontrolled usage)                                                                                                                                                 |
+| defaultValue               | string                                                                                     | `''`           | Initial markup value for uncontrolled usage; ignored when `value` is provided                                                                                                                                          |
+| name                       | string                                                                                     | `undefined`    | Renders a hidden input with this name carrying the markup value, for native `<form>` submissions and form actions                                                                                                      |
 | onMentionsChange           | function ({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, id-based text, the affected mention id (when applicable), active mentions, and the previous markup value                        |
 | onMentionSelectionChange   | function (selection, context)                                                              | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries and a metadata context containing the current value, plain text, and mention identifiers |
 | onKeyDown                  | function (event)                                                                           | empty function | A callback that is invoked when the user presses a key in the mentions input                                                                                                                                           |
@@ -355,7 +357,7 @@ The [live demo](https://hbmartin.github.io/react-mentions-ts/) includes many rea
 
 ### Markup Format and Controlled State
 
-`MentionsInput` is a **controlled component** — you must provide a `value` prop and handle updates via `onMentionsChange`. The `value` string uses a markup format to encode mentions inline with plain text.
+`MentionsInput` is typically used as a **controlled component** — provide a `value` prop and handle updates via `onMentionsChange`. (It can also manage its own state; see [Uncontrolled Mode & Forms](#uncontrolled-mode--forms).) The `value` string uses a markup format to encode mentions inline with plain text.
 
 The default markup template is `@[__display__](__id__)`, so a value containing a mention looks like:
 
@@ -367,6 +369,36 @@ The `__display__` placeholder stores the visible text and `__id__` stores the me
 
 You can customize the template via the `markup` prop on `Mention`, or pass a `MentionSerializer` for full control (see below).
 
+### Uncontrolled Mode & Forms
+
+When you omit the `value` prop, `MentionsInput` manages its own state. Pass `defaultValue` (in markup format) to set the initial content — `onMentionsChange` still fires on every edit if you want to observe changes:
+
+```tsx
+<MentionsInput defaultValue="Hi @[Walter White](walter)!">
+  <Mention trigger="@" data={users} />
+</MentionsInput>
+```
+
+Adding a `name` prop renders a hidden input carrying the **markup value**, so the component works with plain `<form>` submissions, React 19 form actions, and libraries like React Hook Form without a controlled wrapper:
+
+```tsx
+<form action={sendMessage}>
+  <MentionsInput name="message">
+    <Mention trigger="@" data={users} />
+  </MentionsInput>
+  <button type="submit">Send</button>
+</form>
+
+// in sendMessage(formData):
+// formData.get('message') → 'Hi @[Walter White](walter)!'
+```
+
+Notes:
+
+- The submitted value is the markup value (with mention metadata), not the visible plain text. Use [`MentionsText` or `parseMentionsMarkup`](#rendering-saved-values) to work with it later.
+- In uncontrolled mode, a native form reset restores `defaultValue`.
+- Providing `value` switches back to fully controlled behavior; `defaultValue` is then ignored (the hidden input still works with `name`).
+
 ### Rendering Saved Values
 
 Once a markup value has been stored (in your database, a message feed, etc.), use `MentionsText` to display it with mentions highlighted — the read-only counterpart to `MentionsInput`:
@@ -375,7 +407,7 @@ Once a markup value has been stored (in your database, a message feed, etc.), us
 import { MentionsText } from 'react-mentions-ts'
 
 // value: 'Hey @[Walter White](walter), are you there?'
-<MentionsText value={message.value} />
+;<MentionsText value={message.value} />
 // renders: Hey <strong data-mention-id="walter">Walter White</strong>, are you there?
 ```
 
