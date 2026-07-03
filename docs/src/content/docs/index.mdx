@@ -1,0 +1,61 @@
+---
+title: react-mentions-ts
+description: Facebook/Twitter-style @mentions and tagging for React textareas, with full TypeScript support.
+template: splash
+hero:
+  tagline: Facebook/Twitter-style @mentions and tagging in React textarea inputs — TypeScript-first, accessible, and async-ready.
+  actions:
+    - text: Get Started
+      link: /react-mentions-ts/docs/getting-started/
+      icon: right-arrow
+    - text: Live Demos
+      link: https://hbmartin.github.io/react-mentions-ts/
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+
+```tsx
+import { useState } from 'react'
+import { MentionsInput, Mention } from 'react-mentions-ts'
+
+const users = [
+  { id: 'walter', display: 'Walter White' },
+  { id: 'jesse', display: 'Jesse Pinkman' },
+]
+
+function MyComponent() {
+  const [value, setValue] = useState('')
+
+  return (
+    <MentionsInput value={value} onMentionsChange={({ value: nextValue }) => setValue(nextValue)}>
+      <Mention trigger="@" data={users} />
+    </MentionsInput>
+  )
+}
+```
+
+<CardGrid stagger>
+  <Card title="Flexible Triggers" icon="setting">
+    Any character, string, or custom `RegExp` — `@`, `#`, `:`, or your own pattern.
+  </Card>
+  <Card title="Async Data Loading" icon="rocket">
+    Real-time filtering with debouncing, `AbortSignal` cancellation, and cursor pagination.
+  </Card>
+  <Card title="TypeScript First" icon="seti:typescript">
+    Written in TypeScript with complete type definitions and generic mention data.
+  </Card>
+  <Card title="Accessible" icon="approve-check">
+    WAI-ARIA combobox pattern, screen-reader announcements, keyboard navigation — enforced by an
+    axe-core test suite.
+  </Card>
+  <Card title="Clipboard Fidelity" icon="document">
+    Copy/cut/paste preserves mentions via `text/react-mentions` and `text/html` payloads, even
+    across apps.
+  </Card>
+  <Card title="Forms & SSR Ready" icon="laptop">
+    Uncontrolled mode with native `<form>` integration, plus Next.js/SSR compatibility out of the
+    box.
+  </Card>
+</CardGrid>

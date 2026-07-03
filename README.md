@@ -10,7 +10,7 @@
 
 A React component that enables Facebook/Twitter-style @mentions and tagging in textarea inputs with full TypeScript support.
 
-### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/)
+### [Try out the live demos now!](https://hbmartin.github.io/react-mentions-ts/) · [Read the docs](https://hbmartin.github.io/react-mentions-ts/docs/)
 
 ## Table of Contents
 
@@ -26,6 +26,7 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
 - [Advanced Usage](#advanced-usage)
 - [Package & Tree Shaking](#package--tree-shaking)
 - [Styling](#styling)
+- [Accessibility](#accessibility)
 - [Testing](#testing)
 - [FAQ & Gotchas](#faq--gotchas)
 - [Migrating from react-mentions](#migrating-from-react-mentions)
@@ -41,6 +42,7 @@ A React component that enables Facebook/Twitter-style @mentions and tagging in t
 - **Inline Autocomplete** — ghost-text hints accepted with Tab, Enter, or arrow keys
 - **Tailwind v4 Ready** — first-class support for Tailwind CSS v4 utility styling
 - **TypeScript First** — written in TypeScript with complete type definitions
+- **Clipboard Fidelity** — copy/cut/paste preserves mentions via `text/react-mentions` and `text/html` clipboard payloads, even across apps
 - **Accessible** — built with ARIA labels and keyboard navigation
 - **SSR Compatible** — works with Next.js and other SSR frameworks
 - **Mobile Friendly** — touch-optimized for mobile devices
@@ -163,7 +165,9 @@ The `MentionsInput` component supports the following props:
 
 | Prop name                  | Type                                                                                       | Default value  | Description                                                                                                                                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| value                      | string                                                                                     | `''`           | The value containing markup for mentions                                                                                                                                                                               |
+| value                      | string                                                                                     | `''`           | The value containing markup for mentions (omit for uncontrolled usage)                                                                                                                                                 |
+| defaultValue               | string                                                                                     | `''`           | Initial markup value for uncontrolled usage; ignored when `value` is provided                                                                                                                                          |
+| name                       | string                                                                                     | `undefined`    | Renders a hidden input with this name carrying the markup value, for native `<form>` submissions and form actions                                                                                                      |
 | onMentionsChange           | function ({ trigger, value, plainTextValue, idValue, mentionId, mentions, previousValue }) | `undefined`    | Called when the mention markup changes; receives the updated markup value, plain text, id-based text, the affected mention id (when applicable), active mentions, and the previous markup value                        |
 | onMentionSelectionChange   | function (selection, context)                                                              | `undefined`    | Called whenever the caret or selection overlaps one or more mentions; receives an ordered array of `MentionSelection` entries and a metadata context containing the current value, plain text, and mention identifiers |
 | onKeyDown                  | function (event)                                                                           | empty function | A callback that is invoked when the user presses a key in the mentions input                                                                                                                                           |
@@ -355,7 +359,7 @@ The [live demo](https://hbmartin.github.io/react-mentions-ts/) includes many rea
 
 ### Markup Format and Controlled State
 
-`MentionsInput` is a **controlled component** — you must provide a `value` prop and handle updates via `onMentionsChange`. The `value` string uses a markup format to encode mentions inline with plain text.
+`MentionsInput` is typically used as a **controlled component** — provide a `value` prop and handle updates via `onMentionsChange`. (It can also manage its own state; see [Uncontrolled Mode & Forms](#uncontrolled-mode--forms).) The `value` string uses a markup format to encode mentions inline with plain text.
 
 The default markup template is `@[__display__](__id__)`, so a value containing a mention looks like:
 
@@ -366,6 +370,75 @@ Hey @[Walter White](walter), are you there?
 The `__display__` placeholder stores the visible text and `__id__` stores the mention identifier. When rendered, the user sees plain text (`Hey @Walter White, are you there?`) while the underlying value preserves the structured mention data.
 
 You can customize the template via the `markup` prop on `Mention`, or pass a `MentionSerializer` for full control (see below).
+
+### Uncontrolled Mode & Forms
+
+When you omit the `value` prop, `MentionsInput` manages its own state. Pass `defaultValue` (in markup format) to set the initial content — `onMentionsChange` still fires on every edit if you want to observe changes:
+
+```tsx
+<MentionsInput defaultValue="Hi @[Walter White](walter)!">
+  <Mention trigger="@" data={users} />
+</MentionsInput>
+```
+
+Adding a `name` prop renders a hidden input carrying the **markup value**, so the component works with plain `<form>` submissions, React 19 form actions, and libraries like React Hook Form without a controlled wrapper:
+
+```tsx
+<form action={sendMessage}>
+  <MentionsInput name="message">
+    <Mention trigger="@" data={users} />
+  </MentionsInput>
+  <button type="submit">Send</button>
+</form>
+
+// in sendMessage(formData):
+// formData.get('message') → 'Hi @[Walter White](walter)!'
+```
+
+Notes:
+
+- The submitted value is the markup value (with mention metadata), not the visible plain text. Use [`MentionsText` or `parseMentionsMarkup`](#rendering-saved-values) to work with it later.
+- In uncontrolled mode, a native form reset restores `defaultValue`.
+- Providing `value` switches back to fully controlled behavior; `defaultValue` is then ignored (the hidden input still works with `name`).
+
+### Rendering Saved Values
+
+Once a markup value has been stored (in your database, a message feed, etc.), use `MentionsText` to display it with mentions highlighted — the read-only counterpart to `MentionsInput`:
+
+```tsx
+import { MentionsText } from 'react-mentions-ts'
+
+// value: 'Hey @[Walter White](walter), are you there?'
+;<MentionsText value={message.value} />
+// renders: Hey <strong data-mention-id="walter">Walter White</strong>, are you there?
+```
+
+`MentionsText` accepts the same `markup` (a template string, a `MentionSerializer`, or an array of either for multi-trigger values) and `displayTransform` you used when creating the value, plus a `renderMention` callback for custom mention elements:
+
+```tsx
+<MentionsText
+  value={message.value}
+  markup={['@[__display__](__id__)', '#[__display__](__id__)']}
+  mentionClassName="text-primary font-medium"
+  renderMention={(mention) => <a href={`/users/${mention.id}`}>@{mention.display}</a>}
+/>
+```
+
+For non-React targets (HTML emails, notifications) or custom rendering pipelines, the lower-level helpers are also exported:
+
+```ts
+import { parseMentionsMarkup, renderMentionsToReact } from 'react-mentions-ts'
+
+parseMentionsMarkup('Hey @[Walter White](walter)!')
+// [
+//   { type: 'text', text: 'Hey ', index: 0, plainTextIndex: 0 },
+//   { type: 'mention', id: 'walter', display: 'Walter White', markup: '@[Walter White](walter)', ... },
+//   { type: 'text', text: '!', ... },
+// ]
+
+renderMentionsToReact(value, { mentionClassName: 'mention' })
+// ReactNode[] — the array MentionsText renders internally
+```
 
 ### `makeTriggerRegex`
 
@@ -606,6 +679,19 @@ Customize the inline hint appearance via the `classNames` prop:
 
 See [demo/src/examples/defaultStyle.ts](https://github.com/hbmartin/react-mentions-ts/blob/master/demo/src/examples/defaultStyle.ts) for a full styling example.
 
+## Accessibility
+
+`MentionsInput` implements the [WAI-ARIA editable combobox with list autocomplete pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/):
+
+- The input has `role="combobox"` with `aria-autocomplete="list"` (or `"inline"` when `suggestionsDisplay="inline"`), `aria-haspopup="listbox"`, and `aria-expanded` reflecting whether suggestions are open.
+- The open suggestions overlay is a `role="listbox"` (labeled via `a11ySuggestionsListLabel`) whose focused `role="option"` is referenced by `aria-activedescendant`, so focus never leaves the input while navigating with the arrow keys.
+- Inline autocomplete announces the current completion through a visually hidden live region referenced by `aria-describedby`.
+- Remember to give the input an accessible name — pass `aria-label` or associate a `<label>` yourself.
+
+Expected screen-reader behavior: typing a trigger announces that a list is available; ArrowUp/ArrowDown announce each suggestion as it becomes active (via `aria-activedescendant`); Enter or Tab inserts the active suggestion; Escape closes the list.
+
+One deliberate deviation: in multiline mode the ARIA-in-HTML spec disallows an explicit role on `<textarea>`, but the combobox role is required for the `aria-expanded`/`aria-controls`/`aria-activedescendant` wiring above and is well supported by screen readers (axe-core rates it minor). Single-line mode (`singleLine`) renders an `<input type="text">` and is fully conformant. These invariants are enforced by the axe-core suite in [`tests/MentionsInputA11y.spec.tsx`](tests/MentionsInputA11y.spec.tsx).
+
 ## Testing
 
 Due to React Mentions' internal cursor tracking, use [@testing-library/user-event](https://github.com/testing-library/user-event) for realistic event simulation:
@@ -642,6 +728,12 @@ The default template `@[__display__](__id__)` uses `)` as a terminator. Either s
 
 **Async requests aren't cancelling.**
 You must forward the `signal` from `MentionSearchContext` into `fetch` (or your HTTP client's equivalent). Without it, stale responses will race and overwrite the active query's results.
+
+**Does native undo (Ctrl+Z / Cmd+Z) work?**
+Partially — and this is a platform limitation of DOM inputs, not something the library can override. Undo works per keystroke for plain typing, but whenever the value is rewritten programmatically (selecting a suggestion, `insertText()`, or an external `value` change), the browser invalidates the textarea's undo stack, so Ctrl+Z right after inserting a mention is a no-op. What the library does guarantee — enforced by the browser suite in [`tests/browser/MentionsInputUndo.browser.test.tsx`](tests/browser/MentionsInputUndo.browser.test.tsx) — is that undo/redo can never desynchronize the markup value from the visible text or leave a partially-deleted mention. If your app needs full undo/redo across mention insertions, keep a history of markup values in your own state and restore them via the `value` prop.
+
+**What happens to mentions on copy & paste?**
+Copying or cutting a selection writes three clipboard flavors: `text/plain` (the visible text), `text/react-mentions` (the raw markup), and `text/html` (mentions as `<strong data-mention-id>` elements, with the raw markup carried on a wrapper attribute). Pasting into another `MentionsInput` restores full mention structure — via the custom type when available, or the HTML payload when an app strips custom clipboard types. Pasting into other applications gets the plain text or styled HTML.
 
 **`onBlur` isn't firing with the expected signature.**
 The native `onBlur` is unchanged. For the library-specific callback that also reports whether focus moved to a suggestion, use `onMentionBlur(event, clickedSuggestion)`.

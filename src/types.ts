@@ -301,7 +301,15 @@ export interface MentionsInputProps<
   classNames?: MentionsInputClassNames
   suggestionsPortalHost?: Element | Document | null
   suggestionsDisplay?: 'overlay' | 'inline'
+  /** Markup value for controlled usage; omit it (optionally with `defaultValue`) for uncontrolled usage */
   value?: string
+  /** Initial markup value for uncontrolled usage; ignored when `value` is provided */
+  defaultValue?: string
+  /**
+   * When set, a hidden input carrying the markup value is rendered so plain `<form>`
+   * submissions and form actions receive the mentions markup under this field name.
+   */
+  name?: string
   children:
     | ReactElement<MentionComponentProps<Extra>>
     | Array<ReactElement<MentionComponentProps<Extra>>>

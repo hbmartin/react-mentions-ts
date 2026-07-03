@@ -2643,7 +2643,7 @@ describe('MentionsInput', () => {
 
         fireEvent(textarea, event)
 
-        expect(setData).toHaveBeenCalledTimes(2)
+        expect(setData).toHaveBeenCalledTimes(3)
 
         expect(setData).toHaveBeenNthCalledWith(
           1,
@@ -2654,6 +2654,11 @@ describe('MentionsInput', () => {
           2,
           'text/react-mentions',
           "@[First](first), \n\nlet's add @[Second](second) to the conversation."
+        )
+        expect(setData).toHaveBeenNthCalledWith(
+          3,
+          'text/html',
+          expect.stringContaining('data-react-mentions')
         )
       }
     )
@@ -2684,7 +2689,7 @@ describe('MentionsInput', () => {
 
         fireEvent(textarea, event)
 
-        expect(setData).toHaveBeenCalledTimes(2)
+        expect(setData).toHaveBeenCalledTimes(3)
 
         expect(setData).toHaveBeenNthCalledWith(
           1,
@@ -2695,6 +2700,11 @@ describe('MentionsInput', () => {
           2,
           'text/react-mentions',
           "Hi @[First](first), \n\nlet's add @[Second](second)"
+        )
+        expect(setData).toHaveBeenNthCalledWith(
+          3,
+          'text/html',
+          expect.stringContaining('data-react-mentions')
         )
       }
     )

@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactElement, ReactNode, Ref } from 'react'
-import { useImperativeHandle } from 'react'
+import { useEffect, useImperativeHandle, useState } from 'react'
 import { cva } from 'class-variance-authority'
 import { createPortal } from 'react-dom'
 import Highlighter from './Highlighter'
@@ -21,6 +21,7 @@ import { useSuggestionsQuery } from './useSuggestionsQuery'
 import type {
   InputComponentProps,
   InputElement,
+  MentionsInputChangeEvent,
   MentionsInputClassNames,
   MentionsInputHandle,
   MentionsInputProps,
@@ -67,9 +68,24 @@ type MentionsInputComponentProps<Extra extends Record<string, unknown> = Record<
 
 const MentionsInput = <Extra extends Record<string, unknown> = Record<string, unknown>>({
   ref,
-  ...props
+  ...baseProps
 }: MentionsInputComponentProps<Extra>): ReactElement | null => {
   const { state, stateRef, setState } = useMentionsInputState<Extra>()
+  const isControlled = baseProps.value !== undefined
+  const [uncontrolledValue, setUncontrolledValue] = useState(() => baseProps.defaultValue ?? '')
+  const handleUncontrolledMentionsChange = useEventCallback(
+    (change: MentionsInputChangeEvent<Extra>): void => {
+      setUncontrolledValue(change.value)
+      baseProps.onMentionsChange?.(change)
+    }
+  )
+  const props: MentionsInputProps<Extra> = isControlled
+    ? baseProps
+    : {
+        ...baseProps,
+        value: uncontrolledValue,
+        onMentionsChange: handleUncontrolledMentionsChange,
+      }
   const value = props.value ?? ''
   const singleLine = props.singleLine ?? defaultMentionsInputProps.singleLine
   const suggestionsDisplay =
@@ -133,6 +149,24 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
     clearSuggestions: suggestionsQuery.clearSuggestions,
     requestHighlighterScrollSync: caretLayout.requestHighlighterScrollSync,
   })
+
+  const handleFormReset = useEventCallback((): void => {
+    setUncontrolledValue(baseProps.defaultValue ?? '')
+  })
+
+  useEffect(() => {
+    if (isControlled) {
+      return undefined
+    }
+
+    const form = caretLayout.inputElementRef.current?.form ?? null
+    if (!form) {
+      return undefined
+    }
+
+    form.addEventListener('reset', handleFormReset)
+    return () => form.removeEventListener('reset', handleFormReset)
+  }, [isControlled, handleFormReset, caretLayout.inputElementRef])
 
   const { currentMentionSelectionMap } = useMentionSelectionChange<Extra>({
     props,
@@ -381,6 +415,14 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
     </Highlighter>
   )
 
+  const renderHiddenFormInput = (): ReactNode => {
+    if (props.name === undefined || props.name.length === 0) {
+      return null
+    }
+
+    return <input type="hidden" name={props.name} value={value} readOnly />
+  }
+
   const renderMeasurementBridge = (): ReactElement => (
     <MeasurementBridge
       container={caretLayout.containerElementRef.current}
@@ -404,6 +446,7 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
       inlineSuggestionLiveRegion={renderInlineSuggestionLiveRegion()}
       suggestionsOverlay={renderSuggestionsOverlay()}
       measurementBridge={renderMeasurementBridge()}
+      hiddenFormInput={renderHiddenFormInput()}
     />
   )
 }

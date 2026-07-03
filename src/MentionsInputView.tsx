@@ -13,6 +13,7 @@ export interface MentionsInputViewProps {
   readonly inlineSuggestionLiveRegion: React.ReactNode
   readonly suggestionsOverlay: React.ReactNode
   readonly measurementBridge: React.ReactNode
+  readonly hiddenFormInput?: React.ReactNode
 }
 
 const MentionsInputView = ({
@@ -27,6 +28,7 @@ const MentionsInputView = ({
   inlineSuggestionLiveRegion,
   suggestionsOverlay,
   measurementBridge,
+  hiddenFormInput,
 }: MentionsInputViewProps) => (
   <div
     ref={rootRef}
@@ -43,6 +45,7 @@ const MentionsInputView = ({
     </div>
     {suggestionsOverlay}
     {measurementBridge}
+    {hiddenFormInput}
   </div>
 )
 

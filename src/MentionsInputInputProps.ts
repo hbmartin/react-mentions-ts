@@ -10,6 +10,8 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'suggestionsPlacement',
   'a11ySuggestionsListLabel',
   'value',
+  'defaultValue',
+  'name',
   'onKeyDown',
   'customSuggestionsContainer',
   'onSelect',
