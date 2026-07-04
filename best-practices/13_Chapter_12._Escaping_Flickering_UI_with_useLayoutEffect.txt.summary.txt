@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Run DOM measurements that influence rendering inside `useLayoutEffect` so adjustments (hiding overflowed nav items, repositioning toolbars) happen before the browser repaints, eliminating flicker.
+2. Keep layout effects minimal and synchronous—expensive work here blocks paint, so compute only what is required to determine the next render.
+3. Default your UI to a safe placeholder state (e.g., hide menu items) until layout measurements complete, then render the trimmed list based on measured widths.
+4. When teaching juniors, emphasize the paint pipeline: layout effect -> paint -> passive effect so they know why layout work cannot live in `useEffect`.
+5. Use standard effects for non-visual side effects (logging, data fetching) to avoid stalling interactivity.

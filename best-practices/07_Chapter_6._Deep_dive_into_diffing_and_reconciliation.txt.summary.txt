@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Audit components that create other components inside render—extract them so element identities remain stable and React's diffing algorithm can short-circuit work.
+2. Enforce meaningful `key` props anywhere arrays are dynamic; keys must survive reorders/additions so state stays with the correct element.
+3. Use `key` intentionally outside of map loops to force state resets (new key) or preserve state (shared key) when toggling between views.
+4. When mixing dynamic and static siblings, remember React wraps the dynamic block; avoid assumptions that static nodes will shift positions.
+5. Build utilities for controlled unmount/remount (e.g., `key={url}`) when you need to drop entire component state on route changes.

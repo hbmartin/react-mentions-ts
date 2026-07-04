@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Implement a reusable class-based ErrorBoundary that records errors (componentDidCatch) and renders a fallback UI; wrap every major route/feature area with it.
+2. Document the limits of try/catch: it does not catch render errors in children or async errors, so rely on ErrorBoundaries plus targeted try/catch in event handlers.
+3. Provide a standard fallback component with reset affordances so users can recover without hard-refreshing the app.
+4. For async code (effects, fetch callbacks, event handlers) keep try/catch blocks and surface failures via local state or context so ErrorBoundaries remain focused on render-time failures.
+5. Add monitoring hooks wherever errors are caught so modernization work can be validated via real error rates, not just local testing.

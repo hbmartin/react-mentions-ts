@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Convert components that must influence their child props (e.g., buttons that dictate icon color or hover state) into render-prop APIs so the parent can pass computed props/state explicitly.
+2. When logic must stay near a DOM node (scroll/resize detectors, drag targets), expose that logic via `children` render props; hooks alone cannot observe DOM nodes without refs.
+3. Keep render-prop signatures tiny and documented: first argument for derived props, optional second argument for component state so consumers know what they're receiving.
+4. Default to hooks for generic state sharing, but leave render props in place for legacy areas until the DOM-specific logic can be rewritten with refs + hooks.
+5. For any render-prop component kept long term, wrap the child function in `React.memo` or `useCallback` so it does not thrash when parent re-renders.

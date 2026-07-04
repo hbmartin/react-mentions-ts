@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Treat every async request as a potential race: if the component can trigger another fetch before the first resolves, guard the state update.
+2. Prefer unmounting stale instances (e.g., `key={id}` on route-level components) so outstanding promises lose their state setters and cannot flash old data.
+3. When a component must persist, track the latest request ID or URL in a ref and only apply a response if it matches the current ref.
+4. Use `useEffect` cleanup (or AbortController) to mark in-flight requests as inactive before firing the next one; ignore responses whose closure was cleaned up.
+5. Encode these safeguards into a shared fetching hook so every junior engineer gets cancellation tokens, cleanup, and ref checks for free.

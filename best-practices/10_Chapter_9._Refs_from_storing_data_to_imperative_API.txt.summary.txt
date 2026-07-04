@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Use `useRef` for data that should persist between renders but must not trigger UI updates (counters, previous values, timer IDs); keep anything user-visible in state instead.
+2. Store DOM nodes in refs by passing them to elements via `ref={...}` and only read/write `ref.current` inside effects or callbacks once the node exists.
+3. To expose underlying DOM nodes from a function component, either accept a prop like `inputRef` or wrap the component with `forwardRef` so parents can attach refs safely.
+4. Build imperative APIs (focus, shake, scroll) with `useImperativeHandle`: expose only the commands the parent should call and encapsulate DOM specifics inside the child.
+5. Teach juniors that ref writes are synchronous yet invisible to React; if the UI needs to reflect ref data, mirror it into state or trigger a controlled re-render.

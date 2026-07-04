@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Refactor legacy class components that pass massive child trees to instead accept `children`/slot props so those trees keep their element identity and avoid repeat renders when parent state flips.
+2. Distinguish between components (functions) and elements (objects) in code reviews; never recreate expensive elements inline if they can be defined outside a render function and passed down unchanged.
+3. For scrolling or animated containers, push heavy content into a `children` prop so state such as scroll position only re-renders the lightweight controller.
+4. When toggling layouts, rely on referential equality: wrap repeated child markup in constants and pass via props so React can skip diffing when nothing meaningful changed.
+5. Teach juniors to prefer JSX nesting over bespoke `content` props so the API stays idiomatic while retaining the performance benefits of passing elements as props.

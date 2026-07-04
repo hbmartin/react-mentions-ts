@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Memoize only when referential stability is required (hook dependency arrays or React.memo components); otherwise prefer composition to avoid needless useMemo/useCallback noise.
+2. Teach the difference between `useCallback` (memoizes the function definition) and `useMemo` (memoizes the returned value) so dependencies are declared correctly.
+3. Wrap components in `React.memo` only when parent-driven re-renders are the bottleneck and every prop—including `children`—can be kept referentially stable.
+4. Memoize expensive calculations with `useMemo`, but measure both CPU time and the cost of re-rendering descendants; sometimes recalculating is cheaper than caching.
+5. Add guidelines for when to memoize props: only if a downstream hook depends on them or the child is memoized; otherwise, inline objects/functions are fine.

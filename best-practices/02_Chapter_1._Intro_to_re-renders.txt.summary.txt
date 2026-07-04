@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Map every class component's state ownership and push that state down into the smallest possible function component so re-renders stay localized (the "moving state down" technique).
+2. Document how each state update propagates through the render tree; anything downstream that doesn't rely on the state should be wrapped in a child component rather than blindly memoized.
+3. When rewriting to hooks, treat each custom hook as a potential re-render trigger—if a hook updates internal state (even from another hook) it will re-render the parent, so isolate those hooks in lightweight child components.
+4. Verify no one relies on the myth "props changing cause re-renders": teach juniors to look for state updates instead and only consider React.memo when a component is explicitly memoized.
+5. Add tracing (React DevTools, why-did-you-render, console instrumentation) to confirm dialog/modal states only re-render the branch that actually uses them.
