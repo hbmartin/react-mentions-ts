@@ -1,2 +1,8 @@
 allowBuilds:
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@emnapi/runtime@1.11.2'
+
+overrides:
+  '@emnapi/runtime': 1.11.2

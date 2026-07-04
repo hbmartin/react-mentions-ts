@@ -66,6 +66,31 @@ describe('MentionsInput clipboard HTML fidelity', () => {
     expect(change.mentions.map((mention) => mention.id)).toEqual(['second', 'third', 'first'])
   })
 
+  it('trusts matching HTML mention markup when clipboard line endings differ', () => {
+    const onMentionsChange = vi.fn()
+    const textarea = renderInput(onMentionsChange)
+    textarea.setSelectionRange(0, 0)
+
+    const copiedMarkup = 'ping @[Second](second)\nand @[Third](third)'
+    const html = buildMentionsClipboardHtml(copiedMarkup, [
+      {
+        ...DEFAULT_MENTION_PROPS,
+        data: [],
+        serializer: createMarkupSerializer('@[__display__](__id__)'),
+      },
+    ])
+
+    firePaste(textarea, {
+      'text/html': html,
+      'text/plain': 'ping Second\r\nand Third',
+    })
+
+    const change = getLastMentionsChange(onMentionsChange)
+    expect(change.trigger.type).toBe('paste')
+    expect(change.value).toBe(`${copiedMarkup}${value}`)
+    expect(change.mentions.map((mention) => mention.id)).toEqual(['second', 'third', 'first'])
+  })
+
   it('prefers the custom clipboard type over the HTML payload', () => {
     const onMentionsChange = vi.fn()
     const textarea = renderInput(onMentionsChange)

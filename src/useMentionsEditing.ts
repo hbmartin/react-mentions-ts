@@ -57,6 +57,8 @@ interface UseMentionsEditingArgs<Extra extends Record<string, unknown>> {
   requestHighlighterScrollSync: () => void
 }
 
+const normalizeLineEndings = (text: string): string => text.replaceAll(/\r\n?/g, '\n')
+
 const getTrustedClipboardMarkup = <Extra extends Record<string, unknown>>(
   markup: string,
   plainText: string,
@@ -66,7 +68,9 @@ const getTrustedClipboardMarkup = <Extra extends Record<string, unknown>>(
     return null
   }
 
-  return getMentionsAndPlainText(markup, config).plainText === plainText ? markup : null
+  const parsedPlainText = getMentionsAndPlainText(markup, config).plainText
+
+  return normalizeLineEndings(parsedPlainText) === normalizeLineEndings(plainText) ? markup : null
 }
 
 const readPastedMentionsMarkup = <Extra extends Record<string, unknown>>(
