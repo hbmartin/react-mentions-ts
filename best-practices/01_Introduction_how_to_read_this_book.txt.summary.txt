@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Align the team on prerequisites before touching legacy class components: every engineer should already be comfortable with hooks, component composition, and basic state so the rest of the playbook is actionable.
+2. Read the chapters sequentially and turn each chapter's "What you'll learn" and "Key takeaways" lists into explicit backlog items (e.g., re-render audits, reconciliation fixes) so modernization happens methodically instead of ad hoc.
+3. Build a shared glossary that mirrors the book's language (treat React, ReactDOM, and JSX as one stack) so refactors across repos follow the same mental model.
+4. Use every case study as a rehearsal: replicate the described performance bugs inside our app, confirm they exist or not, and record the remediation path.
+5. Keep quick-reference notes next to each chapter so junior engineers can jump straight to the pattern that solves their assignment without rereading entire chapters.

@@ -5,6 +5,8 @@ allowBuilds:
   esbuild: true
   sharp: true
 
+minimumReleaseAge: 1440
+
 minimumReleaseAgeExclude:
   - '@astrojs/internal-helpers@0.10.1'
   - '@astrojs/markdown-satteri@0.3.3'

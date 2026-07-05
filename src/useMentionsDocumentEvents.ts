@@ -10,6 +10,8 @@ interface UseMentionsDocumentEventsArgs {
   onSelectionChange: () => void
 }
 
+const getGlobalDocument = (): Document | undefined => Reflect.get(globalThis, 'document')
+
 export const useMentionsDocumentEvents = ({
   inputElementRef,
   onCopy,
@@ -18,7 +20,7 @@ export const useMentionsDocumentEvents = ({
   onSelectionChange,
 }: UseMentionsDocumentEventsArgs): void => {
   useEffect(() => {
-    const ownerDocument = inputElementRef.current?.ownerDocument ?? globalThis.document
+    const ownerDocument = inputElementRef.current?.ownerDocument ?? getGlobalDocument()
 
     if (ownerDocument === undefined) {
       return undefined

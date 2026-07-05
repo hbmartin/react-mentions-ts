@@ -33,6 +33,9 @@ const getOwnerWindow = (...elements: Array<Element | null>): Window | undefined 
   return globalWindow ?? undefined
 }
 
+const getGlobalResizeObserver = (): typeof ResizeObserver | undefined =>
+  Reflect.get(globalThis, 'ResizeObserver')
+
 const MeasurementBridge = ({
   container,
   highlighter,
@@ -50,7 +53,7 @@ const MeasurementBridge = ({
 
   const observe = useEventCallback((element: Element | null, callback: () => void) => {
     const resizeObserverConstructor =
-      element?.ownerDocument.defaultView?.ResizeObserver ?? globalThis.ResizeObserver
+      element?.ownerDocument.defaultView?.ResizeObserver ?? getGlobalResizeObserver()
 
     if (!element || resizeObserverConstructor === undefined) {
       return undefined

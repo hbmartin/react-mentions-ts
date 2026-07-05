@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Define the storytelling order for each view (what must appear first) before coding; speed is judged by perceived progress, not just total load time.
+2. Separate initial bootstrap data from on-demand fetches so we can prefetch critical resources (even before React mounts) while lazy-loading the rest.
+3. Fire independent requests in parallel (Promise.all, parallel hooks) and avoid waterfalls where child components wait for parent data before starting their own fetch.
+4. Honor browser connection limits by batching or de-duping requests; centralize fetch orchestration in a data provider/context when multiple areas need the same resource.
+5. Provide loading states per region (sidebar, main issue, comments) so the UI can reveal each section as soon as its data lands rather than waiting for everything.

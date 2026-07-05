@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Keep controlled inputs responsive: update local state on every keystroke and debounce only the side effect (network call, expensive filter), not the state setter.
+2. Memoize both the debounced function (`useMemo`) and the callback it wraps (`useCallback`) so a re-render doesn't create a brand-new debounce instance.
+3. Use refs to hold timer IDs or the latest callback arguments when the debounced function should always work with up-to-date state.
+4. Clean up debounced/throttled work on unmount by cancelling timers in a `useEffect` cleanup to prevent memory leaks or stray requests.
+5. Choose debounce vs throttle deliberately (autosave wants throttle, search wants debounce) and document the wait interval alongside UX expectations.

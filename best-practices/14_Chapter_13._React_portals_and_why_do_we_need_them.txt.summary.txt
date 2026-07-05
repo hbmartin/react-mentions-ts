@@ -1,0 +1,6 @@
+Modernization Directives:
+1. Audit every overlay (modal, tooltip, dropdown) and move it into a React portal (`createPortal`) mounted near `document.body` so stacking contexts, `overflow: hidden`, and transforms in ancestors can't clip it.
+2. Decide between `position: absolute` vs `position: fixed` based on whether the overlay should follow its trigger or the viewport; document the math used to position it.
+3. Track the CSS that creates new stacking contexts (position+z-index, transforms, filters) and set explicit z-index layers so headers, sidebars, and overlays compose predictably.
+4. For translated/animated panels, ensure the triggering container and the portal share a coordinate system or adjust offsets accordingly.
+5. Provide a shared overlay manager that handles focus trapping and scroll locking once overlays are rendered outside their local DOM subtree.
