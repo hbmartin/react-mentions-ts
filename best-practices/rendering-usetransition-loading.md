@@ -1,13 +1,15 @@
 ---
-title: Use useTransition Over Manual Loading States
+title: Use useTransition for Non-Urgent Result Updates
 impact: LOW
 impactDescription: reduces re-renders and improves code clarity
 tags: rendering, transitions, useTransition, loading, state
 ---
 
-## Use useTransition Over Manual Loading States
+## Use useTransition for Non-Urgent Result Updates
 
-Use `useTransition` instead of manual `useState` for loading states. This provides built-in `isPending` state and automatically manages transitions.
+Use `useTransition` for non-urgent result rendering after async work completes.
+It provides `isPending` while React renders the transition; keep separate
+loading/error state when the network lifecycle matters.
 
 **Incorrect (manual loading state):**
 
@@ -27,7 +29,7 @@ function SearchResults() {
 
   return (
     <>
-      <input onChange={(e) => handleSearch(e.target.value)} />
+      <input value={query} onChange={(e) => handleSearch(e.target.value)} />
       {isLoading && <Spinner />}
       <ResultsList results={results} />
     </>
@@ -43,22 +45,29 @@ import { useTransition, useState } from 'react'
 function SearchResults() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
+  const [isFetching, setIsFetching] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const handleSearch = (value: string) => {
+  const handleSearch = async (value: string) => {
     setQuery(value) // Update input immediately
 
-    startTransition(async () => {
-      // Fetch and update results
+    setIsFetching(true)
+    try {
       const data = await fetchResults(value)
-      setResults(data)
-    })
+
+      startTransition(() => {
+        // Mark the expensive result update as non-urgent
+        setResults(data)
+      })
+    } finally {
+      setIsFetching(false)
+    }
   }
 
   return (
     <>
-      <input onChange={(e) => handleSearch(e.target.value)} />
-      {isPending && <Spinner />}
+      <input value={query} onChange={(e) => handleSearch(e.target.value)} />
+      {(isFetching || isPending) && <Spinner />}
       <ResultsList results={results} />
     </>
   )
@@ -67,8 +76,7 @@ function SearchResults() {
 
 **Benefits:**
 
-- **Automatic pending state**: No need to manually manage `setIsLoading(true/false)`
-- **Error resilience**: Pending state correctly resets even if the transition throws
+- **Pending semantics**: `isPending` indicates when a transition render is in progress; handle async loading and failures separately.
 - **Better responsiveness**: Keeps the UI responsive during updates
 - **Interrupt handling**: New transitions automatically cancel pending ones
 

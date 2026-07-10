@@ -1,6 +1,6 @@
 Modernization Directives:
 1. Replace prop explosions (iconName/iconColor/iconSize/...) on shared widgets with explicit element slots (`icon`, `footer`, column props) so product teams can supply any React element without touching the component internals.
-2. When default styling is required, clone the incoming element via `React.cloneElement` and merge defaults *after* spreading the caller props so overrides keep working.
+2. For new slot APIs, prefer passing props directly or using children/render callbacks before `React.cloneElement`; React lists `cloneElement` as a legacy API, so reserve it for compatibility cases and test caller overrides.
 3. Document that elements created outside a conditional render only mount when the conditional component renders; reassure teammates it's safe to predeclare dialog footers or layouts.
 4. Use slot props for multi-section shells (modal headers, three-column layouts) so feature teams can rearrange composition without adding more boolean props.
 5. Keep a lint note about the fragility of cloneElement defaults—unit-test every slot to ensure overriding color/size/etc still works before merging.

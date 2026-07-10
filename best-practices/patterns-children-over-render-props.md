@@ -59,6 +59,26 @@ function ComposerFooter({ children }: { children: React.ReactNode }) {
   return <footer className="flex">{children}</footer>
 }
 
+function ComposerInput() {
+  return <Input />
+}
+
+function ComposerFormatting() {
+  return <Formatting />
+}
+
+function ComposerEmojis() {
+  return <Emojis />
+}
+
+const Composer = {
+  Frame: ComposerFrame,
+  Input: ComposerInput,
+  Footer: ComposerFooter,
+  Formatting: ComposerFormatting,
+  Emojis: ComposerEmojis,
+}
+
 // Usage is flexible
 return (
   <Composer.Frame>

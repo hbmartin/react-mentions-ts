@@ -1,6 +1,6 @@
 Modernization Directives:
-1. Use higher-order components (HOCs) to retrofit cross-cutting concerns—logging, analytics, shortcut suppression—onto legacy class components without rewriting their internals.
-2. Keep HOCs pure functions: accept a component, return a new component that renders it, and remember to forward every prop plus any injected props/handlers.
-3. Allow HOCs to accept configuration either via curried arguments or via props so one implementation services multiple use cases (e.g., different log messages).
-4. Combine HOCs with hooks to tap lifecycle events (`useEffect`) while still presenting a class-friendly surface for the rest of the tree.
-5. Memoize wrapped components when the injected behavior should not cause downstream re-renders, especially for heavy dropdowns or modals.
+1. Do not introduce HOCs as a primary retrofit strategy for this library; prefer composition, children, `inputComponent`, and targeted render callbacks.
+2. If legacy HOCs already exist, keep them pure and isolated while planning a composition-based replacement.
+3. Move lifecycle behavior into focused hooks or leaf components instead of wrapping broad subtrees.
+4. Use adapter components only at compatibility boundaries where a class-friendly or third-party surface is unavoidable.
+5. Measure before memoizing adapter components; only add `memo` when parent-driven re-renders are a demonstrated bottleneck.

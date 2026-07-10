@@ -1,6 +1,6 @@
 Modernization Directives:
-1. Replace prop drilling of global UI state (nav collapse, theme, auth) with Context providers so expanding/collapsing panels no longer rerender entire pages.
-2. Always memoize the provider `value` (useMemo) and its action creators (useCallback) to keep consumer re-renders tied to actual state changes, not parent activity.
-3. Split contexts into "state" and "actions" or use `useReducer` so commands like `open/close` stay referentially stable even when the underlying state flips.
-4. For hot paths that should not re-render on context updates, wrap consumers in a memoized HOC that selects only the needed slice (e.g., `withNavigationOpen`).
-5. Document that every context update re-renders every consumer; plan multiple providers for coarse-grained state (layout, permissions, feature flags) to avoid global storms.
+1. Prefer composition and local state in the branch that consumes it; introduce Context only when a provider boundary is the clearest extension point.
+2. Memoize provider `value` objects and action creators only when measured render cost or referential-stability requirements justify it.
+3. When Context is justified, split unrelated state/actions or use `useReducer` so commands like `open/close` stay stable without widening the provider scope.
+4. For hot paths that should not re-render on context updates, move the read into the smallest leaf component or use a targeted selector hook rather than adding an HOC layer.
+5. Document that every context update re-renders matching consumers; keep providers narrow and close to the UI that actually needs the state.

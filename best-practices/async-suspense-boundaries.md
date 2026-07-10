@@ -7,7 +7,11 @@ tags: async, suspense, streaming, layout-shift
 
 ## Strategic Suspense Boundaries
 
-Instead of awaiting data in async components before returning JSX, use Suspense boundaries to show the wrapper UI faster while data loads.
+Instead of awaiting data before returning wrapper JSX, use Suspense boundaries
+to show the wrapper UI faster while data loads.
+
+The async component examples below require React Server Components. For Client
+Components, use the `use(promise)` approach shown in the Alternative section.
 
 **Incorrect (wrapper blocked by data fetching):**
 
@@ -33,6 +37,8 @@ The entire layout waits for data even though only the middle section needs it.
 **Correct (wrapper shows immediately, data streams in):**
 
 ```tsx
+import { use } from 'react'
+
 function Page() {
   return (
     <div>

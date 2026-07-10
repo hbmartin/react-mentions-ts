@@ -7,7 +7,8 @@ tags: javascript, cache, memoization, performance
 
 ## Cache Repeated Function Calls
 
-Use a module-level Map to cache function results when the same function is called repeatedly with the same inputs during render.
+Use a bounded cache for pure function results when the same function is called
+repeatedly with the same inputs during render.
 
 **Incorrect (redundant computation):**
 
@@ -29,14 +30,17 @@ function ProjectList({ projects }: { projects: Project[] }) {
 **Correct (cached results):**
 
 ```typescript
-// Module-level cache
 const slugifyCache = new Map<string, string>()
+const MAX_SLUGIFY_CACHE_SIZE = 500
 
 function cachedSlugify(text: string): string {
   if (slugifyCache.has(text)) {
     return slugifyCache.get(text)!
   }
   const result = slugify(text)
+  if (slugifyCache.size >= MAX_SLUGIFY_CACHE_SIZE) {
+    slugifyCache.clear()
+  }
   slugifyCache.set(text, result)
   return result
 }
@@ -65,6 +69,10 @@ function isLoggedIn(): boolean {
     return isLoggedInCache
   }
 
+  if (typeof document === 'undefined') {
+    return false
+  }
+
   isLoggedInCache = document.cookie.includes('auth=')
   return isLoggedInCache
 }
@@ -75,6 +83,8 @@ function onAuthChange() {
 }
 ```
 
-Use a Map (not a hook) so it works everywhere: utilities, event handlers, not just React components.
+Use a Map (not a hook) so utilities and event handlers can share the cache.
+Avoid process-wide module caches for request-specific data in SSR/SSG; isolate
+those caches per request or clear them explicitly.
 
 Reference: [How we made the Vercel Dashboard twice as fast](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast)

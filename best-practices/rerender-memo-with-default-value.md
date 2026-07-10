@@ -1,17 +1,21 @@
 ---
 title: Extract Default Non-primitive Parameter Value from Memoized Component to Constant
 impact: MEDIUM
-impactDescription: restores memoization by using a constant for default value
+impactDescription: avoids per-render default allocations
 tags: rerender, memo, optimization
 ---
 
 ## Extract Default Non-primitive Parameter Value from Memoized Component to Constant
 
-When memoized component has a default value for some non-primitive optional parameter, such as an array, function, or object, calling the component without that parameter results in broken memoization. This is because new value instances are created on every rerender, and they do not pass strict equality comparison in `memo()`.
+When a memoized component has a default value for a non-primitive optional
+parameter, such as an array, function, or object, that default is created each
+time the component actually renders. This does not break `memo()` for omitted
+props, but it can add avoidable allocations when another prop change causes a
+render.
 
 To address this issue, extract the default value into a constant.
 
-**Incorrect (`onClick` has different values on every rerender):**
+**Avoid (creates a new default during each render):**
 
 ```tsx
 const UserAvatar = memo(function UserAvatar({ onClick = () => {} }: { onClick?: () => void }) {
@@ -22,7 +26,7 @@ const UserAvatar = memo(function UserAvatar({ onClick = () => {} }: { onClick?: 
 <UserAvatar />
 ```
 
-**Correct (stable default value):**
+**Prefer (stable default value):**
 
 ```tsx
 const NOOP = () => {};
