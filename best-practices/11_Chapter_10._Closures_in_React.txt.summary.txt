@@ -3,4 +3,4 @@ Modernization Directives:
 2. Never skip dependency arrays to "optimize" memoized callbacks; stale closures will reference outdated state/props and produce bugs that tests rarely catch.
 3. When a stable function is required (e.g., prop for React.memo child) but it must execute with the latest state, store the real implementation in a ref updated via `useEffect` and call it from a dependency-free wrapper.
 4. Avoid caching callbacks inside refs without refreshing them; if you must, add an effect that updates `ref.current` whenever its dependencies change.
-5. When writing custom `React.memo` comparison functions, compare every prop that influences behavior, not just one or two, otherwise closures will keep pointing to the first invocation's data.
+5. When writing custom `React.memo` comparison functions, compare every prop that influences behavior; omitting a prop means the component skips re-rendering when that prop changes. If the comparison function captures outer-scope values, keep those closure risks separate and avoid stale references.

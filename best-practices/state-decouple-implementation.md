@@ -21,8 +21,8 @@ function ChannelComposer({ channelId }: { channelId: string }) {
 
   return (
     <Composer.Frame>
-      <Composer.Input value={state.input} onChange={(text) => sync.updateInput(text)} />
-      <Composer.Submit onPress={() => sync.submit()} />
+      <Composer.Input value={state.input} onChange={(text) => updateInput(text)} />
+      <Composer.Submit onPress={submit} />
     </Composer.Frame>
   )
 }
@@ -75,9 +75,11 @@ function Channel({ channelId }: { channelId: string }) {
 **Different providers, same UI:**
 
 ```tsx
+const initialForwardMessageState = { input: '' }
+
 // Local state for ephemeral forms
 function ForwardMessageProvider({ children }) {
-  const [state, setState] = useState(initialState)
+  const [state, setState] = useState(initialForwardMessageState)
   const forwardMessage = useForwardMessage()
 
   return (

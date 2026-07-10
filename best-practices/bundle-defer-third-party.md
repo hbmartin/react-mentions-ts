@@ -29,20 +29,22 @@ export default function RootLayout({ children }) {
 **Correct (loads after hydration):**
 
 ```tsx
-import dynamic from 'next/dynamic'
+import { lazy, Suspense, useEffect, useState } from 'react'
 
-const Analytics = dynamic(() => import('@vercel/analytics/react').then((m) => m.Analytics), {
-  ssr: false,
-})
+const Analytics = lazy(() =>
+  import('@vercel/analytics/react').then((m) => ({ default: m.Analytics }))
+)
 
 export default function RootLayout({ children }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
+
   return (
-    <html>
-      <body>
-        {children}
-        <Analytics />
-      </body>
-    </html>
+    <>
+      {children}
+      <Suspense fallback={null}>{mounted && <Analytics />}</Suspense>
+    </>
   )
 }
 ```

@@ -36,7 +36,8 @@ function setLocalStorage(key: string, value: string) {
 }
 ```
 
-Use a Map (not a hook) so it works everywhere: utilities, event handlers, not just React components.
+Use a Map (not a hook) so utilities and event handlers can share the cache.
+Guard browser storage APIs when code can run during SSR.
 
 **Cookie caching:**
 
@@ -44,8 +45,17 @@ Use a Map (not a hook) so it works everywhere: utilities, event handlers, not ju
 let cookieCache: Record<string, string> | null = null
 
 function getCookie(name: string) {
+  if (typeof document === 'undefined') {
+    return undefined
+  }
+
   if (!cookieCache) {
-    cookieCache = Object.fromEntries(document.cookie.split('; ').map((c) => c.split('=')))
+    cookieCache = Object.fromEntries(
+      document.cookie.split('; ').map((cookie) => {
+        const index = cookie.indexOf('=')
+        return index === -1 ? [cookie, ''] : [cookie.slice(0, index), cookie.slice(index + 1)]
+      })
+    )
   }
   return cookieCache[name]
 }

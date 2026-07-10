@@ -77,14 +77,20 @@ function ComposerInput() {
 **Different providers implement the same interface:**
 
 ```tsx
+const initialState: ComposerState = {
+  input: '',
+  attachments: [],
+  isSubmitting: false,
+}
+
 // Provider A: Local state for ephemeral forms
 function ForwardMessageProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState(initialState)
-  const inputRef = useRef(null)
+  const inputRef = useRef<TextInput>(null)
   const submit = useForwardMessage()
 
   return (
-    <ComposerContext
+    <ComposerContext.Provider
       value={{
         state,
         actions: { update: setState, submit },
@@ -92,17 +98,17 @@ function ForwardMessageProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-    </ComposerContext>
+    </ComposerContext.Provider>
   )
 }
 
 // Provider B: Global synced state for channels
 function ChannelProvider({ channelId, children }: Props) {
   const { state, update, submit } = useGlobalChannel(channelId)
-  const inputRef = useRef(null)
+  const inputRef = useRef<TextInput>(null)
 
   return (
-    <ComposerContext
+    <ComposerContext.Provider
       value={{
         state,
         actions: { update, submit },
@@ -110,7 +116,7 @@ function ChannelProvider({ channelId, children }: Props) {
       }}
     >
       {children}
-    </ComposerContext>
+    </ComposerContext.Provider>
   )
 }
 ```

@@ -7,7 +7,11 @@ tags: advanced, hooks, useEffectEvent, refs, optimization
 
 ## useEffectEvent for Stable Callback Refs
 
-Access latest values in callbacks without adding them to dependency arrays. Prevents effect re-runs while avoiding stale closures.
+Access latest values in callbacks without adding them to dependency arrays.
+Prevents effect re-runs while avoiding stale closures.
+
+`useEffectEvent` requires React 19.2+. If your supported range includes React
+19.0 or 19.1, keep the ref-based callback pattern instead.
 
 **Incorrect (effect re-runs on every callback change):**
 
@@ -22,7 +26,7 @@ function SearchInput({ onSearch }: { onSearch: (q: string) => void }) {
 }
 ```
 
-**Correct (using React's useEffectEvent):**
+**Correct (React 19.2+ with useEffectEvent):**
 
 ```tsx
 import { useEffectEvent } from 'react'

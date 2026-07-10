@@ -22,7 +22,7 @@ function AnimationPlayer({
   const [frames, setFrames] = useState<Frame[] | null>(null)
 
   useEffect(() => {
-    if (enabled && !frames && typeof window !== 'undefined') {
+    if (enabled && !frames) {
       import('./animation-frames.js')
         .then((mod) => setFrames(mod.frames))
         .catch(() => setEnabled(false))
@@ -34,4 +34,8 @@ function AnimationPlayer({
 }
 ```
 
-The `typeof window !== 'undefined'` check prevents bundling this module for SSR, optimizing server bundle size and build speed.
+The dynamic `import()` creates a split chunk that loads only after the feature is
+enabled. A `typeof window` guard inside `useEffect` is not an SSR bundle-size
+optimization because effects do not run during SSR and bundlers still see the
+import. Use a framework-level SSR opt-out when a module must be excluded from a
+server bundle.

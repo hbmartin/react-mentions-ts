@@ -12,7 +12,7 @@ Store callbacks in refs when used in effects that shouldn't re-subscribe on call
 **Incorrect (re-subscribes on every render):**
 
 ```tsx
-function useWindowEvent(event: string, handler: (e) => void) {
+function useWindowEvent(event: string, handler: (e: Event) => void) {
   useEffect(() => {
     window.addEventListener(event, handler)
     return () => window.removeEventListener(event, handler)
@@ -23,26 +23,26 @@ function useWindowEvent(event: string, handler: (e) => void) {
 **Correct (stable subscription):**
 
 ```tsx
-function useWindowEvent(event: string, handler: (e) => void) {
+function useWindowEvent(event: string, handler: (e: Event) => void) {
   const handlerRef = useRef(handler)
   useEffect(() => {
     handlerRef.current = handler
   }, [handler])
 
   useEffect(() => {
-    const listener = (e) => handlerRef.current(e)
+    const listener = (e: Event) => handlerRef.current(e)
     window.addEventListener(event, listener)
     return () => window.removeEventListener(event, listener)
   }, [event])
 }
 ```
 
-**Alternative: use `useEffectEvent` if you're on latest React:**
+**Alternative: use `useEffectEvent` in React 19.2+:**
 
 ```tsx
 import { useEffectEvent } from 'react'
 
-function useWindowEvent(event: string, handler: (e) => void) {
+function useWindowEvent(event: string, handler: (e: Event) => void) {
   const onEvent = useEffectEvent(handler)
 
   useEffect(() => {
@@ -52,4 +52,6 @@ function useWindowEvent(event: string, handler: (e) => void) {
 }
 ```
 
-`useEffectEvent` provides a cleaner API for the same pattern: it creates a stable function reference that always calls the latest version of the handler.
+`useEffectEvent` provides a cleaner API for the same pattern when your supported
+React range is 19.2 or newer: it creates a stable function reference that always
+calls the latest version of the handler.
