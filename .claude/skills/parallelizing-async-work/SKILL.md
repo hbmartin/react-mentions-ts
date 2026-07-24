@@ -7,16 +7,13 @@ description: 'Rules for structuring async TypeScript so independent work runs co
 
 Rules for structuring async TypeScript so independent operations run concurrently
 and no code path blocks on work it does not need. Apply to any code with more
-than one `await`: suggestion providers and tests in this library, the demo and
-docs apps, and any server code.
+than one `await`, on the client or the server.
 
 How to use this skill:
 
 - Scan the tables top-down (highest impact first) against the code at hand.
 - Before applying a rule non-trivially, read its reference file for the full
   incorrect/correct examples and trade-offs.
-- Files under `references/` are byte-identical copies of `best-practices/*.md`
-  at the repo root. Edit the originals, re-copy, and verify with `pnpm skills:check`.
 
 ## Critical
 
@@ -36,11 +33,10 @@ How to use this skill:
 
 ## Scope notes
 
-- `async-api-routes` targets server code (API routes, Server Actions). In this
-  repo that means demo or docs backends, not the published library bundle.
+- `async-api-routes` targets server code (API routes, Server Actions), not
+  client components.
 - The async-component examples in `async-suspense-boundaries` require React
   Server Components; in client components use the `use(promise)` alternative
   shown in the reference.
-- Keep this library's suggestion fetching race-safe (abort or ignore stale
-  requests, preserve existing suggestions while a same-trigger refresh loads) —
-  see the best-practice guidance in AGENTS.md.
+- Keep UI-driven async flows race-safe: abort or ignore stale responses so a
+  slow earlier request cannot overwrite the result of a newer one.

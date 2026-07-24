@@ -15,8 +15,6 @@ How to use this skill:
 - Scan the tables top-down (highest impact first) against the design at hand.
 - Before applying a rule non-trivially, read its reference file for the full
   incorrect/correct examples and trade-offs.
-- Files under `references/` are byte-identical copies of `best-practices/*.md`
-  at the repo root. Edit the originals, re-copy, and verify with `pnpm skills:check`.
 
 ## Critical
 
@@ -42,9 +40,8 @@ How to use this skill:
 
 ## Scope notes
 
-- In this library, prefer the existing extension points — `children`,
-  `inputComponent`, `customSuggestionsContainer`, and targeted render
-  callbacks — before adding new boolean props, HOCs, or broad context layers
-  (AGENTS.md).
-- Keep `MentionsInput` as the orchestration shell; extract helpers or leaf
-  components before considering larger rewrites.
+- Before adding a new prop or context layer to an existing component, check
+  whether its existing extension points — `children`, slot props, targeted
+  render callbacks — already cover the use case.
+- Prefer extracting subcomponents over growing one orchestrator component
+  with ever more configuration.

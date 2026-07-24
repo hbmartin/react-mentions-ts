@@ -28,4 +28,7 @@ function Dropdown({ isOpen }: Props) {
 }
 ```
 
-Avoids expensive re-renders and state loss.
+Avoids expensive re-mounts and state loss. Note: hidden children keep their
+state and DOM (hidden via `display: none`), but React unmounts their Effects —
+active subscriptions are cleaned up until the boundary becomes visible again —
+and updates to hidden content render at a lower priority.

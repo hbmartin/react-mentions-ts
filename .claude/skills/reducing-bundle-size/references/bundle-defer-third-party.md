@@ -29,6 +29,8 @@ export default function RootLayout({ children }) {
 **Correct (loads after hydration):**
 
 ```tsx
+'use client'
+
 import { lazy, Suspense, useEffect, useState } from 'react'
 
 const Analytics = lazy(() =>
@@ -41,10 +43,14 @@ export default function RootLayout({ children }) {
   useEffect(() => setMounted(true), [])
 
   return (
-    <>
-      {children}
-      <Suspense fallback={null}>{mounted && <Analytics />}</Suspense>
-    </>
+    <html>
+      <body>
+        {children}
+        <Suspense fallback={null}>{mounted && <Analytics />}</Suspense>
+      </body>
+    </html>
   )
 }
 ```
+
+In React Server Components setups, prefer keeping the root layout a Server Component and moving this mounted/lazy logic into a small client component rendered inside it.

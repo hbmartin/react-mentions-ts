@@ -53,5 +53,7 @@ function useWindowEvent(event: string, handler: (e: Event) => void) {
 ```
 
 `useEffectEvent` provides a cleaner API for the same pattern when your supported
-React range is 19.2 or newer: it creates a stable function reference that always
-calls the latest version of the handler.
+React range is 19.2 or newer: it returns a function that always calls the latest
+version of the handler and is excluded from effect dependencies. Its identity is
+intentionally not stable — it changes on every render — so never add it to a
+dependency array.

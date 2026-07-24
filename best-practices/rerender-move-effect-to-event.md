@@ -42,4 +42,6 @@ function Form() {
 }
 ```
 
+If the logic must stay inside an effect but should not re-run when a value like `theme` changes (e.g. a "connected" notification), extract it into an Effect Event with `useEffectEvent` (React 19.2+).
+
 Reference: [Should this code move to an event handler?](https://react.dev/learn/removing-effect-dependencies#should-this-code-move-to-an-event-handler)

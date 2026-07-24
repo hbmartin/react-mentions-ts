@@ -7,16 +7,14 @@ description: 'Rules for eliminating unnecessary React re-renders. Use when writi
 
 Rules for keeping React render work proportional to what actually changed:
 state placement, derived values, memoization, refs, and scheduling. Apply when
-writing or reviewing any component or hook — in this library that especially
-means `MentionsInput` and its per-keystroke render path.
+writing or reviewing any component or hook, especially ones on per-keystroke,
+per-frame, or otherwise hot render paths.
 
 How to use this skill:
 
 - Scan the tables top-down (highest impact first) against the code at hand.
 - Before applying a rule non-trivially, read its reference file for the full
   incorrect/correct examples and trade-offs.
-- Files under `references/` are byte-identical copies of `best-practices/*.md`
-  at the repo root. Edit the originals, re-copy, and verify with `pnpm skills:check`.
 
 ## High
 
@@ -58,6 +56,7 @@ How to use this skill:
 - The memoization rules (`rerender-memo`, `rerender-memo-with-default-value`,
   `rerender-simple-expression-in-memo`) carry React Compiler notes — honor them
   when the consuming project enables the compiler.
-- Per AGENTS.md for this repo: measure before memoizing, keep simple primitive
-  derivations inline, and preserve render locality — move state and derived
-  work into the smallest branch that consumes it.
+- Measure before memoizing: add `memo`, `useMemo`, or `useCallback` only when
+  referential stability or a measured bottleneck requires it, keep simple
+  primitive derivations inline, and preserve render locality — keep state and
+  derived work in the smallest branch that consumes it.

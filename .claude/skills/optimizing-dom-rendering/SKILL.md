@@ -1,22 +1,20 @@
 ---
 name: optimizing-dom-rendering
-description: 'Rules for faster paint, layout, and hydration in React DOM. Use when working on rendering performance, long lists (content-visibility), conditional rendering with && versus ternaries, hoisting static JSX, SVG size or animation, script loading with defer or async, resource hints (preload, preconnect), SSR hydration mismatch or flicker, suppressHydrationWarning, the Activity component, or useTransition loading states. Document-level and SSR rules apply to apps that embed this library (demo, docs), not to the library bundle itself.'
+description: 'Rules for faster paint, layout, and hydration in React DOM. Use when working on rendering performance, long lists (content-visibility), conditional rendering with && versus ternaries, hoisting static JSX, SVG size or animation, script loading with defer or async, resource hints (preload, preconnect), SSR hydration mismatch or flicker, suppressHydrationWarning, the Activity component, or useTransition loading states. Document-level and SSR rules apply to application shells, not inside component libraries.'
 ---
 
 # Optimizing DOM rendering
 
 Rules for getting pixels on screen faster: paint and layout costs, script
 loading, resource hints, hydration correctness, and JSX-level rendering
-details. Apply when working on rendering performance in components, the demo
-app, or the docs site.
+details. Apply when working on rendering performance anywhere React output
+reaches the DOM.
 
 How to use this skill:
 
 - Scan the tables top-down (highest impact first) against the code at hand.
 - Before applying a rule non-trivially, read its reference file for the full
   incorrect/correct examples and trade-offs.
-- Files under `references/` are byte-identical copies of `best-practices/*.md`
-  at the repo root. Edit the originals, re-copy, and verify with `pnpm skills:check`.
 
 ## High
 
@@ -52,11 +50,11 @@ How to use this skill:
 ## Scope notes
 
 - The document-level and SSR rules (resource hints, script defer/async, both
-  hydration rules) apply to apps that embed this library — the demo and docs
-  sites — not to the published library bundle.
+  hydration rules) apply where you control the document — application shells
+  and SSR frameworks — not inside a component library.
 - `<Activity>` requires React 19.2+; for consumers on 19.0–19.1 use
   conditional rendering or CSS visibility.
 - React Compiler hoists static JSX automatically; `rendering-hoist-jsx`
   matters only without the compiler.
-- Keep paint-sensitive measurement inside `MentionsInputLayout` and
-  `MeasurementBridge` with minimal `useLayoutEffect`, per AGENTS.md.
+- Keep paint-sensitive DOM measurement centralized and `useLayoutEffect`
+  usage minimal — it blocks paint.

@@ -6,17 +6,14 @@ description: 'Plain JavaScript and TypeScript performance rules that apply outsi
 # Writing efficient JavaScript
 
 Language-level performance rules that hold with or without React: data
-structures, iteration, caching, and scheduling. Apply in hot paths — in this
-library that means the mention-parsing and highlighting utilities in
-`src/utils/` and anything that runs per keystroke (verify with `pnpm perf:check`).
+structures, iteration, caching, and scheduling. Apply in hot paths — code
+that runs per keystroke, per frame, per render, or over large collections.
 
 How to use this skill:
 
 - Scan the tables top-down (highest impact first) against the code at hand.
 - Before applying a rule non-trivially, read its reference file for the full
   incorrect/correct examples and trade-offs.
-- Files under `references/` are byte-identical copies of `best-practices/*.md`
-  at the repo root. Edit the originals, re-copy, and verify with `pnpm skills:check`.
 
 ## Medium-high
 
@@ -55,8 +52,7 @@ How to use this skill:
 ## Scope notes
 
 - These are micro-optimizations: they pay off in hot paths and are noise in
-  cold ones. Confirm a path is hot (profiler, `pnpm perf:check`) before
-  restructuring readable code.
-- `js-batch-dom-css` overlaps with this library's layout code — measurement
-  and overlay math belong in `MentionsInputLayout`/`MeasurementBridge` per
-  AGENTS.md.
+  cold ones. Confirm a path is hot with a profiler before restructuring
+  readable code.
+- `js-batch-dom-css` applies wherever code touches layout — keep DOM
+  measurement centralized so read/write batching stays enforceable.

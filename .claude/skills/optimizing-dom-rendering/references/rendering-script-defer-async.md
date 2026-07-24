@@ -50,12 +50,15 @@ export default function Document() {
 }
 ```
 
+**Note:** When React 19 itself renders the tag, `<script async src="…" />` gets special treatment: React hoists it into `<head>` and de-duplicates identical scripts. The `defer` attribute is not compatible with streaming server rendering — prefer `async` there.
+
 **Note:** In Next.js, prefer the `next/script` component with `strategy` prop instead of raw script tags:
 
 ```tsx
 import Script from 'next/script'
 
-export default function Page() {
+// beforeInteractive is only allowed in the root layout (app/layout.tsx) or pages/_document
+export default function RootLayout() {
   return (
     <>
       <Script src="https://example.com/analytics.js" strategy="afterInteractive" />

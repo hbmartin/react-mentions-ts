@@ -6,16 +6,14 @@ description: 'Rules for shrinking JavaScript bundles and code-splitting React ap
 # Reducing bundle size
 
 Rules for keeping JavaScript bundles small and loading code only when it is
-needed. Apply when adding dependencies or imports to the library, and when
-working on the demo or docs apps.
+needed. Apply when adding dependencies or imports, and whenever deciding how
+and when code should load.
 
 How to use this skill:
 
 - Scan the tables top-down (highest impact first) against the code at hand.
 - Before applying a rule non-trivially, read its reference file for the full
   incorrect/correct examples and trade-offs.
-- Files under `references/` are byte-identical copies of `best-practices/*.md`
-  at the repo root. Edit the originals, re-copy, and verify with `pnpm skills:check`.
 
 ## Critical
 
@@ -40,10 +38,10 @@ How to use this skill:
 
 ## Scope notes
 
-- For the published library itself, the operative rules are
-  `bundle-analyzable-paths` and keeping the export surface small — enforced by
-  the size-limit budget (`pnpm size:check`, 30 kB gzip). Dynamic imports,
-  preloading, and third-party deferral target apps that embed the library
-  (demo, docs).
-- See AGENTS.md: avoid unnecessary exports, overly dynamic import/path
-  patterns, and dependency choices that bloat the library bundle.
+- For library code, the operative rules are `bundle-analyzable-paths` and
+  keeping the export surface small and tree-shakeable — avoid unnecessary
+  exports, overly dynamic import/path patterns, and dependency choices that
+  bloat the bundle. Dynamic imports, preloading, and third-party deferral are
+  application-level techniques.
+- Track bundle cost with a size budget in CI (e.g. size-limit) so regressions
+  fail loudly instead of accumulating.

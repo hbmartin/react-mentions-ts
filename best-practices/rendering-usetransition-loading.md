@@ -80,4 +80,6 @@ function SearchResults() {
 - **Better responsiveness**: Keeps the UI responsive during updates
 - **Interrupt handling**: New transitions automatically cancel pending ones
 
+**React 19:** You can also pass an `async` function directly to `startTransition` (an "Action"); `isPending` then stays `true` until the whole action completes. State updates after an `await` inside the action must still be wrapped in another `startTransition` — a documented current limitation.
+
 Reference: [useTransition](https://react.dev/reference/react/useTransition)

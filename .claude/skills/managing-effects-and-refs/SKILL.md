@@ -15,8 +15,6 @@ How to use this skill:
 - Scan the tables top-down (highest impact first) against the code at hand.
 - Before applying a rule non-trivially, read its reference file for the full
   incorrect/correct examples and trade-offs.
-- Files under `references/` are byte-identical copies of `best-practices/*.md`
-  at the repo root. Edit the originals, re-copy, and verify with `pnpm skills:check`.
 
 ## Medium
 
@@ -40,9 +38,10 @@ How to use this skill:
 
 ## Scope notes
 
-- `useEffectEvent` requires React 19.2+. This library's peer range starts
-  below that, so keep the ref-based callback pattern where consumers on React
-  19.0–19.1 must be supported (the references show both).
+- `useEffectEvent` requires React 19.2+; when earlier versions (including
+  React 19.0–19.1) must be supported, use the ref-based callback pattern —
+  the references show both.
 - `react19-no-forwardref` is React 19-only; skip it for React 18 code.
-- Per AGENTS.md: keep user-visible data in state and transient values in
-  refs, and preserve imperative/ref compatibility on the public API.
+- Keep user-visible data in state and transient values in refs; when a
+  component exposes an imperative handle, preserve that ref contract across
+  refactors.
