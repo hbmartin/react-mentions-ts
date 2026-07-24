@@ -62,15 +62,7 @@ pnpm add react-mentions-ts
 
 ### Peer dependencies
 
-`react` and `react-dom` are required. The remaining peers are only needed if you use the built-in Tailwind styling:
-
-```bash
-# Required
-npm install react react-dom
-
-# Required only if using the built-in Tailwind utility classes
-npm install class-variance-authority clsx tailwind-merge
-```
+`react` and `react-dom` are the only peer dependencies — the library ships zero styling dependencies. The built-in Tailwind classes are plain strings that your app's Tailwind build compiles; without Tailwind, use the `unstyled` prop or the `react-mentions-ts/core` entry (see [Styling](#styling)).
 
 Check `package.json` for the latest peer dependency version ranges.
 
@@ -593,7 +585,39 @@ Maintainer follow-up opportunities are `LoadingIndicator`, `SuggestionsOverlay`,
 
 ## Styling
 
-React Mentions ships its markup with **Tailwind utility classes**. Consumers should have Tailwind configured in their application build so these classes compile to real CSS. If you do not use Tailwind you can still provide your own styles via `className`, CSS modules, or inline styles.
+Styling is layered so every setup works with no extra dependencies:
+
+- **Structural inline styles** always apply: overlay mirroring, caret measurement, font-metric parity between the input and the highlighter, and visually-hidden accessibility text. The component functions with no CSS framework at all.
+- **Default Tailwind utility classes** are attached to every slot unless you opt out. They are inert strings — your app's Tailwind build compiles them to CSS (see [Tailwind CSS](#tailwind-css) below).
+- **`unstyled`** (a prop on `MentionsInput`, cascading to `Mention` children) skips the default classes so all visual styling comes from you — via `className`/`classNames`, CSS modules, or plain CSS targeting the `data-slot` attributes each element carries.
+
+### Without Tailwind
+
+Import the unstyled-by-default entry — the same components with `unstyled` already set:
+
+```tsx
+import { MentionsInput, Mention } from 'react-mentions-ts/core'
+```
+
+For a minimal baseline look (system colors, so it follows light/dark mode automatically), optionally add:
+
+```css
+@import 'react-mentions-ts/styles/default.css';
+```
+
+Every rule in that file has zero specificity (`:where()`), so any CSS of yours overrides it. Beyond looks, it also carries the box-model parity rules (`width`, `box-sizing`, `overflow` on the input and highlighter); if you skip the file, replicate those so long text wraps identically in both layers.
+
+### Merging class names
+
+Default classes and your `className`/`classNames` overrides are concatenated in order (yours last). If you rely on Tailwind conflict resolution — e.g. overriding the default `text-sm` with `text-base` — pass your app's merger once:
+
+```tsx
+import { twMerge } from 'tailwind-merge'
+
+<MentionsInput mergeClassNames={twMerge} ... />
+```
+
+Any `(…classNames) => string` works; it is used for every slot merge, including `Mention` children.
 
 ### Tailwind CSS
 

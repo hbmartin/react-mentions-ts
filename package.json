@@ -8,6 +8,13 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.cts",
+  "typesVersions": {
+    "*": {
+      "core": [
+        "./dist/core.d.cts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "import": {
@@ -19,10 +26,24 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./core": {
+      "import": {
+        "types": "./dist/core.d.ts",
+        "default": "./dist/core.js"
+      },
+      "require": {
+        "types": "./dist/core.d.cts",
+        "default": "./dist/core.cjs"
+      }
+    },
     "./package.json": "./package.json",
     "./styles/tailwind.css": {
       "types": "./styles/tailwind.css.d.ts",
       "default": "./styles/tailwind.css"
+    },
+    "./styles/default.css": {
+      "types": "./styles/default.css.d.ts",
+      "default": "./styles/default.css"
     }
   },
   "files": [
@@ -35,7 +56,8 @@
     "package.json"
   ],
   "sideEffects": [
-    "./styles/tailwind.css"
+    "./styles/tailwind.css",
+    "./styles/default.css"
   ],
   "scripts": {
     "clean": "rimraf dist",
@@ -71,14 +93,14 @@
   },
   "size-limit": [
     {
-      "name": "esm",
-      "path": "dist/index.js",
+      "name": "esm (all chunks)",
+      "path": "dist/*.js",
       "limit": "30 kB",
       "gzip": true
     },
     {
-      "name": "cjs",
-      "path": "dist/index.cjs",
+      "name": "cjs (all chunks)",
+      "path": "dist/*.cjs",
       "limit": "30 kB",
       "gzip": true
     }
@@ -140,7 +162,6 @@
     "@vitest/eslint-plugin": "^1.6.20",
     "@welldone-software/why-did-you-render": "^10.0.1",
     "axe-core": "^4.12.1",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint": "^10.6.0",
     "eslint-import-resolver-typescript": "^4.4.5",
@@ -174,7 +195,6 @@
     "react-dom": "19.2.7",
     "rimraf": "^6.1.3",
     "size-limit": "12.1.0",
-    "tailwind-merge": "^3.5.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
@@ -182,11 +202,8 @@
     "vitest": "^4.1.9"
   },
   "peerDependencies": {
-    "class-variance-authority": ">=0.6.0",
-    "clsx": ">=2.0.0",
     "react": ">=19.0.3 <19.1.0 || >=19.1.4 <19.2.0 || >=19.2.3",
-    "react-dom": ">=19.0.0",
-    "tailwind-merge": ">=3.0.0"
+    "react-dom": ">=19.0.0"
   },
   "engines": {
     "node": ">=22.12.0"

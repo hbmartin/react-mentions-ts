@@ -1,5 +1,6 @@
 import type React from 'react'
 import type { CSSProperties } from 'react'
+import { controlStructuralStyle } from './structuralStyles'
 
 export interface MentionsInputViewProps {
   readonly rootRef: (element: HTMLDivElement | null) => void
@@ -34,10 +35,11 @@ const MentionsInputView = ({
     ref={rootRef}
     className={rootClassName}
     style={style}
+    data-mentions=""
     data-single-line={singleLine ? 'true' : undefined}
     data-multi-line={singleLine ? undefined : 'true'}
   >
-    <div className={controlClassName} data-slot="control">
+    <div className={controlClassName} style={controlStructuralStyle} data-slot="control">
       {highlighter}
       {input}
       {inlineSuggestion}

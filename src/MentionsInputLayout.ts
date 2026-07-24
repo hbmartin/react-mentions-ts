@@ -8,6 +8,7 @@ import type {
   SuggestionsPosition,
 } from './types'
 import { areMentionConfigsEqual } from './MentionsInputChildren'
+import { getInputStructuralStyle } from './structuralStyles'
 
 export interface PendingViewSync {
   restoreSelection: boolean
@@ -247,6 +248,7 @@ export const isMobileSafari = (): boolean =>
 
 export const getInputInlineStyle = (singleLine?: boolean): CSSProperties => {
   const style: CSSProperties = {
+    ...getInputStructuralStyle(singleLine === true),
     background: 'transparent',
   }
 

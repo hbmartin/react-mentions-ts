@@ -1,7 +1,10 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/index.ts',
+    core: 'src/core.ts',
+  },
   format: ['esm', 'cjs'],
   // eslint-disable-next-line code-complete/enforce-meaningful-names
   dts: true,

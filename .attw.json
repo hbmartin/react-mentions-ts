@@ -1,5 +1,6 @@
 {
   "excludeEntrypoints": [
-    "./styles/tailwind.css"
+    "./styles/tailwind.css",
+    "./styles/default.css"
   ]
 }

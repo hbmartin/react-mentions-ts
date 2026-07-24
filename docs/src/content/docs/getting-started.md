@@ -18,17 +18,13 @@ pnpm add react-mentions-ts
 
 ### Peer dependencies
 
-`react` and `react-dom` are required. The remaining peers are only needed if you use the built-in Tailwind styling:
+`react` and `react-dom` are the only peer dependencies — the library ships zero styling dependencies. The built-in Tailwind classes are plain strings compiled by your app's Tailwind build; without Tailwind, import from `react-mentions-ts/core` (unstyled by default) instead:
 
-```bash
-# Required
-npm install react react-dom
-
-# Required only if using the built-in Tailwind utility classes
-npm install class-variance-authority clsx tailwind-merge
+```tsx
+import { MentionsInput, Mention } from 'react-mentions-ts/core'
 ```
 
-Check `package.json` for the latest peer dependency version ranges.
+Check `package.json` for the latest peer dependency version ranges, and the [Styling](/styling/) guide for the unstyled workflow.
 
 ## Basic usage
 

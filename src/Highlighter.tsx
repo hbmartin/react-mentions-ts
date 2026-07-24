@@ -1,11 +1,18 @@
 import React, { useLayoutEffect, useMemo, useRef } from 'react'
 import type { CSSProperties } from 'react'
-import { cva } from 'class-variance-authority'
-import { iterateMentionsMarkup, isNumber, cn } from './utils'
+import { defaultClassNames } from './defaultClassNames'
+import {
+  getHighlighterStructuralStyle,
+  highlighterCaretStructuralStyle,
+  highlighterSubstringStructuralStyle,
+} from './structuralStyles'
+import { iterateMentionsMarkup, isNumber } from './utils'
+import joinClassNames from './utils/joinClassNames'
 import readConfigFromChildren, { collectMentionElements } from './utils/readConfigFromChildren'
 import { useEventCallback } from './utils/useEventCallback'
 import type {
   CaretCoordinates,
+  ClassNameJoiner,
   MentionChildConfig,
   MentionComponentProps,
   MentionSelectionState,
@@ -35,6 +42,8 @@ interface HighlighterProps<Extra extends Record<string, unknown> = Record<string
   readonly caretClassName?: string
   readonly recomputeVersion?: number
   readonly mentionSelectionMap?: Record<string, MentionSelectionState>
+  readonly unstyled?: boolean
+  readonly mergeClassNames?: ClassNameJoiner
 }
 
 interface TextHighlighterSegment {
@@ -57,21 +66,6 @@ interface MentionHighlighterSegment {
 
 type HighlighterSegment = TextHighlighterSegment | MentionHighlighterSegment
 
-// Note: singleLine intentionally overrides whitespace/break behavior
-const highlighterStyles = cva(
-  'box-border w-full overflow-hidden text-start text-transparent pointer-events-none [font-family:inherit] [font-size:inherit] [line-height:inherit]',
-  {
-    variants: {
-      singleLine: {
-        true: 'whitespace-pre break-normal',
-        false: 'whitespace-pre-wrap break-words',
-      },
-    },
-  }
-)
-
-const substringStyles = 'text-transparent inline [white-space:inherit]'
-const caretStyles = 'relative inline-block h-0 w-0 align-baseline'
 const singleLineContentWrapperStyle: CSSProperties = {
   display: 'inline-block',
   whiteSpace: 'inherit',
@@ -89,7 +83,11 @@ const HighlighterSubstring = React.memo(function HighlighterSubstring({
   className,
   value,
 }: HighlighterSubstringProps) {
-  return <span className={className}>{value}</span>
+  return (
+    <span className={className} style={highlighterSubstringStructuralStyle}>
+      {value}
+    </span>
+  )
 })
 
 interface HighlighterCaretProps {
@@ -161,7 +159,14 @@ const HighlighterCaret = React.memo(function HighlighterCaret({
   }, [measureKey, recomputeVersion, singleLine, updatePosition])
 
   return (
-    <span className={className} data-mentions-caret ref={caretRef} key="caret" aria-hidden="true" />
+    <span
+      className={className}
+      style={highlighterCaretStructuralStyle}
+      data-mentions-caret
+      ref={caretRef}
+      key="caret"
+      aria-hidden="true"
+    />
   )
 })
 
@@ -206,6 +211,8 @@ const HighlighterTextSegment = React.memo(function HighlighterTextSegment({
 type HighlighterMentionCloneProps = MentionComponentProps & {
   readonly display?: string
   readonly id?: string
+  readonly unstyled?: boolean
+  readonly mergeClassNames?: ClassNameJoiner
 }
 
 interface HighlighterMentionSegmentProps {
@@ -213,6 +220,8 @@ interface HighlighterMentionSegmentProps {
   readonly display: string
   readonly id: string
   readonly selectionState?: MentionSelectionState
+  readonly unstyled: boolean
+  readonly mergeClassNames: ClassNameJoiner
 }
 
 const HighlighterMentionSegment = React.memo(function HighlighterMentionSegment({
@@ -220,8 +229,17 @@ const HighlighterMentionSegment = React.memo(function HighlighterMentionSegment(
   display,
   id,
   selectionState,
+  unstyled,
+  mergeClassNames,
 }: HighlighterMentionSegmentProps) {
-  return React.cloneElement(child, { id, display, selectionState })
+  return React.cloneElement(child, {
+    id,
+    display,
+    selectionState,
+    // The input's styling mode cascades to mention chips unless the child opts out itself.
+    unstyled: child.props.unstyled ?? unstyled,
+    mergeClassNames: child.props.mergeClassNames ?? mergeClassNames,
+  })
 })
 
 const buildHighlighterSegments = <Extra extends Record<string, unknown>>(
@@ -306,6 +324,8 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
   caretClassName,
   recomputeVersion,
   mentionSelectionMap,
+  unstyled = false,
+  mergeClassNames = joinClassNames,
 }: HighlighterProps<Extra>) {
   const mentionChildren = useMemo(
     () => mentionChildrenProp ?? collectMentionElements<Extra>(children),
@@ -317,9 +337,18 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
   )
   const segments = useMemo(() => buildHighlighterSegments(value, config), [config, value])
 
-  const rootClassName = cn(highlighterStyles({ singleLine }), className)
-  const substringClass = cn(substringStyles, substringClassName)
-  const caretClass = cn(caretStyles, caretClassName)
+  const rootClassName = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.highlighter(singleLine),
+    className
+  )
+  const substringClass = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.highlighterSubstring,
+    substringClassName
+  )
+  const caretClass = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.highlighterCaret,
+    caretClassName
+  )
   const selectionMap = mentionSelectionMap ?? {}
   const caretPositionInMarkup = getCaretPositionInMarkup(
     segments,
@@ -342,6 +371,8 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
           id={segment.id}
           key={segment.key}
           selectionState={selectionMap[selectionKey]}
+          unstyled={unstyled}
+          mergeClassNames={mergeClassNames}
         />
       )
     }
@@ -399,22 +430,12 @@ function Highlighter<Extra extends Record<string, unknown> = Record<string, unkn
       data-slot="highlighter"
       data-single-line={singleLine ? 'true' : undefined}
       data-multi-line={singleLine ? undefined : 'true'}
-      style={HIGHLIGHTER_OVERLAY_STYLE}
+      style={getHighlighterStructuralStyle(singleLine)}
       ref={containerRef}
     >
       {content}
     </div>
   )
-}
-
-const HIGHLIGHTER_OVERLAY_STYLE: CSSProperties = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  pointerEvents: 'none',
-  zIndex: 0,
 }
 
 export default Highlighter

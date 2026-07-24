@@ -1093,9 +1093,9 @@ describe('MentionsInputLayout', () => {
         marginLeft: -3,
         marginTop: 1,
       })
-      expect(getInputInlineStyle(true)).toEqual({
-        background: 'transparent',
-      })
+      expect(getInputInlineStyle(true)).toMatchObject({ background: 'transparent' })
+      expect(getInputInlineStyle(true)).not.toHaveProperty('marginLeft')
+      expect(getInputInlineStyle(true)).not.toHaveProperty('marginTop')
     } finally {
       Object.defineProperty(globalThis.navigator, 'userAgent', {
         configurable: true,

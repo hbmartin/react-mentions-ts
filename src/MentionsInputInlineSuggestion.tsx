@@ -1,32 +1,21 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { cva } from 'class-variance-authority'
+import { defaultClassNames } from './defaultClassNames'
 import type { InlineSuggestionDetails } from './MentionsInputSelectors'
-import type { MentionsInputClassNames } from './types'
-import { cn } from './utils'
-
-const inlineSuggestionStyles = cva(
-  'absolute inline-block pointer-events-none [color:inherit] opacity-80 whitespace-pre z-[2] [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]'
-)
-const inlineSuggestionTextStyles = 'relative inline-block items-baseline text-muted-foreground'
-const inlineSuggestionPrefixStyles = 'sr-only'
-const inlineSuggestionSuffixStyles = 'whitespace-pre text-muted-foreground'
-
-const visuallyHiddenStyles: CSSProperties = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  padding: 0,
-  border: 0,
-  margin: -1,
-  clipPath: 'inset(50%)',
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-}
+import {
+  inlineSuggestionStructuralStyle,
+  inlineSuggestionSuffixStructuralStyle,
+  inlineSuggestionTextStructuralStyle,
+  visuallyHiddenStyle,
+} from './structuralStyles'
+import type { ClassNameJoiner, MentionsInputClassNames } from './types'
+import joinClassNames from './utils/joinClassNames'
 
 interface MentionsInputInlineSuggestionProps<Extra extends Record<string, unknown>> {
   readonly inlineSuggestion: InlineSuggestionDetails<Extra> | null
   readonly inlineSuggestionPosition: CSSProperties | null
   readonly classNames?: MentionsInputClassNames
+  readonly unstyled?: boolean
+  readonly mergeClassNames?: ClassNameJoiner
 }
 
 interface MentionsInputInlineLiveRegionProps {
@@ -34,40 +23,32 @@ interface MentionsInputInlineLiveRegionProps {
   readonly announcement: ReactNode
 }
 
-const getSlotClassName = (
-  classNames: MentionsInputClassNames | undefined,
-  slot: keyof MentionsInputClassNames,
-  baseClass: string
-): string => cn(baseClass, classNames?.[slot])
-
 export const MentionsInputInlineSuggestion = <Extra extends Record<string, unknown>>({
   inlineSuggestion,
   inlineSuggestionPosition,
   classNames,
+  unstyled = false,
+  mergeClassNames = joinClassNames,
 }: MentionsInputInlineSuggestionProps<Extra>) => {
   if (!inlineSuggestion || !inlineSuggestionPosition) {
     return null
   }
 
-  const wrapperClassName = getSlotClassName(
-    classNames,
-    'inlineSuggestion',
-    inlineSuggestionStyles()
-  )
+  const getSlotClassName = (slot: keyof MentionsInputClassNames, baseClass: string): string =>
+    mergeClassNames(unstyled ? undefined : baseClass, classNames?.[slot])
+
+  const wrapperClassName = getSlotClassName('inlineSuggestion', defaultClassNames.inlineSuggestion)
   const textWrapperClassName = getSlotClassName(
-    classNames,
     'inlineSuggestionText',
-    inlineSuggestionTextStyles
+    defaultClassNames.inlineSuggestionText
   )
   const prefixClassName = getSlotClassName(
-    classNames,
     'inlineSuggestionPrefix',
-    inlineSuggestionPrefixStyles
+    defaultClassNames.inlineSuggestionPrefix
   )
   const suffixClassName = getSlotClassName(
-    classNames,
     'inlineSuggestionSuffix',
-    inlineSuggestionSuffixStyles
+    defaultClassNames.inlineSuggestionSuffix
   )
 
   return (
@@ -75,15 +56,18 @@ export const MentionsInputInlineSuggestion = <Extra extends Record<string, unkno
       aria-hidden="true"
       className={wrapperClassName}
       data-slot="inline-suggestion"
-      style={inlineSuggestionPosition}
+      // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop -- position changes with the caret; the wrapper re-renders alongside it anyway.
+      style={{ ...inlineSuggestionStructuralStyle, ...inlineSuggestionPosition }}
     >
-      <span className={textWrapperClassName}>
+      <span className={textWrapperClassName} style={inlineSuggestionTextStructuralStyle}>
         {inlineSuggestion.hiddenPrefix ? (
-          <span className={prefixClassName} aria-hidden="true">
+          <span className={prefixClassName} style={visuallyHiddenStyle} aria-hidden="true">
             {inlineSuggestion.hiddenPrefix}
           </span>
         ) : null}
-        <span className={suffixClassName}>{inlineSuggestion.visibleText}</span>
+        <span className={suffixClassName} style={inlineSuggestionSuffixStructuralStyle}>
+          {inlineSuggestion.visibleText}
+        </span>
       </span>
     </div>
   )
@@ -98,7 +82,7 @@ export const MentionsInputInlineLiveRegion = ({
     role="status"
     aria-live="polite"
     aria-atomic="true"
-    style={visuallyHiddenStyles}
+    style={visuallyHiddenStyle}
     data-slot="inline-suggestion-live-region"
   >
     {announcement}

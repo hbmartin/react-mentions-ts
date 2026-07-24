@@ -1,7 +1,7 @@
 import type { KeyboardEvent, ReactElement, ReactNode, Ref } from 'react'
-import { useEffect, useImperativeHandle, useState } from 'react'
-import { cva } from 'class-variance-authority'
+import { useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { defaultClassNames } from './defaultClassNames'
 import Highlighter from './Highlighter'
 import { buildMentionsInputInputProps, defaultMentionsInputProps } from './MentionsInputInputProps'
 import MeasurementBridge from './MeasurementBridge'
@@ -12,6 +12,7 @@ import {
   MentionsInputInlineSuggestion,
 } from './MentionsInputInlineSuggestion'
 import { getInlineSuggestionAnnouncement, getSuggestionsLayoutKey } from './MentionsInputSelectors'
+import { rootStructuralStyle } from './structuralStyles'
 import { useCaretLayout } from './useCaretLayout'
 import { useMentionSelectionChange } from './useMentionSelectionChange'
 import { useMentionValueSnapshot } from './useMentionValueSnapshot'
@@ -19,6 +20,7 @@ import { useMentionsEditing } from './useMentionsEditing'
 import { useMentionsInputState } from './MentionsInputState'
 import { useSuggestionsQuery } from './useSuggestionsQuery'
 import type {
+  ClassNameJoiner,
   InputComponentProps,
   InputElement,
   MentionsInputChangeEvent,
@@ -26,7 +28,8 @@ import type {
   MentionsInputHandle,
   MentionsInputProps,
 } from './types'
-import { cn, countSuggestions, isNumber } from './utils'
+import { countSuggestions, isNumber } from './utils'
+import joinClassNames from './utils/joinClassNames'
 import { useEventCallback } from './utils/useEventCallback'
 
 const KEY = {
@@ -41,30 +44,11 @@ const KEY = {
 
 const suggestionHandledKeys = new Set<string>([KEY.ESC, KEY.DOWN, KEY.UP, KEY.RETURN, KEY.TAB])
 
-const rootStyles = cva('relative overflow-y-visible')
-const controlStyles = cva('relative border border-border bg-card')
-const inputStyles = cva(
-  'relative block w-full m-0 box-border bg-transparent text-foreground transition placeholder:text-muted-foreground [font-family:inherit] [font-size:inherit] [letter-spacing:inherit]',
-  {
-    variants: {
-      singleLine: {
-        true: '',
-        false: 'h-full overflow-hidden resize-none whitespace-pre-wrap break-words',
-      },
-    },
-  }
-)
-
-const getSlotClassName = (
-  classNames: MentionsInputClassNames | undefined,
-  slot: keyof MentionsInputClassNames,
-  baseClass: string
-): string => cn(baseClass, classNames?.[slot])
-
-type MentionsInputComponentProps<Extra extends Record<string, unknown> = Record<string, unknown>> =
-  MentionsInputProps<Extra> & {
-    ref?: Ref<MentionsInputHandle>
-  }
+export type MentionsInputComponentProps<
+  Extra extends Record<string, unknown> = Record<string, unknown>,
+> = MentionsInputProps<Extra> & {
+  ref?: Ref<MentionsInputHandle>
+}
 
 const MentionsInput = <Extra extends Record<string, unknown> = Record<string, unknown>>({
   ref,
@@ -90,6 +74,10 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
   const singleLine = props.singleLine ?? defaultMentionsInputProps.singleLine
   const suggestionsDisplay =
     props.suggestionsDisplay ?? defaultMentionsInputProps.suggestionsDisplay
+  const unstyled = props.unstyled ?? false
+  const mergeClassNames: ClassNameJoiner = props.mergeClassNames ?? joinClassNames
+  const getSlotClassName = (slot: keyof MentionsInputClassNames, baseClass: string): string =>
+    mergeClassNames(unstyled ? undefined : baseClass, props.classNames?.[slot])
   const {
     preparedChildren,
     currentSnapshot,
@@ -273,7 +261,7 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
   const getInputProps = (): InputComponentProps => {
     return buildMentionsInputInputProps<Extra>({
       props,
-      inputClassName: getSlotClassName(props.classNames, 'input', inputStyles({ singleLine })),
+      inputClassName: getSlotClassName('input', defaultClassNames.input(singleLine)),
       plainTextValue: currentSnapshot.plainText,
       singleLine,
       isInlineAutocomplete,
@@ -354,6 +342,8 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
         isLoading={suggestionsQuery.isLoading}
         isOpened={suggestionsQuery.isOpened}
         a11ySuggestionsListLabel={props.a11ySuggestionsListLabel}
+        unstyled={unstyled}
+        mergeClassNames={mergeClassNames}
       >
         {props.children}
       </SuggestionsOverlay>
@@ -372,6 +362,8 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
         inlineSuggestion={suggestionsQuery.inlineSuggestionDetails}
         inlineSuggestionPosition={state.inlineSuggestionPosition}
         classNames={props.classNames}
+        unstyled={unstyled}
+        mergeClassNames={mergeClassNames}
       />
     )
   }
@@ -410,6 +402,8 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
       recomputeVersion={state.highlighterRecomputeVersion}
       onCaretPositionChange={caretLayout.handleCaretPositionChange}
       mentionSelectionMap={currentMentionSelectionMap}
+      unstyled={unstyled}
+      mergeClassNames={mergeClassNames}
     >
       {props.children}
     </Highlighter>
@@ -435,13 +429,22 @@ const MentionsInput = <Extra extends Record<string, unknown> = Record<string, un
     />
   )
 
+  const rootStyle = useMemo(
+    () =>
+      props.style === undefined ? rootStructuralStyle : { ...rootStructuralStyle, ...props.style },
+    [props.style]
+  )
+
   return (
     <MentionsInputView
       rootRef={caretLayout.setContainerElement}
-      rootClassName={cn(rootStyles(), props.className)}
-      style={props.style}
+      rootClassName={mergeClassNames(
+        unstyled ? undefined : defaultClassNames.root,
+        props.className
+      )}
+      style={rootStyle}
       singleLine={singleLine}
-      controlClassName={getSlotClassName(props.classNames, 'control', controlStyles())}
+      controlClassName={getSlotClassName('control', defaultClassNames.control)}
       highlighter={renderHighlighter()}
       input={renderInputControl()}
       inlineSuggestion={renderInlineSuggestion()}

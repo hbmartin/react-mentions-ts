@@ -1,5 +1,8 @@
 import type { MouseEventHandler } from 'react'
-import { cn } from './utils'
+import { defaultClassNames } from './defaultClassNames'
+import { visuallyHiddenStyle } from './structuralStyles'
+import type { ClassNameJoiner } from './types'
+import joinClassNames from './utils/joinClassNames'
 import { useEventCallback } from './utils/useEventCallback'
 
 interface LoadingIndicatorProps {
@@ -7,13 +10,9 @@ interface LoadingIndicatorProps {
   readonly spinnerClassName?: string
   readonly spinnerElementClassName?: string
   readonly onMouseDown?: MouseEventHandler<HTMLElement>
+  readonly unstyled?: boolean
+  readonly mergeClassNames?: ClassNameJoiner
 }
-
-const containerStyles = 'flex justify-center py-4'
-const spinnerStyles = 'flex items-center gap-2 text-primary'
-const spinnerButtonStyles = 'appearance-none border-0 bg-transparent p-0'
-const spinnerDotStyles =
-  'inline-block h-1.5 w-1.5 animate-bounce motion-reduce:animate-none rounded-full bg-current'
 
 const dotAnimationStyles = [0, 1, 2, 3, 4].map((delay) => ({
   delay,
@@ -25,6 +24,8 @@ function LoadingIndicator({
   spinnerClassName,
   spinnerElementClassName,
   onMouseDown,
+  unstyled = false,
+  mergeClassNames = joinClassNames,
 }: LoadingIndicatorProps) {
   const handleMouseDown = useEventCallback<MouseEventHandler<HTMLButtonElement>>((event) => {
     event.preventDefault()
@@ -32,14 +33,30 @@ function LoadingIndicator({
   })
 
   return (
-    <div className={cn(containerStyles, className)}>
-      <span className="sr-only" role="status" aria-live="polite">
+    <div
+      className={mergeClassNames(
+        unstyled ? undefined : defaultClassNames.loadingIndicator,
+        className
+      )}
+      data-slot="loading-indicator"
+    >
+      <span
+        className={unstyled ? undefined : defaultClassNames.screenReaderOnly}
+        style={visuallyHiddenStyle}
+        role="status"
+        aria-live="polite"
+      >
         Loading suggestions
       </span>
       <button
         type="button"
         data-testid="loading-indicator"
-        className={cn(spinnerStyles, spinnerButtonStyles, spinnerClassName)}
+        data-slot="loading-spinner"
+        className={mergeClassNames(
+          unstyled ? undefined : defaultClassNames.loadingSpinner,
+          unstyled ? undefined : defaultClassNames.loadingSpinnerButton,
+          spinnerClassName
+        )}
         tabIndex={-1}
         aria-hidden="true"
         onMouseDown={handleMouseDown}
@@ -47,7 +64,11 @@ function LoadingIndicator({
         {dotAnimationStyles.map(({ delay, style }) => (
           <span
             key={delay}
-            className={cn(spinnerDotStyles, spinnerElementClassName)}
+            className={mergeClassNames(
+              unstyled ? undefined : defaultClassNames.loadingSpinnerElement,
+              spinnerElementClassName
+            )}
+            data-slot="loading-spinner-dot"
             style={style}
             aria-hidden="true"
           />
