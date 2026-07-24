@@ -1,0 +1,31 @@
+---
+title: Use Activity Component for Show/Hide
+impact: MEDIUM
+impactDescription: preserves state/DOM
+tags: rendering, activity, visibility, state-preservation
+---
+
+## Use Activity Component for Show/Hide
+
+Use React's `<Activity>` to preserve state/DOM for expensive components that
+frequently toggle visibility.
+
+`<Activity>` requires React 19.2+. If your supported range includes React 19.0
+or 19.1, use conditional rendering or CSS visibility until all consumers are on
+a compatible version.
+
+**Usage:**
+
+```tsx
+import { Activity } from 'react'
+
+function Dropdown({ isOpen }: Props) {
+  return (
+    <Activity mode={isOpen ? 'visible' : 'hidden'}>
+      <ExpensiveMenu />
+    </Activity>
+  )
+}
+```
+
+Avoids expensive re-renders and state loss.
