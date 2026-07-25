@@ -88,19 +88,20 @@ describe('unstyled mode', () => {
   })
 
   it('routes every slot merge through a custom mergeClassNames', async () => {
+    // Appends a sentinel token so any element styled via the custom merger is observable.
     const merge = vi.fn<ClassNameJoiner>((...classNames) =>
-      classNames
+      [...classNames, 'via-custom-merge']
         .filter((className): className is string => typeof className === 'string')
         .join(' ')
         .trim()
     )
 
-    render(
+    const { unmount } = render(
       <MentionsInput
         value="@"
         onMentionsChange={() => undefined}
         mergeClassNames={merge}
-        classNames={{ input: 'my-input' }}
+        classNames={{ input: 'my-input', suggestionItem: 'my-item' }}
       >
         <Mention trigger="@" data={data} />
       </MentionsInput>
@@ -109,8 +110,27 @@ describe('unstyled mode', () => {
     const textarea = screen.getByRole('combobox')
     expect(merge).toHaveBeenCalled()
     expect(textarea.className).toContain('my-input')
+    expect(textarea.className).toContain('via-custom-merge')
 
     await openSuggestions(textarea)
+    const firstOption = screen.getAllByRole('option', { hidden: true })[0]
+    expect(firstOption.className).toContain('my-item')
+    expect(firstOption.className).toContain('via-custom-merge')
+    unmount()
+
+    const { container } = render(
+      <MentionsInput
+        value="Hi @[Walter White](walter)!"
+        onMentionsChange={() => undefined}
+        mergeClassNames={merge}
+      >
+        <Mention trigger="@" data={data} className="my-chip" />
+      </MentionsInput>
+    )
+
+    const chip = container.querySelector('[data-slot="mention"]')
+    expect(chip?.className).toContain('my-chip')
+    expect(chip?.className).toContain('via-custom-merge')
   })
 })
 
@@ -158,9 +178,13 @@ describe('styling dependencies', () => {
 
         // eslint-disable-next-line security/detect-non-literal-fs-filename -- reads only discovered repo source files.
         const source = readFileSync(fullPath, 'utf8')
+        // The `from` matcher covers static imports and export-from re-exports alike.
         if (
           /from\s+['"](?:clsx|tailwind-merge|class-variance-authority)['"]/.test(source) ||
-          /require\(['"](?:clsx|tailwind-merge|class-variance-authority)['"]\)/.test(source)
+          /require\(\s*['"](?:clsx|tailwind-merge|class-variance-authority)['"]\s*\)/.test(
+            source
+          ) ||
+          /import\(\s*['"](?:clsx|tailwind-merge|class-variance-authority)['"]\s*\)/.test(source)
         ) {
           offenders.push(fullPath)
         }
