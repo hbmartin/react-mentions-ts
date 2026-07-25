@@ -137,7 +137,7 @@ describe('MentionsText', () => {
 
     const root = container.firstElementChild
     expect(root?.tagName).toBe('SPAN')
-    expect(root).toHaveClass('whitespace-pre-wrap')
+    expect(root).toHaveStyle({ whiteSpace: 'pre-wrap' })
     expect(root?.textContent).toBe('Hi Walter White, meet Jesse!')
     expect(root?.querySelectorAll('strong[data-mention-id]')).toHaveLength(2)
   })
@@ -145,7 +145,8 @@ describe('MentionsText', () => {
   it('merges a custom className', () => {
     const { container } = render(<MentionsText value={value} className="text-sm" />)
 
-    expect(container.firstElementChild).toHaveClass('whitespace-pre-wrap', 'text-sm')
+    expect(container.firstElementChild).toHaveClass('text-sm')
+    expect(container.firstElementChild).toHaveStyle({ whiteSpace: 'pre-wrap' })
   })
 
   it('forwards render options', () => {

@@ -3,7 +3,39 @@ title: Styling
 description: Tailwind setup, class name slots, inline styles, and caret-driven mention styling.
 ---
 
-react-mentions-ts ships its markup with **Tailwind utility classes**. Consumers should have Tailwind configured in their application build so these classes compile to real CSS. If you do not use Tailwind you can still provide your own styles via `className`, CSS modules, or inline styles.
+Styling is layered so every setup works with no extra dependencies:
+
+- **Structural inline styles** always apply (overlay mirroring, caret measurement, font-metric parity, visually-hidden accessibility text) — the component functions with no CSS framework at all.
+- **Default Tailwind utility classes** decorate every slot unless you opt out. They are inert strings compiled by your app's Tailwind build.
+- **`unstyled`** (a prop on `MentionsInput`, cascading to `Mention` children) skips the default classes entirely.
+
+## Without Tailwind
+
+Import the unstyled-by-default entry — the same components with `unstyled` already set:
+
+```tsx
+import { MentionsInput, Mention } from 'react-mentions-ts/core'
+```
+
+Style the parts with your own CSS via the `className`/`classNames` props or the `data-slot` attributes each element carries (`control`, `input`, `highlighter`, `suggestions`, `suggestion-item`, `mention`, …). For a minimal baseline look using system colors (it follows light/dark mode automatically), optionally add:
+
+```css
+@import 'react-mentions-ts/styles/default.css';
+```
+
+Every rule in that file has zero specificity (`:where()`), so any CSS of yours overrides it.
+
+Beyond looks, `default.css` also carries the box-model parity rules (`width`, `box-sizing`, `overflow` on the input and highlighter). If you skip it, replicate those — e.g. via the `classNames` slots — so long text wraps identically in the input and its mirrored highlighter.
+
+## Merging class names
+
+Default classes and your `className`/`classNames` overrides are concatenated in order (yours last). If you rely on Tailwind conflict resolution — e.g. replacing the default `text-sm` with `text-base` — pass your app's merger once; it is used for every slot merge, including `Mention` children:
+
+```tsx
+import { twMerge } from 'tailwind-merge'
+
+<MentionsInput mergeClassNames={twMerge} ... />
+```
 
 ## Tailwind CSS
 

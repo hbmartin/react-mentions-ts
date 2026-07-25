@@ -1,12 +1,14 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { cva } from 'class-variance-authority'
+import { defaultClassNames } from './defaultClassNames'
 import LoadingIndicator from './LoadingIndicator'
 import { DEFAULT_MENTION_PROPS } from './MentionDefaultProps'
 import Suggestion from './Suggestion'
-import { cn, flattenSuggestions, getSuggestionHtmlId } from './utils'
+import { flattenSuggestions, getSuggestionHtmlId } from './utils'
+import joinClassNames from './utils/joinClassNames'
 import { useEventCallback } from './utils/useEventCallback'
 import type {
+  ClassNameJoiner,
   MentionComponentProps,
   MentionRenderSuggestion,
   QueryInfo,
@@ -50,13 +52,10 @@ interface SuggestionsOverlayProps<Extra extends Record<string, unknown> = Record
   readonly statusContent?: React.ReactNode
   readonly statusClassName?: string
   readonly statusType?: 'empty' | 'error' | null
+  readonly unstyled?: boolean
+  readonly mergeClassNames?: ClassNameJoiner
 }
 
-const overlayStyles = cva(
-  'z-[100] w-full min-w-[16rem] border border-border bg-popover backdrop-blur supports-[backdrop-filter]:bg-popover/95'
-)
-const listStyles =
-  'm-0 max-h-64 list-none divide-y divide-border overflow-y-auto scroll-py-1 p-0 focus:outline-none'
 const loadMoreThresholdPx = 48
 
 const isNearLoadMoreThreshold = (list: HTMLUListElement): boolean => {
@@ -76,18 +75,6 @@ const didMousePositionChange = (
   previousPosition === null ||
   previousPosition.clientX !== nextPosition.clientX ||
   previousPosition.clientY !== nextPosition.clientY
-
-const statusStyles = cva('px-4 py-2.5 text-left text-sm leading-relaxed', {
-  variants: {
-    type: {
-      empty: 'text-muted-foreground',
-      error: 'text-destructive',
-    },
-  },
-  defaultVariants: {
-    type: 'empty',
-  },
-})
 
 function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
@@ -123,6 +110,8 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   statusContent,
   statusClassName,
   statusType,
+  unstyled = false,
+  mergeClassNames = joinClassNames,
 }: SuggestionsOverlayProps<Extra>) {
   const [ulElement, setUlElement] = useState<HTMLUListElement | null>(null)
   const lastMouseEnterPosition = useRef<MousePosition | null>(null)
@@ -186,8 +175,14 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     }
   }, [focusIndex, scrollFocusedIntoView, suppressStationaryMouseEnter, ulElement])
 
-  const overlayClassName = cn(overlayStyles(), className)
-  const listClassNameResolved = cn(listStyles, listClassName)
+  const overlayClassName = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.suggestions,
+    className
+  )
+  const listClassNameResolved = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.suggestionsList,
+    listClassName
+  )
 
   const selectSuggestion = useEventCallback(
     (suggestionItem: SuggestionDataItem<Extra>, queryInfo: QueryInfo) => {
@@ -304,6 +299,8 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
               focusedClassName={focusedItemClassName}
               displayClassName={displayClassName}
               highlightClassName={highlightClassName}
+              unstyled={unstyled}
+              mergeClassNames={mergeClassNames}
               key={`${childIndex.toString()}-${suggestionItem.id}`}
               id={
                 id === undefined ? `suggestion-${index.toString()}` : getSuggestionHtmlId(id, index)
@@ -340,6 +337,8 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
         spinnerClassName={spinnerClassName}
         spinnerElementClassName={spinnerElementClassName}
         onMouseDown={onMouseDown}
+        unstyled={unstyled}
+        mergeClassNames={mergeClassNames}
       />
     )
   }
@@ -350,8 +349,10 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
     }
 
     const isPlainTextStatus = typeof statusContent === 'string' || typeof statusContent === 'number'
-    const statusClassNameResolved = cn(
-      isPlainTextStatus ? statusStyles({ type: statusType ?? 'empty' }) : undefined,
+    const statusClassNameResolved = mergeClassNames(
+      isPlainTextStatus && !unstyled
+        ? defaultClassNames.suggestionsStatus(statusType ?? 'empty')
+        : undefined,
       statusClassName
     )
 
@@ -384,6 +385,7 @@ function SuggestionsOverlay<Extra extends Record<string, unknown> = Record<strin
   return (
     <div
       className={overlayClassName}
+      data-mentions=""
       data-open="true"
       data-slot="suggestions"
       aria-live="polite"

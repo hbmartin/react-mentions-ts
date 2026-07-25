@@ -29,6 +29,8 @@ const HANDLED_PROPS: Array<keyof MentionsInputProps> = [
   'classNames',
   'suggestionsDisplay',
   'autoResize',
+  'unstyled',
+  'mergeClassNames',
 ]
 
 export const defaultMentionsInputProps = {

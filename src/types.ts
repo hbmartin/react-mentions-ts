@@ -12,6 +12,17 @@ import type {
 export type MentionTrigger = string | RegExp
 export type MentionIdentifier = string | number
 
+export type ClassNameValue = string | false | null | undefined
+
+/**
+ * Merges slot class strings into a single className. The default joiner simply
+ * concatenates; supply a Tailwind-aware merger (e.g. a `cn` built on
+ * tailwind-merge) via the `mergeClassNames` prop when conflicting utilities
+ * between the built-in defaults and your `classNames` overrides should
+ * resolve in your favor.
+ */
+export type ClassNameJoiner = (...classNames: ClassNameValue[]) => string
+
 export interface MentionSerializerMatch {
   markup: string
   index: number
@@ -299,6 +310,23 @@ export interface MentionsInputProps<
   style?: React.CSSProperties
   className?: string
   classNames?: MentionsInputClassNames
+  /**
+   * Skip the default Tailwind utility classes on every slot. Structural inline
+   * styles (overlay mirroring, caret measurement, font-metric parity, screen
+   * reader text) always apply, so the component stays functional; all visual
+   * styling is then up to `className`/`classNames`, your own CSS targeting the
+   * `data-slot` attributes, or the optional `react-mentions-ts/styles/default.css`.
+   * Cascades to `Mention` children unless a child sets its own `unstyled`.
+   */
+  unstyled?: boolean
+  /**
+   * Merges default slot classes with `className`/`classNames` overrides.
+   * Defaults to simple concatenation. Pass your app's Tailwind-aware `cn`
+   * (e.g. built on tailwind-merge) if conflicting utilities should resolve
+   * in favor of your overrides. Cascades to `Mention` children unless a child
+   * sets its own `mergeClassNames`.
+   */
+  mergeClassNames?: ClassNameJoiner
   suggestionsPortalHost?: Element | Document | null
   suggestionsDisplay?: 'overlay' | 'inline'
   /** Markup value for controlled usage; omit it (optionally with `defaultValue`) for uncontrolled usage */

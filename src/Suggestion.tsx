@@ -1,6 +1,12 @@
 import React from 'react'
-import { cn } from './utils'
-import type { MentionRenderSuggestion, QueryInfo, SuggestionDataItem } from './types'
+import { defaultClassNames } from './defaultClassNames'
+import type {
+  ClassNameJoiner,
+  MentionRenderSuggestion,
+  QueryInfo,
+  SuggestionDataItem,
+} from './types'
+import joinClassNames from './utils/joinClassNames'
 import { useEventCallback } from './utils/useEventCallback'
 
 interface SuggestionProps<Extra extends Record<string, unknown> = Record<string, unknown>> {
@@ -17,12 +23,9 @@ interface SuggestionProps<Extra extends Record<string, unknown> = Record<string,
   readonly focusedClassName?: string
   readonly displayClassName?: string
   readonly highlightClassName?: string
+  readonly unstyled?: boolean
+  readonly mergeClassNames?: ClassNameJoiner
 }
-
-const suggestionItemBase =
-  'cursor-pointer select-none text-sm text-muted-foreground transition-colors hover:bg-muted data-[focused=true]:bg-primary/10 data-[focused=true]:text-primary'
-const suggestionDisplayStyles = 'inline-block'
-const suggestionHighlightStyles = 'font-semibold text-primary'
 
 function SuggestionComponent<Extra extends Record<string, unknown> = Record<string, unknown>>({
   id,
@@ -38,11 +41,23 @@ function SuggestionComponent<Extra extends Record<string, unknown> = Record<stri
   focusedClassName,
   displayClassName,
   highlightClassName,
+  unstyled = false,
+  mergeClassNames = joinClassNames,
 }: SuggestionProps<Extra>) {
   const isFocused = focused === true
-  const itemClassName = cn(suggestionItemBase, className, isFocused ? focusedClassName : undefined)
-  const displayClassNameResolved = cn(suggestionDisplayStyles, displayClassName)
-  const highlightClassNameResolved = cn(suggestionHighlightStyles, highlightClassName)
+  const itemClassName = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.suggestionItem,
+    className,
+    isFocused ? focusedClassName : undefined
+  )
+  const displayClassNameResolved = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.suggestionDisplay,
+    displayClassName
+  )
+  const highlightClassNameResolved = mergeClassNames(
+    unstyled ? undefined : defaultClassNames.suggestionHighlight,
+    highlightClassName
+  )
 
   const handleClick = useEventCallback((): void => {
     onSelect(suggestion, queryInfo)
