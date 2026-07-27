@@ -167,7 +167,7 @@
     "knip": "^6.24.0",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.72.0",
-    "oxlint-tsgolint": "^0.24.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "playwright": "^1.61.1",
     "publint": "^0.3.18",
     "react": "19.2.7",
