@@ -22,6 +22,7 @@ import type {
   MentionsInputChangeEvent,
   MentionsInputHandle,
   MentionsInputProps,
+  MentionDataPage,
   MentionSearchContext,
   MentionSerializer,
 } from '../src/types'
@@ -1015,6 +1016,58 @@ describe('MentionsInput', () => {
     await waitFor(() => {
       const suggestions = screen.getAllByRole('option', { hidden: true })
       expect(suggestions).toHaveLength(2)
+    })
+  })
+
+  it('renders and selects grouped async suggestions without counting section headers', async () => {
+    const onMentionsChange = vi.fn()
+    const asyncData = vi.fn(
+      async (): Promise<MentionDataPage> => ({
+        sections: [
+          {
+            label: 'Users',
+            items: [{ id: 'user:alice', display: 'Alice' }],
+          },
+          {
+            label: 'Teams',
+            items: [{ id: 'team:frontend', display: 'Frontend Team' }],
+          },
+        ],
+      })
+    )
+
+    render(
+      <MentionsInput value="@a" onMentionsChange={onMentionsChange}>
+        <Mention trigger="@" data={asyncData} />
+      </MentionsInput>
+    )
+
+    const textarea = screen.getByRole('combobox')
+    fireEvent.focus(textarea)
+    textarea.setSelectionRange(2, 2)
+    fireEvent.select(textarea)
+
+    await waitFor(() => {
+      expect(screen.getByText('Users')).toBeInTheDocument()
+      expect(screen.getByText('Teams')).toBeInTheDocument()
+      expect(screen.getAllByRole('option', { hidden: true })).toHaveLength(2)
+    })
+
+    const sections = document.querySelectorAll('[data-slot="suggestion-section"]')
+    expect(sections).toHaveLength(2)
+    expect(sections[0]).not.toHaveAttribute('role', 'option')
+
+    fireEvent.keyDown(textarea, { key: 'ArrowDown', keyCode: 40 })
+
+    await waitFor(() => {
+      const suggestions = screen.getAllByRole('option', { hidden: true })
+      expect(suggestions[1]).toHaveAttribute('aria-selected', 'true')
+    })
+
+    fireEvent.keyDown(textarea, { key: 'Enter', keyCode: 13 })
+
+    await waitFor(() => {
+      expect(getLastMentionsChange(onMentionsChange).value).toBe('@[Frontend Team](team:frontend)')
     })
   })
 

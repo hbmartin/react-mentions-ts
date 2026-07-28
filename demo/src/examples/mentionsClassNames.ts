@@ -28,6 +28,8 @@ export const multilineMentionsClassNames: MentionsInputClassNames = {
   suggestionsStatus:
     'px-4 py-2.5 text-left text-sm data-[status-type=empty]:text-slate-600 data-[status-type=error]:text-rose-600',
   suggestionsList: baseSuggestionsList,
+  suggestionSection: 'bg-slate-50/80 px-4 py-2 text-xs font-semibold text-slate-500',
+  suggestionSectionLabel: 'block',
   suggestionItem: baseSuggestionItem,
   suggestionItemFocused: baseSuggestionItemFocused,
   suggestionDisplay: 'inline-flex items-center',

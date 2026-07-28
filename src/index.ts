@@ -16,6 +16,7 @@ export type {
   MentionComponentProps,
   MentionDataItem,
   MentionDataPage,
+  MentionDataSection,
   MentionDataProviderResult,
   MentionPageCursor,
   MentionRenderEmpty,
