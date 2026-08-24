@@ -108,6 +108,7 @@ function SuggestionComponent<Extra extends Record<string, unknown> = Record<stri
       className={itemClassName}
       data-slot="suggestion-item"
       data-focused={isFocused ? 'true' : undefined}
+      data-suggestion-index={index}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
