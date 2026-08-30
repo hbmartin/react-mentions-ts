@@ -423,10 +423,6 @@ export const useCaretLayout = <Extra extends Record<string, unknown>>(
   const handleCaretPositionChange = useEventCallback(
     (position: MentionsInputState<Extra>['caretPosition']): void => {
       argsRef.current.setState({ caretPosition: position })
-      requestViewSync({
-        measureSuggestions: true,
-        measureInline: true,
-      })
     }
   )
 
