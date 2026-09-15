@@ -15,3 +15,8 @@
 - keep paint-sensitive measurement and overlay math inside `MentionsInputLayout`, `MeasurementBridge`, and minimal `useLayoutEffect` usage; preserve portal, scroll, and auto-resize behavior
 - keep the published surface small and analyzable: avoid unnecessary exports, overly dynamic import/path patterns, and dependency choices that bloat the library bundle
 - verify render-locality, async, and layout changes with focused tests and the demo harness before treating a refactor as safe
+
+## Claude Code skills
+
+- the guidance above is expanded into seven skills under `.claude/skills/` (minimizing-rerenders, writing-efficient-javascript, optimizing-dom-rendering, reducing-bundle-size, parallelizing-async-work, composing-react-components, managing-effects-and-refs); consult the matching skill before performance or component-API work
+- skill `references/` files are byte-identical copies of `best-practices/*.md`; edit the originals and run `pnpm skills:check` to verify the copies still match
