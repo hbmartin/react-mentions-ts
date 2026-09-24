@@ -71,6 +71,49 @@ describe('MentionsInputQueryState', () => {
     expect(nextState.queryStates[0]?.ignoreAccents).toBe(true)
   })
 
+  it('stores grouped sections with successful query results', () => {
+    const user = { id: 'alice', display: 'Alice' }
+    const team = { id: 'frontend', display: 'Frontend Team' }
+    const sections = [
+      { key: 'label:Users', label: 'Users', results: [user] },
+      { key: 'label:Teams', label: 'Teams', results: [team] },
+    ]
+
+    const nextState = applySuccessfulQueryResult(
+      {},
+      {
+        0: {
+          queryInfo,
+          results: [],
+          status: 'loading',
+        },
+      },
+      0,
+      queryInfo,
+      {
+        items: [user, team],
+        sections,
+        nextCursor: null,
+        hasMore: false,
+        paginated: true,
+      },
+      0,
+      false
+    )
+
+    expect(nextState.suggestions[0]).toMatchObject({
+      queryInfo,
+      results: [user, team],
+      sections,
+    })
+    expect(nextState.queryStates[0]).toMatchObject({
+      queryInfo,
+      results: [user, team],
+      sections,
+      status: 'success',
+    })
+  })
+
   it('ignores stale successful query results without current query state', () => {
     const suggestions = {
       1: {
@@ -317,6 +360,67 @@ describe('MentionsInputQueryState', () => {
       hasMore: false,
       isLoading: false,
     })
+  })
+
+  it('merges paginated grouped sections by stable section identity', () => {
+    const firstUser = { id: 'alice', display: 'Alice' }
+    const firstTeam = { id: 'frontend', display: 'Frontend Team' }
+    const secondUser = { id: 'adam', display: 'Adam' }
+    const secondTeam = { id: 'design', display: 'Design Team' }
+    const currentSections = [
+      { key: 'label:Users', label: 'Users', results: [firstUser] },
+      { key: 'label:Teams', label: 'Teams', results: [firstTeam] },
+    ]
+    const pageSections = [
+      { key: 'label:Users', label: 'Users', results: [secondUser] },
+      { key: 'label:Teams', label: 'Teams', results: [secondTeam] },
+    ]
+
+    const nextState = applySuccessfulPageResult(
+      {
+        0: {
+          queryInfo,
+          results: [firstUser, firstTeam],
+          sections: currentSections,
+        },
+      },
+      {
+        0: {
+          queryInfo,
+          results: [firstUser, firstTeam],
+          sections: currentSections,
+          status: 'success',
+          ignoreAccents: false,
+          pagination: {
+            nextCursor: 'cursor-2',
+            hasMore: true,
+            isLoading: true,
+          },
+        },
+      },
+      0,
+      queryInfo,
+      {
+        items: [secondUser, secondTeam],
+        sections: pageSections,
+        nextCursor: null,
+        hasMore: false,
+        paginated: true,
+      },
+      9
+    )
+
+    expect(nextState.suggestions[0]?.results).toEqual([
+      firstUser,
+      firstTeam,
+      secondUser,
+      secondTeam,
+    ])
+    expect(nextState.suggestions[0]?.sections).toEqual([
+      { key: 'label:Users', label: 'Users', results: [firstUser, secondUser] },
+      { key: 'label:Teams', label: 'Teams', results: [firstTeam, secondTeam] },
+    ])
+    expect(nextState.focusIndex).toBe(3)
   })
 
   it('starts paginated page results from an empty suggestion bucket when needed', () => {
