@@ -48,7 +48,9 @@ Component first renders with default value (`light`), then updates after hydrati
 function ThemeWrapper({ children }: { children: ReactNode }) {
   return (
     <>
-      <div id="theme-wrapper">{children}</div>
+      <div id="theme-wrapper" suppressHydrationWarning>
+        {children}
+      </div>
       <script
         dangerouslySetInnerHTML={{
           __html: `
@@ -67,6 +69,6 @@ function ThemeWrapper({ children }: { children: ReactNode }) {
 }
 ```
 
-The inline script executes synchronously before showing the element, ensuring the DOM already has the correct value. No flickering, no hydration mismatch.
+The inline script executes synchronously before showing the element, ensuring the DOM already has the correct value. `suppressHydrationWarning` is required on the element the script mutates: React leaves the changed attribute in place either way, but without it React logs a development-mode hydration mismatch warning. No flickering, no hydration errors.
 
 This pattern is especially useful for theme toggles, user preferences, authentication states, and any client-only data that should render immediately without flashing default values.

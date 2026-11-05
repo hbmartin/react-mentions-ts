@@ -67,7 +67,9 @@ If storage can change externally (another tab, server-set cookies), invalidate c
 
 ```typescript
 window.addEventListener('storage', (e) => {
+  // e.key is null when another tab calls clear()
   if (e.key) storageCache.delete(e.key)
+  else storageCache.clear()
 })
 
 document.addEventListener('visibilitychange', () => {

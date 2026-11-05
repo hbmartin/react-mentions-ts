@@ -56,4 +56,6 @@ function Search({ items }: { items: Item[] }) {
 
 **Note:** Wrap the expensive computation in `useMemo` with the deferred value as a dependency, otherwise it still runs on every render.
 
+**Note:** If the child's rendering is itself expensive, also wrap it in `memo` (e.g. `const ResultsList = memo(...)`). During the urgent render its deferred props are unchanged, and `memo` is what lets React skip re-rendering it — without it, it re-renders anyway, defeating the optimization.
+
 Reference: [React useDeferredValue](https://react.dev/reference/react/useDeferredValue)

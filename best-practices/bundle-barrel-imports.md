@@ -41,7 +41,7 @@ import { Check, X, Menu } from 'lucide-react'
 // Full TypeScript support, no manual path wrangling
 ```
 
-This is the recommended approach because it preserves TypeScript type safety and editor autocompletion while still eliminating the barrel import cost.
+This is the recommended approach because it preserves TypeScript type safety and editor autocompletion while still eliminating the barrel import cost. Current Next.js already applies this optimization by default to a built-in list of common libraries — including lucide-react and @mui/material — so add packages to `optimizePackageImports` only when they are not on the default list.
 
 **Correct - Direct imports (non-Next.js projects):**
 
