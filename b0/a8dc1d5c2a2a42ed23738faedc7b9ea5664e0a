@@ -1,0 +1,79 @@
+{
+  "command": "pnpm test:perf",
+  "metrics": {
+    "array-provider-scan-count": {
+      "scanCount": 5,
+      "resultCount": 5
+    },
+    "accent-provider-scan-count": {
+      "scanCount": 5,
+      "resultCount": 5
+    },
+    "controlled-keystroke": {
+      "getPlainTextCalls": 0,
+      "deriveMentionValueSnapshotCalls": 1,
+      "prepareMentionsInputChildrenCalls": 1
+    },
+    "selection-only": {
+      "deriveMentionValueSnapshotCalls": 0
+    },
+    "inline-layout": {
+      "calculateSuggestionsPositionCalls": 0,
+      "calculateInlineSuggestionPositionCalls": 2
+    },
+    "overlay-layout": {
+      "calculateSuggestionsPositionCalls": 1,
+      "calculateInlineSuggestionPositionCalls": 0
+    },
+    "locality-render-counts": {
+      "stableSiblingRendersDuringInteraction": 0,
+      "activeBranchRendersDuringInteraction": 1
+    },
+    "debounced-async-query": {
+      "providerCalls": 1
+    },
+    "stale-async-result": {
+      "staleResultApplications": 0,
+      "freshResultApplications": 1
+    },
+    "long-document-caret-mapping": {
+      "mapPlainTextIndexCalls": 3,
+      "deriveMentionValueSnapshotCalls": 1
+    },
+    "paste-replace-mention": {
+      "applyPasteToMentionsValueCalls": 1,
+      "mapPlainTextIndexCalls": 2,
+      "getPlainTextCalls": 1
+    },
+    "delete-around-mention": {
+      "applyInputChangeToMentionsValueCalls": 1,
+      "applyChangeToValueCalls": 1,
+      "mapPlainTextIndexCalls": 3
+    },
+    "multiple-trigger-query-routing": {
+      "activeProviderCalls": 1,
+      "inactiveProviderCalls": 0,
+      "prepareMentionsInputChildrenCalls": 0
+    },
+    "overlay-navigation-layout": {
+      "calculateSuggestionsPositionCalls": 0,
+      "calculateInlineSuggestionPositionCalls": 0
+    },
+    "overlay-focus-row-renders": {
+      "rowRenderCount": 2
+    },
+    "controlled-rerender-stability": {
+      "deriveMentionValueSnapshotCalls": 0,
+      "prepareMentionsInputChildrenCalls": 0
+    },
+    "suggestions-measurement-events": {
+      "updateSuggestionsPositionCalls": 2
+    },
+    "auto-resize-keystroke": {
+      "getTextareaResizePatchCalls": 4,
+      "applyTextareaResizePatchCalls": 4
+    }
+  },
+  "schemaVersion": 1,
+  "suite": "react-mentions-ts/perf"
+}
