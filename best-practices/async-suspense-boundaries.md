@@ -10,8 +10,12 @@ tags: async, suspense, streaming, layout-shift
 Instead of awaiting data before returning wrapper JSX, use Suspense boundaries
 to show the wrapper UI faster while data loads.
 
-The async component examples below require React Server Components. For Client
-Components, use the `use(promise)` approach shown in the Alternative section.
+The async component examples below require React Server Components. Client
+Components can read a shared promise with the `use(promise)` approach shown in
+the Alternative section, but the promise must be created outside the Client
+Component's render — in a Server Component that passes it down, a route
+loader, or a cache. A promise created during a Client Component's render is
+recreated on every render, refetching each time.
 
 **Incorrect (wrapper blocked by data fetching):**
 

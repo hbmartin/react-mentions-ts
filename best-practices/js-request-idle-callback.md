@@ -81,6 +81,8 @@ function processLargeDataset(items: Item[]) {
 
 **With fallback for unsupported browsers:**
 
+`requestIdleCallback` is still not supported in Safari (any version, as of 2026) and is not Baseline, so always ship a fallback:
+
 ```typescript
 const scheduleIdleWork = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1))
 

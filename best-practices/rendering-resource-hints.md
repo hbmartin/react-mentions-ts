@@ -14,9 +14,9 @@ React DOM provides APIs to hint the browser about resources it will need. These 
 - **`prefetchDNS(href)`**: Resolve DNS for a domain you expect to connect to
 - **`preconnect(href)`**: Establish connection (DNS + TCP + TLS) to a server
 - **`preload(href, options)`**: Fetch a resource (stylesheet, font, script, image) you'll use soon
-- **`preloadModule(href)`**: Fetch an ES module you'll use soon
+- **`preloadModule(href, options)`**: Fetch an ES module you'll use soon
 - **`preinit(href, options)`**: Fetch and evaluate a stylesheet or script
-- **`preinitModule(href)`**: Fetch and evaluate an ES module
+- **`preinitModule(href, options)`**: Fetch and evaluate an ES module
 
 **Example (preconnect to third-party APIs):**
 
@@ -41,7 +41,7 @@ export default function RootLayout({ children }) {
   preload('/fonts/inter.woff2', { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' })
 
   // Fetch and apply critical stylesheet immediately
-  preinit('/styles/critical.css', { as: 'style' })
+  preinit('/styles/critical.css', { as: 'style', precedence: 'high' })
 
   return (
     <html>

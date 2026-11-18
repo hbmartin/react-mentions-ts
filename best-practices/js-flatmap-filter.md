@@ -12,7 +12,8 @@ tags: javascript, arrays, flatMap, filter, performance
 Chaining `.map().filter((item) => item != null)` creates an intermediate array
 and iterates twice. Use `.flatMap()` to transform and filter in a single pass.
 Avoid replacing `.filter(Boolean)` unless dropping every falsy value is not part
-of the intended behavior.
+of the intended behavior. Note that `flatMap` allocates a small temporary array
+per kept element, so in the hottest paths a plain `for` loop is still faster.
 
 **Incorrect (2 iterations, intermediate array):**
 
