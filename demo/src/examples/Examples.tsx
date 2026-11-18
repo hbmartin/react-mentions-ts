@@ -7,6 +7,7 @@ import CustomSuggestionsContainer from './CustomSuggestionsContainer'
 import CutCopyPaste from './CutCopyPaste'
 import Emojis from './Emojis'
 import EmptyAndError from './EmptyAndError'
+import GroupedSuggestions from './GroupedSuggestions'
 import InlineAutocomplete from './InlineAutocomplete'
 import LeftAnchored from './LeftAnchored'
 import MentionSelection from './MentionSelection'
@@ -96,6 +97,7 @@ export default function Examples() {
       <MentionSelection data={users} />
       <InlineAutocomplete data={users} />
       <AsyncGithubUserMentions />
+      <GroupedSuggestions />
       <PaginatedUsers />
       <EmptyAndError />
       <RichSuggestionData />

@@ -5,6 +5,7 @@ import type {
   MentionDataItem,
   MentionDataPage,
   MentionDataProviderResult,
+  MentionDataSection,
   MentionIdentifier,
   MentionPageCursor,
   MentionSearchContext,
@@ -14,6 +15,7 @@ import type {
   SuggestionDataItem,
   SuggestionQueryState,
   SuggestionQueryStateMap,
+  SuggestionSection,
   SuggestionsMap,
 } from './types'
 import type { FlattenedSuggestion } from './utils/flattenSuggestions'
@@ -85,6 +87,40 @@ const isMentionDataPage = <Extra extends Record<string, unknown>>(
   result: MentionDataProviderResult<Extra>
 ): result is MentionDataPage<Extra> => !Array.isArray(result)
 
+const getSectionKey = <Extra extends Record<string, unknown>>(
+  section: MentionDataSection<Extra>,
+  sectionIndex: number
+): string => {
+  if (section.id !== undefined) {
+    return `id:${typeof section.id}:${String(section.id)}`
+  }
+
+  return typeof section.label === 'string'
+    ? `label:${section.label}`
+    : `index:${sectionIndex.toString()}`
+}
+
+const normalizeMentionDataSections = <Extra extends Record<string, unknown>>(
+  sections: ReadonlyArray<MentionDataSection<Extra>>
+): SuggestionSection<Extra>[] => {
+  const normalizedSections: SuggestionSection<Extra>[] = []
+
+  for (const [sectionIndex, section] of sections.entries()) {
+    if (section.items.length === 0) {
+      continue
+    }
+
+    normalizedSections.push({
+      key: getSectionKey(section, sectionIndex),
+      id: section.id,
+      label: section.label,
+      results: [...section.items],
+    })
+  }
+
+  return normalizedSections
+}
+
 export const normalizeMentionDataResult = <Extra extends Record<string, unknown>>(
   result: MentionDataProviderResult<Extra>,
   maxSuggestions?: number
@@ -99,6 +135,18 @@ export const normalizeMentionDataResult = <Extra extends Record<string, unknown>
   }
 
   const nextCursor = result.nextCursor ?? null
+
+  if ('sections' in result && result.sections !== undefined) {
+    const sections = normalizeMentionDataSections(result.sections)
+
+    return {
+      items: sections.flatMap((section) => section.results),
+      sections: sections.length === 0 ? undefined : sections,
+      nextCursor,
+      hasMore: result.hasMore !== false && nextCursor !== null,
+      paginated: true,
+    }
+  }
 
   return {
     items: [...result.items],
@@ -176,6 +224,23 @@ const getSuggestionLayoutIdentity = <Extra extends Record<string, unknown>>(
   return [typeof id, String(id), display, objectIdentity] as const
 }
 
+const getSuggestionSectionLabelLayoutIdentity = (label: React.ReactNode) => {
+  if (typeof label === 'object' && label !== null) {
+    return ['object', getObjectLayoutIdentity(label)] as const
+  }
+
+  return [typeof label, String(label)] as const
+}
+
+const getSuggestionSectionLayoutIdentity = <Extra extends Record<string, unknown>>(
+  section: SuggestionSection<Extra>
+) =>
+  [
+    section.key,
+    getSuggestionSectionLabelLayoutIdentity(section.label),
+    section.results.map((item) => getSuggestionLayoutIdentity(item)),
+  ] as const
+
 const formatQueryInfoLayoutKey = (queryInfo: QueryInfo) =>
   [
     queryInfo.childIndex,
@@ -196,6 +261,7 @@ export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
       number,
       ReturnType<typeof formatQueryInfoLayoutKey>,
       Array<ReturnType<typeof getSuggestionLayoutIdentity>>,
+      Array<ReturnType<typeof getSuggestionSectionLayoutIdentity>>,
     ]
   > = []
   for (const key of Object.keys(suggestions)) {
@@ -206,6 +272,7 @@ export const getSuggestionsLayoutKey = <Extra extends Record<string, unknown>>({
         childIndex,
         formatQueryInfoLayoutKey(value.queryInfo),
         value.results.map((item) => getSuggestionLayoutIdentity(item)),
+        value.sections?.map((section) => getSuggestionSectionLayoutIdentity(section)) ?? [],
       ] as const)
     }
   }
