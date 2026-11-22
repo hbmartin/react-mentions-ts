@@ -13,6 +13,10 @@ Prevents effect re-runs while avoiding stale closures.
 `useEffectEvent` requires React 19.2+. If your supported range includes React
 19.0 or 19.1, keep the ref-based callback pattern instead.
 
+Note: the function returned by `useEffectEvent` is excluded from dependency
+arrays but does not have a stable identity — it changes on every render. Never
+add it to a dependency array or pass it to other components or Hooks.
+
 **Incorrect (effect re-runs on every callback change):**
 
 ```tsx

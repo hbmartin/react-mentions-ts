@@ -32,4 +32,13 @@ export async function GET(request: Request) {
 }
 ```
 
+A promise started early has no rejection handler until it is awaited. If `fetchConfig()` can reject while `auth()` is still pending, the runtime reports an unhandled rejection (fatal by default in Node.js 15+). In that case, chain the dependent call with `.then()` and pass every started promise to a single `Promise.all` in the same tick:
+
+```typescript
+const sessionPromise = auth()
+const configPromise = fetchConfig()
+const dataPromise = sessionPromise.then((session) => fetchData(session.user.id))
+const [config, data] = await Promise.all([configPromise, dataPromise])
+```
+
 For operations with more complex dependency chains, use `better-all` to automatically maximize parallelism (see Dependency-Based Parallelization).

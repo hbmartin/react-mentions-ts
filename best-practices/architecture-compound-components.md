@@ -108,3 +108,8 @@ const Composer = {
 ```
 
 Consumers explicitly compose exactly what they need. No hidden conditionals. And the state, actions and meta are dependency-injected by a parent provider, allowing multiple usages of the same component structure.
+
+Caveat: the provider above creates a new `value` object on every render, and
+React re-renders all context consumers whenever the value changes (compared
+with `Object.is`). If the provider re-renders often, wrap the value in
+`useMemo` (and its callbacks in `useCallback`).

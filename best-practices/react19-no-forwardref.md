@@ -42,3 +42,8 @@ const value = use(MyContext)
 
 `use()` can also be called conditionally, unlike `useContext()`, but
 `useContext()` remains supported.
+
+`forwardRef` still works in React 19 (react.dev marks it deprecated: "no longer
+necessary"; removal is planned for a future major), so migrate incrementally.
+React 19 ref callbacks can also return a cleanup function that runs when the
+element is removed.
