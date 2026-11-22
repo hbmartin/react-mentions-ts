@@ -1,5 +1,6 @@
 import React from 'react'
 import { Mention } from './index'
+import type { MentionDataSection } from './index'
 import {
   DEFAULT_EMPTY_SUGGESTIONS_MESSAGE,
   DEFAULT_ERROR_SUGGESTIONS_MESSAGE,
@@ -185,7 +186,14 @@ describe('MentionsInputSelectors', () => {
       'idle',
       'none',
       'no-inline',
-      [[0, [0, 'Al,|;::', 0, 8], [['string', '1:2|3;4,5::6', 'A:B|C;D,E::F', expect.any(Number)]]]],
+      [
+        [
+          0,
+          [0, 'Al,|;::', 0, 8],
+          [['string', '1:2|3;4,5::6', 'A:B|C;D,E::F', expect.any(Number)]],
+          [],
+        ],
+      ],
       [
         [
           0,
@@ -687,6 +695,49 @@ describe('MentionsInputSelectors', () => {
       items: [
         { id: 'alice', display: 'Alice' },
         { id: 'adam', display: 'Adam' },
+      ],
+      nextCursor: 'cursor-2',
+      hasMore: true,
+      paginated: true,
+    })
+  })
+
+  it('normalizes grouped provider sections into flat items and section metadata', () => {
+    const users = [
+      { id: 'alice', display: 'Alice' },
+      { id: 'adam', display: 'Adam' },
+    ]
+    const teams = [{ id: 'frontend', display: 'Frontend Team' }]
+    const publicSection: MentionDataSection = {
+      label: 'Public API section',
+      items: [],
+    }
+
+    expect(publicSection.label).toBe('Public API section')
+
+    expect(
+      normalizeMentionDataResult({
+        sections: [
+          { id: 'users', label: 'Users', items: users },
+          { label: 'Teams', items: teams },
+          { label: 'Empty', items: [] },
+        ],
+        nextCursor: 'cursor-2',
+      })
+    ).toEqual({
+      items: [...users, ...teams],
+      sections: [
+        {
+          key: 'id:string:users',
+          id: 'users',
+          label: 'Users',
+          results: users,
+        },
+        {
+          key: 'label:Teams',
+          label: 'Teams',
+          results: teams,
+        },
       ],
       nextCursor: 'cursor-2',
       hasMore: true,

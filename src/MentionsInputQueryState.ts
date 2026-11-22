@@ -4,6 +4,7 @@ import type {
   QueryInfo,
   SuggestionQueryState,
   SuggestionQueryStateMap,
+  SuggestionSection,
   SuggestionsMap,
 } from './types'
 
@@ -82,6 +83,63 @@ const clampFocusIndex = <Extra extends Record<string, unknown>>(
   return focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex
 }
 
+const getDefinedSections = <Extra extends Record<string, unknown>>(
+  sections: SuggestionSection<Extra>[] | undefined
+): SuggestionSection<Extra>[] | undefined =>
+  sections === undefined || sections.length === 0 ? undefined : sections
+
+const createSuggestionsEntry = <Extra extends Record<string, unknown>>(
+  queryInfo: QueryInfo,
+  results: SuggestionQueryState<Extra>['results'],
+  sections?: SuggestionSection<Extra>[]
+): SuggestionsMap<Extra>[number] => ({
+  queryInfo,
+  results,
+  ...(getDefinedSections(sections) === undefined ? {} : { sections }),
+})
+
+const mergeSuggestionSections = <Extra extends Record<string, unknown>>(
+  previousSections: SuggestionSection<Extra>[] | undefined,
+  nextSections: SuggestionSection<Extra>[] | undefined
+): SuggestionSection<Extra>[] | undefined => {
+  if (previousSections === undefined || previousSections.length === 0) {
+    return getDefinedSections(nextSections)
+  }
+
+  if (nextSections === undefined || nextSections.length === 0) {
+    return previousSections
+  }
+
+  const mergedSections = previousSections.map((section) => ({
+    ...section,
+    results: [...section.results],
+  }))
+  const sectionIndexByKey = new Map(
+    mergedSections.map((section, sectionIndex) => [section.key, sectionIndex] as const)
+  )
+
+  for (const section of nextSections) {
+    const existingSectionIndex = sectionIndexByKey.get(section.key)
+
+    if (existingSectionIndex === undefined) {
+      sectionIndexByKey.set(section.key, mergedSections.length)
+      mergedSections.push({
+        ...section,
+        results: [...section.results],
+      })
+      continue
+    }
+
+    const existingSection = mergedSections[existingSectionIndex]
+    mergedSections[existingSectionIndex] = {
+      ...existingSection,
+      results: [...existingSection.results, ...section.results],
+    }
+  }
+
+  return mergedSections
+}
+
 const applyPaginationResult = <Extra extends Record<string, unknown>>(
   currentSuggestions: SuggestionsMap<Extra>,
   currentQueryStates: SuggestionQueryStateMap<Extra>,
@@ -140,13 +198,11 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
   }
 
   const results = page.items
+  const sections = getDefinedSections(page.sections)
   const ignoreAccents = currentQueryState.ignoreAccents ?? false
   const suggestions: SuggestionsMap<Extra> = {
     ...currentSuggestions,
-    [childIndex]: {
-      queryInfo,
-      results,
-    },
+    [childIndex]: createSuggestionsEntry(queryInfo, results, sections),
   }
   const nextFocusIndex = inlineAutocomplete ? 0 : clampFocusIndex(suggestions, focusIndex)
 
@@ -158,6 +214,7 @@ export const applySuccessfulQueryResult = <Extra extends Record<string, unknown>
       [childIndex]: {
         queryInfo,
         results,
+        ...(sections === undefined ? {} : { sections }),
         status: 'success',
         ignoreAccents,
         pagination: page.paginated
@@ -207,13 +264,14 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
   const previousResults = Object.hasOwn(currentSuggestions, childIndex)
     ? currentSuggestions[childIndex].results
     : []
+  const previousSections = Object.hasOwn(currentSuggestions, childIndex)
+    ? currentSuggestions[childIndex].sections
+    : undefined
   const results = [...previousResults, ...page.items]
+  const sections = mergeSuggestionSections(previousSections, page.sections)
   const suggestions: SuggestionsMap<Extra> = {
     ...currentSuggestions,
-    [childIndex]: {
-      queryInfo,
-      results,
-    },
+    [childIndex]: createSuggestionsEntry(queryInfo, results, sections),
   }
 
   return {
@@ -225,6 +283,7 @@ export const applySuccessfulPageResult = <Extra extends Record<string, unknown>>
         ...currentQueryState,
         queryInfo,
         results,
+        ...(sections === undefined ? {} : { sections }),
         status: 'success',
         pagination: {
           nextCursor: page.nextCursor,
